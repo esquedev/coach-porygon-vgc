@@ -1,0 +1,2 @@
+Timestamp,Match_ID,Format_Type,Series_Game,Team_ID,Opponent_Archetype,Risk_Profile,Decision_Pacing,Mistake_Domain,Mistake_Code,Turn_Occurred,VP_Delta_Lost,Root_Cognitive_Trap,Deterministic_Fix,Eradication_Status
+46321.0,1.0,Bo1_Ladder,Bo1_Single,T01,Rain Balance,Calculated,Calculated_15-45s,Targeting,TGT-01,2.0,-2.0,Tunnel_Vision,Punish mandatory defensive Protects by targeting the partner slot,Monitored

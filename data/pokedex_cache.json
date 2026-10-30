@@ -1,0 +1,9 @@
+{
+  "species": {},
+  "moves": {},
+  "mechanics": {
+    "stat_points": "Exactly 66 total SP per Pokemon, max 32 SP per single stat. EV = 0 if SP == 0 else 4 + 8 * (SP - 1). Floor after +10%/-10% Stat Alignment.",
+    "mega_evolution": "Occurs during Activation Phase before Fake Out/Protect; speed tiers recalibrate immediately.",
+    "redirection": "Follow Me and Rage Powder cannot absorb spread moves. Airborne Pokemon do not receive Psychic Terrain priority immunity."
+  }
+}
