@@ -454,7 +454,7 @@ Defensiva:
 
 # Raichu
 
-# Speed: Raichu se encuentra muy por encima de la mediana del formato (80 Base Speed) con 110 base speed (empatado en base speed con opciones como Alolan Raichu, Gengar, Tauros, Espeon, Froslass, Hisuian Zoroark, Lycanroc (Dusk Form), Mega Metagross y Mega Gallade, y superando a Pokémon clave de base 100 a 109 e inferior como Charizard, Typhlosion, Salamence, Volcarona, Palafin, Garchomp, Pawmot, Espathra, Infernape, Urshifu, Arcanine, Rillaboom e Incineroar).
+# Speed: Raichu se encuentra muy por encima de la mediana del formato (80 Base Speed) con 110 base speed (empatado en base speed con opciones como Alolan Raichu, Gengar, Tauros, Espeon, Froslass, Hisuian Zoroark, Lycanroc (Dusk Form), Mega Metagross y Mega Gallade, y superando a Pokémon clave de base 100 a 109 e inferior como Charizard, Typhlosion, Salamence, Volcarona, Palafin, Garchomp, Pawmot, Espathra, Infernape, Arcanine, Rillaboom e Incineroar).
 
 # Velocidad máxima Timid / Jolly: 178
 # Velocidad máxima Naturaleza neutra: 162
@@ -513,7 +513,7 @@ Defensiva:
 
 # Raichu-X
 
-Speed: Mega Raichu X mantiene la velocidad base de su forma original y se ubica muy por encima de la mediana del formato (80 Base Speed) con 110 base speed (empatado en base speed con Raichu tradicional, Alolan Raichu, Gengar, Tauros, Espeon, Froslass, Hisuian Zoroark, Lycanroc (Dusk Form), Mega Metagross y Mega Gallade, y superando a Pokémon clave de base 100 a 109 e inferior como Charizard, Typhlosion, Salamence, Volcarona, Palafin, Garchomp, Pawmot, Espathra, Infernape, Urshifu, Arcanine, Rillaboom e Incineroar).
+Speed: Mega Raichu X mantiene la velocidad base de su forma original y se ubica muy por encima de la mediana del formato (80 Base Speed) con 110 base speed (empatado en base speed con Raichu tradicional, Alolan Raichu, Gengar, Tauros, Espeon, Froslass, Hisuian Zoroark, Lycanroc (Dusk Form), Mega Metagross y Mega Gallade, y superando a Pokémon clave de base 100 a 109 e inferior como Charizard, Typhlosion, Salamence, Volcarona, Palafin, Garchomp, Pawmot, Espathra, Infernape, Arcanine, Rillaboom e Incineroar).
 
 # Velocidad máxima Timid / Jolly: 178
 # Velocidad máxima Naturaleza neutra: 162
@@ -1728,14 +1728,14 @@ Defensiva:
 0 SpA Indeedee-F Hyper Voice vs. 18 HP / 0 SpD Tyranitar-Mega in Sand: 12-15 (5.7 - 7.2%) -- possible 14HKO
 
 ### Defensive Calculations (15)
-252+ SpA Choice Specs Gholdengo Shadow Ball vs. +1 32 HP / 2 SpD Indeedee-F: 146-174 (82.4 - 98.3%) -- guaranteed 2HKO [Roll 100 $\le 99.4\%$ asegurado vía Psychic Seed]
-32+ Atk Staraptor-Mega Close Combat vs. 32 HP / 32+ Def Indeedee-F: 147-174 (83.0 - 98.3%) -- guaranteed 2HKO [Roll 100 $\le 99.4\%$ asegurado]
+252+ SpA Choice Specs Gholdengo Shadow Ball vs. +1 32 HP / 2 SpD Indeedee-F: 146-174 (82.4 - 98.3%) -- guaranteed 2HKO [Roll 100 ≤ 99.4% asegurado vía Psychic Seed]
+32+ Atk Staraptor-Mega Close Combat vs. 32 HP / 32+ Def Indeedee-F: 147-174 (83.0 - 98.3%) -- guaranteed 2HKO [Roll 100 ≤ 99.4% asegurado]
 32 Atk Staraptor-Mega Close Combat vs. 32 HP / 32+ Def Indeedee-F: 141-166 (79.6 - 93.7%) -- guaranteed 2HKO
 32+ Atk Sneasler Dire Claw vs. 32 HP / 32+ Def Indeedee-F: 72-85 (40.7 - 48.0%) -- guaranteed 3HKO
 32 Atk Sneasler Close Combat vs. 32 HP / 32+ Def Indeedee-F: 135-159 (76.2 - 89.8%) -- guaranteed 2HKO
 32 Atk Salamence-Mega Double-Edge vs. 32 HP / 32+ Def Indeedee-F: 126-148 (71.2 - 83.6%) -- guaranteed 2HKO
 32 SpA Gengar-Mega Sludge Bomb vs. +1 32 HP / 2 SpD Indeedee-F: 60-72 (33.9 - 40.7%) -- guaranteed 3HKO
-32+ Atk Golisopod-Mega Leech Life vs. 32 HP / 32+ Def Indeedee-F: 158-188 (89.2 - 106.2%) -- 31.3% chance to OHKO [Compromiso Minimax: $<50\%$ OHKO]
+32+ Atk Golisopod-Mega Leech Life vs. 32 HP / 32+ Def Indeedee-F: 158-188 (89.2 - 106.2%) -- 31.3% chance to OHKO [Compromiso Minimax: < 50% OHKO]
 32+ Atk Black Glasses Kingambit Sucker Punch vs. Indeedee-F: 0-0 (0.0 - 0.0%) -- Anulado (Bloqueado por Terreno Psíquico)
 32+ Atk Miracle Seed Rillaboom Grassy Glide vs. Indeedee-F in Psychic Terrain: 0-0 (0.0 - 0.0%) -- Anulado (Bloqueado por Terreno Psíquico)
 32+ Atk Black Glasses Kingambit Kowtow Cleave vs. 32 HP / 32+ Def Indeedee-F: 186-218 (105.0 - 123.1%) -- guaranteed OHKO [Requiere pivote / Protect / TR inmediato]

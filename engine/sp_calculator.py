@@ -13,6 +13,41 @@ MAX_TOTAL_SP = 66
 MAX_SINGLE_STAT_SP = 32
 
 
+def ev_to_sp(ev: int) -> int:
+    """
+    Convert Showdown EV value to Regulation M-C Stat Points (SP).
+    EV progression at Level 50 (31 IV):
+    0 EV -> 0 SP
+    4 EV -> 1 SP
+    12 EV -> 2 SP
+    20 EV -> 3 SP
+    28 EV -> 4 SP
+    ...
+    252 EV -> 32 SP
+    Formula: 1 + (ev - 4) // 8 for ev >= 4.
+    """
+    if ev < 4:
+        return 0
+    return min(MAX_SINGLE_STAT_SP, 1 + (int(ev) - 4) // 8)
+
+
+def sp_to_ev(sp: int) -> int:
+    """
+    Convert Regulation M-C Stat Points (SP) to Showdown EV value.
+    0 SP -> 0 EV
+    1 SP -> 4 EV
+    2 SP -> 12 EV
+    3 SP -> 20 EV
+    4 SP -> 28 EV
+    ...
+    32 SP -> 252 EV
+    Formula: 4 + (sp - 1) * 8 for sp >= 1.
+    """
+    if sp <= 0:
+        return 0
+    return 4 + (min(MAX_SINGLE_STAT_SP, int(sp)) - 1) * 8
+
+
 def validate_and_calculate_sp(
     species: str,
     sp_spread: Dict[str, int],
@@ -56,6 +91,7 @@ def validate_and_calculate_sp(
 
 
 def main():
+    """CLI entry point for Stat Point calculation and verification."""
     parser = argparse.ArgumentParser(description="Regulation M-C 66-SP Deterministic Validator & Stat Calculator")
     parser.add_argument("--species", type=str, required=True, help="Pokemon species name (e.g., Charizard-Mega-Y)")
     parser.add_argument("--nature", type=str, default="Hardy", help="Stat Alignment nature (e.g., Modest, Timid)")

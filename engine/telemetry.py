@@ -1,13 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Coach Porygon VGC — Telemetry & Competitive Log Engine
+Adheres to SOLID Principles & PEP 8 via Repository Pattern.
+Safely logs personal matches, scouted tournaments, and damage benchmarks to CSV.
+"""
+
 import argparse
 import csv
 import json
-import re
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Union
+import sys
+import threading
+from typing import Any, Dict, List, Optional, Union
 
+# Enable engine package import
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = REPO_ROOT / "data"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+try:
+    from engine.repositories import (
+        DATA_DIR,
+        CsvDamageCalcRepository,
+        CsvDiagnosticsRepository,
+        CsvMatchRepository,
+        IDamageCalcRepository,
+        IDiagnosticsRepository,
+        IMatchRepository,
+        get_excel_serial_timestamp,
+        sanitize_csv_cell,
+    )
+except ImportError:
+    from repositories import (  # type: ignore
+        DATA_DIR,
+        CsvDamageCalcRepository,
+        CsvDiagnosticsRepository,
+        CsvMatchRepository,
+        IDamageCalcRepository,
+        IDiagnosticsRepository,
+        IMatchRepository,
+        get_excel_serial_timestamp,
+        sanitize_csv_cell,
+    )
+
 MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB hard cap against memory exhaustion (CWE-400)
 
 RAW_MATCHES_CSV = DATA_DIR / "Raw_Matches.csv"
@@ -15,20 +51,9 @@ PLAYSTYLE_DIAGNOSTICS_CSV = DATA_DIR / "Playstyle_Diagnostics.csv"
 SCOUTED_RAW_MATCHES_CSV = DATA_DIR / "Scouted_Raw_Matches.csv"
 DAMAGE_CALCS_CSV = DATA_DIR / "Damage_Calculations.csv"
 
-RAW_MATCHES_COLS = [
-    "Timestamp", "Match_ID", "Team_ID", "Opponent", "Start_Rating", "End_Rating",
-    "Net_Rating", "Result", "Turns", "Enemy_Archetype", "User_Mega", "Enemy_Mega",
-    "User_Lead_1", "User_Lead_2", "User_Back_1", "User_Back_2", "Enemy_Lead_1",
-    "Enemy_Lead_2", "Speed_Control_Active", "First_Blood_Side", "MVP_Pokemon",
-    "MVP_Move", "Misplay_Type", "Key_RNG_Event", "Core_Lesson", "Commentary"
-]
-
-PLAYSTYLE_COLS = [
-    "Timestamp", "Match_ID", "Format_Type", "Series_Game", "Team_ID",
-    "Opponent_Archetype", "Risk_Profile", "Decision_Pacing", "Mistake_Domain",
-    "Mistake_Code", "Turn_Occurred", "VP_Delta_Lost", "Root_Cognitive_Trap",
-    "Deterministic_Fix", "Eradication_Status"
-]
+RAW_MATCHES_COLS = CsvMatchRepository.HEADERS
+PLAYSTYLE_COLS = CsvDiagnosticsRepository.HEADERS
+DAMAGE_CALC_COLS = CsvDamageCalcRepository.HEADERS
 
 SCOUTED_MATCHES_COLS = [
     "Timestamp", "Scouted_Match_ID", "Scouted_Team_ID", "Player_Name",
@@ -38,39 +63,9 @@ SCOUTED_MATCHES_COLS = [
     "First_Blood_Side", "MVP_Pokemon", "Key_Turn_Notes"
 ]
 
-DAMAGE_CALC_COLS = [
-    "Calc_ID", "Attacker_Species", "Attacker_Spread", "Attacker_Modifiers",
-    "Move_Name", "Defender_Species", "Defender_Spread", "Defender_Modifiers",
-    "Min_Dmg_Pct", "Max_Dmg_Pct", "KO_Threshold", "Damage_Rolls",
-    "Strategic_Context", "Raw_Showdown_Text"
-]
-
-# Matches safe signed numbers or Showdown stat stage prefixes (e.g. "-18.0", "+2 SpA", "-1 boost")
-_SAFE_SIGNED_PREFIX_RE = re.compile(r"^[+-]\d+(\.\d+)?(\s|$)")
-
-
-def sanitize_csv_cell(val: Union[str, float, int]) -> Union[str, float, int]:
-    """
-    Neutralizes CSV Formula / DDE Injection (OWASP A03 / CWE-1236) on untrusted strings
-    while preserving legitimate numeric values and Showdown stage modifiers (e.g. '-1 boost').
-    """
-    if isinstance(val, (int, float)):
-        return val
-    s = str(val)
-    if not s:
-        return s
-    if s[0] in ("=", "@", "\t", "\r"):
-        return f"'{s}"
-    if s[0] in ("+", "-"):
-        if not _SAFE_SIGNED_PREFIX_RE.match(s) or "|" in s or "!" in s:
-            return f"'{s}"
-    return s
-
 
 def load_json_payload_safely(payload_arg: str) -> Union[dict, list]:
-    """
-    Safely parses either an inline JSON string or a JSON file path with size bounds.
-    """
+    """Safely parses either an inline JSON string or a JSON file path with size bounds."""
     stripped = payload_arg.strip()
     if stripped.startswith("{") or stripped.startswith("["):
         if len(stripped.encode("utf-8")) > MAX_PAYLOAD_BYTES:
@@ -85,14 +80,8 @@ def load_json_payload_safely(payload_arg: str) -> Union[dict, list]:
     return json.loads(candidate_path.read_text(encoding="utf-8"))
 
 
-def get_excel_serial_timestamp() -> float:
-    """Returns current UTC time as an Excel/Sheets serial timestamp (days since 1899-12-30)."""
-    epoch = datetime(1899, 12, 30, tzinfo=timezone.utc)
-    now = datetime.now(timezone.utc)
-    return round((now - epoch).total_seconds() / 86400.0, 11)
-
-
 def get_next_numeric_id(csv_path: Path, id_col_index: int = 1) -> float:
+    """Computes next sequential numeric ID in given CSV file."""
     if not csv_path.exists():
         return 1.0
     max_id = 0.0
@@ -108,24 +97,37 @@ def get_next_numeric_id(csv_path: Path, id_col_index: int = 1) -> float:
     return max_id + 1.0
 
 
+_CSV_WRITE_LOCK = threading.RLock()
+
+
 def append_csv_row(csv_path: Path, headers: List[str], row_dict: Dict[str, Union[str, float, int]]) -> None:
+    """Appends sanitized row dictionary to CSV path in a thread-safe atomic manner (SEC-07)."""
     csv_path.parent.mkdir(parents=True, exist_ok=True)
-    write_header = not csv_path.exists() or csv_path.stat().st_size == 0
-    with open(csv_path, "a", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f)
-        if write_header:
-            writer.writerow(headers)
-        writer.writerow([sanitize_csv_cell(row_dict.get(col, "")) for col in headers])
+    with _CSV_WRITE_LOCK:
+        write_header = not csv_path.exists() or csv_path.stat().st_size == 0
+        with open(csv_path, "a", encoding="utf-8", newline="") as f:
+            writer = csv.writer(f)
+            if write_header:
+                writer.writerow(headers)
+            writer.writerow([sanitize_csv_cell(row_dict.get(col, "")) for col in headers])
 
 
-def log_personal_match_to_csv(params: Dict[str, str]) -> Dict[str, object]:
+def log_personal_match_to_csv(
+    params: Dict[str, Any],
+    match_repo: Optional[IMatchRepository] = None,
+    diag_repo: Optional[IDiagnosticsRepository] = None
+) -> Dict[str, Any]:
     """
-    Appends a personal match directly to:
-      1. data/Raw_Matches.csv
-      2. data/Playstyle_Diagnostics.csv (if a misplay code is recorded)
+    Appends a personal match to Raw_Matches.csv and Playstyle_Diagnostics.csv via Repository.
+    Supports dependency injection for side-effect-free testing.
     """
+    if match_repo is None:
+        match_repo = CsvMatchRepository(RAW_MATCHES_CSV)
+    if diag_repo is None:
+        diag_repo = CsvDiagnosticsRepository(PLAYSTYLE_DIAGNOSTICS_CSV)
+
     ts = get_excel_serial_timestamp()
-    match_id = get_next_numeric_id(RAW_MATCHES_CSV, id_col_index=1)
+    match_id = match_repo.get_next_id()
 
     start_r = float(params.get("startRating", params.get("Start_Rating", 0)) or 0)
     end_r = float(params.get("endRating", params.get("End_Rating", 0)) or 0)
@@ -170,29 +172,28 @@ def log_personal_match_to_csv(params: Dict[str, str]) -> Dict[str, object]:
         "Commentary": params.get("commentary", params.get("Commentary", ""))
     }
 
-    append_csv_row(RAW_MATCHES_CSV, RAW_MATCHES_COLS, raw_row)
+    match_repo.log_match(raw_row)
 
-    # Append to Playstyle_Diagnostics.csv if a misplay code was logged
     diag_logged = False
     if code and code != "NONE":
         diag_row = {
             "Timestamp": ts,
             "Match_ID": match_id,
-            "Format_Type": params.get("formatType", params.get("Format_Type", "Bo1_Ladder")),
-            "Series_Game": params.get("seriesGame", params.get("Series_Game", "Bo1_Single")),
+            "Format_Type": params.get("format", params.get("Format_Type", "Bo1_Ladder")),
+            "Series_Game": params.get("game", params.get("Series_Game", "G1")),
             "Team_ID": raw_row["Team_ID"],
             "Opponent_Archetype": raw_row["Enemy_Archetype"],
-            "Risk_Profile": params.get("riskProfile", params.get("Risk_Profile", "Minimax")),
-            "Decision_Pacing": params.get("pacing", params.get("Decision_Pacing", "Calculated_15-45s")),
+            "Risk_Profile": params.get("riskProfile", params.get("Risk_Profile", "Normal")),
+            "Decision_Pacing": params.get("pacing", params.get("Decision_Pacing", "Deliberate")),
             "Mistake_Domain": domain,
             "Mistake_Code": code,
-            "Turn_Occurred": float(turn or 0),
-            "VP_Delta_Lost": float(params.get("vpDelta", params.get("VP_Delta_Lost", 0)) or 0),
-            "Root_Cognitive_Trap": params.get("cognitiveTrap", params.get("Root_Cognitive_Trap", "NONE")),
+            "Turn_Occurred": turn,
+            "VP_Delta_Lost": float(params.get("vpLost", params.get("VP_Delta_Lost", 0)) or 0),
+            "Root_Cognitive_Trap": params.get("trap", params.get("Root_Cognitive_Trap", "Autopilot")),
             "Deterministic_Fix": fix,
-            "Eradication_Status": params.get("Eradication_Status", "Remediating")
+            "Eradication_Status": "Active"
         }
-        append_csv_row(PLAYSTYLE_DIAGNOSTICS_CSV, PLAYSTYLE_COLS, diag_row)
+        diag_repo.log_diagnostic(diag_row)
         diag_logged = True
 
     return {
@@ -202,12 +203,13 @@ def log_personal_match_to_csv(params: Dict[str, str]) -> Dict[str, object]:
         "Result": raw_row["Result"],
         "Net_Rating": net_r,
         "Playstyle_Diagnostics_Logged": diag_logged,
-        "Files_Updated": ["data/Raw_Matches.csv"]
-        + (["data/Playstyle_Diagnostics.csv"] if diag_logged else [])
+        "Files_Updated": ["data/Raw_Matches.csv"] + (
+            ["data/Playstyle_Diagnostics.csv"] if diag_logged else []
+        )
     }
 
 
-def log_scouted_match_to_csv(params: Dict[str, str]) -> Dict[str, object]:
+def log_scouted_match_to_csv(params: Dict[str, Any]) -> Dict[str, Any]:
     """Appends a scouted tournament match directly to data/Scouted_Raw_Matches.csv."""
     ts = get_excel_serial_timestamp()
     scouted_id = get_next_numeric_id(SCOUTED_RAW_MATCHES_CSV, id_col_index=1)
@@ -243,8 +245,14 @@ def log_scouted_match_to_csv(params: Dict[str, str]) -> Dict[str, object]:
     }
 
 
-def log_damage_calcs_to_csv(rows: List[Dict[str, str]]) -> Dict[str, object]:
-    """Appends one or more damage calculation rows directly to data/Damage_Calculations.csv."""
+def log_damage_calcs_to_csv(
+    rows: List[Dict[str, Any]],
+    calc_repo: Optional[IDamageCalcRepository] = None
+) -> Dict[str, Any]:
+    """Appends damage calculation rows to data/Damage_Calculations.csv via Repository."""
+    if calc_repo is None:
+        calc_repo = CsvDamageCalcRepository(DAMAGE_CALCS_CSV)
+
     logged_ids = []
     for r in rows:
         calc_id = r.get("Calc_ID", "CALC_NEW")
@@ -264,8 +272,9 @@ def log_damage_calcs_to_csv(rows: List[Dict[str, str]]) -> Dict[str, object]:
             "Strategic_Context": r.get("Strategic_Context", ""),
             "Raw_Showdown_Text": r.get("Raw_Showdown_Text", r.get("Raw_Text", ""))
         }
-        append_csv_row(DAMAGE_CALCS_CSV, DAMAGE_CALC_COLS, row)
+        calc_repo.log_calculation(row)
         logged_ids.append(calc_id)
+
     return {
         "status": "LOGGED_DAMAGE_CALCS",
         "Calc_IDs": logged_ids,
@@ -274,6 +283,7 @@ def log_damage_calcs_to_csv(rows: List[Dict[str, str]]) -> Dict[str, object]:
 
 
 def main():
+    """CLI entry point for match logging and playstyle diagnostics."""
     parser = argparse.ArgumentParser(description="Coach Porygon VGC Direct CSV Telemetry Logger")
     parser.add_argument("--mode", choices=["personal", "scouted", "calc", "tsv"], required=True)
     parser.add_argument("--payload", type=str, required=True, help="JSON string or path to JSON payload file")

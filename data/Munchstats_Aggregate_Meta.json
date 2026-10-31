@@ -1,0 +1,349 @@
+{
+  "crawled_at": "2026-10-31T07:04:56.662604+00:00",
+  "total_tournaments": 7,
+  "total_players": 4965,
+  "tournaments": [
+    {
+      "id": "TM_PUEBLA_2027",
+      "name": "2027 Puebla Pokémon VGC Regional Championships",
+      "players": 333,
+      "date": "2026-10-24"
+    },
+    {
+      "id": "TM_NICE_2027",
+      "name": "2027 Nice Pokémon VGC Regional Championships",
+      "players": 862,
+      "date": "2026-10-17"
+    },
+    {
+      "id": "TM_LOUISVILLE_2027",
+      "name": "2027 Louisville Pokémon VGC Regional Championships",
+      "players": 1013,
+      "date": "2026-10-09"
+    },
+    {
+      "id": "TM_RECIFE_2027",
+      "name": "2027 Recife Pokémon VGC Regional Championships",
+      "players": 222,
+      "date": "2026-10-03"
+    },
+    {
+      "id": "TM_FRANKFURT_2027",
+      "name": "2027 Frankfurt Pokémon VGC Regional Championships",
+      "players": 1129,
+      "date": "2026-09-26"
+    },
+    {
+      "id": "TM_BRISBANE_2027",
+      "name": "2027 Brisbane Pokémon VGC Regional Championships",
+      "players": 327,
+      "date": "2026-09-26"
+    },
+    {
+      "id": "TM_BALTIMORE_2027",
+      "name": "2027 Baltimore Pokémon VGC Regional Championships",
+      "players": 1079,
+      "date": "2026-09-18"
+    }
+  ],
+  "top_species_weighted_usage": [
+    {
+      "rank": 1,
+      "species": "Rillaboom",
+      "total_count": 2501,
+      "weighted_usage_pct": 50.37
+    },
+    {
+      "rank": 2,
+      "species": "Sneasler",
+      "total_count": 1929,
+      "weighted_usage_pct": 38.85
+    },
+    {
+      "rank": 3,
+      "species": "Incineroar",
+      "total_count": 1693,
+      "weighted_usage_pct": 34.1
+    },
+    {
+      "rank": 4,
+      "species": "Raichu-Mega-Y",
+      "total_count": 1281,
+      "weighted_usage_pct": 25.8
+    },
+    {
+      "rank": 5,
+      "species": "Gholdengo",
+      "total_count": 1254,
+      "weighted_usage_pct": 25.26
+    },
+    {
+      "rank": 6,
+      "species": "Kingambit",
+      "total_count": 1175,
+      "weighted_usage_pct": 23.67
+    },
+    {
+      "rank": 7,
+      "species": "Salamence-Mega",
+      "total_count": 1049,
+      "weighted_usage_pct": 21.13
+    },
+    {
+      "rank": 8,
+      "species": "Archaludon",
+      "total_count": 855,
+      "weighted_usage_pct": 17.22
+    },
+    {
+      "rank": 9,
+      "species": "Charizard-Mega-Y",
+      "total_count": 842,
+      "weighted_usage_pct": 16.96
+    },
+    {
+      "rank": 10,
+      "species": "Arcanine-Hisui",
+      "total_count": 811,
+      "weighted_usage_pct": 16.33
+    },
+    {
+      "rank": 11,
+      "species": "Garchomp-Mega-Z",
+      "total_count": 766,
+      "weighted_usage_pct": 15.43
+    },
+    {
+      "rank": 12,
+      "species": "Basculegion",
+      "total_count": 763,
+      "weighted_usage_pct": 15.37
+    },
+    {
+      "rank": 13,
+      "species": "Indeedee-F",
+      "total_count": 736,
+      "weighted_usage_pct": 14.82
+    },
+    {
+      "rank": 14,
+      "species": "Farigiraf",
+      "total_count": 731,
+      "weighted_usage_pct": 14.72
+    },
+    {
+      "rank": 15,
+      "species": "Pelipper",
+      "total_count": 708,
+      "weighted_usage_pct": 14.26
+    },
+    {
+      "rank": 16,
+      "species": "Floette-Mega",
+      "total_count": 649,
+      "weighted_usage_pct": 13.07
+    },
+    {
+      "rank": 17,
+      "species": "Milotic",
+      "total_count": 600,
+      "weighted_usage_pct": 12.08
+    },
+    {
+      "rank": 18,
+      "species": "Garchomp",
+      "total_count": 597,
+      "weighted_usage_pct": 12.02
+    },
+    {
+      "rank": 19,
+      "species": "Sylveon",
+      "total_count": 592,
+      "weighted_usage_pct": 11.92
+    },
+    {
+      "rank": 20,
+      "species": "Golisopod-Mega",
+      "total_count": 589,
+      "weighted_usage_pct": 11.86
+    },
+    {
+      "rank": 21,
+      "species": "Staraptor-Mega",
+      "total_count": 575,
+      "weighted_usage_pct": 11.58
+    },
+    {
+      "rank": 22,
+      "species": "Volcarona",
+      "total_count": 561,
+      "weighted_usage_pct": 11.3
+    },
+    {
+      "rank": 23,
+      "species": "Venusaur",
+      "total_count": 381,
+      "weighted_usage_pct": 7.67
+    },
+    {
+      "rank": 24,
+      "species": "Grimmsnarl",
+      "total_count": 377,
+      "weighted_usage_pct": 7.59
+    },
+    {
+      "rank": 25,
+      "species": "Tyranitar-Mega",
+      "total_count": 349,
+      "weighted_usage_pct": 7.03
+    },
+    {
+      "rank": 26,
+      "species": "Excadrill",
+      "total_count": 320,
+      "weighted_usage_pct": 6.45
+    },
+    {
+      "rank": 27,
+      "species": "Sinistcha",
+      "total_count": 318,
+      "weighted_usage_pct": 6.4
+    },
+    {
+      "rank": 28,
+      "species": "Gardevoir-Mega",
+      "total_count": 318,
+      "weighted_usage_pct": 6.4
+    },
+    {
+      "rank": 29,
+      "species": "Delphox-Mega",
+      "total_count": 311,
+      "weighted_usage_pct": 6.26
+    },
+    {
+      "rank": 30,
+      "species": "Whimsicott",
+      "total_count": 310,
+      "weighted_usage_pct": 6.24
+    },
+    {
+      "rank": 31,
+      "species": "Politoed",
+      "total_count": 287,
+      "weighted_usage_pct": 5.78
+    },
+    {
+      "rank": 32,
+      "species": "Indeedee",
+      "total_count": 283,
+      "weighted_usage_pct": 5.7
+    },
+    {
+      "rank": 33,
+      "species": "Kommo-o",
+      "total_count": 269,
+      "weighted_usage_pct": 5.42
+    },
+    {
+      "rank": 34,
+      "species": "Froslass-Mega",
+      "total_count": 261,
+      "weighted_usage_pct": 5.26
+    },
+    {
+      "rank": 35,
+      "species": "Gengar-Mega",
+      "total_count": 256,
+      "weighted_usage_pct": 5.16
+    }
+  ],
+  "dominant_megas_ranking": [
+    {
+      "rank": 1,
+      "mega": "Raichu-Mega-Y",
+      "total_count": 1281,
+      "weighted_usage_pct": 25.8
+    },
+    {
+      "rank": 2,
+      "mega": "Salamence-Mega",
+      "total_count": 1049,
+      "weighted_usage_pct": 21.13
+    },
+    {
+      "rank": 3,
+      "mega": "Charizard-Mega-Y",
+      "total_count": 842,
+      "weighted_usage_pct": 16.96
+    },
+    {
+      "rank": 4,
+      "mega": "Garchomp-Mega-Z",
+      "total_count": 766,
+      "weighted_usage_pct": 15.43
+    },
+    {
+      "rank": 5,
+      "mega": "Floette-Mega",
+      "total_count": 649,
+      "weighted_usage_pct": 13.07
+    },
+    {
+      "rank": 6,
+      "mega": "Golisopod-Mega",
+      "total_count": 589,
+      "weighted_usage_pct": 11.86
+    },
+    {
+      "rank": 7,
+      "mega": "Staraptor-Mega",
+      "total_count": 575,
+      "weighted_usage_pct": 11.58
+    },
+    {
+      "rank": 8,
+      "mega": "Tyranitar-Mega",
+      "total_count": 349,
+      "weighted_usage_pct": 7.03
+    },
+    {
+      "rank": 9,
+      "mega": "Gardevoir-Mega",
+      "total_count": 318,
+      "weighted_usage_pct": 6.4
+    },
+    {
+      "rank": 10,
+      "mega": "Delphox-Mega",
+      "total_count": 311,
+      "weighted_usage_pct": 6.26
+    },
+    {
+      "rank": 11,
+      "mega": "Froslass-Mega",
+      "total_count": 261,
+      "weighted_usage_pct": 5.26
+    },
+    {
+      "rank": 12,
+      "mega": "Gengar-Mega",
+      "total_count": 256,
+      "weighted_usage_pct": 5.16
+    }
+  ],
+  "top_archetypes": [
+    {
+      "archetype": "Standard Meta Balance",
+      "count": 3778
+    },
+    {
+      "archetype": "Sun Hyper Offense",
+      "count": 842
+    },
+    {
+      "archetype": "Sand Balance",
+      "count": 345
+    }
+  ]
+}

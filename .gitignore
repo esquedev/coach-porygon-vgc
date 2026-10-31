@@ -65,6 +65,7 @@ data/Playstyle_Diagnostics.csv
 data/Scouted_Raw_Matches.csv
 data/Scouted_Teams.csv
 data/Recent_Matches.csv
+data/trainer_profile.json
 data/compendium/Proto*.md
 
 # 7. Explicitly Tracked Agent Customizations, Public Data & Schema Examples
@@ -72,6 +73,7 @@ data/compendium/Proto*.md
 !.agents/**
 !AGENTS.md
 !data/*.example.csv
+!data/*.example.json
 !data/pokedex_cache.json
 !data/compendium/Champions_Mechanics_Compendium.md
 !data/compendium/M-C Calcs & Sets.md

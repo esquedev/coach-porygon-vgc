@@ -1,0 +1,13 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Horseshoe Magnet U-Bend -->
+  <path d="M22,26 L22,60 C22,76 34,88 50,88 C66,88 78,76 78,60 L78,26 L62,26 L62,58 C62,66 56,72 50,72 C44,72 38,66 38,58 L38,26 Z" fill="#94a3b8" stroke="#475569" stroke-width="3"/>
+  <!-- Red North Pole -->
+  <rect x="22" y="22" width="16" height="24" fill="#dc2626" stroke="#475569" stroke-width="2"/>
+  <text x="30" y="38" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="900" font-size="12">N</text>
+  <!-- Blue South Pole -->
+  <rect x="62" y="22" width="16" height="24" fill="#2563eb" stroke="#475569" stroke-width="2"/>
+  <text x="70" y="38" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-weight="900" font-size="12">S</text>
+  <!-- Magnetic Field Arcs -->
+  <path d="M14,34 C10,48 10,64 18,76" stroke="#38bdf8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="3,3"/>
+  <path d="M86,34 C90,48 90,64 82,76" stroke="#38bdf8" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="3,3"/>
+</svg>

@@ -11,13 +11,15 @@ Deliver dense, mathematically grounded coaching analysis directly without conver
 
 ## Execution Workflow
 
-1. **Automated Team ID Resolution**:
-   - If the user did not specify a Team ID (`T01`–`T23` or `STxx`), run:
-     `python scouts/munchstats_scraper.py --lookup <Species1> <Species2> ...`
-   - Bind a single match automatically, prompt if ambiguous, or issue the `[INPUT REQUIRED]` hard halt if zero matches exist.
+1. **Trainer Profile & Strict Team ID Verification**:
+   - Determine trainer POV by matching player usernames in the replay against `known_alts` in `data/trainer_profile.json`.
+   - If the user did not specify a Team ID (`T01`–`Txx` or `STxx`):
+     - Check `last_team_id` in `data/trainer_profile.json`.
+     - If available, prompt: `[INPUT REQUIRED]: No Team ID specified. Are you running last registered team [last_team_id] or a new team? (If new, provide Showdown Team Paste to register via 'python engine/register_team.py').`
+     - Halt execution immediately until confirmed. Never speculate, guess, or silently bind an old team.
 2. **Pre-Turn Validation & Minimax Branch Simulation**:
    - Identify the **Turning Point** where a `+6 VP` Checkmate state or massive tempo swing occurred.
-   - Use [`engine/turn_simulator.py`](../../engine/turn_simulator.py) to simulate the exact turn divergence comparing the **User's Line** against the **Master-Tier Minimax Line**.
+   - Use [`engine/turn_simulator.py`](../../../engine/turn_simulator.py) to simulate the exact turn divergence comparing the **User's Line** against the **Master-Tier Minimax Line**.
 3. **Structured Output Sections**:
    - **Match Telemetry:** `[Format: Bo1_Ladder / Bo3_Swiss] | [User Team ID] vs [Opponent] | Result: [Win/Loss] | Archetype Matrix: [User vs Opponent]`
    - **Win Condition Audit (Grade A–F):** Assess Team Preview selection and Turn 1 lead execution against opposing speed control.
@@ -25,8 +27,29 @@ Deliver dense, mathematically grounded coaching analysis directly without conver
    - **Tactical Execution & Misplay Diagnosis:** Assign standardized error codes (`POS-01`–`POS-03`, `TGT-01`–`TGT-03`, `MEC-01`–`MEC-02`, `SPD-01`–`SPD-02`), classify the root cognitive trap (`Tunnel_Vision`, `Greed`, `Autopilot`, `Tilt`, `Format_Divergence`), and dictate the deterministic imperative fix.
    - **Team Evolution & Commentary:** Formulate concise, actionable roster improvements (SP spread optimizations, item swaps, tech moves).
 4. **Direct CSV Telemetry Ingestion**:
-   - Instead of printing external webhook URLs, log all telemetry directly into the workspace CSVs via [`engine/telemetry.py`](../../engine/telemetry.py):
+   - Instead of printing external webhook URLs, log all telemetry directly into the workspace CSVs via [`engine/telemetry.py`](../../../engine/telemetry.py):
      - **Personal Matches (`Txx`):** Run `python engine/telemetry.py --mode personal --payload <json>` to automatically append the match to `data/Raw_Matches.csv` and log the cognitive trap row to `data/Playstyle_Diagnostics.csv`.
      - **Scouted Matches (`STxx` / Third-Party):** Run `python engine/telemetry.py --mode scouted --payload <json>` to append directly to `data/Scouted_Raw_Matches.csv`.
      - **Damage Calculations:** Run `python engine/telemetry.py --mode calc --payload <json>` to append newly computed damage rows directly to `data/Damage_Calculations.csv`.
    - Confirm the logged `Match_ID` and updated CSV files at the bottom of the breakdown.
+
+## 5. First-Proof Worked Example
+```markdown
+### Match Telemetry
+[Format: Bo1_Ladder] | T24 vs opponent_vgc | Result: Loss | Archetype Matrix: Rain Offense vs Sun Balance
+
+### Win Condition Audit (Grade: C+)
+Turn 1 lead ceded instant board equity: dry hard switch into active sun boosted Charizard.
+
+### The Turning Point (Turn 3 | VP Delta: -4 VP)
+- User's Line: Swapped Pelipper directly into Charizard Solar Beam without Protect (POS-01). Result: Pelipper KO (-2 VP), lost weather control.
+- Master Minimax Line: Protect slot 1 + Electro Shot slot 2 into opposing Charizard (+3 VP Mega KO).
+
+### Tactical Execution & Misplay Diagnosis
+- Error Code: POS-01 (Dry Hard Switch)
+- Cognitive Trap: Autopilot
+- Deterministic Fix: Run Pre-Turn Checklist step 2 (Positional Pivoting) before swapping in low-resilience weather setters.
+
+### CSV Ingestion Status
+Logged Match to data/Raw_Matches.csv and diagnostic to data/Playstyle_Diagnostics.csv.
+```
