@@ -119,8 +119,20 @@ def verify_stress_cases_schema():
     return len(cases)
 
 
+def ensure_local_data_templates():
+    """Ensure gitignored telemetry/profile files have baseline local templates on clean CI runs."""
+    data_dir = REPO_ROOT / "data"
+    if data_dir.exists():
+        for ex_file in data_dir.glob("*.example.*"):
+            target_name = ex_file.name.replace(".example", "")
+            target_file = data_dir / target_name
+            if not target_file.exists():
+                target_file.write_bytes(ex_file.read_bytes())
+
+
 def verify_referenced_paths():
     """Scans AGENTS.md and .agents/skills/ for referenced files and validates existence."""
+    ensure_local_data_templates()
     markdown_files = [REPO_ROOT / "AGENTS.md"]
     markdown_files.extend((REPO_ROOT / ".agents").rglob("*.md"))
 
@@ -144,13 +156,18 @@ def verify_referenced_paths():
                 continue
 
             resolved = (md_file.parent / target_clean).resolve()
+            data_resolved = (REPO_ROOT / "data" / target_clean).resolve()
+            candidates = [resolved, data_resolved]
+            example_candidates = [
+                c.with_name(c.stem + ".example" + c.suffix) for c in candidates
+            ]
             checked_count += 1
-            if not resolved.exists():
+            if not any(c.exists() for c in candidates + example_candidates):
                 missing_paths.append((str(md_file.relative_to(REPO_ROOT)), target, str(resolved)))
 
         # 2. Check explicitly backticked filepaths
-        for p in code_path_pattern.findall(content):
-            p_clean = p.strip()
+        for p_str in code_path_pattern.findall(content):
+            p_clean = p_str.strip()
             if p_clean.startswith("http://") or p_clean.startswith("https://") or "<" in p_clean:
                 continue
             if p_clean.startswith("evals/reports/"):
@@ -165,10 +182,13 @@ def verify_referenced_paths():
                 REPO_ROOT / "scouts" / p_clean,
                 REPO_ROOT / ".agents" / "rules" / p_clean
             ]
-            found = any(c.exists() for c in candidates)
+            example_candidates = [
+                c.with_name(c.stem + ".example" + c.suffix) for c in candidates
+            ]
+            found = any(c.exists() for c in candidates + example_candidates)
             checked_count += 1
             if not found:
-                missing_paths.append((str(md_file.relative_to(REPO_ROOT)), p, str(REPO_ROOT / p_clean)))
+                missing_paths.append((str(md_file.relative_to(REPO_ROOT)), p_str, str(REPO_ROOT / p_clean)))
 
     if missing_paths:
         for source, ref, target in missing_paths:
