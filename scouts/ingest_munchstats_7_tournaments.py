@@ -239,7 +239,7 @@ def run_pipeline():
 
                 trainer_item = {
                     "player": s.get("name", "Unknown"),
-                    "placement": f"{place}{'st' if place==1 else 'nd' if place==2 else 'rd' if place==3 else 'th'} Place" if isinstance(place, int) else str(place),
+                    "placement": f"{place}{'st' if place == 1 else 'nd' if place == 2 else 'rd' if place == 3 else 'th'} Place" if isinstance(place, int) else str(place),
                     "numeric_place": place if isinstance(place, int) else 999,
                     "record": s.get("record", {}),
                     "archetype": arch,

@@ -24219,11 +24219,15 @@ function loadCrucibleScenario(idx) {
         const teams = TELEMETRY.teams || [];
         const tIdx = Number(val) || 0;
         const team = teams[tIdx] || teams[0];
-        if (team && team.mons) {
-          monSel.innerHTML = team.mons.map((raw, idx) => {
+        if (monSel && team && team.mons) {
+          monSel.textContent = '';
+          team.mons.forEach((raw, idx) => {
             const p = parseMonString(raw, idx);
-            return `<option value="${idx}">${p.name} @ ${p.item}</option>`;
-          }).join('');
+            const opt = document.createElement('option');
+            opt.value = String(idx);
+            opt.textContent = `${p.name} @ ${p.item}`;
+            monSel.appendChild(opt);
+          });
         }
       }
       onSpMonChange();
@@ -24292,17 +24296,48 @@ function loadCrucibleScenario(idx) {
       const hdr = document.getElementById('sp-mon-header');
       const types = currentSpMon.types || ['Normal'];
       if (hdr) {
-        hdr.innerHTML = `
-          <img src="${getSpritePath(currentSpMon.name)}" class="w-14 h-14 object-contain mon-sprite drop-shadow" alt="${currentSpMon.name}">
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-extrabold text-sm text-white">${currentSpMon.name}</span>
-              ${types.map(t => `<span class="badge bg-slate-900 text-cyan-300 border border-cyan-500/30 text-[10px]">${t}</span>`).join('')}
-            </div>
-            <div class="text-xs text-slate-300">🎒 ${currentSpMon.item} • ⚡ ${currentSpMon.ability} • ${currentLang === 'en' ? 'Nature' : 'Naturaleza'}: <b class="text-amber-300">${nat}</b></div>
-            <div class="text-[11px] font-mono text-cyan-300 mt-0.5">Lv.50: ${finalStats.hp} HP / ${finalStats.atk} Atk / ${finalStats.def} Def / ${finalStats.spa} SpA / ${finalStats.spd} SpD / ${finalStats.spe} Spe</div>
-          </div>
-        `;
+        hdr.textContent = '';
+        const img = document.createElement('img');
+        img.src = getSpritePath(currentSpMon.name);
+        img.className = 'w-14 h-14 object-contain mon-sprite drop-shadow';
+        img.alt = currentSpMon.name || '';
+        hdr.appendChild(img);
+
+        const content = document.createElement('div');
+        content.className = 'flex-1 min-w-0';
+
+        const titleRow = document.createElement('div');
+        titleRow.className = 'flex items-center gap-2';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'font-extrabold text-sm text-white';
+        nameSpan.textContent = currentSpMon.name || '';
+        titleRow.appendChild(nameSpan);
+
+        types.forEach(t => {
+          const badge = document.createElement('span');
+          badge.className = 'badge bg-slate-900 text-cyan-300 border border-cyan-500/30 text-[10px]';
+          badge.textContent = t;
+          titleRow.appendChild(badge);
+        });
+        content.appendChild(titleRow);
+
+        const detailsRow = document.createElement('div');
+        detailsRow.className = 'text-xs text-slate-300';
+        const natLabel = currentLang === 'en' ? 'Nature' : 'Naturaleza';
+        detailsRow.textContent = `🎒 ${currentSpMon.item || ''} • ⚡ ${currentSpMon.ability || ''} • ${natLabel}: `;
+        const natBold = document.createElement('b');
+        natBold.className = 'text-amber-300';
+        natBold.textContent = nat;
+        detailsRow.appendChild(natBold);
+        content.appendChild(detailsRow);
+
+        const statsRow = document.createElement('div');
+        statsRow.className = 'text-[11px] font-mono text-cyan-300 mt-0.5';
+        statsRow.textContent = `Lv.50: ${finalStats.hp} HP / ${finalStats.atk} Atk / ${finalStats.def} Def / ${finalStats.spa} SpA / ${finalStats.spd} SpD / ${finalStats.spe} Spe`;
+        content.appendChild(statsRow);
+
+        hdr.appendChild(content);
       }
 
       const rows = [

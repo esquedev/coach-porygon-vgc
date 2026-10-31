@@ -199,17 +199,26 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
         """Inject strict CORS headers allowing only localhost and local file execution (SEC-02)."""
         origin = self.headers.get("Origin", "")
         if origin:
-            origin_lower = origin.lower()
-            if (
-                origin_lower == "null"
-                or origin_lower.startswith("http://localhost")
-                or origin_lower.startswith("http://127.0.0.1")
-                or origin_lower.startswith("https://localhost")
-                or origin_lower.startswith("https://127.0.0.1")
-            ):
-                self.send_header("Access-Control-Allow-Origin", origin if origin != "null" else "*")
+            # CodeQL remediation for HTTP Response Splitting (CWE-113)
+            # Reconstruct origin strictly from parsed URL components to eradicate CRLF injection
+            clean_origin = origin.replace("\r", "").replace("\n", "").strip()
+            if clean_origin.lower() == "null":
+                self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type")
+            else:
+                try:
+                    parsed_origin = urllib.parse.urlsplit(clean_origin)
+                    scheme = (parsed_origin.scheme or "").lower()
+                    hostname = (parsed_origin.hostname or "").lower()
+                    port = parsed_origin.port
+                    if scheme in ("http", "https") and hostname in ("localhost", "127.0.0.1"):
+                        safe_origin = f"{scheme}://{hostname}" + (f":{port}" if port is not None else "")
+                        self.send_header("Access-Control-Allow-Origin", safe_origin)
+                        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+                except Exception:
+                    pass
         else:
             self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
             self.send_header("Access-Control-Allow-Headers", "Content-Type")
