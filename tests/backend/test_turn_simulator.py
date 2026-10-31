@@ -243,7 +243,7 @@ class TestTurnSimulator(unittest.TestCase):
         lines = []
 
         # Deal 300 damage (exceeding 183 HP) with Focus Sash intact at 100% HP
-        dmg = sim.deal_hp_damage(slot, 300, lines, check_sash=True)
+        _dmg = sim.deal_hp_damage(slot, 300, lines, check_sash=True)
         self.assertEqual(slot["hp"], 1, "Focus Sash must preserve 1 HP from full health")
         self.assertEqual(slot["item"], "", "Focus Sash must be consumed after activation")
 

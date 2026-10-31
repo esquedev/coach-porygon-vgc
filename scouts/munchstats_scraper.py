@@ -176,7 +176,6 @@ def parse_plain_text_scouted_entry(text: str) -> Dict[str, Union[str, List[str]]
     }
 
     roster_lines: List[str] = []
-    in_paste = False
 
     for line in lines:
         lower = line.lower()
@@ -463,7 +462,7 @@ def scrape_munchstats_url_or_json(
 
     # Extract player sections or table rows containing Pokémon
     # MunchStats table pattern: Player Name, Placement, 6-Mon icons/names
-    player_pattern = re.compile(
+    _player_pattern = re.compile(
         r'<tr[^>]*>.*?<td[^>]*>(.*?)</td>.*?<td[^>]*>(.*?)</td>.*?</tr>',
         re.DOTALL | re.IGNORECASE
     )

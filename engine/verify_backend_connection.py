@@ -54,7 +54,7 @@ def run_mock_http_request(method: str, path: str, body: dict = None):
     raw_input = "\r\n".join(req_lines).encode("utf-8") + body_bytes
     mock_sock = MockSocket(raw_input)
 
-    handler = CoachPorygonHTTPHandler(mock_sock, ("127.0.0.1", 12345), MockServer())
+    _handler = CoachPorygonHTTPHandler(mock_sock, ("127.0.0.1", 12345), MockServer())
 
     # Read output from handler
     output_bytes = mock_sock.wfile.getvalue()

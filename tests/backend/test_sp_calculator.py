@@ -43,21 +43,21 @@ class TestSpCalculator(unittest.TestCase):
     def test_rejects_sp_overflow_67_sp(self):
         """Test for rejects sp overflow 67 sp."""
         sp = {"hp": 32, "atk": 32, "def": 0, "spa": 0, "spd": 0, "spe": 3}
-        is_valid, ver_str, stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
+        is_valid, ver_str, _stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
         self.assertFalse(is_valid)
         self.assertIn("Deviates from mandatory 66 SP", ver_str)
 
     def test_rejects_single_stat_over_32_sp(self):
         """Test for rejects single stat over 32 sp."""
         sp = {"hp": 34, "atk": 20, "def": 0, "spa": 0, "spd": 0, "spe": 12}
-        is_valid, ver_str, stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
+        is_valid, ver_str, _stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
         self.assertFalse(is_valid)
         self.assertIn("exceeds the 32 SP single-stat hard cap", ver_str)
 
     def test_rejects_negative_sp(self):
         """Test for rejects negative sp."""
         sp = {"hp": -4, "atk": 32, "def": 10, "spa": 0, "spd": 0, "spe": 28}
-        is_valid, ver_str, stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
+        is_valid, ver_str, _stats = validate_and_calculate_sp("Garchomp", sp, nature="Jolly")
         self.assertFalse(is_valid)
         self.assertIn("Negative SP detected", ver_str)
 

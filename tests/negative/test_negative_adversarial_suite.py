@@ -148,21 +148,21 @@ class TestNegativeSpCalculator(unittest.TestCase):
     def test_negative_sp_allocation_rejected(self):
         """Ensure negative SP in any stat fails validation with critical failure message."""
         spread = {"hp": -1, "atk": 32, "def": 0, "spa": 0, "spd": 0, "spe": 32}
-        valid, msg, stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
+        valid, msg, _stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
         self.assertFalse(valid, "Negative SP must fail validation")
         self.assertIn("Negative SP detected", msg)
 
     def test_single_stat_sp_over_32_rejected(self):
         """Ensure allocating more than 32 SP to a single stat fails validation."""
         spread = {"hp": 33, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 32}
-        valid, msg, stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
+        valid, msg, _stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
         self.assertFalse(valid, "Single stat SP > 32 must fail validation")
         self.assertIn("exceeds the 32 SP single-stat hard cap", msg)
 
     def test_sp_total_over_66_rejected(self):
         """Ensure total SP exceeding 66 cap fails validation with recalibrate prompt."""
         spread = {"hp": 32, "atk": 32, "def": 4, "spa": 0, "spd": 0, "spe": 0}  # 68 SP
-        valid, msg, stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
+        valid, msg, _stats = validate_and_calculate_sp("Garchomp", spread, "Jolly")
         self.assertFalse(valid, "Total SP > 66 must fail validation")
         self.assertIn("Deviates from mandatory 66 SP budget", msg)
 

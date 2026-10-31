@@ -181,7 +181,7 @@ def run_pipeline():
     print("=" * 70)
 
     all_tournament_meta = []
-    cross_species_counter = Counter()
+    _cross_species_counter = Counter()
     cross_species_weighted_counts = Counter()
     cross_mega_counter = Counter()
     cross_archetype_counter = Counter()
@@ -234,7 +234,7 @@ def run_pipeline():
         if standings_data:
             for s in standings_data:
                 place = s.get("placement")
-                day_reached = s.get("day_reached", "")
+                _day_reached = s.get("day_reached", "")
                 team_list = s.get("team", [])
                 arch = infer_archetype_from_team(team_list)
                 cross_archetype_counter[arch] += 1

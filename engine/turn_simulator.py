@@ -2009,7 +2009,7 @@ def main():
         choices = {}
 
     sim = ClientReplaySimulator(state, choices)
-    next_state, replay_text = sim.run_turn(roll_mode=args.roll_mode, fixed_roll=args.fixed_roll)
+    _next_state, replay_text = sim.run_turn(roll_mode=args.roll_mode, fixed_roll=args.fixed_roll)
     print(replay_text)
 
 

@@ -125,7 +125,7 @@ def generate_master_catalog():
     svg_parts.append(f"""<svg viewBox="0 0 {CANVAS_W} {CANVAS_H}" width="{CANVAS_W}" height="{CANVAS_H}" xmlns="http://www.w3.org/2000/svg">
   <!-- Master White Background -->
   <rect width="100%" height="100%" fill="#ffffff"/>
-  
+
   <defs>
     <style>
       .catalog-title {{ font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; font-weight: 900; font-size: 32px; fill: #0f172a; letter-spacing: -0.5px; }}

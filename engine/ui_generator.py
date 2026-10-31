@@ -1499,7 +1499,7 @@ def main():
     """CLI entry point for Command Center generation."""
     parser = argparse.ArgumentParser(description="Coach Porygon VGC Visual Asset & UI Generator")
     parser.add_argument("--export-telemetry-json", type=str, help="Export live telemetry JSON for UI consumption")
-    args = parser.parse_args()
+    _args = parser.parse_args()
 
     written = write_svg_assets()
     telemetry = load_live_telemetry()

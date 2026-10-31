@@ -308,7 +308,7 @@ def run_generation():
 
     with open(REPO_ROOT / 'data' / 'Regulation_MC_Items.csv', encoding='utf-8') as f:
         reader = csv.reader(f)
-        header = next(reader, None)
+        next(reader, None)  # Skip CSV header
         for row in reader:
             if not row: continue
             if len(row) > 0 and row[0].strip():
@@ -340,7 +340,7 @@ def run_generation():
     species_list = []
     with open(REPO_ROOT / 'data' / 'MC_Available_Pokemon.csv', encoding='utf-8') as f:
         reader = csv.reader(f)
-        header = next(reader, None)
+        next(reader, None)  # Skip CSV header
         for row in reader:
             if not row or not row[0].strip(): continue
             raw_name = row[0].strip()

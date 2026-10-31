@@ -111,7 +111,7 @@ class VisualColoredTestResult(unittest.TestResult):
         class_name = ".".join(test_id[-3:-1]) if len(test_id) >= 3 else test_id[0]
         self.stream.write(
             f"  {CLR_YELLOW}[WARN/SKIP]{CLR_RESET} {CLR_WHITE}{method_name:<48}{CLR_RESET} "
-            f"{CLR_YELLOW}Reason: {reason}{CLR_RESET}\n"
+            f"{CLR_GRAY}({class_name}){CLR_RESET} {CLR_YELLOW}Reason: {reason}{CLR_RESET}\n"
         )
         self.stream.flush()
 

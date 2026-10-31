@@ -787,7 +787,7 @@ def run_generation_and_validation():
 
     # Ensure required aliases exist: porygon-coach, gender variants
     coach_svg = BESPOKE_SPECIES.get("porygon-coach", candidate_svg)
-    c_svg, c_prob, _ = refine_svg_asset(coach_svg, "porygon-coach", "sprite", clf, [])
+    c_svg, _c_prob, _ = refine_svg_asset(coach_svg, "porygon-coach", "sprite", clf, [])
     (SPRITES_DIR / "porygon-coach.svg").write_text(c_svg, encoding="utf-8")
 
     print(f"Species Sprites Validated (P >= 90%): {species_passed} / {len(species_rows)} ({species_passed/len(species_rows)*100:.1f}%)")
