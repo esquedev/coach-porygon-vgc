@@ -189,7 +189,7 @@ def generate_master_catalog():
     try:
         ET.fromstring(master_svg_content)
         print("[OK] master_svg_catalog.svg is well-formed XML!")
-    except Exception:
+    except Exception as e:
         print("[WARNING] XML validation issue on master catalog SVG:", e)
 
     # 5. GENERATE COMPANION HTML AUDIT VIEWER ON WHITE BACKGROUND
