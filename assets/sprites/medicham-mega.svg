@@ -1,0 +1,12 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Flowing White Meditation Turban Ribbons -->
+  <path d="M42,26 C18,10 8,30 20,44" stroke="#f8fafc" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <path d="M78,26 C102,10 112,30 100,44" stroke="#f8fafc" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <!-- Yogic Body in Lotus Stance -->
+  <polygon points="46,54 74,54 68,88 52,88" fill="#cbd5e1" stroke="#64748b" stroke-width="2"/>
+  <polygon points="34,84 60,94 86,84 60,106" fill="#ec4899"/>
+  <!-- Head with Third Eye Jewel & Gold Torcs -->
+  <circle cx="60" cy="38" r="16" fill="#ec4899" stroke="#9d174d" stroke-width="2"/>
+  <circle cx="60" cy="28" r="3" fill="#38bdf8"/>
+  <ellipse cx="52" cy="38" rx="2" ry="4" fill="#18181b"/><ellipse cx="68" cy="38" rx="2" ry="4" fill="#18181b"/>
+</svg>

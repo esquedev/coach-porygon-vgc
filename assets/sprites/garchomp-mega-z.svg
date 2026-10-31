@@ -1,0 +1,18 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Burning Fire Aura -->
+  <circle cx="60" cy="60" r="50" fill="#f97316" fill-opacity="0.15"/>
+  <!-- Central Dorsal Fin / Flame Blade -->
+  <polygon points="60,8 44,40 76,40" fill="#dc2626" stroke="#7f1d1d" stroke-width="2"/>
+  <!-- Serrated Scythe Arms with Glowing Fiery Edges -->
+  <path d="M38,54 L8,58 L24,84 L40,68 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="8,58 4,70 20,80" fill="#f97316"/>
+  <path d="M82,54 L112,58 L96,84 L80,68 Z" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="112,58 116,70 100,80" fill="#f97316"/>
+  <!-- Torso with Fiery Golden Star -->
+  <polygon points="42,50 78,50 72,96 48,96" fill="#dc2626" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="60,56 64,68 76,70 66,78 70,90 60,82 50,90 54,78 44,70 56,68" fill="#facc15"/>
+  <!-- Shark Head with Engine Intakes -->
+  <ellipse cx="32" cy="34" rx="10" ry="6" fill="#1e3a8a"/><ellipse cx="88" cy="34" rx="10" ry="6" fill="#1e3a8a"/>
+  <polygon points="40,26 80,26 70,52 50,52" fill="#1e3a8a" stroke="#0f172a" stroke-width="1.5"/>
+  <polygon points="46,36 54,38 48,42" fill="#facc15"/><polygon points="74,36 66,38 72,42" fill="#facc15"/>
+</svg>

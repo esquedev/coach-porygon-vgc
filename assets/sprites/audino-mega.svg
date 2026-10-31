@@ -1,0 +1,11 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Physician White Flowing Coat Body -->
+  <ellipse cx="60" cy="74" rx="26" ry="26" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/>
+  <!-- Curled Ribbon Ear Feelers -->
+  <path d="M44,32 C26,14 18,36 34,44" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/>
+  <path d="M76,32 C94,14 102,36 86,44" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/>
+  <!-- Gentle Head with Blue Eyes & Fluff -->
+  <circle cx="60" cy="40" r="18" fill="#fed7aa" stroke="#ea580c" stroke-width="2"/>
+  <circle cx="52" cy="40" r="3" fill="#0284c7"/><circle cx="68" cy="40" r="3" fill="#0284c7"/>
+  <ellipse cx="60" cy="50" rx="8" ry="4" fill="#f8fafc"/>
+</svg>

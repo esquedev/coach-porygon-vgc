@@ -1,0 +1,18 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Central Metallic Disc Body -->
+  <circle cx="60" cy="56" r="30" fill="#0284c7" stroke="#0f172a" stroke-width="2.5"/>
+  <!-- Iconic Chrome X Face Emblem -->
+  <polygon points="46,38 74,74 66,74 38,38" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+  <polygon points="74,38 46,74 38,74 66,38" fill="#f8fafc" stroke="#94a3b8" stroke-width="1"/>
+  <!-- Spiked Golden Chin Horn -->
+  <polygon points="54,82 60,108 66,82" fill="#facc15" stroke="#b45309" stroke-width="2"/>
+  <!-- Glowing Red/Cyan Eyes -->
+  <circle cx="48" cy="54" r="3.5" fill="#ef4444"/><circle cx="72" cy="54" r="3.5" fill="#ef4444"/>
+  <!-- 4 Massive Forward Facing Claws -->
+  <polygon points="28,46 4,32 8,62 30,56" fill="#0369a1" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="4,32 0,44 10,48" fill="#f8fafc"/>
+  <polygon points="92,46 116,32 112,62 90,56" fill="#0369a1" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="116,32 120,44 110,48" fill="#f8fafc"/>
+  <polygon points="34,70 14,88 28,102 44,78" fill="#0284c7" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="86,70 106,88 92,102 76,78" fill="#0284c7" stroke="#0f172a" stroke-width="2"/>
+</svg>

@@ -1,0 +1,7 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="36,34 26,8 48,26" fill="#f472b6"/><polygon points="84,34 94,8 72,26" fill="#f472b6"/>
+  <ellipse cx="60" cy="66" rx="18" ry="22" fill="#fdf2f8" stroke="#ec4899" stroke-width="2"/>
+  <circle cx="52" cy="42" r="3.5" fill="#38bdf8"/><circle cx="68" cy="42" r="3.5" fill="#38bdf8"/>
+  <path d="M44,56 Q20,66 16,86" fill="none" stroke="#38bdf8" stroke-width="4"/>
+  <path d="M76,56 Q100,66 104,86" fill="none" stroke="#f472b6" stroke-width="4"/>
+</svg>

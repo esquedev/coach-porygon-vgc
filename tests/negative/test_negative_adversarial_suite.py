@@ -10,7 +10,7 @@ are strictly and properly rejected with expected failures, exceptions, or error 
 4. Negative SP Calculator & Stat Points (Negative SP, Single stat cap > 32, Total cap > 66).
 5. Negative Telemetry & Misplay Taxonomy (Invalid outcomes, Unregistered error codes).
 6. Negative Validate Roster (Banned species, Banned items, Item Clause, Species Clause).
-7. Negative Crucible & Speed Duels UX (Spoilers in labels, Invalid option counts, Leaked speeds).
+7. Negative Flash Cards & Speed Duels UX (Spoilers in labels, Invalid option counts, Leaked speeds).
 8. Negative Translations & i18n Guardrails (Missing keys, Forbidden pilot terms, Hallucinated languages).
 9. Negative Security Hardening & HTTP Backend (Path traversal, 403 dotfiles, 413 payload bombs).
 10. Negative Code Style & Docstrings (Syntax errors, Missing docstring detection).
@@ -236,17 +236,17 @@ Timid Nature
         self.assertEqual(parsed, [], "Blank paste must return zero parsed Pokémon")
 
 
-class TestNegativeCrucibleAndSpeedDuels(unittest.TestCase):
+class TestNegativeFlashcardsAndSpeedDuels(unittest.TestCase):
     """Negative tests asserting that spoiler leaks and bad option schemas fail."""
 
-    def test_crucible_scenario_with_spoiler_in_label_rejected(self):
+    def test_flashcard_scenario_with_spoiler_in_label_rejected(self):
         """Ensure option label containing explicit spoiler tokens is detected and rejected."""
         spoilers = ['minimax', 'fuga táctica', 'óptima', '(pos-01', 'inversión de velocidad']
         bad_label = "A) Protect con Garchomp (Jugada Óptima POS-01)"
         has_spoiler = any(sp in bad_label.lower() for sp in spoilers)
         self.assertTrue(has_spoiler, "Spoiler detector must catch explicit leak tokens in labels")
 
-    def test_crucible_scenario_missing_optimal_option_rejected(self):
+    def test_flashcard_scenario_missing_optimal_option_rejected(self):
         """Ensure scenario having zero optimal options fails validation."""
         options = [
             {"id": "OPT-A", "optimal": False},
@@ -258,7 +258,7 @@ class TestNegativeCrucibleAndSpeedDuels(unittest.TestCase):
         self.assertEqual(optimal_count, 0)
         self.assertNotEqual(optimal_count, 1, "Scenario without optimal option must be rejected")
 
-    def test_crucible_scenario_multiple_optimal_options_rejected(self):
+    def test_flashcard_scenario_multiple_optimal_options_rejected(self):
         """Ensure scenario having more than 1 optimal option fails validation."""
         options = [
             {"id": "OPT-A", "optimal": True},

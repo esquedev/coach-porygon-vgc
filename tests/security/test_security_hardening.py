@@ -17,9 +17,9 @@ import tempfile
 import threading
 import unittest
 
-from engine.ui_server import CoachPorygonHTTPHandler
+from engine.ui_server import CoachPorygonHTTPHandler, validate_scraping_target
 from engine.verify_svg_inventory import DANGEROUS_SVG_PATTERNS
-from scouts.munchstats_scraper import validate_scraping_target
+
 from engine.telemetry import append_csv_row
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent

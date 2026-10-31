@@ -13,10 +13,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 49.58830507286975,
-    "total_elements": 5.0,
-    "num_paths": 0.0,
+    "vector_complexity": 5.0,
+    "total_elements": 7.0,
     "distinct_colors": 6.0,
-    "file_size_bytes": 947.0,
     "is_item": 0.0
   },
   {
@@ -33,10 +32,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 49.90991885387112,
+    "vector_complexity": 4.0,
     "total_elements": 12.0,
-    "num_paths": 1.0,
     "distinct_colors": 8.0,
-    "file_size_bytes": 1150.0,
     "is_item": 0.0
   },
   {
@@ -53,10 +51,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 18.0,
-    "total_elements": 5.0,
-    "num_paths": 0.0,
+    "vector_complexity": 5.0,
+    "total_elements": 7.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 637.0,
     "is_item": 0.0
   },
   {
@@ -73,10 +70,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 123.0,
-    "total_elements": 9.0,
-    "num_paths": 0.0,
+    "vector_complexity": 6.0,
+    "total_elements": 14.0,
     "distinct_colors": 9.0,
-    "file_size_bytes": 1248.0,
     "is_item": 0.0
   },
   {
@@ -93,10 +89,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 82.80700453464067,
+    "vector_complexity": 3.0,
     "total_elements": 4.0,
-    "num_paths": 1.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 356.0,
     "is_item": 0.0
   },
   {
@@ -113,10 +108,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 34.9857113690718,
+    "vector_complexity": 6.0,
     "total_elements": 11.0,
-    "num_paths": 0.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 1368.0,
     "is_item": 0.0
   },
   {
@@ -133,10 +127,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 36.193922141707716,
-    "total_elements": 10.0,
-    "num_paths": 0.0,
+    "vector_complexity": 4.0,
+    "total_elements": 14.0,
     "distinct_colors": 11.0,
-    "file_size_bytes": 1350.0,
     "is_item": 0.0
   },
   {
@@ -153,10 +146,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 30.870698080866262,
+    "vector_complexity": 11.0,
     "total_elements": 16.0,
-    "num_paths": 0.0,
     "distinct_colors": 9.0,
-    "file_size_bytes": 1519.0,
     "is_item": 0.0
   },
   {
@@ -173,10 +165,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 39.102429592034305,
+    "vector_complexity": 9.0,
     "total_elements": 12.0,
-    "num_paths": 0.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 1002.0,
     "is_item": 0.0
   },
   {
@@ -193,10 +184,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 12.36931687685298,
+    "vector_complexity": 7.0,
     "total_elements": 10.0,
-    "num_paths": 0.0,
     "distinct_colors": 9.0,
-    "file_size_bytes": 1165.0,
     "is_item": 0.0
   },
   {
@@ -213,10 +203,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 132.7742444904131,
+    "vector_complexity": 6.0,
     "total_elements": 13.0,
-    "num_paths": 2.0,
     "distinct_colors": 4.0,
-    "file_size_bytes": 1327.0,
     "is_item": 0.0
   },
   {
@@ -233,10 +222,9 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 74.51845409024533,
+    "vector_complexity": 0.0,
     "total_elements": 6.0,
-    "num_paths": 0.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 417.0,
     "is_item": 0.0
   },
   {
@@ -253,10 +241,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 92.13576938409967,
+    "vector_complexity": 6.0,
     "total_elements": 13.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 1327.0,
     "is_item": 0.0
   },
   {
@@ -273,10 +260,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 87.82368700982668,
+    "vector_complexity": 6.0,
     "total_elements": 12.0,
-    "num_paths": 3.0,
     "distinct_colors": 13.0,
-    "file_size_bytes": 1300.0,
     "is_item": 0.0
   },
   {
@@ -293,10 +279,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 118.04236527620073,
+    "vector_complexity": 8.0,
     "total_elements": 14.0,
-    "num_paths": 1.0,
     "distinct_colors": 4.0,
-    "file_size_bytes": 1574.0,
     "is_item": 0.0
   },
   {
@@ -313,10 +298,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 168.05058762170395,
+    "vector_complexity": 8.0,
     "total_elements": 14.0,
-    "num_paths": 1.0,
     "distinct_colors": 4.0,
-    "file_size_bytes": 1574.0,
     "is_item": 0.0
   },
   {
@@ -333,10 +317,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 111.91961400934154,
+    "vector_complexity": 7.0,
     "total_elements": 13.0,
-    "num_paths": 1.0,
     "distinct_colors": 4.0,
-    "file_size_bytes": 1335.0,
     "is_item": 0.0
   },
   {
@@ -353,10 +336,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 154.9967741599805,
+    "vector_complexity": 5.0,
     "total_elements": 13.0,
-    "num_paths": 1.0,
     "distinct_colors": 6.0,
-    "file_size_bytes": 1283.0,
     "is_item": 0.0
   },
   {
@@ -373,10 +355,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 61.196405123176966,
+    "vector_complexity": 5.0,
     "total_elements": 13.0,
-    "num_paths": 1.0,
     "distinct_colors": 6.0,
-    "file_size_bytes": 1283.0,
     "is_item": 0.0
   },
   {
@@ -393,10 +374,9 @@
     "procedural_penalty": 8.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 213.84340064636083,
+    "vector_complexity": 5.0,
     "total_elements": 12.0,
-    "num_paths": 3.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 1224.0,
     "is_item": 0.0
   },
   {
@@ -413,10 +393,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 0.0,
+    "vector_complexity": 1.0,
     "total_elements": 5.0,
-    "num_paths": 1.0,
     "distinct_colors": 2.0,
-    "file_size_bytes": 447.0,
     "is_item": 1.0
   },
   {
@@ -433,10 +412,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 53.422841556772326,
+    "vector_complexity": 5.0,
     "total_elements": 7.0,
-    "num_paths": 3.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 1120.0,
     "is_item": 1.0
   },
   {
@@ -453,10 +431,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 124.93598360760602,
+    "vector_complexity": 4.0,
     "total_elements": 5.0,
-    "num_paths": 3.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 961.0,
     "is_item": 1.0
   },
   {
@@ -473,10 +450,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 39.91240408695021,
+    "vector_complexity": 5.0,
     "total_elements": 9.0,
-    "num_paths": 5.0,
     "distinct_colors": 8.0,
-    "file_size_bytes": 1045.0,
     "is_item": 1.0
   },
   {
@@ -493,10 +469,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 47.24404724407086,
+    "vector_complexity": 2.0,
     "total_elements": 6.0,
-    "num_paths": 2.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 884.0,
     "is_item": 1.0
   },
   {
@@ -513,10 +488,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 85.42833253669417,
+    "vector_complexity": 4.0,
     "total_elements": 4.0,
-    "num_paths": 4.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 665.0,
     "is_item": 1.0
   },
   {
@@ -533,10 +507,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 63.50590523722971,
+    "vector_complexity": 0.0,
     "total_elements": 2.0,
-    "num_paths": 0.0,
     "distinct_colors": 2.0,
-    "file_size_bytes": 261.0,
     "is_item": 1.0
   },
   {
@@ -553,10 +526,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 183.71717393863864,
+    "vector_complexity": 5.0,
     "total_elements": 6.0,
-    "num_paths": 4.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 1131.0,
     "is_item": 1.0
   },
   {
@@ -573,10 +545,9 @@
     "procedural_penalty": 4.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 41.892720131306824,
-    "total_elements": 3.0,
-    "num_paths": 3.0,
+    "vector_complexity": 3.0,
+    "total_elements": 5.0,
     "distinct_colors": 6.0,
-    "file_size_bytes": 1077.0,
     "is_item": 1.0
   },
   {
@@ -593,10 +564,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 54.31390245600108,
-    "total_elements": 2.0,
-    "num_paths": 0.0,
+    "vector_complexity": 2.0,
+    "total_elements": 3.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 856.0,
     "is_item": 1.0
   },
   {
@@ -613,10 +583,9 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 67.1863081289633,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 371.0,
     "is_item": 1.0
   },
   {
@@ -633,10 +602,9 @@
     "procedural_penalty": 4.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 30.789608636681304,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 0.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 723.0,
     "is_item": 1.0
   },
   {
@@ -653,10 +621,9 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 191.17008134119732,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 371.0,
     "is_item": 1.0
   },
   {
@@ -673,10 +640,9 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 163.37686494727458,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 371.0,
     "is_item": 1.0
   },
   {
@@ -693,10 +659,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 148.69095466772686,
+    "vector_complexity": 2.0,
     "total_elements": 2.0,
-    "num_paths": 2.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 614.0,
     "is_item": 1.0
   },
   {
@@ -713,10 +678,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 53.301031884945715,
+    "vector_complexity": 3.0,
     "total_elements": 8.0,
-    "num_paths": 2.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 748.0,
     "is_item": 1.0
   },
   {
@@ -733,10 +697,9 @@
     "procedural_penalty": 4.0,
     "unmatched_primary": 0.0,
     "primary_color_dist": 55.89275444992848,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 0.0,
     "distinct_colors": 5.0,
-    "file_size_bytes": 717.0,
     "is_item": 1.0
   },
   {
@@ -753,10 +716,9 @@
     "procedural_penalty": 0.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 142.63590010933433,
-    "total_elements": 3.0,
-    "num_paths": 1.0,
+    "vector_complexity": 1.0,
+    "total_elements": 4.0,
     "distinct_colors": 7.0,
-    "file_size_bytes": 757.0,
     "is_item": 1.0
   },
   {
@@ -773,10 +735,9 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 85.42833253669417,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 371.0,
     "is_item": 1.0
   },
   {
@@ -793,10 +754,28 @@
     "procedural_penalty": 3.0,
     "unmatched_primary": 1.0,
     "primary_color_dist": 85.42833253669417,
+    "vector_complexity": 2.0,
     "total_elements": 3.0,
-    "num_paths": 2.0,
     "distinct_colors": 3.0,
-    "file_size_bytes": 371.0,
     "is_item": 1.0
+  },
+  {
+    "filename": "rotom-wash.svg",
+    "category": "sprite",
+    "label": 1,
+    "class_name": "APPROVED",
+    "has_creepy_eye": 0.0,
+    "has_generic_torso": 0.0,
+    "has_generic_berry": 0.0,
+    "has_generic_mega": 0.0,
+    "has_text_fallback": 0.0,
+    "is_primitive_blob": 0.0,
+    "procedural_penalty": 0.0,
+    "unmatched_primary": 0.0,
+    "primary_color_dist": 0.0,
+    "vector_complexity": 23.0,
+    "total_elements": 30.0,
+    "distinct_colors": 16.0,
+    "is_item": 0.0
   }
 ]

@@ -22,7 +22,7 @@ from engine.validate_roster import (
     load_pokemon_registry,
     get_pokemon_entry,
 )
-from engine.scenarios_data import CRUCIBLE_SCENARIOS
+from engine.scenarios_data import FLASHCARD_SCENARIOS
 from engine.speed_duels_data import SPEED_DUELS
 
 
@@ -46,10 +46,10 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         """Ensure blacklisted species never appear in active playable rosters or battle slots."""
         violations = []
 
-        # 1. Check data/Crucible_Scenarios.csv active slots
-        crucible_csv = REPO_ROOT / "data" / "Crucible_Scenarios.csv"
-        if crucible_csv.exists():
-            with open(crucible_csv, "r", encoding="utf-8") as f:
+        # 1. Check data/Flashcard_Scenarios.csv active slots
+        flashcard_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
+        if flashcard_csv.exists():
+            with open(flashcard_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     sc_id = row.get("Scenario_ID", "")
@@ -57,7 +57,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                         val = row.get(col, "").strip()
                         for banned in self.blacklist:
                             if banned.lower() in val.lower():
-                                violations.append((f"Crucible_Scenarios.csv:{sc_id}", col, val, banned))
+                                violations.append((f"Flashcard_Scenarios.csv:{sc_id}", col, val, banned))
 
         # 2. Check data/Speed_Duel_Scenarios.csv
         speed_csv = REPO_ROOT / "data" / "Speed_Duel_Scenarios.csv"
@@ -86,14 +86,14 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                                 if banned.lower() in mon_val.lower():
                                     violations.append((f"{team_file}:{tid}", f"Pokemon_{i}", mon_val, banned))
 
-        # 4. Check in-memory CRUCIBLE_SCENARIOS and SPEED_DUELS
-        for sc in CRUCIBLE_SCENARIOS:
+        # 4. Check in-memory FLASHCARD_SCENARIOS and SPEED_DUELS
+        for sc in FLASHCARD_SCENARIOS:
             for side in ["oppSlots", "mySlots"]:
                 for mon in sc.get(side, []):
                     name = mon.get("name", "")
                     for banned in self.blacklist:
                         if banned.lower() in name.lower():
-                            violations.append((f"CRUCIBLE_SCENARIOS:{sc['id']}", side, name, banned))
+                            violations.append((f"FLASHCARD_SCENARIOS:{sc['id']}", side, name, banned))
 
         for d in SPEED_DUELS:
             for side in ["monA", "monB"]:
@@ -113,10 +113,10 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         """Ensure all held items in datasets and scenario files exist strictly in Regulation_MC_Items.csv."""
         violations = []
 
-        # 1. Crucible_Scenarios.csv
-        crucible_csv = REPO_ROOT / "data" / "Crucible_Scenarios.csv"
-        if crucible_csv.exists():
-            with open(crucible_csv, "r", encoding="utf-8") as f:
+        # 1. Flashcard_Scenarios.csv
+        flashcard_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
+        if flashcard_csv.exists():
+            with open(flashcard_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     sc_id = row.get("Scenario_ID", "")
@@ -125,7 +125,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                         if item_val and item_val.lower() not in ("none", "no item", "sin objeto"):
                             clean = item_val.replace("’", "'").strip().lower()
                             if clean not in self.legal_items:
-                                violations.append((f"Crucible_Scenarios.csv:{sc_id}", col, item_val))
+                                violations.append((f"Flashcard_Scenarios.csv:{sc_id}", col, item_val))
 
         # 2. Speed_Duel_Scenarios.csv
         speed_csv = REPO_ROOT / "data" / "Speed_Duel_Scenarios.csv"
@@ -166,7 +166,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         """Verify that every species in scenarios and teams maps to a valid Champions Dex entry."""
         unrecognized = []
 
-        for sc in CRUCIBLE_SCENARIOS:
+        for sc in FLASHCARD_SCENARIOS:
             for side in ["oppSlots", "mySlots"]:
                 for mon in sc.get(side, []):
                     name = mon.get("name", "").strip()
@@ -177,7 +177,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         self.assertEqual(
             unrecognized,
             [],
-            f"Unrecognized species without registry grounding in Crucible scenarios: {unrecognized}"
+            f"Unrecognized species without registry grounding in Flash Card scenarios: {unrecognized}"
         )
 
     def test_tcg_mechanics_rejection_across_repository(self):
@@ -254,8 +254,8 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                 continue
             html = hpath.read_text(encoding="utf-8")
 
-            # Extract CRUCIBLE_SCENARIOS JSON from HTML
-            m_sc = re.search(r'const\s+CRUCIBLE_SCENARIOS\s*=\s*(\[\{.*?\}\]);', html, re.DOTALL)
+            # Extract FLASHCARD_SCENARIOS JSON from HTML
+            m_sc = re.search(r'const\s+FLASHCARD_SCENARIOS\s*=\s*(\[\{.*?\}\]);', html, re.DOTALL)
             if m_sc:
                 scenarios = json.loads(m_sc.group(1))
                 for sc in scenarios:

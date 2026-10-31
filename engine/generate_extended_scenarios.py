@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Generates the complete 42 Crucible Scenarios with zero spoiler tokens in labels.
-Updates engine/scenarios_data.py and data/Crucible_Scenarios.csv.
+Generates the complete 42 Flash Card Scenarios with zero spoiler tokens in labels.
+Updates engine/scenarios_data.py and data/Flashcard_Scenarios.csv.
 """
 
 import sys
@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 # Load current 42 scenarios
-from engine.scenarios_data import CRUCIBLE_SCENARIOS
+from engine.scenarios_data import FLASHCARD_SCENARIOS
 
 # Specific realistic tactical options for SC-20 through SC-42
 EXTENDED_23 = [
@@ -1635,7 +1635,7 @@ EXTENDED_23 = [
 
 # Clean SC-01 to SC-19 labels
 CLEAN_BASE = []
-for sc in CRUCIBLE_SCENARIOS[:19]:
+for sc in FLASHCARD_SCENARIOS[:19]:
     sc_copy = dict(sc)
     new_opts = []
     for opt in sc["options"]:
@@ -1686,8 +1686,8 @@ with open(out_py, "w", encoding="utf-8") as f:
 
 print(f"Updated {out_py}")
 
-# Write to data/Crucible_Scenarios.csv
-out_csv = REPO_ROOT / "data" / "Crucible_Scenarios.csv"
+# Write to data/Flashcard_Scenarios.csv
+out_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
 fieldnames = [
     "Scenario_ID", "Title", "Driver", "Error_Code", "Turn_Badge",
     "Opp_Slot1_Name", "Opp_Slot1_Item", "Opp_Slot1_Status",

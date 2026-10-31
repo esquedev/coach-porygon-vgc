@@ -1469,6 +1469,21 @@ def load_live_telemetry() -> Dict:
         except Exception:
             tournaments = []
 
+    munch_overview = []
+    if (DATA_DIR / "MunchStats_Overview.csv").exists():
+        with open(DATA_DIR / "MunchStats_Overview.csv", "r", encoding="utf-8") as f:
+            munch_overview = list(csv.DictReader(f))
+
+    munch_usage = []
+    if (DATA_DIR / "MunchStats_Usage.csv").exists():
+        with open(DATA_DIR / "MunchStats_Usage.csv", "r", encoding="utf-8") as f:
+            munch_usage = list(csv.DictReader(f))
+
+    munch_top_teams = []
+    if (DATA_DIR / "MunchStats_Top_Teams.csv").exists():
+        with open(DATA_DIR / "MunchStats_Top_Teams.csv", "r", encoding="utf-8") as f:
+            munch_top_teams = list(csv.DictReader(f))
+
     wins = sum(1 for r in raw_matches if r.get("result", "").strip().lower() == "win")
     total_m = len(raw_matches)
     trap_counts = dict(Counter(r.get("root_cognitive_trap", "Unknown") for r in diagnostics))
@@ -1491,6 +1506,9 @@ def load_live_telemetry() -> Dict:
         "all_calcs": calcs,
         "total_calcs": len(calcs),
         "tournaments": tournaments,
+        "munchstats_overview": munch_overview,
+        "munchstats_usage": munch_usage,
+        "munchstats_top_teams": munch_top_teams,
         "pokedex": pokedex,
     }
 

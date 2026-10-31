@@ -1,0 +1,14 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Massive Central Beetle Horn with Crossbar -->
+  <polygon points="54,34 54,6 66,6 66,34" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="2"/>
+  <polygon points="44,14 76,14 76,20 44,20" fill="#1d4ed8" stroke="#1e3a8a" stroke-width="1.5"/>
+  <!-- Twin Brow Horns -->
+  <polygon points="42,32 30,16 46,26" fill="#1d4ed8"/><polygon points="78,32 90,16 74,26" fill="#1d4ed8"/>
+  <!-- Rounded Armored Beetle Body -->
+  <ellipse cx="60" cy="74" rx="26" ry="28" fill="#2563eb" stroke="#1e3a8a" stroke-width="2.5"/>
+  <rect x="48" y="70" width="24" height="20" rx="3" fill="#fb923c"/>
+  <!-- Head with Yellow Oval Eyes -->
+  <circle cx="60" cy="42" r="18" fill="#2563eb" stroke="#1e3a8a" stroke-width="2"/>
+  <ellipse cx="50" cy="42" rx="3" ry="5" fill="#fef08a"/><circle cx="50" cy="42" r="1.5" fill="#0f172a"/>
+  <ellipse cx="70" cy="42" rx="3" ry="5" fill="#fef08a"/><circle cx="70" cy="42" r="1.5" fill="#0f172a"/>
+</svg>

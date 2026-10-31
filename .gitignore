@@ -29,9 +29,12 @@ ENV/
 ~$*
 
 # 3. Temporary Simulation Payloads, Scratch Scripts & Logs
-scratch/
+scratch/*
+!scratch/.gitkeep
 tmp/
 temp/
+scripts/temp_*.py
+scripts/patch_*.py
 *.log
 *.tmp
 *.bak
@@ -57,7 +60,7 @@ Desktop.ini
 *.swp
 *.swo
 
-# 6. Private Coaching Telemetry, Rosters, Scouting Intel & Prototype Dossiers
+# 6. Private Coaching Telemetry, Rosters, Scouting Intel & Heavy Tournament Dumps
 #    (Public schema templates live alongside as *.example.csv)
 data/Raw_Matches.csv
 data/Teams.csv
@@ -67,7 +70,16 @@ data/Scouted_Teams.csv
 data/Recent_Matches.csv
 data/trainer_profile.json
 data/*_Dump.csv
+data/MunchStats_Overview.csv
+data/MunchStats_Usage.csv
+data/MunchStats_Standings.csv
+data/MunchStats_Top_Teams.csv
+data/MunchStats_Pokemon_Sets.csv
+data/munchstats_standings/
 data/compendium/Proto*.md
+assets/reports/*.pdf
+assets/reports/team_audit_*.html
+!assets/reports/munchstats_theorybuild_report.html
 
 # 7. Explicitly Tracked Agent Customizations, Public Data & Schema Examples
 !.agents/

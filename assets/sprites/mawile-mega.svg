@@ -1,0 +1,16 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Massive Left Steel Jaw with Interlocking Fangs -->
+  <path d="M46,38 C28,14 6,24 8,50 C10,72 32,74 46,58 Z" fill="#18181b" stroke="#475569" stroke-width="2"/>
+  <polygon points="14,32 20,40 24,32 30,40" fill="#f8fafc"/>
+  <polygon points="16,56 22,48 26,56 32,48" fill="#f8fafc"/>
+  <!-- Massive Right Steel Jaw with Interlocking Fangs -->
+  <path d="M74,38 C92,14 114,24 112,50 C110,72 88,74 74,58 Z" fill="#18181b" stroke="#475569" stroke-width="2"/>
+  <polygon points="106,32 100,40 96,32 90,40" fill="#f8fafc"/>
+  <polygon points="104,56 98,48 94,56 88,48" fill="#f8fafc"/>
+  <!-- Petit Body with Pink Dress Hakama -->
+  <polygon points="46,68 74,68 84,106 36,106" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+  <!-- Cute Face with Yellow Eyes -->
+  <circle cx="60" cy="46" r="14" fill="#18181b"/>
+  <ellipse cx="60" cy="40" rx="16" ry="6" fill="#fef08a"/>
+  <circle cx="53" cy="46" r="2.5" fill="#ef4444"/><circle cx="67" cy="46" r="2.5" fill="#ef4444"/>
+</svg>

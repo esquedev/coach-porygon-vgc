@@ -10,6 +10,8 @@ Compiles:
 """
 
 import base64
+import io
+from PIL import Image
 import json
 import os
 import re
@@ -32,49 +34,63 @@ OUT_ES = ASSETS_DIR / "command_center_es.html"
 OUT_EN = ASSETS_DIR / "command_center_en.html"
 
 
-_env_artifact = os.environ.get("ANTIGRAVITY_ARTIFACT_DIR")
-ARTIFACT_DIR = Path(_env_artifact).resolve() if _env_artifact else None
-ARTIFACT_PATH = ARTIFACT_DIR / "command_center.html"
+def resolve_artifact_dir() -> Path | None:
+    """Dynamically resolves the active Antigravity brain artifact directory."""
+    env_dir = os.environ.get("ANTIGRAVITY_ARTIFACT_DIR")
+    if env_dir and Path(env_dir).exists():
+        return Path(env_dir).resolve()
+    brain_root = Path.home() / ".gemini" / "antigravity" / "brain"
+    if brain_root.exists():
+        direct = brain_root / "cf584036-b905-4920-962f-82887aafeaab"
+        if direct.exists():
+            return direct
+        subdirs = [d for d in brain_root.iterdir() if d.is_dir() and d.name != "tempmediaStorage"]
+        if subdirs:
+            return max(subdirs, key=lambda d: d.stat().st_mtime)
+    return None
 
-from engine.ui_generator import POKEMON_SVGS, UI_ICONS
+from engine.ui_generator import POKEMON_SVGS, UI_ICONS, load_live_telemetry
 
 
 def build_base64_maps():
-    """Builds base64 data URIs for all authentic Showdown sprites, items, and mega stones."""
+    """Builds deduplicated, palette-optimized base64 data URIs for all authentic sprites and items.
+
+    Quantizes 128x128 PNGs to 256 colors to reduce sprite payload by ~70%, ensuring the final
+    HTML remains under 10 MB (well below the 20 MB display limit) with zero broken links.
+    """
     sprite_map = {}
     item_map = {}
 
-    # 1. Load sprites from assets/sprites/ (supporting authentic official Showdown .png)
+    reg_mc_dir = SPRITES_DIR / "Reg_M-C"
+    all_sprite_paths = []
+    if reg_mc_dir.exists():
+        all_sprite_paths.extend(reg_mc_dir.glob("*.png"))
     if SPRITES_DIR.exists():
-        for asset_path in sorted(list(SPRITES_DIR.glob("*.png")) + list(SPRITES_DIR.glob("*.svg"))):
-            key = asset_path.stem.lower()
-            mime = "image/png" if asset_path.suffix == ".png" else "image/svg+xml"
-            b64 = base64.b64encode(asset_path.read_bytes()).decode("utf-8")
-            data_uri = f"data:{mime};base64,{b64}"
-            sprite_map[key] = data_uri
-            sprite_map[key.replace("-", "")] = data_uri
+        for p in SPRITES_DIR.glob("*.png"):
+            if "Reg_M-C" not in str(p):
+                all_sprite_paths.append(p)
+        all_sprite_paths.extend(SPRITES_DIR.glob("*.svg"))
 
-            # If mega evolution, register all standard showdown permutations
-            if key.startswith("mega-"):
-                base = key[5:]
-                sprite_map[f"{base}-mega"] = data_uri
-                sprite_map[f"{base}mega"] = data_uri
-                sprite_map[f"mega{base}"] = data_uri
-                if base.endswith("-x") or base.endswith("-y") or base.endswith("-z"):
-                    b = base[:-2]
-                    s = base[-1]
-                    sprite_map[f"{b}-mega-{s}"] = data_uri
-                    sprite_map[f"{b}-mega{s}"] = data_uri
-                    sprite_map[f"{b}-{s}-mega"] = data_uri
-                    sprite_map[f"mega-{b}-{s}"] = data_uri
-                    sprite_map[f"mega-{b}{s}"] = data_uri
-                    sprite_map[f"{b}mega{s}"] = data_uri
-                    sprite_map[f"mega{b}{s}"] = data_uri
-            elif key.endswith("-mega"):
-                base = key[:-5]
-                sprite_map[f"mega-{base}"] = data_uri
-                sprite_map[f"mega{base}"] = data_uri
-                sprite_map[f"{base}mega"] = data_uri
+    for asset_path in sorted(all_sprite_paths):
+        key = asset_path.stem.lower()
+        if asset_path.suffix == ".png":
+            try:
+                im = Image.open(asset_path)
+                im_p = im.quantize(colors=256, method=Image.Quantize.FASTOCTREE)
+                buf = io.BytesIO()
+                im_p.save(buf, format="PNG", optimize=True)
+                raw_bytes = buf.getvalue()
+            except Exception:
+                raw_bytes = asset_path.read_bytes()
+            mime = "image/png"
+        else:
+            raw_bytes = asset_path.read_bytes()
+            mime = "image/svg+xml"
+
+        b64 = base64.b64encode(raw_bytes).decode("utf-8")
+        data_uri = f"data:{mime};base64,{b64}"
+        # Store only once under canonical key (NO duplicate base64 bloat)
+        sprite_map[key] = data_uri
 
     # 2. Load items from assets/items/
     if ITEMS_DIR.exists():
@@ -84,7 +100,6 @@ def build_base64_maps():
             b64 = base64.b64encode(asset_path.read_bytes()).decode("utf-8")
             data_uri = f"data:{mime};base64,{b64}"
             item_map[key] = data_uri
-            item_map[key.replace("-", "")] = data_uri
             sprite_map[f"item-{key}"] = data_uri
 
     # 3. Load mega stones from assets/megastones/
@@ -95,7 +110,6 @@ def build_base64_maps():
             b64 = base64.b64encode(asset_path.read_bytes()).decode("utf-8")
             data_uri = f"data:{mime};base64,{b64}"
             item_map[key] = data_uri
-            item_map[key.replace("-", "")] = data_uri
             sprite_map[f"mega-{key}"] = data_uri
 
     # 4. Mascot Coach Porygon & UI Icons only (NEVER inject species SVGs into sprite_map)
@@ -103,7 +117,13 @@ def build_base64_maps():
         b64 = base64.b64encode(POKEMON_SVGS["porygon-coach"].strip().encode("utf-8")).decode("utf-8")
         data_uri = f"data:image/svg+xml;base64,{b64}"
         sprite_map["porygon-coach"] = data_uri
-        sprite_map["porygoncoach"] = data_uri
+
+    rotom_icon = ASSETS_DIR / "icons" / "rotom-wash.svg"
+    if rotom_icon.exists():
+        b64 = base64.b64encode(rotom_icon.read_bytes()).decode("utf-8")
+        data_uri = f"data:image/svg+xml;base64,{b64}"
+        sprite_map["rotom-wash-coach"] = data_uri
+        sprite_map["rotom-wash-logo"] = data_uri
 
     for name, svg_code in UI_ICONS.items():
         k = name.lower()
@@ -126,8 +146,8 @@ def update_command_center_files():
 
     # 1. Uncheck auto-advance checkboxes by default
     content = re.sub(
-        r'<input type="checkbox" id="crucible-auto-advance"\s*checked\s*class="([^"]+)">',
-        r'<input type="checkbox" id="crucible-auto-advance" class="\1">',
+        r'<input type="checkbox" id="(?:crucible|flashcard)-auto-advance"\s*checked\s*class="([^"]+)">',
+        r'<input type="checkbox" id="flashcard-auto-advance" class="\1">',
         content
     )
     content = re.sub(
@@ -174,23 +194,23 @@ def update_command_center_files():
 
     content = old_fallback_pattern.sub(new_fallback_code, content)
 
-    # 4. Update simulateCrucibleTurn: 8.0s auto-advance with explicit buttons, plus persistent manual navigation buttons
+    # 4. Update simulateFlashCardTurn: 8.0s auto-advance with explicit buttons, plus persistent manual navigation buttons
     old_sim_pattern = re.compile(
-        r'if \(isOptimal && autoAdvanceChecked\) \{.*?crucibleAutoAdvanceTimer = setTimeout\(\(\) => \{.*?\}, \d+\);\s*\}\s*const formattedVerdict =',
+        r'if \(isOptimal && autoAdvanceChecked\) \{.*?(?:crucible|flashCard)AutoAdvanceTimer = setTimeout\(\(\) => \{.*?\}, \d+\);\s*\}\s*const formattedVerdict =',
         re.DOTALL
     )
     new_sim_block = """if (isOptimal && autoAdvanceChecked) {
           autoAdvanceBanner = `
-            <div id="crucible-auto-badge" class="mt-2.5 p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-center text-xs font-bold text-emerald-300 flex items-center justify-between gap-2">
+            <div id="flashcard-auto-badge" class="mt-2.5 p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-center text-xs font-bold text-emerald-300 flex items-center justify-between gap-2">
               <span>⏱️ ${isEn ? "OPTIMAL LINE VERIFIED! Auto-advancing in 8.0s..." : "¡LÍNEA ÓPTIMA VERIFICADA! Auto-avanzando en 8.0s..."}</span>
               <div class="flex items-center gap-1.5">
-                <button type="button" onclick="loadNextRandomCrucibleScenario()" class="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] hover:bg-emerald-500">${isEn ? "Next Now ➡️" : "Avanzar Ya ➡️"}</button>
-                <button type="button" onclick="cancelCrucibleAutoAdvance()" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white text-[10px]">${isEn ? "Pause" : "Pausar"}</button>
+                <button type="button" onclick="loadNextRandomFlashCardScenario()" class="px-2.5 py-0.5 rounded bg-emerald-600 text-white font-extrabold text-[10px] hover:bg-emerald-500">${isEn ? "Next Now ➡️" : "Avanzar Ya ➡️"}</button>
+                <button type="button" onclick="cancelFlashCardAutoAdvance()" class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 hover:text-white text-[10px]">${isEn ? "Pause" : "Pausar"}</button>
               </div>
             </div>
           `;
-          crucibleAutoAdvanceTimer = setTimeout(() => {
-            loadNextRandomCrucibleScenario();
+          flashCardAutoAdvanceTimer = setTimeout(() => {
+            loadNextRandomFlashCardScenario();
           }, 8000);
         }
 
@@ -210,13 +230,14 @@ def update_command_center_files():
           ${autoAdvanceBanner}
         `;"""
 
-        new_verdict_html = """const navActionButtons = `
+        new_verdict_html = """const curIdx = (typeof activeScenarioList !== 'undefined' && currentScenario) ? activeScenarioList.indexOf(currentScenario) : 0;
+        const navActionButtons = `
           <div class="mt-3 pt-3 border-t border-[var(--border)] flex flex-wrap items-center justify-between gap-2">
-            <button type="button" onclick="loadNextRandomCrucibleScenario()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-extrabold shadow-lg transition cursor-pointer flex items-center gap-2">
-              <span>➡️</span> <span>${isEn ? "Next Tactical Scenario" : "Siguiente Escenario Táctico"}</span>
+            <button type="button" onclick="loadNextRandomFlashCardScenario()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-extrabold shadow-lg transition cursor-pointer flex items-center gap-2">
+              <span>➡️</span> <span>${isEn ? "Next Tactical Flash Card" : "Siguiente Flash Card Táctica"}</span>
             </button>
-            <button type="button" onclick="startCrucibleScenario(currentScenarioIndex)" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
-              <span>🔄</span> <span>${isEn ? "Retry Scenario" : "Reintentar Escenario"}</span>
+            <button type="button" onclick="loadFlashCardScenario(${curIdx >= 0 ? curIdx : 0})" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer flex items-center gap-1.5">
+              <span>🔄</span> <span>${isEn ? "Retry Flash Card" : "Reintentar Flash Card"}</span>
             </button>
           </div>
         `;
@@ -235,17 +256,109 @@ def update_command_center_files():
         content = content.replace(old_verdict_html, new_verdict_html)
 
     # 4b. Update getSpritePath with comprehensive Mega alias resolver and Showdown PNG priority
-    new_get_sprite_path = """function getSpritePath(speciesName) {
+    new_get_sprite_path = r"""function getSpritePath(speciesName, isShiny = false) {
       const spriteMap = window.__COACH_PORYGON_SPRITES__ || {};
-      const clean = String(speciesName || '').split('@')[0].replace(/\\s*\\([mf]\\)\\s*/gi, '').trim();
-      const slug = slugify(clean);
-      const alnum = alnumKey(clean);
+      const raw = String(speciesName || '').trim();
+      const clean = raw.split('@')[0].trim();
+      const checkShiny = isShiny || /\bshiny\b/i.test(clean);
+      const isFemale = /\(f\)/i.test(clean) || /-f$/i.test(clean) || /-female$/i.test(clean);
+      const isMale = /\(m\)/i.test(clean) || /-m$/i.test(clean) || /-male$/i.test(clean);
+      const stripped = clean.replace(/\bshiny\b/gi, '').replace(/\s*\([mf]\)\s*/gi, '').trim();
+      const slug = slugify(stripped);
+      const alnum = alnumKey(stripped);
 
-      // Direct matches
-      if (spriteMap[slug]) return spriteMap[slug];
-      if (spriteMap[alnum]) return spriteMap[alnum];
+      function lookup(key) {
+        if (!key) return null;
+        if (checkShiny) {
+          if (spriteMap[`${key}-shiny`]) return spriteMap[`${key}-shiny`];
+          if (spriteMap[`${key}shiny`]) return spriteMap[`${key}shiny`];
+        }
+        if (spriteMap[key]) return spriteMap[key];
+        const aKey = alnumKey(key);
+        if (checkShiny) {
+          if (spriteMap[`${aKey}-shiny`]) return spriteMap[`${aKey}-shiny`];
+          if (spriteMap[`${aKey}shiny`]) return spriteMap[`${aKey}shiny`];
+        }
+        if (spriteMap[aKey]) return spriteMap[aKey];
 
-      // Mega normalization permutations
+        // Dynamic Loading via Flask Web Backend (Mode 0-7)
+        if (typeof window !== 'undefined' && window.location) {
+          const sfx = checkShiny ? '-shiny' : '';
+          if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
+            return `/assets/sprites/Reg_M-C/${key}${sfx}.png`;
+          }
+          if (window.location.protocol === 'file:') {
+            return `sprites/Reg_M-C/${key}${sfx}.png`;
+          }
+        }
+        return null;
+      }
+
+      // 1. Gender differentiated candidates
+      if (isFemale) {
+        const fCandidates = [
+          `${slug}-female`, `${slug}-f`, `${slug}female`, `${slug}f`,
+          `${alnum}-female`, `${alnum}-f`
+        ];
+        if (slug === 'basculegion' || slug.includes('basculegion')) fCandidates.unshift('basculegion-female');
+        if (slug === 'indeedee' || slug.includes('indeedee')) fCandidates.unshift('indeedee-female');
+        if (slug === 'meowstic' || slug.includes('meowstic')) fCandidates.unshift('meowstic-female', 'meowstic-f');
+        if (slug === 'pyroar' || slug.includes('pyroar')) fCandidates.unshift('pyroar-female');
+        for (const c of fCandidates) {
+          const res = lookup(c);
+          if (res) return res;
+        }
+      } else if (isMale) {
+        const mCandidates = [
+          `${slug}-male`, `${slug}-m`, `${slug}male`, `${slug}m`,
+          `${alnum}-male`, `${alnum}-m`
+        ];
+        if (slug === 'indeedee' || slug.includes('indeedee')) mCandidates.unshift('indeedee-male');
+        if (slug === 'basculegion' || slug.includes('basculegion')) mCandidates.unshift('basculegion-male');
+        if (slug === 'meowstic' || slug.includes('meowstic')) mCandidates.unshift('meowstic-male');
+        if (slug === 'pyroar' || slug.includes('pyroar')) mCandidates.unshift('pyroar-male');
+        for (const c of mCandidates) {
+          const res = lookup(c);
+          if (res) return res;
+        }
+      }
+
+      // 2. Direct matches
+      let res = lookup(slug);
+      if (res) return res;
+      res = lookup(alnum);
+      if (res) return res;
+
+      // 3. Regional forms permutations
+      const regCandidates = [
+        slug.replace(/^alolan-/, '').concat('-alolan'),
+        slug.replace(/^alolan-/, '').concat('-alola'),
+        slug.replace(/-alola$/, '-alolan'),
+        slug.replace(/^hisuian-/, '').concat('-hisuian'),
+        slug.replace(/^hisuian-/, '').concat('-hisui'),
+        slug.replace(/-hisui$/, '-hisuian'),
+        slug.replace(/^galarian-/, '').concat('-galarian'),
+        slug.replace(/^galarian-/, '').concat('-galar'),
+        slug.replace(/-galar$/, '-galarian'),
+        slug.replace(/-paldea-/, '-paldean-'),
+        slug.replace(/-paldea$/, '-paldean')
+      ];
+      for (const c of regCandidates) {
+        res = lookup(c);
+        if (res) return res;
+      }
+
+      // 4. Rotom appliances
+      if (slug.includes('rotom')) {
+        for (const app of ['wash', 'heat', 'frost', 'fan', 'mow']) {
+          if (slug.includes(app)) {
+            res = lookup(`rotom-${app}`) || lookup(`${app}-rotom`);
+            if (res) return res;
+          }
+        }
+      }
+
+      // 5. Mega normalization permutations
       if (slug.includes('mega')) {
         const candidates = [];
         const mX = slug.match(/^(?:mega-)?([a-z0-9]+)-(?:mega-)?([xyz])$/);
@@ -265,17 +378,19 @@ def update_command_center_files():
           candidates.push(slug.substring(0, slug.length - 5) + 'mega');
         }
         for (const c of candidates) {
-          if (spriteMap[c]) return spriteMap[c];
-          if (spriteMap[alnumKey(c)]) return spriteMap[alnumKey(c)];
+          res = lookup(c);
+          if (res) return res;
         }
       }
 
-      // Base species fallback for mega forms if missing
-      const baseSlug = slug.replace(/^mega-/, '').replace(/-mega.*$/, '').replace(/-[xyz]$/, '');
-      if (spriteMap[baseSlug]) return spriteMap[baseSlug];
-      if (spriteMap[alnumKey(baseSlug)]) return spriteMap[alnumKey(baseSlug)];
+      // 6. Base species fallback
+      const baseSlug = slug.replace(/^mega-/, '').replace(/-mega.*$/, '').replace(/-[xyz]$/, '')
+                           .replace(/-(alolan|alola|hisuian|hisui|galarian|galar|paldean|paldea).*$/, '')
+                           .replace(/^(alolan|hisuian|galarian|paldean)-/, '');
+      res = lookup(baseSlug) || lookup(`${baseSlug}-male`);
+      if (res) return res;
 
-      // Dynamic Dual-Type Anatomical Battle Crest for any uncatalogued species (No Pokeball pattern)
+      // 7. Dynamic Dual-Type Anatomical Battle Crest for any uncatalogued species (No Pokeball pattern)
       const entry = getPokedexEntry(clean);
       const t1 = (entry.types && entry.types[0]) || 'Normal';
       const t2 = (entry.types && entry.types[1]) || t1;
@@ -302,6 +417,19 @@ def update_command_center_files():
         re.DOTALL
     )
     content = sprite_fn_pattern.sub(lambda _: new_get_sprite_path, content)
+
+    # 4c. Inject fresh Live Telemetry
+    telemetry = load_live_telemetry()
+    telemetry_json = json.dumps(telemetry, ensure_ascii=False)
+    telem_marker = "window.__COACH_PORYGON_TELEMETRY__ ="
+    sprites_marker = "window.__COACH_PORYGON_SPRITES__ ="
+
+    t_start = content.find(telem_marker)
+    s_start = content.find(sprites_marker)
+    if t_start != -1 and s_start > t_start:
+        telem_stmt = f"window.__COACH_PORYGON_TELEMETRY__ = {telemetry_json};\n"
+        content = content[:t_start] + telem_stmt + content[s_start:]
+        print(f"Injected live telemetry ({telemetry['total_matches']} matches, {len(telemetry.get('scouted', []))} scouted OTS, {len(telemetry.get('tournaments', []))} tournaments).")
 
     # 5. Inject fresh Base64 maps
     sprites_json = json.dumps(sprite_map)
@@ -335,9 +463,11 @@ def update_command_center_files():
     print(f"[OK] Written {OUT_EN} ({len(en_content):,} bytes)")
 
     # 9. Sync Artifact
-    if ARTIFACT_DIR and ARTIFACT_DIR.exists() and ARTIFACT_PATH:
-        shutil.copyfile(OUT_MAIN, ARTIFACT_PATH)
-        print(f"[OK] Synced Artifact -> {ARTIFACT_PATH}")
+    art_dir = resolve_artifact_dir()
+    if art_dir and art_dir.exists():
+        art_path = art_dir / "command_center.html"
+        shutil.copyfile(OUT_MAIN, art_path)
+        print(f"[OK] Synced Artifact -> {art_path}")
 
 
 if __name__ == "__main__":

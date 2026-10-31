@@ -39,43 +39,43 @@ def test_all():
     # 3. Check Crucible 42 Scenarios & 168 Total Options
     sc_ids = re.findall(r'"?id"?:\s*"SC-(\d+)"', html)
     opt_ids = re.findall(r'"?id"?:\s*"(OPT-[A-D])"', html)
-    print(f"Point 3a - Crucible scenarios count: {len(sc_ids)} (IDs: SC-01 to SC-{sc_ids[-1]})")
+    print(f"Point 3a - Flash Card scenarios count: {len(sc_ids)} (IDs: SC-01 to SC-{sc_ids[-1]})")
     print(f"Point 3b - Total 4-option response choices: {len(opt_ids)} (4 options per scenario: {len(opt_ids) == 168})")
     assert len(sc_ids) == 42, f"Expected 42 scenarios, found {len(sc_ids)}"
     assert len(opt_ids) == 168, f"Expected 168 options, found {len(opt_ids)}"
 
     # 3c. Check Speed Duel Flashcards (25 Matchups)
     speed_ids = re.findall(r'"?id"?:\s*"SD-(\d+)"', html)
-    has_speed_container = 'id="crucible-speed-duel-container"' in html
-    has_speed_funcs = 'setCrucibleSubMode' in html and 'loadSpeedDuel' in html and 'guessSpeedWinner' in html
+    has_speed_container = 'id="flashcard-speed-duel-container"' in html
+    has_speed_funcs = 'setFlashCardSubMode' in html and 'loadSpeedDuel' in html and 'guessSpeedWinner' in html
     print(f"Point 3c - Speed Duel flashcards count: {len(speed_ids)} (IDs: SD-01 to SD-25): {len(speed_ids) == 25}")
     print(f"Point 3d - Speed Duel interactive UI & functions present: {has_speed_container and has_speed_funcs}")
     assert len(speed_ids) == 25, f"Expected 25 speed duels, found {len(speed_ids)}"
     assert has_speed_container and has_speed_funcs, "Speed Duel UI missing"
 
     # 3e. Check AI Generator Banners, Sub-Mode toggle & Auto-Advance QoL
-    has_crucible_ai_banner = 'Generador de Escenarios Crucible con IA' in html
-    has_submode_toggle = 'crucible-submode-tactical-btn' in html and 'crucible-submode-speed-btn' in html
-    has_crucible_auto = 'id="crucible-auto-advance"' in html and 'id="crucible-auto-badge"' in html and 'crucibleAutoAdvanceTimer' in html
+    has_crucible_ai_banner = 'Generador de Flash Cards Tácticas con IA' in html
+    has_submode_toggle = 'flashcard-submode-tactical-btn' in html and 'flashcard-submode-speed-btn' in html
+    has_crucible_auto = 'id="flashcard-auto-advance"' in html and 'id="flashcard-auto-badge"' in html and 'flashCardAutoAdvanceTimer' in html
     has_speed_auto = 'id="speed-auto-advance"' in html and 'id="speed-auto-badge"' in html and 'speedAutoAdvanceTimer' in html
     has_random_start = 'Math.floor(Math.random()' in html
-    print(f"Point 3e - Crucible AI Banner & Submode Toggle: {has_crucible_ai_banner and has_submode_toggle}")
-    print(f"Point 3f - Crucible & Speed Duel Auto-Advance Toggles & Timers: {has_crucible_auto and has_speed_auto}")
+    print(f"Point 3e - Flash Card AI Banner & Submode Toggle: {has_crucible_ai_banner and has_submode_toggle}")
+    print(f"Point 3f - Flash Card & Speed Duel Auto-Advance Toggles & Timers: {has_crucible_auto and has_speed_auto}")
     print(f"Point 3g - Random Initial Scenario / Duel Selection: {has_random_start}")
-    assert has_crucible_ai_banner and has_submode_toggle, "Crucible AI Banner or toggle missing"
-    assert has_crucible_auto and has_speed_auto, "Crucible or Speed auto-advance missing"
+    assert has_crucible_ai_banner and has_submode_toggle, "Flash Card AI Banner or toggle missing"
+    assert has_crucible_auto and has_speed_auto, "Flash Card or Speed auto-advance missing"
     assert has_random_start, "Random start logic missing"
 
     # 4. Check Persistent CSV Datasets
-    crucible_csv = REPO_ROOT / "data" / "Crucible_Scenarios.csv"
+    flashcard_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
     speed_csv = REPO_ROOT / "data" / "Speed_Duel_Scenarios.csv"
-    assert crucible_csv.exists(), "Crucible_Scenarios.csv missing"
+    assert flashcard_csv.exists(), "Flashcard_Scenarios.csv missing"
     assert speed_csv.exists(), "Speed_Duel_Scenarios.csv missing"
-    with open(crucible_csv, "r", encoding="utf-8") as f:
+    with open(flashcard_csv, "r", encoding="utf-8") as f:
         c_rows = list(csv.reader(f))
     with open(speed_csv, "r", encoding="utf-8") as f:
         s_rows = list(csv.reader(f))
-    print(f"Point 4a - Crucible_Scenarios.csv rows: {len(c_rows)-1} (Header + 42 Scenarios)")
+    print(f"Point 4a - Flashcard_Scenarios.csv rows: {len(c_rows)-1} (Header + 42 Scenarios)")
     print(f"Point 4b - Speed_Duel_Scenarios.csv rows: {len(s_rows)-1} (Header + 25 Duels)")
     assert len(c_rows) - 1 == 42, f"Expected 42 rows in Crucible_Scenarios.csv, got {len(c_rows)-1}"
     assert len(s_rows) - 1 == 25, f"Expected 25 rows in Speed_Duel_Scenarios.csv, got {len(s_rows)-1}"

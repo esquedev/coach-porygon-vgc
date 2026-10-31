@@ -655,7 +655,7 @@ def build_report():
         </div>
 
         <div class="text-[11px] text-slate-300 bg-slate-800/30 p-2.5 rounded-lg border border-slate-700/40">
-          <b class="text-purple-300">Mega Branch B:</b> Blazing 200 Speed control & redirection. Lightning Rod protects Milotic and Staraptor. Eerie Impulse shuts down special sweepers (Charizard-Y, Archaludon). <b class="text-rose-400">Tactical Risk:</b> Zap Cannon (50% acc) is high-variance without Coil/Gravity.
+          <b class="text-purple-300">Mega Branch B:</b> Blazing 200 Speed control & redirection. Lightning Rod protects Milotic and Staraptor. Eerie Impulse shuts down special sweepers (Charizard-Y, Archaludon). <b class="text-emerald-400">Lethal Synergy:</b> Raichu-Mega-Y's <b>No Guard</b> ability grants Zap Cannon <b>100% accuracy</b>, delivering guaranteed 120 BP STAB nukes and 100% paralysis without variance!
         </div>
       </div>
 
@@ -802,11 +802,11 @@ def build_report():
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
       <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50 space-y-2">
-        <div class="font-bold text-amber-400 font-mono flex items-center gap-1.5">
-          <span>⚠️</span> <span>TGT-01 / GREED: Zap Cannon Variance</span>
+        <div class="font-bold text-emerald-400 font-mono flex items-center gap-1.5">
+          <span>⚡</span> <span>SYN-01: Raichu-Mega-Y No Guard Synergy</span>
         </div>
         <p class="text-slate-300 leading-relaxed">
-          While Zap Cannon guarantees an OHKO on Charizard-Mega-Y and 100% paralysis, its <b>50% unboosted accuracy</b> poses severe variance risks in high-stakes Swiss matches. If Milotic has not established Coil accuracy boosts, consider <b class="text-white">Thunderbolt</b> or <b class="text-white">Volt Switch</b> for tournament consistency.
+          Raichu-Mega-Y's signature ability <b>No Guard</b> completely eliminates Zap Cannon's standard 50% accuracy penalty. Under No Guard, Zap Cannon is a <b>100% accurate, 120 BP STAB nuke</b> that guarantees an OHKO on Charizard-Mega-Y and applies guaranteed paralysis to non-Electric switch-ins. Never swap Zap Cannon for Thunderbolt on Mega-Y; No Guard turns this move into the premier win-condition of the format.
         </p>
       </div>
 

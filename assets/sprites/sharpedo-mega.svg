@@ -1,0 +1,14 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Serrated Dorsal and Ventral Fins -->
+  <polygon points="60,10 50,42 70,42" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+  <polygon points="60,110 52,86 68,86" fill="#1e3a8a" stroke="#0f172a" stroke-width="2"/>
+  <!-- Torpedo Body with Spiked Snout -->
+  <ellipse cx="60" cy="64" rx="34" ry="24" fill="#0284c7" stroke="#0f172a" stroke-width="2.5"/>
+  <polygon points="26,64 16,58 20,64 16,70" fill="#cbd5e1"/>
+  <!-- Yellow Star & Battle Scars -->
+  <polygon points="40,54 44,58 50,56 46,62 50,68 44,66 40,70 40,64 34,62 38,58" fill="#facc15"/>
+  <line x1="68" y1="52" x2="84" y2="52" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+  <line x1="72" y1="60" x2="88" y2="60" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+  <!-- Gaping Jaws & Red Eye -->
+  <circle cx="56" cy="54" r="3.5" fill="#ef4444"/>
+</svg>

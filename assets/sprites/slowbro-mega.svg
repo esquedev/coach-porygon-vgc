@@ -1,0 +1,16 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Giant Spiral Shellder Shell Armor Covering Entire Body -->
+  <path d="M30,50 C30,30 50,18 60,18 C70,18 90,30 90,50 L96,96 C96,110 24,110 24,96 Z" fill="#64748b" stroke="#1e293b" stroke-width="3"/>
+  <!-- Shellder Shell Spikes & Ridges -->
+  <polygon points="26,62 10,64 24,74" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
+  <polygon points="94,62 110,64 96,74" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
+  <polygon points="28,82 12,86 26,94" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
+  <polygon points="92,82 108,86 94,94" fill="#64748b" stroke="#1e293b" stroke-width="2"/>
+  <circle cx="60" cy="104" r="6" fill="#1e293b"/>
+  <!-- Dopey Pink Slowbro Head & Arms Peeking Out at Top -->
+  <circle cx="60" cy="30" r="14" fill="#f472b6" stroke="#db2777" stroke-width="2"/>
+  <ellipse cx="60" cy="34" rx="8" ry="4" fill="#fef3c7"/>
+  <circle cx="54" cy="28" r="2" fill="#0f172a"/><circle cx="66" cy="28" r="2" fill="#0f172a"/>
+  <!-- Clueless Front Paws -->
+  <ellipse cx="44" cy="46" rx="5" ry="3" fill="#f472b6"/><ellipse cx="76" cy="46" rx="5" ry="3" fill="#f472b6"/>
+</svg>

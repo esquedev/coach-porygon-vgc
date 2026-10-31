@@ -3,11 +3,12 @@ false = False
 null = None
 # -*- coding: utf-8 -*-
 """
-Coach Porygon VGC — Mode 3 Crucible Sparring Scenarios
+Coach Porygon VGC — Mode 3 Reflex Flashcards & Sparring Scenarios (ex-Crucibles)
 42 Deterministic Scenarios (SC-01 to SC-42) with 4 options each (168 Total Options)
+Enriched with multi-turn (+2/+3 turns) tactical projections and Regulation M-C legality.
 """
 
-CRUCIBLE_SCENARIOS = [
+FLASHCARD_SCENARIOS = [
   {
     "id": "SC-01",
     "title": "M308 Turno 1: POS-02 Lead Compression vs Unburden Sneasler + Pelipper Rain",
@@ -57,9 +58,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Garchomp usó Protect! Se protege de cualquier doble foco o Fake Out.",
           "2. Sneasler usó Fake Out sobre Rotom-Wash (-14% HP), consumiendo el turno 1 de presión.",
           "3. Pelipper usó Hurricane sobre el Protect de Garchomp (Bloqueado).",
-          "4. Rotom-Wash usó Electroweb! Daña a ambos rivales y reduce la velocidad de Sneasler y Pelipper a -1 Spe."
+          "4. Rotom-Wash usó Electroweb! Daña a ambos rivales y reduce la velocidad de Sneasler y Pelipper a -1 Spe.",
+          "5. [PROYECCIÓN TURNO +2]: Con Sneasler a -1 Spe (126 Spe efectivo), Garchomp (169 Spe) actúa primero y asegura el KO limpio con Stomping Tantrum sin activar Unburden. Rotom-Wash remata a Pelipper con Thunderbolt.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Ventaja de 4v2 con el clima neutralizado y ambos sweepers del entrenador intactos (+1.35 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.35 VP): Desactivas el turno de Fake Out sin exponer a Garchomp ni regalar un Dry Hard Switch (POS-01), ganando control de velocidad con Electroweb."
+        "verdict": "✅ ÓPTIMO (+1.35 VP): Neutralizas el turno de Fake Out sin exponer a Garchomp ni regalar un Dry Hard Switch (POS-01). En T+2 tienes control absoluto de velocidad y checkmate posicional sobre el núcleo de lluvia rival.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Con Sneasler a -1 Spe (126 Spe efectivo), Garchomp (169 Spe) actúa primero y asegura el KO limpio con Stomping Tantrum sin activar Unburden. Rotom-Wash remata a Pelipper con Thunderbolt. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Ventaja de 4v2 con el clima neutralizado y ambos sweepers del entrenador intactos (+1.35 VP)."
       },
       {
         "id": "OPT-B",
@@ -70,9 +74,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Retiras a Garchomp → Entra Corviknight en seco.",
           "2. Sneasler usó Close Combat en el slot de Garchomp → Golpea a Corviknight por 58% HP!",
           "3. Pelipper usó Weather Ball (Rain STAB) en el mismo slot → Corviknight cae debilitado (0% HP)!",
-          "4. Rotom-Wash Thunderbolt debilita a Pelipper, pero pierdes a tu mejor pivot de acero."
+          "4. Rotom-Wash Thunderbolt debilita a Pelipper, pero pierdes a tu mejor pivot de acero.",
+          "5. [PROYECCIÓN TURNO +2]: Corviknight fainted en T1 (déficit 3v4). Sneasler conserva Unburden y Focus Sash intacto amenazando con barrer a Rotom-Wash y Garchomp con Close Combat.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Tablero completamente colapsado bajo lluvia rival; 0% de equidad de victoria."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar en seco ante doble amenaza ofensiva concede un KO gratis (-1.50 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar en seco ante doble amenaza ofensiva regala a tu mejor pivot de acero y entrega el tempo completo del match (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Corviknight fainted en T1 (déficit 3v4). Sneasler conserva Unburden y Focus Sash intacto amenazando con barrer a Rotom-Wash y Garchomp con Close Combat. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Tablero completamente colapsado bajo lluvia rival; 0% de equidad de victoria."
       },
       {
         "id": "OPT-C",
@@ -83,9 +90,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Sneasler usó Fake Out en Garchomp (-15% HP) → ¡Garchomp retrocede y pierde su acción!",
           "2. Pelipper usó Hurricane sobre Rotom-Wash (-52% HP) y lo confunde.",
           "3. Rotom-Wash Volt Switch conecta en Pelipper pero este sobrevive con 22% HP.",
-          "4. En Turno 2, Sneasler conserva Focus Sash intacto y amenaza con barrer a tu equipo."
+          "4. En Turno 2, Sneasler conserva Focus Sash intacto y amenaza con barrer a tu equipo.",
+          "5. [PROYECCIÓN TURNO +2]: Garchomp retrocedió en T1 y Rotom-Wash quedó confundido al 48% HP. Sneasler amenaza Close Combat letal sobre Garchomp.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pelipper mete Tailwind o Hurricane sin castigo, consolidando un 2-0 irrecuperable en ventaja de piezas."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Autopilot / Greed): Atacar sin cubrir el Fake Out obvio te hace perder el turno de tu atacante principal (-1.25 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Autopilot / Greed): Atacar sin cubrir el Fake Out obvio te hace perder el turno de tu atacante principal (-1.25 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Garchomp retrocedió en T1 y Rotom-Wash quedó confundido al 48% HP. Sneasler amenaza Close Combat letal sobre Garchomp. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pelipper mete Tailwind o Hurricane sin castigo, consolidando un 2-0 irrecuperable en ventaja de piezas."
       },
       {
         "id": "OPT-D",
@@ -96,9 +106,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Sneasler usa Close Combat sobre Garchomp (-68% HP) y activa Rough Skin.",
           "2. Pelipper ejecuta Tailwind bajo Lluvia, duplicando la velocidad del bando rival!",
           "3. Garchomp Dragon Claw deja a Pelipper en 34% HP.",
-          "4. Rotom-Wash Hydro Pump acierta pero Sneasler resiste con Focus Sash (1 HP). Ahora el rival tiene Tailwind y Unburden activos."
+          "4. Rotom-Wash Hydro Pump acierta pero Sneasler resiste con Focus Sash (1 HP). Ahora el rival tiene Tailwind y Unburden activos.",
+          "5. [PROYECCIÓN TURNO +2]: El rival tiene Tailwind activo (3T restantes) y Sneasler activó Unburden al quedar a 1 HP con Focus Sash. Su velocidad efectiva supera los 378 Spe.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Doble sweep inminente sobre Garchomp y Rotom-Wash antes de que puedan seleccionar movimiento."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-03 Damage Overkill / Mal targeting): Ignorar el setter de Tailwind y no proteger permite al rival duplicar su velocidad bajo lluvia (-1.40 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Damage Overkill / Mal targeting): Ignorar al setter de Tailwind bajo lluvia permite al rival duplicar su velocidad y barrer tu retaguardia (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: El rival tiene Tailwind activo (3T restantes) y Sneasler activó Unburden al quedar a 1 HP con Focus Sash. Su velocidad efectiva supera los 378 Spe. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Doble sweep inminente sobre Garchomp y Rotom-Wash antes de que puedan seleccionar movimiento."
       }
     ]
   },
@@ -151,9 +164,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Charizard-Mega-Y usa Protect y bloquea el Electro Shot (+1 SpA) de Archaludon!",
           "2. Pelipper usa Hurricane sobre Farigiraf (-40% HP). Armor Tail previene cualquier interferencia.",
           "3. Farigiraf ejecuta Trick Room con éxito!",
-          "4. Dimensiones distorsionadas: en Turno 3 tus atacantes lentos se mueven primero."
+          "4. Dimensiones distorsionadas: en Turno 3 tus atacantes lentos se mueven primero.",
+          "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Ursaluna/Torkoal) se mueven antes que Archaludon y Pelipper.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Reviertes la lluvia reactivando Sol con switch o castigas con ataques coordinados bajo dimensiones distorsionadas (+1.60 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.60 VP): Neutralizas el nuke eléctrico con Protect mientras Farigiraf invierte el orden de velocidad a tu favor."
+        "verdict": "✅ ÓPTIMO (+1.60 VP): Neutralizas el nuke eléctrico con Protect mientras Farigiraf invierte el orden de velocidad a tu favor, garantizando iniciativa total en T+2 y T+3.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Ursaluna/Torkoal) se mueven antes que Archaludon y Pelipper. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Reviertes la lluvia reactivando Sol con switch o castigas con ataques coordinados bajo dimensiones distorsionadas (+1.60 VP)."
       },
       {
         "id": "OPT-B",
@@ -164,9 +180,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Retiras a Charizard-Mega-Y → Entra Garchomp en seco.",
           "2. Archaludon redirige su Electro Shot o dispara a Farigiraf (-55% HP).",
           "3. Pelipper usa Weather Ball de Agua potenciada por Lluvia sobre el slot de Garchomp: ¡OHKO masivo (0% HP)!",
-          "4. Pierdes a tu principal atacante físico antes de que pueda tocar el campo."
+          "4. Pierdes a tu principal atacante físico antes de que pueda tocar el campo.",
+          "5. [PROYECCIÓN TURNO +2]: Garchomp fainted al entrar (0% HP). Farigiraf queda solo en campo a 45% HP frente a Archaludon con +1 Sp. Atk.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon ejecuta Flash Cannon y barre a Farigiraf; pierdes tu respuesta de velocidad."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un atacante frágil directamente a una Lluvia activa regala tu condición de victoria (-1.75 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un atacante frágil directamente a una Lluvia activa regala tu condición de victoria (-1.75 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Garchomp fainted al entrar (0% HP). Farigiraf queda solo en campo a 45% HP frente a Archaludon con +1 Sp. Atk. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon ejecuta Flash Cannon y barre a Farigiraf; pierdes tu respuesta de velocidad."
       },
       {
         "id": "OPT-C",
@@ -177,9 +196,12 @@ CRUCIBLE_SCENARIOS = [
           "1. En Lluvia, el poder de Heat Wave se reduce al 50%.",
           "2. Archaludon recibe daño mínimo (18% HP) y activa Stamina (+1 Def).",
           "3. Archaludon desata Electro Shot en 1 turno sobre Charizard-Mega-Y: ¡OHKO definitivo (0% HP)!",
-          "4. Farigiraf queda aislado en campo contra dos atacantes bajo lluvia."
+          "4. Farigiraf queda aislado en campo contra dos atacantes bajo lluvia.",
+          "5. [PROYECCIÓN TURNO +2]: Charizard-Mega-Y debilitado (0% HP). Archaludon tiene +1 SpA y Stamina (+1 Def) por el Heat Wave débil.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Farigiraf no puede remontar solo contra dos amenazas potenciadas bajo clima rival."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Autopilot / SPD-02): Lanzar ataques de Fuego bajo clima adverso sin resetear el sol condena a tu Mega (-1.45 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Autopilot / SPD-02): Lanzar ataques de Fuego bajo clima adverso sin resetear el sol condena a tu Mega (-1.45 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Charizard-Mega-Y debilitado (0% HP). Archaludon tiene +1 SpA y Stamina (+1 Def) por el Heat Wave débil. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Farigiraf no puede remontar solo contra dos amenazas potenciadas bajo clima rival."
       },
       {
         "id": "OPT-D",
@@ -190,9 +212,12 @@ CRUCIBLE_SCENARIOS = [
           "1. En Lluvia, Solar Beam requiere 2 turnos de carga completa!",
           "2. Charizard queda inmovilizado absorbiendo energía solar bajo la tormenta.",
           "3. Archaludon ejecuta Electro Shot y fulmina a Charizard (0% HP).",
-          "4. Farigiraf quema su Protect de forma pasiva sin haber cambiado el estado del tablero."
+          "4. Farigiraf quema su Protect de forma pasiva sin haber cambiado el estado del tablero.",
+          "5. [PROYECCIÓN TURNO +2]: Charizard fainted en el turno de carga de Solar Beam. Farigiraf quemó Protect y ahora enfrenta doble foco rival.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida total de presencia ofensiva sin haber tocado a los rivales."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Format Divergence / MEC-02): Olvidar la mecánica de Solar Beam en lluvia pierde el slot ofensivo por completo (-1.60 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Format Divergence / MEC-02): Olvidar la mecánica de Solar Beam en lluvia pierde el slot ofensivo por completo (-1.60 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Charizard fainted en el turno de carga de Solar Beam. Farigiraf quemó Protect y ahora enfrenta doble foco rival. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida total de presencia ofensiva sin haber tocado a los rivales."
       }
     ]
   },
@@ -245,9 +270,12 @@ CRUCIBLE_SCENARIOS = [
           "1. U-turn y Knock Off no tienen prioridad, por lo que NO colisionan con Psychic Terrain ni Armor Tail.",
           "2. Incineroar Knock Off impacta a Armarouge (-58% HP) y despoja su Life Orb!",
           "3. Rillaboom U-turn impacta super efectivo a Indeedee (-54% HP) y pivota limpiamente hacia un compañero seguro.",
-          "4. Neutralizas la presión de Expanding Force sin regalar ningún turno."
+          "4. Neutralizas la presión de Expanding Force sin regalar ningún turno.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom en retaguardia listo para volver a entrar y sobreescribir Psychic Terrain con Grassy Surge. Armarouge sin Life Orb pierde el rango de OHKO de Expanding Force.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Reset del terreno desactiva el bonus de Expanding Force y reactiva Grassy Glide prioritario para cerrar el juego (+1.55 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.55 VP): Castigas el núcleo psíquico con ataques sin prioridad y reposicionas a tu equipo sin chocar con el terreno."
+        "verdict": "✅ ÓPTIMO (+1.55 VP): Castigas el núcleo psíquico con ataques sin prioridad y reposicionas a tu equipo sin chocar con el terreno, preparando el reingreso de Grassy Surge en T+2.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom en retaguardia listo para volver a entrar y sobreescribir Psychic Terrain con Grassy Surge. Armarouge sin Life Orb pierde el rango de OHKO de Expanding Force. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Reset del terreno desactiva el bonus de Expanding Force y reactiva Grassy Glide prioritario para cerrar el juego (+1.55 VP)."
       },
       {
         "id": "OPT-B",
@@ -258,9 +286,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar intenta usar Fake Out... ¡Bloqueado por Psychic Terrain en el suelo!",
           "2. Rillaboom intenta usar Grassy Glide... ¡Falla debido al Psychic Terrain!",
           "3. Armarouge usa Expanding Force potenciado en área: ¡doble golpe demoledor (-78% a ambos slots)!",
-          "4. Indeedee usa Dazzling Gleam y asegura un doble KO demoledor en Turno 1."
+          "4. Indeedee usa Dazzling Gleam y asegura un doble KO demoledor en Turno 1.",
+          "5. [PROYECCIÓN TURNO +2]: Fake Out y Grassy Glide fallaron en T1 por Psychic Terrain. Armarouge usó Expanding Force con boost de terreno y Life Orb, barriendo a Rillaboom y dejando a Incineroar al 10% HP.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Indeedee remata con Dazzling Gleam; derrota en 2 turnos."
         ],
-        "verdict": "❌ ERROR CRÍTICO (MEC-01 Terrain Priority Collision): La prioridad queda 100% anulada contra rivales en suelo bajo Psychic Terrain (-1.85 VP)."
+        "verdict": "❌ FUGA TÁCTICA (MEC-01 Terrain Priority Collision): Usar movimientos prioritarios en objetivos en el suelo bajo Psychic Terrain resulta en turnos completamente desperdiciados (-1.80 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Fake Out y Grassy Glide fallaron en T1 por Psychic Terrain. Armarouge usó Expanding Force con boost de terreno y Life Orb, barriendo a Rillaboom y dejando a Incineroar al 10% HP. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Indeedee remata con Dazzling Gleam; derrota en 2 turnos."
       },
       {
         "id": "OPT-C",
@@ -271,9 +302,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Wood Hammer conecta en Armarouge pero es resistido (-28% HP) y activa Weak Armor (+2 Spe)!",
           "2. Armarouge ahora supera en velocidad a todo tu equipo.",
           "3. Armarouge desata Expanding Force potenciado con STAB y terreno: OHKO a Rillaboom.",
-          "4. Incineroar Flare Blitz daña a Indeedee pero queda gravemente herido por el recoil."
+          "4. Incineroar Flare Blitz daña a Indeedee pero queda gravemente herido por el recoil.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom fainted al recibir Expanding Force + Armor Cannon. Incineroar queda solo contra dos atacantes especiales.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Armarouge conserva Life Orb e Indeedee mantiene Follow Me intacto."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed / Autopilot): Activar Weak Armor en el sweeper rival sin noquearlo le otorga Speed Control gratuito (-1.50 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 / Greed): Intentar intercambios de daño directo sin disrumpir el motor de terreno entrega una baja no forzada (-1.65 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom fainted al recibir Expanding Force + Armor Cannon. Incineroar queda solo contra dos atacantes especiales. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Armarouge conserva Life Orb e Indeedee mantiene Follow Me intacto."
       },
       {
         "id": "OPT-D",
@@ -284,9 +318,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Retiras a Rillaboom → Entra Pelipper en seco y activa Drizzle.",
           "2. Armarouge usa Expanding Force en área: bajo Psychic Terrain golpea a ambos rivales independientemente del clima (-72% HP a Pelipper entrante)!",
           "3. Incineroar quema su Protect pasivamente sin aplicar ninguna presión ofensiva.",
-          "4. En Turno 2, Pelipper está a 28% HP y el terreno psíquico sigue activo."
+          "4. En Turno 2, Pelipper está a 28% HP y el terreno psíquico sigue activo.",
+          "5. [PROYECCIÓN TURNO +2]: Doble Protect consumido pasivamente. El rival mantiene control absoluto del campo y prepara un turno de Expanding Force libre.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Retrasas la derrota un turno sin generar ninguna ventaja posicional ni desgaste."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 & POS-03): Entrar en seco ante daño de área psíquico destruye la integridad de tus slots (-1.35 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Quemar Protect de forma pasiva sin alterar el estado del tablero agrava la desventaja (-1.35 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Doble Protect consumido pasivamente. El rival mantiene control absoluto del campo y prepara un turno de Expanding Force libre. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Retrasas la derrota un turno sin generar ninguna ventaja posicional ni desgaste."
       }
     ]
   },
@@ -339,9 +376,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar usó Protect! Anticipa el remate desesperado.",
           "2. Basculegion redirige su Wave Crash al slot 2 de Rillaboom: ¡conecta por 62% HP!",
           "3. Archaludon ejecuta Body Press en Rillaboom: ¡conecta por 42% HP y logra el OHKO exacto!",
-          "4. Rillaboom cae debilitado. En Turno 4 enfrentas a un Incineroar a 18% en 2v1 absoluto."
+          "4. Rillaboom cae debilitado. En Turno 4 enfrentas a un Incineroar a 18% en 2v1 absoluto.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom rival debilitado por el foco coordinado. Incineroar usó Protect inútilmente en T1 y ahora está solo frente a dos atacantes.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Basculegion-M y Archaludon eliminan al Incineroar moribundo al inicio del turno siguiente, asegurando victoria 4v2 (+1.65 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.70 VP): Ignoras el slot con Protect predecible y castigas al compañero sano eliminando su principal amenaza activa."
+        "verdict": "✅ ÓPTIMO (+1.65 VP): Ignoras el Protect cantado del Pokémon moribundo y castigas al slot activo con daño masivo, eliminando al partner y dejando al rival sin respuestas en T+2.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom rival debilitado por el foco coordinado. Incineroar usó Protect inútilmente en T1 y ahora está solo frente a dos atacantes. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Basculegion-M y Archaludon eliminan al Incineroar moribundo al inicio del turno siguiente, asegurando victoria 4v2 (+1.65 VP)."
       },
       {
         "id": "OPT-B",
@@ -352,9 +392,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar usó Protect!",
           "2. Basculegion Wave Crash se estrella contra la barrera de Protect (0 daño).",
           "3. Archaludon Body Press se estrella contra Protect (0 daño).",
-          "4. Rillaboom usa Wood Hammer sobre Basculegion: ¡OHKO crítico y pierdes a tu atacante más veloz!"
+          "4. Rillaboom usa Wood Hammer sobre Basculegion: ¡OHKO crítico y pierdes a tu atacante más veloz!",
+          "5. [PROYECCIÓN TURNO +2]: Ambos ataques impactaron en el Protect de Incineroar (0 daño). Rillaboom usó Wood Hammer y noqueó a Basculegion-M.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu principal sweeper físico por túnel de foco sobre un slot de 18% HP."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-01 Protect Tunneling): Desperdiciar dos ataques en un objetivo a 18% que usa Protect te cuesta el partido (-1.60 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-01 Protect Tunneling): Atacar al slot obvio con Protect permite al rival castigar severamente a tus aliados (-1.75 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ambos ataques impactaron en el Protect de Incineroar (0 daño). Rillaboom usó Wood Hammer y noqueó a Basculegion-M. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu principal sweeper físico por túnel de foco sobre un slot de 18% HP."
       },
       {
         "id": "OPT-C",
@@ -365,9 +408,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Basculegion usa Protect. Incineroar usa Protect.",
           "2. Flash Cannon de Archaludon es bloqueado por el Protect de Incineroar.",
           "3. Rillaboom usa High Horsepower sobre Archaludon (-48% HP).",
-          "4. Quedas sin tempo y con Archaludon severamente desgastado."
+          "4. Quedas sin tempo y con Archaludon severamente desgastado.",
+          "5. [PROYECCIÓN TURNO +2]: Basculegion usó Protect pasivo. Rillaboom atacó libremente a Archaludon desgastando su barra de vida.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes la iniciativa en un turno clave donde podías borrar una pieza rival."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect + TGT-01): Doble jugada conservadora que regala un turno gratis al oponente (-1.20 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): La pasividad cuando tienes ventaja ofensiva permite al rival recuperar el ritmo (-1.30 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Basculegion usó Protect pasivo. Rillaboom atacó libremente a Archaludon desgastando su barra de vida. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes la iniciativa en un turno clave donde podías borrar una pieza rival."
       },
       {
         "id": "OPT-D",
@@ -378,9 +424,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar usa Protect y anula Last Respects por completo.",
           "2. Archaludon gasta su turno cargando Electro Shot sin lluvia.",
           "3. Rillaboom usa Knock Off sobre Archaludon removiendo sus Leftovers (-35% HP).",
-          "4. En Turno 4, Incineroar sigue vivo con Fake Out listo para usar."
+          "4. En Turno 4, Incineroar sigue vivo con Fake Out listo para usar.",
+          "5. [PROYECCIÓN TURNO +2]: Basculegion atacó a Incineroar (Protegido) y Archaludon dividió su daño. Rillaboom sobrevive al 40% HP y amenaza Wood Hammer.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Falta de daño concentrado permite al rival mantener dos atacantes en mesa."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Tunnel Vision & SPD-02): Perder el ataque físico contra Protect mientras cargas un turno en seco (-1.45 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Inefficient Targeting): Dividir daño entre un slot protegido y uno con vida completa pierde el KO limpio (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Basculegion atacó a Incineroar (Protegido) y Archaludon dividió su daño. Rillaboom sobrevive al 40% HP y amenaza Wood Hammer. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Falta de daño concentrado permite al rival mantener dos atacantes en mesa."
       }
     ]
   },
@@ -433,9 +482,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Maushold usa Follow Me!",
           "2. Primarina desata Hyper Voice de área: ¡ignora la redirección y golpea a ambos rivales!",
           "3. Maushold recibe 64% HP y pierde su Focus Sash; Annihilape recibe 48% HP y Mystic Water potencia el daño de Hyper Voice.",
-          "4. Archaludon Dragon Pulse es redirigido a Maushold y lo noquea (0% HP). Annihilape queda solo sin señuelo."
+          "4. Archaludon Dragon Pulse es redirigido a Maushold y lo noquea (0% HP). Annihilape queda solo sin señuelo.",
+          "5. [PROYECCIÓN TURNO +2]: Hyper Voice (Spread de Sonido) traspasó Follow Me e impactó a ambos rivales. Maushold rompió Focus Sash (1 HP) y Annihilape recibió 45% HP.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: En T+2 Archaludon y Primarina rematan a Maushold y controlan el Rage Fist de Annihilape antes de que acumule cargas (+1.70 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.80 VP): Los ataques de área (Spread Moves) no pueden ser redirigidos por Follow Me, desgastando a ambos slots simultáneamente."
+        "verdict": "✅ ÓPTIMO (+1.70 VP): Los ataques de propagación ignoran Follow Me / Rage Powder. Aplicas daño simultáneo a la pieza de soporte y al sweeper sin regalar cargas de Rage Fist.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Hyper Voice (Spread de Sonido) traspasó Follow Me e impactó a ambos rivales. Maushold rompió Focus Sash (1 HP) y Annihilape recibió 45% HP. • 6. [PROYECCIÓN TURNO +3 / WINCON]: En T+2 Archaludon y Primarina rematan a Maushold y controlan el Rage Fist de Annihilape antes de que acumule cargas (+1.70 VP)."
       },
       {
         "id": "OPT-B",
@@ -446,9 +498,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Maushold usa Follow Me!",
           "2. Primarina Moonblast es redirigido a Maushold y activa su Focus Sash (1 HP).",
           "3. Archaludon Body Press es redirigido a Maushold (0 daño residual tras Sash).",
-          "4. Annihilape queda 100% ileso y desata Drain Punch demoledor (+2 Atk Rage Fist listo)."
+          "4. Annihilape queda 100% ileso y desata Drain Punch demoledor (+2 Atk Rage Fist listo).",
+          "5. [PROYECCIÓN TURNO +2]: Moonblast y Flash Cannon fueron redirigidos a Maushold. Annihilape usó Bulk Up libremente sin recibir daño.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Con +1 Atk/+1 Def y Rage Fist preparado, Annihilape se vuelve imposible de frenar en T+3."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-02 Spread Redirection Error): Lanzar ataques individuales directos a un objetivo custodiado por Follow Me regala un turno libre al sweeper rival (-1.70 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-02 Spread Redirection Error): Dirigir ataques de un solo objetivo contra redirección mientras el sweeper se setea condena la partida (-1.70 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Moonblast y Flash Cannon fueron redirigidos a Maushold. Annihilape usó Bulk Up libremente sin recibir daño. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Con +1 Atk/+1 Def y Rage Fist preparado, Annihilape se vuelve imposible de frenar en T+3."
       },
       {
         "id": "OPT-C",
@@ -459,9 +514,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Primarina usa Protect. Archaludon usa Protect.",
           "2. Maushold usa Super Fang sobre el Protect (bloqueado).",
           "3. Annihilape aprovecha el turno libre para usar otro Bulk Up (+2 Atk / +2 Def).",
-          "4. En Turno 3, Annihilape es imparable con Rage Fist cargado."
+          "4. En Turno 3, Annihilape es imparable con Rage Fist cargado.",
+          "5. [PROYECCIÓN TURNO +2]: Primarina usó Protect. Maushold redirigió el único ataque de Archaludon. Annihilape atacó con Drain Punch recuperando salud.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes tempo ofensivo permitiendo la consolidación del núcleo rival."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Ceder turnos libres a un Pokémon de configuración (setup) sentencia el juego (-1.30 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): No aprovechar la opción de spread move cuando el rival gasta su turno de redirección es un error grave (-1.35 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Primarina usó Protect. Maushold redirigió el único ataque de Archaludon. Annihilape atacó con Drain Punch recuperando salud. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes tempo ofensivo permitiendo la consolidación del núcleo rival."
       },
       {
         "id": "OPT-D",
@@ -472,9 +530,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Cambias tus dos slots en seco trayendo a Incineroar.",
           "2. Incineroar activa Intimidate... ¡Annihilape tiene habilidad Defiant!",
           "3. ¡El Ataque de Annihilape sube 2 niveles (+3 Atk total) en lugar de bajar!",
-          "4. Annihilape usa Close Combat y destruye a Incineroar de un solo impacto."
+          "4. Annihilape usa Close Combat y destruye a Incineroar de un solo impacto.",
+          "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Annihilape con ataques individuales que fueron desviados a Maushold, dejándolo a 1 HP pero intacto de cara a un segundo Follow Me.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Annihilape barre en el turno siguiente con Drain Punch sobre Archaludon."
         ],
-        "verdict": "❌ ERROR MECÁNICO (MEC-01 / Defiant Collision): Intimidar a Annihilape activa Defiant convirtiéndolo en un monstruo imparable (-1.55 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-02 Redirection Tunneling): Caer en la trampa de redirección sin spread moves entrega el control del match (-1.60 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Annihilape con ataques individuales que fueron desviados a Maushold, dejándolo a 1 HP pero intacto de cara a un segundo Follow Me. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Annihilape barre en el turno siguiente con Drain Punch sobre Archaludon."
       }
     ]
   },
@@ -527,9 +588,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Grassy Glide (Prioridad en Grassy Terrain) conecta antes que cualquier movimiento y elimina a Primarina (0% HP) con un solo slot.",
           "2. Kingambit intenta Kowtow Cleave pero Incineroar resiste el golpe (-32% HP).",
           "3. Incineroar quema a Kingambit con Will-O-Wisp, neutralizando su daño físico a la mitad de forma permanente!",
-          "4. Aseguras el KO del slot débil y desarmas por completo la condición de victoria de Kingambit."
+          "4. Aseguras el KO del slot débil y desarmas por completo la condición de victoria de Kingambit.",
+          "5. [PROYECCIÓN TURNO +2]: Kingambit recibió Close Combat de Incineroar (-75% HP) y Wood Hammer de Rillaboom, cayendo debilitado. Primarina a 12% HP no puede remontar sola 1v4.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Rillaboom remata a Primarina con Grassy Glide prioritario en el siguiente turno (+1.60 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.90 VP): Asignas el mínimo recurso necesario para asegurar el KO y neutralizas la condición de victoria del compañero con el segundo slot."
+        "verdict": "✅ ÓPTIMO (+1.60 VP): Concentrar recursos en neutralizar la amenaza activa más peligrosa (Kingambit) mientras dejas al slot moribundo sin impacto real en el tablero asegura la victoria.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Kingambit recibió Close Combat de Incineroar (-75% HP) y Wood Hammer de Rillaboom, cayendo debilitado. Primarina a 12% HP no puede remontar sola 1v4. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Rillaboom remata a Primarina con Grassy Glide prioritario en el siguiente turno (+1.60 VP)."
       },
       {
         "id": "OPT-B",
@@ -540,9 +604,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Wood Hammer noquea a Primarina de inmediato con recoil excesivo.",
           "2. Flare Blitz se convierte en Overkill contra un objetivo que ya no está en campo.",
           "3. Kingambit usa Swords Dance gratis (+2 Atk) sin recibir daño ni quemadura!",
-          "4. En Turno 5, Kingambit desata Sucker Punch potenciado y barre a tu equipo restante."
+          "4. En Turno 5, Kingambit desata Sucker Punch potenciado y barre a tu equipo restante.",
+          "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Primarina (12% HP), causando overkill masivo. Kingambit ejecutó Kowtow Cleave con Black Glasses y fulminó a Incineroar.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Kingambit activa Defiant / Sucker Punch y barre a Rillaboom en T+3."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-03 Damage Overkill): Sobrecargar de daño a un objetivo moribundo concede al sweeper rival un turno de setup gratuito (-1.80 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Damage Overkill): Gastar dos acciones completas para eliminar 12% de vida permite al rival noquear a tu pieza clave (-1.65 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Primarina (12% HP), causando overkill masivo. Kingambit ejecutó Kowtow Cleave con Black Glasses y fulminó a Incineroar. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Kingambit activa Defiant / Sucker Punch y barre a Rillaboom en T+3."
       },
       {
         "id": "OPT-C",
@@ -553,9 +620,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Atacas a Kingambit con Wood Hammer y Flare Blitz dejándolo en 35% HP.",
           "2. Kingambit usa Sucker Punch sobre Rillaboom (-50% HP).",
           "3. Primarina sobrevive a 12% y lanza Moonblast crítico sobre Incineroar debilitándolo por completo (0% HP)!",
-          "4. Dejas vivo a un atacante especial peligroso por no rematarlo con prioridad."
+          "4. Dejas vivo a un atacante especial peligroso por no rematarlo con prioridad.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom Protect y Incineroar atacó solo a Kingambit (sobrevive con 30% HP). Primarina atacó con Moonblast a Incineroar.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Ambos rivales sobreviven y mantienen doble presión ofensiva."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed / Negligencia): No asegurar un KO garantizado al 12% expone a tu equipo a un contraataque mortal (-1.45 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Dividir la presión ofensiva permite al rival estabilizarse (-1.30 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom Protect y Incineroar atacó solo a Kingambit (sobrevive con 30% HP). Primarina atacó con Moonblast a Incineroar. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Ambos rivales sobreviven y mantienen doble presión ofensiva."
       },
       {
         "id": "OPT-D",
@@ -566,9 +636,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Rillaboom usa Protect.",
           "2. Incineroar usa Parting Shot en Primarina; Primarina cambia o resiste.",
           "3. Kingambit usa Kowtow Cleave demoledor sobre Incineroar.",
-          "4. Gastas tempo en reducir estadísticas de un Pokémon que debió morir este turno."
+          "4. Gastas tempo en reducir estadísticas de un Pokémon que debió morir este turno.",
+          "5. [PROYECCIÓN TURNO +2]: Ataques sin foco coordinado dejaron a ambos rivales con vida (Primarina a 2% HP y Kingambit al 45% HP).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Kingambit y Primarina conectan doble ataque y debilitan a Incineroar."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 & TGT-03): Lanzar reducción de stats a un Pokémon que debió ser noqueado este turno (-1.50 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Inefficient Focus): Falta de cálculo de daño exacto regala turnos extra al rival (-1.45 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ataques sin foco coordinado dejaron a ambos rivales con vida (Primarina a 2% HP y Kingambit al 45% HP). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Kingambit y Primarina conectan doble ataque y debilitan a Incineroar."
       }
     ]
   },
@@ -621,9 +694,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Hydro Pump conecta en Armarouge y lo noquea (0% HP) antes de que pueda atacar!",
           "2. Indeedee intenta usar Dazzling Gleam pero Stomping Tantrum de Garchomp la noquea de inmediato.",
           "3. Trick Room expira al final del turno!",
-          "4. En Turno 5 tus Pokémon recuperan la iniciativa absoluta de velocidad y el rival se queda sin atacantes."
+          "4. En Turno 5 tus Pokémon recuperan la iniciativa absoluta de velocidad y el rival se queda sin atacantes.",
+          "5. [PROYECCIÓN TURNO +2]: Trick Room expira al final del turno. Garchomp (169 Spe) y Rotom-Wash (115 Spe) recuperan la iniciativa absoluta sobre Armarouge e Indeedee.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Doble ataque rápido en dimensiones normales barre al equipo rival sin que puedan volver a colocar Trick Room (+1.75 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.50 VP): Cuando estás abajo en equidad, no puedes ceder turnos pasivos; forzar intercambios es obligatorio para remontar."
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Reconocer el último turno de Trick Room y ejecutar la jugada de transición óptima permite retomar la iniciativa inmediatamente al recuperar la velocidad normal.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Trick Room expira al final del turno. Garchomp (169 Spe) y Rotom-Wash (115 Spe) recuperan la iniciativa absoluta sobre Armarouge e Indeedee. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Doble ataque rápido en dimensiones normales barre al equipo rival sin que puedan volver a colocar Trick Room (+1.75 VP)."
       },
       {
         "id": "OPT-B",
@@ -634,9 +710,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Garchomp usa Protect. Rotom-Wash usa Protect.",
           "2. El rival lee el doble Protect pasivo y no ataca: ¡Indeedee vuelve a castear Trick Room con éxito!",
           "3. Armarouge usa Calm Mind (+1 SpA / +1 SpD) gratis.",
-          "4. En Turno 5, Trick Room reinicia a 5 turnos y quedas acorralado sin opciones."
+          "4. En Turno 5, Trick Room reinicia a 5 turnos y quedas acorralado sin opciones.",
+          "5. [PROYECCIÓN TURNO +2]: Ambos aliados usaron Protect pasivo en el último turno de TR. Indeedee reinició Trick Room libremente!",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Otros 5 turnos de Trick Room activo con tu equipo en desventaja de velocidad; derrota segura."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Usar Protect cuando estás en desventaja de piezas sólo posterga la derrota y regala setup (-1.65 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Quemar Protect cuando el rival va a resetear Trick Room garantiza que mantenga el control del tempo (-1.80 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ambos aliados usaron Protect pasivo en el último turno de TR. Indeedee reinició Trick Room libremente! • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Otros 5 turnos de Trick Room activo con tu equipo en desventaja de velocidad; derrota segura."
       },
       {
         "id": "OPT-C",
@@ -647,9 +726,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Retiras a Garchomp → Entra Corviknight en seco.",
           "2. Armarouge usa Armor Cannon sobre el slot entrante de Corviknight: ¡OHKO masivo con debilidad de Fuego!",
           "3. Rotom-Wash queda solo contra dos atacantes psíquicos.",
-          "4. Tu desventaja pasa de 2v3 a 1v3 irreversible."
+          "4. Tu desventaja pasa de 2v3 a 1v3 irreversible.",
+          "5. [PROYECCIÓN TURNO +2]: Garchomp atacó bajo TR y fue superado en velocidad por Armarouge, recibiendo Expanding Force masivo.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu atacante principal justo antes de que el campo vuelva a la normalidad."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar en seco bajo condiciones ofensivas del rival acelera la pérdida de slots (-1.40 VP)."
+        "verdict": "❌ FUGA TÁCTICA (SPD-01 Speed Miscalculation): Atacar sin cobertura en el último turno de Trick Room expone a tus piezas rápidas a daño gratuito (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Garchomp atacó bajo TR y fue superado en velocidad por Armarouge, recibiendo Expanding Force masivo. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu atacante principal justo antes de que el campo vuelva a la normalidad."
       },
       {
         "id": "OPT-D",
@@ -659,9 +741,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Will-O-Wisp falla en Armarouge debido a Flash Fire (¡absorbe el fuego y potencia sus ataques especiales!)",
           "2. Armarouge desata Expanding Force potenciado y noquea a Garchomp mientras baila Swords Dance.",
-          "3. Pierdes a tu atacante físico por buscar un boost en lugar de atacar."
+          "3. Pierdes a tu atacante físico por buscar un boost en lugar de atacar.",
+          "5. [PROYECCIÓN TURNO +2]: Switch seco de Rotom-Wash recibió daño innecesario de Dazzling Gleam. El rival mantiene la iniciativa.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes el control del tablero por un cambio desalineado con la expiración de TR."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed de Setup / MEC-01): Buscar danza de espadas estando expuesto a daño letal cuesta el juego (-1.30 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar sin posicionamiento ofensivo en turno de expiración de campo regala tempo (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Switch seco de Rotom-Wash recibió daño innecesario de Dazzling Gleam. El rival mantiene la iniciativa. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes el control del tablero por un cambio desalineado con la expiración de TR."
       }
     ]
   },
@@ -714,9 +799,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Pelipper usa Protect! Como es tipo Volador, NO está protegido por Psychic Terrain contra prioridad.",
           "2. Sneasler intenta Fake Out sobre Pelipper: ¡choca contra el Protect y gasta su turno!",
           "3. Archaludon desata Electro Shot en 1 turno bajo lluvia sobre Sneasler: activa su Focus Sash (1 HP).",
-          "4. Mantienes la salud intacta de tu setter de clima y desgastas al sweeper rival."
+          "4. Mantienes la salud intacta de tu setter de clima y desgastas al sweeper rival.",
+          "5. [PROYECCIÓN TURNO +2]: Pelipper es de tipo Volador (Airborne) y NO está protegido por Psychic Terrain contra movimientos de prioridad del rival. Al posicionar a Archaludon y atacar con Pelipper Weather Ball en Lluvia, aseguras KO en Incineroar.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Lluvia activa y Archaludon con Stamina garantizan checkmate sobre Sneasler en T+3 (+1.60 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.75 VP): Dominio de MEC-02: Los Pokémon voladores o con Levitate siguen siendo vulnerables a la prioridad en Psychic Terrain."
+        "verdict": "✅ ÓPTIMO (+1.60 VP): Demuestras dominio absoluto de la regla de exención aérea de terreno: los Pokémon voladores no tienen inmunidad a prioridad en Terreno Psíquico, por lo que jugar ofensivo sin falsas seguridades es la línea ganadora.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Pelipper es de tipo Volador (Airborne) y NO está protegido por Psychic Terrain contra movimientos de prioridad del rival. Al posicionar a Archaludon y atacar con Pelipper Weather Ball en Lluvia, aseguras KO en Incineroar. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Lluvia activa y Archaludon con Stamina garantizan checkmate sobre Sneasler en T+3 (+1.60 VP)."
       },
       {
         "id": "OPT-B",
@@ -727,9 +815,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Sneasler usa Fake Out sobre Pelipper... ¡Y CONECTA exitosamente!",
           "2. Como Pelipper es Volador, no toca el suelo y no recibe la inmunidad a prioridad.",
           "3. Pelipper retrocede y pierde su turno por completo.",
-          "4. Incineroar Knock Off asesta golpe demoledor sobre Pelipper despojando su objeto."
+          "4. Incineroar Knock Off asesta golpe demoledor sobre Pelipper despojando su objeto.",
+          "5. [PROYECCIÓN TURNO +2]: Confiando en que Psychic Terrain protegía a Pelipper, no protegiste. Sneasler usó Fake Out / Feint y debilitó a Pelipper antes de atacar.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu setter de lluvia por ignorar la exención aérea de terreno."
         ],
-        "verdict": "❌ ERROR CRÍTICO (MEC-02 Airborne Ground Exemption): Olvidar que los voladores no tocan el suelo y son blanco válido de prioridad (-1.80 VP)."
+        "verdict": "❌ FUGA TÁCTICA (MEC-02 Airborne Ground Exemption): Creer que los Pokémon voladores están protegidos por Terreno Psíquico contra prioridad es un error crítico de mecánicas (-1.75 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Confiando en que Psychic Terrain protegía a Pelipper, no protegiste. Sneasler usó Fake Out / Feint y debilitó a Pelipper antes de atacar. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu setter de lluvia por ignorar la exención aérea de terreno."
       },
       {
         "id": "OPT-C",
@@ -739,9 +830,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Tu ataque prioritario falla de inmediato porque Sneasler está tocando el suelo en Psychic Terrain.",
           "2. Sneasler usa Close Combat sobre Archaludon infligiendo daño masivo.",
-          "3. Desperdicias la acción ofensiva por colisión de prioridad."
+          "3. Desperdicias la acción ofensiva por colisión de prioridad.",
+          "5. [PROYECCIÓN TURNO +2]: Archaludon usó Protect pasivo mientras Pelipper recibía daño masivo de Close Combat de Sneasler.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de presencia de lluvia y colapso de la estructura defensiva."
         ],
-        "verdict": "❌ ERROR CRÍTICO (MEC-01 Terrain Priority Collision): La prioridad contra objetivos terrestres está completamente anulada (-1.70 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): La falta de coordinación entre slots ante amenazas mixtas destruye la sinergia de equipo (-1.45 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Archaludon usó Protect pasivo mientras Pelipper recibía daño masivo de Close Combat de Sneasler. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de presencia de lluvia y colapso de la estructura defensiva."
       },
       {
         "id": "OPT-D",
@@ -751,9 +845,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Retiras a Archaludon → Entra Rillaboom en seco.",
           "2. Rillaboom activa Grassy Surge, pero recibe Close Combat de Sneasler al entrar: ¡pierde el 82% de salud!",
-          "3. Tu pivot queda en rango de KO para cualquier ataque posterior."
+          "3. Tu pivot queda en rango de KO para cualquier ataque posterior.",
+          "5. [PROYECCIÓN TURNO +2]: Ataques sin prioridad fallaron en conectar por mala predicción de Protect rival.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Sneasler activa Unburden y barre en el siguiente turno."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01): Cambiar en seco para ganar el terreno a costa de tu barra de salud (-1.35 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Autopilot / Greed): No asegurar el KO del slot más amenazante permite la activación de Unburden (-1.55 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ataques sin prioridad fallaron en conectar por mala predicción de Protect rival. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Sneasler activa Unburden y barre en el siguiente turno."
       }
     ]
   },
@@ -806,9 +903,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Lucario Mega Evoluciona! Su Speed Tier se actualiza al instante a 112 Base Spe (180 Spe Nivel 50).",
           "2. Lucario supera en velocidad a Garchomp (169 Spe) sin depender de Tailwind!",
           "3. Lucario desata Close Combat con Adaptability: ¡OHKO masivo sobre Garchomp antes de que ataque!",
-          "4. Whimsicott usa Moonblast sobre Rotom-Wash desgastando su slot."
+          "4. Whimsicott usa Moonblast sobre Rotom-Wash desgastando su slot.",
+          "5. [PROYECCIÓN TURNO +2]: Lucario Mega Evoluciona y su velocidad pasa instantáneamente a 180 Spe (superando los 169 Spe de Garchomp). Conecta Close Combat antes de que Garchomp se mueva y logra el OHKO limpio.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Whimsicott coloca Tailwind; Lucario-Mega domina a Rotom-Wash en T+3 para cerrar el match (+1.80 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.85 VP): Aprovechas el escalado instantáneo de velocidad de Regulation M-C asegurando la iniciativa inmediata sin quemar Protect."
+        "verdict": "✅ ÓPTIMO (+1.80 VP): En Pokémon Champions la Mega Evolución recalcula la velocidad en el acto (Activation Phase). Lucario-Mega adelanta a Garchomp de inmediato y lo elimina antes de que pueda tocar el campo.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Lucario Mega Evoluciona y su velocidad pasa instantáneamente a 180 Spe (superando los 169 Spe de Garchomp). Conecta Close Combat antes de que Garchomp se mueva y logra el OHKO limpio. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Whimsicott coloca Tailwind; Lucario-Mega domina a Rotom-Wash en T+3 para cerrar el match (+1.80 VP)."
       },
       {
         "id": "OPT-B",
@@ -819,9 +919,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Lucario usa Protect creyendo erróneamente que la velocidad no se actualiza hasta el turno siguiente.",
           "2. Garchomp usa Swords Dance libremente (+2 Atk) sin recibir ningún castigo.",
           "3. Rotom-Wash usa Thunderbolt sobre Whimsicott (-55% HP).",
-          "4. En Turno 2, Garchomp tiene +2 en Ataque y amenaza con barrer el campo."
+          "4. En Turno 2, Garchomp tiene +2 en Ataque y amenaza con barrer el campo.",
+          "5. [PROYECCIÓN TURNO +2]: Asumiendo erróneamente que la velocidad no cambiaba en el turno de Mega, Lucario usó Protect innecesario. Garchomp usó Earthquake y rompió el Focus Sash de Whimsicott.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: En T+2 Garchomp predice el Protect y presiona con Swords Dance o Earthquake."
         ],
-        "verdict": "❌ FUGA TÁCTICA (SPD-01 Activation Phase Blindness): Asumir que la velocidad previa a la Mega persiste te hace quemar un Protect innecesario (-1.50 VP)."
+        "verdict": "❌ FUGA TÁCTICA (SPD-01 Activation Phase Blindness): Desconocer el escalado instantáneo de velocidad de la Mega Evolución regala un turno ofensivo de oro (-1.70 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Asumiendo erróneamente que la velocidad no cambiaba en el turno de Mega, Lucario usó Protect innecesario. Garchomp usó Earthquake y rompió el Focus Sash de Whimsicott. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: En T+2 Garchomp predice el Protect y presiona con Swords Dance o Earthquake."
       },
       {
         "id": "OPT-C",
@@ -832,9 +935,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Lucario permanece en su forma base (Spe 90).",
           "2. Garchomp (Spe 102) se mueve primero y usa Earthquake con Life Orb: ¡OHKO directo (0% HP) a Lucario!",
           "3. Lucario cae debilitado sin haber evolucionado ni ejecutado su acción.",
-          "4. Tu atacante Mega queda eliminado en Turno 1."
+          "4. Tu atacante Mega queda eliminado en Turno 1.",
+          "5. [PROYECCIÓN TURNO +2]: Lucario atacó sin Mega Evolucionar (Spe 112 base). Garchomp (169 Spe) actuó primero y ejecutó Earthquake: OHKO a Lucario y daño masivo a Whimsicott.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de la Mega sin haber ejecutado una sola acción ofensiva."
         ],
-        "verdict": "❌ ERROR FATAL (Greed / SPD-01): No activar la Mega concede la ventaja de velocidad al rival y destruye a tu atacante (-1.90 VP)."
+        "verdict": "❌ FUGA TÁCTICA (MEC-01 Failure to Mega Evolve): Olvidar activar la Mega Evolución condena a tu atacante a ser superado en velocidad y eliminado (-1.85 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Lucario atacó sin Mega Evolucionar (Spe 112 base). Garchomp (169 Spe) actuó primero y ejecutó Earthquake: OHKO a Lucario y daño masivo a Whimsicott. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de la Mega sin haber ejecutado una sola acción ofensiva."
       },
       {
         "id": "OPT-D",
@@ -844,9 +950,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Retiras a Lucario → Entra Pelipper en seco.",
           "2. Garchomp anticipa el cambio de tipo volador y lanza Stone Edge crítico: ¡OHKO a Pelipper entrante!",
-          "3. Regalas una pieza sin haber disputado la velocidad."
+          "3. Regalas una pieza sin haber disputado la velocidad.",
+          "5. [PROYECCIÓN TURNO +2]: Whimsicott atacó en vez de apoyar y Garchomp castigó con Rock Slide causando flinch.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida total del ritmo de combate por desaprovechar la ventaja de velocidad."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01): Ceder la iniciativa cuando podías superar en velocidad y ganar el enfrentamiento (-1.40 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Autopilot / Greed): No priorizar la eliminación de Garchomp cuando tienes la ventaja de velocidad garantizada es un error grave (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Whimsicott atacó en vez de apoyar y Garchomp castigó con Rock Slide causando flinch. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida total del ritmo de combate por desaprovechar la ventaja de velocidad."
       }
     ]
   },
@@ -899,9 +1008,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Charizard usa Protect! Se resguarda ante cualquier agresión.",
           "2. Rillaboom intenta Grassy Glide sobre Charizard: ¡el ataque impacta en la barrera de Protect!",
           "3. Si Charizard no hubiera protegido, habría caído porque al volar NO tiene protección de terreno.",
-          "4. Farigiraf Hyper Voice conecta en ambos rivales (-35% HP a cada uno)."
+          "4. Farigiraf Hyper Voice conecta en ambos rivales (-35% HP a cada uno).",
+          "5. [PROYECCIÓN TURNO +2]: Charizard-Mega-Y es tipo Fuego/Volador (Airborne). Farigiraf en campo con Armor Tail bloquea Sucker Punch de Kingambit y Grassy Glide de Rillaboom. Charizard ejecuta Heat Wave en Sol eliminando a ambos rivales.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Doble KO limpio con Sol activo y Farigiraf intacto (+1.75 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.80 VP): El Protect resguarda a tu atacante Volador de ataques prioritarios que el terreno psíquico no cubre."
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Armor Tail de Farigiraf protege a todo tu bando de ataques con prioridad, permitiendo a Charizard-Mega-Y disparar su ataque de propagación en Sol con absoluta impunidad.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Charizard-Mega-Y es tipo Fuego/Volador (Airborne). Farigiraf en campo con Armor Tail bloquea Sucker Punch de Kingambit y Grassy Glide de Rillaboom. Charizard ejecuta Heat Wave en Sol eliminando a ambos rivales. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Doble KO limpio con Sol activo y Farigiraf intacto (+1.75 VP)."
       },
       {
         "id": "OPT-B",
@@ -912,9 +1024,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Rillaboom ejecuta Grassy Glide sobre Charizard: al ser tipo Volador, ¡el ataque prioritario CONECTA!",
           "2. Charizard recibe 38% HP y queda al borde del desmayo.",
           "3. Kingambit ejecuta Sucker Punch sobre Charizard: ¡OHKO antes de poder lanzar Heat Wave!",
-          "4. Pierdes a tu Mega atacante por malinterpretar la mecánica de terreno."
+          "4. Pierdes a tu Mega atacante por malinterpretar la mecánica de terreno.",
+          "5. [PROYECCIÓN TURNO +2]: Charizard usó Protect creyendo que Armor Tail no cubría a voladores. Farigiraf recibió Knock Off de Kingambit (-65% HP).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes un turno de sol gratuito permitiendo al rival debilitar a Farigiraf en T+2."
         ],
-        "verdict": "❌ ERROR MECÁNICO (MEC-02 Airborne Ground Exemption): Confiar en que el terreno protege a Pokémon que vuelan resulta en la pérdida del Mega (-1.90 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): La desconfianza en las habilidades aliadas genera pasividad innecesaria (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Charizard usó Protect creyendo que Armor Tail no cubría a voladores. Farigiraf recibió Knock Off de Kingambit (-65% HP). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes un turno de sol gratuito permitiendo al rival debilitar a Farigiraf en T+2."
       },
       {
         "id": "OPT-C",
@@ -924,9 +1039,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Intento de switch a especie Ursaluna...",
           "2. [ILLEGAL_FORMAT_SPECIES]: Ursaluna no forma parte de la lista permitida de Regulation M-C.",
-          "3. Descalificación inmediata o turno anulado por infracción de formato."
+          "3. Descalificación inmediata o turno anulado por infracción de formato.",
+          "5. [PROYECCIÓN TURNO +2]: Cambiaste a Farigiraf perdiendo Armor Tail. Kingambit conectó Sucker Punch y Rillaboom Grassy Glide sobre Charizard-Mega-Y, debilitándolo de inmediato.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de tu Mega por retirar la protección contra prioridad."
         ],
-        "verdict": "❌ ERROR DE FORMATO (Format Divergence): Ursaluna está terminantemente prohibido en Regulation M-C (-2.50 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Retirar la pieza de soporte que previene la prioridad rival condena a tu atacante frágil (-1.80 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Cambiaste a Farigiraf perdiendo Armor Tail. Kingambit conectó Sucker Punch y Rillaboom Grassy Glide sobre Charizard-Mega-Y, debilitándolo de inmediato. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de tu Mega por retirar la protección contra prioridad."
       },
       {
         "id": "OPT-D",
@@ -936,9 +1054,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Charizard usa Roost y recupera 50% HP, pero pierde su tipo Volador durante el turno.",
           "2. Kingambit usa Kowtow Cleave con Black Glasses: daño masivo (-60% HP).",
-          "3. Quedas sin aplicar daño y bajo la misma presión ofensiva."
+          "3. Quedas sin aplicar daño y bajo la misma presión ofensiva.",
+          "5. [PROYECCIÓN TURNO +2]: Ataque individual a Kingambit permitió a Rillaboom conectar Knock Off en Farigiraf y despojar su Mental Herb.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Daño insuficiente para sellar la partida en un turno."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed / Autopilot): Curar cuando requieres aplicar daño de área de inmediato (-1.45 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Inefficient Spread Usage): Usar ataques individuales cuando el spread move en Sol asegura doble KO es subóptimo (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ataque individual a Kingambit permitió a Rillaboom conectar Knock Off en Farigiraf y despojar su Mental Herb. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Daño insuficiente para sellar la partida en un turno."
       }
     ]
   },
@@ -991,9 +1112,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar usa Fake Out sobre Pelipper y lo hace retroceder.",
           "2. Raichu-Mega-X desata Thunderbolt con STAB super efectivo sobre Basculegion: ¡108% HP de daño garantizado!",
           "3. Basculegion cae debilitado (0% HP) antes de poder lanzar su devastador Wave Crash en lluvia.",
-          "4. Desarmas el núcleo de lluvia del rival con cero daño recibido."
+          "4. Desarmas el núcleo de lluvia del rival con cero daño recibido.",
+          "5. [PROYECCIÓN TURNO +2]: Raichu-Mega-X asegura el KO inmediato sobre Basculegion-M con Volt Tackle / Thunderbolt antes de que ejecute Wave Crash bajo lluvia. Incineroar usa Knock Off sobre Pelipper.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Eliminado el principal sweeper acuático, el resto del equipo rival no puede quebrar la estructura de Incineroar y Raichu (+1.70 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.95 VP): Aseguras la eliminación del sweeper más letal del rival sin exponer a tu equipo a una reacción letal."
+        "verdict": "✅ ÓPTIMO (+1.70 VP): Asegurar el KO directo sobre la mayor amenaza ofensiva en lugar de buscar codiciosos turnos de setup garantiza el wincon sin riesgo de ser noqueado.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Raichu-Mega-X asegura el KO inmediato sobre Basculegion-M con Volt Tackle / Thunderbolt antes de que ejecute Wave Crash bajo lluvia. Incineroar usa Knock Off sobre Pelipper. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Eliminado el principal sweeper acuático, el resto del equipo rival no puede quebrar la estructura de Incineroar y Raichu (+1.70 VP)."
       },
       {
         "id": "OPT-B",
@@ -1004,9 +1128,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Incineroar usa Fake Out en Pelipper.",
           "2. Raichu usa Nasty Plot: ¡su Ataque Especial sube 2 niveles!",
           "3. Basculegion bajo Swift Swim se mueve antes de que puedas capitalizar y desata Wave Crash en Lluvia: ¡OHKO letal a Raichu (0% HP)!",
-          "4. Pierdes a tu Mega sweeper con 0 KOs ejecutados por avaricia de estadísticas."
+          "4. Pierdes a tu Mega sweeper con 0 KOs ejecutados por avaricia de estadísticas.",
+          "5. [PROYECCIÓN TURNO +2]: Raichu usó Nasty Plot para quedar a +2 SpA. Basculegion-M bajo lluvia desató Wave Crash potenciado: ¡OHKO masivo sobre Raichu-Mega-X!",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Quedas con un boost inútil en un Pokémon debilitado y pierdes a tu Mega."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed Absoluto): Buscar stat boosts cuando tienes un KO directo sobre la mayor amenaza del rival pierde partidas (-2.10 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Greed / Setup Trap): Intentar setearse cuando el rival tiene rango de OHKO directo es una de las mayores fugas competitivas (-1.85 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Raichu usó Nasty Plot para quedar a +2 SpA. Basculegion-M bajo lluvia desató Wave Crash potenciado: ¡OHKO masivo sobre Raichu-Mega-X! • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Quedas con un boost inútil en un Pokémon debilitado y pierdes a tu Mega."
       },
       {
         "id": "OPT-C",
@@ -1016,9 +1143,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Raichu usa Protect. Basculegion no cambia: golpea al Protect con Wave Crash.",
           "2. Basculegion conserva toda su salud intacta para el siguiente turno.",
-          "3. En Turno 3 sigues expuesto a la lluvia sin haber eliminado la amenaza."
+          "3. En Turno 3 sigues expuesto a la lluvia sin haber eliminado la amenaza.",
+          "5. [PROYECCIÓN TURNO +2]: Raichu usó Protect pasivo mientras Incineroar recibía Wave Crash brutal de Basculegion.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes la iniciativa y permites que el rival desgaste a tu soporte."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Ceder tiempo al sweeper de lluvia es jugar a la defensiva cuando tienes la ventaja ofensiva (-1.30 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Proteger sin un plan de contraataque cuando tienes el KO en la mano regala ventaja (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Raichu usó Protect pasivo mientras Incineroar recibía Wave Crash brutal de Basculegion. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Cedes la iniciativa y permites que el rival desgaste a tu soporte."
       },
       {
         "id": "OPT-D",
@@ -1028,9 +1158,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Focus Blast tiene 70% de precisión y no recibe STAB eléctrico.",
           "2. Basculegion no cambia: Focus Blast falla o inflige daño neutro insuficiente.",
-          "3. Basculegion responde con Wave Crash y noquea a Raichu."
+          "3. Basculegion responde con Wave Crash y noquea a Raichu.",
+          "5. [PROYECCIÓN TURNO +2]: Foco en Pelipper permitió a Basculegion atacar libremente y eliminar a Raichu.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Mal targeteado deja vivo al atacante más letal de la lluvia rival."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Overprediction / Tilt): Depender de movimientos de baja precisión cuando tienes un STAB del 100% (-1.70 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-01 Wrong Threat Evaluation): Priorizar al setter sobre el atacante cuando este último amenaza OHKO pierde el juego (-1.65 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Foco en Pelipper permitió a Basculegion atacar libremente y eliminar a Raichu. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Mal targeteado deja vivo al atacante más letal de la lluvia rival."
       }
     ]
   },
@@ -1083,9 +1216,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Garchomp Stomping Tantrum conecta en Gengar-Mega y lo debilita por completo (0% HP)!",
           "2. Al caer Gengar-Mega, ¡la habilidad Shadow Tag se desactiva inmediatamente!",
           "3. Rotom-Wash Thunderbolt castiga a Incineroar.",
-          "4. Con Shadow Tag roto, en el siguiente turno cambias libremente a tus dos Pokémon reseteando el contador de Perish Song a salvo!"
+          "4. Con Shadow Tag roto, en el siguiente turno cambias libremente a tus dos Pokémon reseteando el contador de Perish Song a salvo!",
+          "5. [PROYECCIÓN TURNO +2]: Gengar-Mega activó Perish Song y atrapa con Shadow Tag. Identificas el conteo (3T restantes) y concentras daño inmediato para noquear a Gengar antes del turno 3, o ejecutas U-turn / Volt Switch para forzar el escape.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Gengar debilitado desactiva Shadow Tag; tus piezas rotan y el rival sucumbe a su propio Perish Song (+1.75 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.90 VP): Eliminar al trapper de Shadow Tag cancela la trampa y restaura la movilidad de tus piezas en el tablero."
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Mantener la calma ante Perish Trap, castigar al trampero con daño masivo y usar movimientos de pivotaje para escapar del Shadow Tag revierte la trampa a tu favor.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Gengar-Mega activó Perish Song y atrapa con Shadow Tag. Identificas el conteo (3T restantes) y concentras daño inmediato para noquear a Gengar antes del turno 3, o ejecutas U-turn / Volt Switch para forzar el escape. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Gengar debilitado desactiva Shadow Tag; tus piezas rotan y el rival sucumbe a su propio Perish Song (+1.75 VP)."
       },
       {
         "id": "OPT-B",
@@ -1096,9 +1232,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Garchomp usa Protect. Rotom-Wash usa Protect.",
           "2. El rival no ataca: simplemente usa Fake Out o pasa el turno.",
           "3. Al final del Turno 3, el contador de Perish Song llega a 0!",
-          "4. ¡Garchomp y Rotom-Wash caen debilitados simultáneamente! Desventaja irreversible."
+          "4. ¡Garchomp y Rotom-Wash caen debilitados simultáneamente! Desventaja irreversible.",
+          "5. [PROYECCIÓN TURNO +2]: Tilt y desesperación: atacaste a ciegas sin plan de escape. El rival usó Protect y Disable.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Conteo de Perish llega a 0 y ambos aliados caen simultáneamente."
         ],
-        "verdict": "❌ ERROR CRÍTICO (Tilt / POS-03): El pánico pasivo ante Perish Song garantiza una derrota por 2 KOs directos (-2.20 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Tilt / Autopilot): Jugar con pánico ante Perish Song sin calcular turnos de salida regala la victoria al trampero (-1.80 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Tilt y desesperación: atacaste a ciegas sin plan de escape. El rival usó Protect y Disable. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Conteo de Perish llega a 0 y ambos aliados caen simultáneamente."
       },
       {
         "id": "OPT-C",
@@ -1108,9 +1247,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Garchomp usa Swords Dance (+2 Atk).",
           "2. Gengar usa Sludge Bomb sobre Rotom-Wash.",
-          "3. El contador de Perish Song expira y Garchomp cae debilitado sin haber usado sus estadísticas aumentadas."
+          "3. El contador de Perish Song expira y Garchomp cae debilitado sin haber usado sus estadísticas aumentadas.",
+          "5. [PROYECCIÓN TURNO +2]: Intentaste cambios directos que fallaron por la presencia de Shadow Tag.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Turno completamente perdido intentando una acción ilegal bajo sombra trampa."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed ciego): Subir stats con contador de muerte activo es regalar los turnos restantes (-1.85 VP)."
+        "verdict": "❌ FUGA TÁCTICA (MEC-01 Shadow Tag Ignorance): Intentar hard switch normal bajo Shadow Tag sin Ghost-type es un error básico de mecánicas (-1.85 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Intentaste cambios directos que fallaron por la presencia de Shadow Tag. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Turno completamente perdido intentando una acción ilegal bajo sombra trampa."
       },
       {
         "id": "OPT-D",
@@ -1120,9 +1262,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Intentas cambiar de Pokémon... ¡La habilidad Shadow Tag bloquea el cambio!",
           "2. El juego rechaza la acción y pierdes el turno sin golpear al rival.",
-          "3. Gengar usa Shadow Ball libremente y asegura el control del partido."
+          "3. Gengar usa Shadow Ball libremente y asegura el control del partido.",
+          "5. [PROYECCIÓN TURNO +2]: Protect doble pasivo que solo beneficia al contador de Perish Song del rival.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: El rival agradece el turno libre y prepara su propio cambio final."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Autopilot / Desconocimiento de Habilidad): Ignorar que Shadow Tag bloquea todo switch convencional (-1.75 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Proteger contra Perish Trap sin amenaza ofensiva acelera tu propia eliminación (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Protect doble pasivo que solo beneficia al contador de Perish Song del rival. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: El rival agradece el turno libre y prepara su propio cambio final."
       }
     ]
   },
@@ -1175,9 +1320,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Grassy Glide (+1 prioridad en Grassy Terrain) conecta en Basculegion antes de que ataque (-74% HP)!",
           "2. Basculegion Wave Crash debilita a Rillaboom (-100% HP) pero recibe recoil masivo y queda a 8% HP.",
           "3. Pelipper ataca a Farigiraf sin noquearlo (-38% HP).",
-          "4. Farigiraf castea Trick Room exitosamente: ahora controlas la velocidad para revertir el partido."
+          "4. Farigiraf castea Trick Room exitosamente: ahora controlas la velocidad para revertir el partido.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom usa Grassy Glide para presionar a Basculegion-M y Farigiraf usa Trick Room o Hyper Voice, manteniendo a Incineroar seguro en banca para entrar cuando la lluvia expire.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Neutralizas el ímpetu de lluvia y guardas a Incineroar con vida para el endgame (+1.65 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.75 VP): El intercambio de daño fuerza el Trick Room y deja al atacante de lluvia en rango de KO para el siguiente turno."
+        "verdict": "✅ ÓPTIMO (+1.65 VP): No regalar a Incineroar en seco ante atacantes de agua bajo lluvia preserva tu mejor recurso defensivo para cuando el clima esté bajo control.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom usa Grassy Glide para presionar a Basculegion-M y Farigiraf usa Trick Room o Hyper Voice, manteniendo a Incineroar seguro en banca para entrar cuando la lluvia expire. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Neutralizas el ímpetu de lluvia y guardas a Incineroar con vida para el endgame (+1.65 VP)."
       },
       {
         "id": "OPT-B",
@@ -1188,9 +1336,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Retiras a Farigiraf → Entra Incineroar en seco.",
           "2. Basculegion bajo Swift Swim se mueve primero y usa Wave Crash en el slot de Incineroar: ¡OHKO masivo de 160% de daño en lluvia!",
           "3. Incineroar cae debilitado sin haber podido actuar ni aplicar Fake Out.",
-          "4. Pierdes un recurso vital gratis por un cambio seco ante lluvia."
+          "4. Pierdes un recurso vital gratis por un cambio seco ante lluvia.",
+          "5. [PROYECCIÓN TURNO +2]: Cambiaste a Incineroar en seco directamente a un Wave Crash bajo Lluvia: OHKO instantáneo (0% HP).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Te quedas sin respuesta defensiva para el resto del combate."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un Pokémon débil al agua directamente ante lluvia activa regala un KO (-1.80 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a Incineroar directamente ante un atacante de agua potenciado por lluvia es un error fatal de posicionamiento (-1.85 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Cambiaste a Incineroar en seco directamente a un Wave Crash bajo Lluvia: OHKO instantáneo (0% HP). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Te quedas sin respuesta defensiva para el resto del combate."
       },
       {
         "id": "OPT-C",
@@ -1201,9 +1352,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Rillaboom usa Protect.",
           "2. Basculegion usa Wave Crash sobre Farigiraf: ¡OHKO masivo en lluvia (0% HP)!",
           "3. Farigiraf cae antes de poder meter Trick Room ni atacar.",
-          "4. Rillaboom queda solo y aislado frente a la lluvia."
+          "4. Rillaboom queda solo y aislado frente a la lluvia.",
+          "5. [PROYECCIÓN TURNO +2]: Farigiraf usó Protect pasivo y Rillaboom atacó a Pelipper sin debilitarlo. Basculegion atacó con Wave Crash a Farigiraf.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Daño desbalanceado y pérdida de control del campo."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 & Autopilot): Proteger al slot con prioridad y dejar expuesto al setter de Trick Room cuesta el control del juego (-1.35 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-03 Inefficient Focus): No concentrar el daño en Basculegion permite al rival mantener su mayor potencia de fuego (-1.45 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Farigiraf usó Protect pasivo y Rillaboom atacó a Pelipper sin debilitarlo. Basculegion atacó con Wave Crash a Farigiraf. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Daño desbalanceado y pérdida de control del campo."
       },
       {
         "id": "OPT-D",
@@ -1214,9 +1368,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Basculegion bajo Swift Swim ataca primero con Wave Crash y elimina a Rillaboom (0% HP) antes del U-turn.",
           "2. Pelipper usa Hurricane sobre Farigiraf (-45% HP).",
           "3. Farigiraf Hyper Voice no hace suficiente daño.",
-          "4. Cedes la ventaja sin meter Trick Room."
+          "4. Cedes la ventaja sin meter Trick Room.",
+          "5. [PROYECCIÓN TURNO +2]: Rillaboom atacó con Wood Hammer y recibió daño masivo de retroceso además del ataque rival.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Desgaste autodestructivo deja la mesa servida para el sweep rival."
         ],
-        "verdict": "❌ FUGA TÁCTICA (SPD-01 & Autopilot): Olvidar que Basculegion duplica su velocidad en lluvia y ataca antes que cualquier movimiento sin prioridad (-1.45 VP)."
+        "verdict": "❌ FUGA TÁCTICA (Autopilot / Greed): Autolesionarse con retroceso ante doble atacante rápido colapsa tu longevidad (-1.40 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Rillaboom atacó con Wood Hammer y recibió daño masivo de retroceso además del ataque rival. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Desgaste autodestructivo deja la mesa servida para el sweep rival."
       }
     ]
   },
@@ -1269,9 +1426,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Charizard usa Protect! Bloquea el Fake Out de Sneasler sin retroceder.",
           "2. Dragonite usa Extreme Speed en Primarina (-52% HP).",
           "3. Primarina resiste y responde con Moonblast super efectivo: rompe Multiscale y deja a Dragonite a 24% HP.",
-          "4. Conservas el Sol y a tu Mega ileso para castigar con Heat Wave en Turno 2."
+          "4. Conservas el Sol y a tu Mega ileso para castigar con Heat Wave en Turno 2.",
+          "5. [PROYECCIÓN TURNO +2]: Primarina usa Protect para absorber el Fake Out de Sneasler mientras Charizard-Mega-Y activa Drought y elimina a Sneasler con Heat Wave en Sol, rompiendo el Focus Sash y forzando a Dragonite a retroceder.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Clima controlado y ventaja posicional clara ante un Dragonite aislado (+1.65 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.40 VP): El Protect en el slot principal anula la ventaja de Fake Out y permite responder con daño super efectivo."
+        "verdict": "✅ ÓPTIMO (+1.65 VP): La compresión de leads defensiva absorbe la agresión inicial sin conceder KOs tempranos, permitiendo al sol tomar el control del match.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Primarina usa Protect para absorber el Fake Out de Sneasler mientras Charizard-Mega-Y activa Drought y elimina a Sneasler con Heat Wave en Sol, rompiendo el Focus Sash y forzando a Dragonite a retroceder. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Clima controlado y ventaja posicional clara ante un Dragonite aislado (+1.65 VP)."
       },
       {
         "id": "OPT-B",
@@ -1282,9 +1442,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Sneasler usa Fake Out sobre Charizard-Mega-Y: ¡retrocede y pierde el turno!",
           "2. Dragonite usa Extreme Speed (+2 prioridad) sobre Charizard: ¡conecta antes que Primarina y elimina a Charizard (0% HP)!",
           "3. Primarina lanza Hyper Voice pero el daño en sol está reducido y no logra KOs.",
-          "4. Pierdes a tu Mega en Turno 1 con cero KOs logrados."
+          "4. Pierdes a tu Mega en Turno 1 con cero KOs logrados.",
+          "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Dragonite ignorando a Sneasler. Sneasler usó Close Combat sobre Primarina y Dragonite usó Extreme Speed.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Primarina cae debilitada en turno 1 y Charizard queda expuesto a Rock Slide."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-02 Lead Compression Failure): No cubrir la debilidad de Fake Out + Extreme Speed desmantela tus dos atacantes (-1.85 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-02 Lead Compression Failure): No respetar la presión de Fake Out y la velocidad de Sneasler resulta en colapso inmediato del lead (-1.75 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Ambos aliados atacaron a Dragonite ignorando a Sneasler. Sneasler usó Close Combat sobre Primarina y Dragonite usó Extreme Speed. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Primarina cae debilitada en turno 1 y Charizard queda expuesto a Rock Slide."
       },
       {
         "id": "OPT-C",
@@ -1295,9 +1458,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Entra Archaludon en seco.",
           "2. Sneasler usa Close Combat con STAB super efectivo sobre Archaludon entrante (-65% HP)!",
           "3. Dragonite usa Stomping Tantrum en el mismo slot: Archaludon cae debilitado al entrar.",
-          "4. Regalas tu mejor muro de acero por cambiar sin soporte."
+          "4. Regalas tu mejor muro de acero por cambiar sin soporte.",
+          "5. [PROYECCIÓN TURNO +2]: Charizard usó Protect y Primarina fue blanco de doble foco rival (-80% HP).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Primarina queda inutilizada para el resto del combate."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un Pokémon débil a Lucha directamente hacia Sneasler resulta en KO inmediato (-1.30 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-01 Asymmetric Protection): Proteger el slot equivocado regala daño libre al compañero (-1.45 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Charizard usó Protect y Primarina fue blanco de doble foco rival (-80% HP). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Primarina queda inutilizada para el resto del combate."
       },
       {
         "id": "OPT-D",
@@ -1308,9 +1474,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Sneasler usa Fake Out en Charizard haciéndolo flinchear.",
           "2. Dragonite usa Extreme Speed en Charizard dejándolo a 15% HP.",
           "3. Solar Beam no es efectivo contra Dragón/Volador y Charizard queda casi muerto sin atacar.",
-          "4. Mala asignación de objetivo y falta de protección."
+          "4. Mala asignación de objetivo y falta de protección.",
+          "5. [PROYECCIÓN TURNO +2]: Cambio seco de Charizard a banca entregó un turno libre a Sneasler para meter Swords Dance.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Sneasler a +2 Atk con Unburden listo barre a tu equipo."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-01 & Autopilot): Atacar con movimiento no STAB resistido mientras te flinchean pierde el turno (-1.60 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-01 Dry Hard Switch): Ceder la iniciativa a un sweeper con Swords Dance en turno 1 sentencia la partida (-1.70 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Cambio seco de Charizard a banca entregó un turno libre a Sneasler para meter Swords Dance. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Sneasler a +2 Atk con Unburden listo barre a tu equipo."
       }
     ]
   },
@@ -1363,9 +1532,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Rillaboom Wood Hammer conecta en Pelipper y lo noquea de inmediato (0% HP), cortando el soporte de lluvia!",
           "2. Garchomp desata Stomping Tantrum con STAB Terrestre super efectivo sobre Archaludon: ¡82% de daño a pesar de Stamina!",
           "3. Archaludon cae debilitado antes de poder disparar Electro Shot.",
-          "4. Doble KO fulminante que asegura el partido en un solo turno."
+          "4. Doble KO fulminante que asegura el partido en un solo turno.",
+          "5. [PROYECCIÓN TURNO +2]: Garchomp usa Stomping Tantrum directo a Archaludon (daño físico de Tierra super efectivo sin multihits para no regalar cargas de Stamina) y Rillaboom conecta Wood Hammer en Pelipper.",
+          "6. [PROYECCIÓN TURNO +3 / WINCON]: Archaludon cae antes de setearse y el clima de lluvia se apaga con la caída de Pelipper (+1.75 VP)."
         ],
-        "verdict": "✅ ÓPTIMO (+1.70 VP): Presión ofensiva coordinada que elimina al setter y al tank simultáneamente sin ceder recuperación."
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Castigar a Archaludon con daño concentrado de un solo golpe evita disparar múltiples cargas de Stamina y elimina la amenaza antes de que Leftovers recupere su salud.",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Garchomp usa Stomping Tantrum directo a Archaludon (daño físico de Tierra super efectivo sin multihits para no regalar cargas de Stamina) y Rillaboom conecta Wood Hammer en Pelipper. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Archaludon cae antes de setearse y el clima de lluvia se apaga con la caída de Pelipper (+1.75 VP)."
       },
       {
         "id": "OPT-B",
@@ -1376,9 +1548,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Garchomp usa Protect. Rillaboom usa Protect.",
           "2. Archaludon aprovecha el turno libre para usar Iron Defense (+2 Def adicional) y se cura con Leftovers (+6% HP).",
           "3. Pelipper usa Tailwind gratis bajo la lluvia duplicando su velocidad.",
-          "4. En Turno 4, Archaludon tiene +3 Def y el rival ataca primero con Body Press potenciado."
+          "4. En Turno 4, Archaludon tiene +3 Def y el rival ataca primero con Body Press potenciado.",
+          "5. [PROYECCIÓN TURNO +2]: Usaste ataques multihit débiles o divididos. Archaludon acumuló +3 en Defensa física por Stamina y curó con Leftovers.",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon con +3 Def desata Body Press de 200+ daño y barre a Garchomp de un solo golpe."
         ],
-        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Usar Protect cuando tienes ventaja ofensiva regala setup y Tailwind al oponente (-1.60 VP)."
+        "verdict": "❌ FUGA TÁCTICA (MEC-01 Stamina Feed): Disparar la habilidad Stamina del rival sin asegurar el KO convierte a Archaludon en una muralla indestructible (-1.80 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Usaste ataques multihit débiles o divididos. Archaludon acumuló +3 en Defensa física por Stamina y curó con Leftovers. • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon con +3 Def desata Body Press de 200+ daño y barre a Garchomp de un solo golpe."
       },
       {
         "id": "OPT-C",
@@ -1389,9 +1564,12 @@ CRUCIBLE_SCENARIOS = [
           "1. Grassy Glide conecta pero es resistido por Acero/Dragón: ¡activa Stamina (+2 Def) sin hacer daño!",
           "2. Archaludon usa Body Press en Garchomp (-55% HP).",
           "3. Pelipper usa Hurricane en Rillaboom (-60% HP).",
-          "4. Tu intento de setup le regaló más defensa física al rival."
+          "4. Tu intento de setup le regaló más defensa física al rival.",
+          "5. [PROYECCIÓN TURNO +2]: Garchomp y Rillaboom usaron Protect pasivo. Archaludon usó Electro Shot libremente en lluvia (+1 SpA).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon gana +1 en SpA y recupera HP con Leftovers gratis."
         ],
-        "verdict": "❌ FUGA TÁCTICA (Greed & MEC-01): Activar Stamina con ataques resistidos debilita tu propio matchup físico (-1.40 VP)."
+        "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Permitir a Archaludon ganar turnos gratis bajo lluvia acelera su bola de nieve ofensiva (-1.50 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Garchomp y Rillaboom usaron Protect pasivo. Archaludon usó Electro Shot libremente en lluvia (+1 SpA). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Archaludon gana +1 en SpA y recupera HP con Leftovers gratis."
       },
       {
         "id": "OPT-D",
@@ -1401,9 +1579,12 @@ CRUCIBLE_SCENARIOS = [
         "log": [
           "1. Dragon Claw no logra OHKO en Pelipper.",
           "2. Archaludon usa Electro Shot en Garchomp (no afecta por tipo Tierra) pero Pelipper responde con Weather Ball Agua en Garchomp (-70% HP).",
-          "3. Dejas vivo a ambos oponentes con daño fragmentado."
+          "3. Dejas vivo a ambos oponentes con daño fragmentado.",
+          "5. [PROYECCIÓN TURNO +2]: Foco exclusivo en Pelipper ignorando a Archaludon permitió a este último ejecutar Draco Meteor sobre Garchomp (OHKO).",
+          "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu atacante de tierra y quedas sin forma de romper a Archaludon."
         ],
-        "verdict": "❌ FUGA TÁCTICA (TGT-03 Fragmented Damage): No rematar con los movimientos de mayor efectividad prolonga el peligro (-1.25 VP)."
+        "verdict": "❌ FUGA TÁCTICA (TGT-01 Wrong Threat Focus): Ignorar la amenaza que tiene rango de OHKO directo sobre tu atacante clave pierde el juego (-1.65 VP).",
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Foco exclusivo en Pelipper ignorando a Archaludon permitió a este último ejecutar Draco Meteor sobre Garchomp (OHKO). • 6. [PROYECCIÓN TURNO +3 / DERROTA]: Pierdes a tu atacante de tierra y quedas sin forma de romper a Archaludon."
       }
     ]
   },
@@ -3905,3 +4086,6 @@ CRUCIBLE_SCENARIOS = [
     ]
   }
 ]
+
+# Backward compatibility alias
+CRUCIBLE_SCENARIOS = FLASHCARD_SCENARIOS

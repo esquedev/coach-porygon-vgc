@@ -1,19 +1,19 @@
 {
   "loocv_summary": {
     "method": "LeaveOneOut",
-    "samples": 40,
-    "accuracy": 0.825,
-    "precision": 0.8421,
-    "recall": 0.8,
-    "f1_score": 0.8205,
-    "roc_auc": 0.9125,
+    "samples": 41,
+    "accuracy": 0.7805,
+    "precision": 0.8,
+    "recall": 0.7619,
+    "f1_score": 0.7805,
+    "roc_auc": 0.85,
     "confusion_matrix": [
       [
-        17,
-        3
+        16,
+        4
       ],
       [
-        4,
+        5,
         16
       ]
     ],
@@ -21,6 +21,23 @@
       1,
       1,
       1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
       1,
       0,
       1,
@@ -30,151 +47,131 @@
       1,
       0,
       0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      0,
-      0,
-      1,
-      1,
-      1,
-      1,
-      1,
-      0,
-      0,
       1,
       0,
       1,
       0,
       0,
       0,
-      0,
-      0,
       1,
       0,
       1,
+      0,
       0,
       0
     ],
     "probabilities": [
-      0.879,
-      0.9068,
-      0.8693,
-      0.5498,
-      0.4955,
-      0.93,
-      0.8426,
-      0.8727,
-      0.9239,
-      0.966,
-      0.0259,
-      0.3801,
-      0.0237,
-      0.8686,
-      0.0142,
-      0.0042,
-      0.0219,
-      0.0906,
-      0.2801,
-      0.2092,
-      0.7063,
-      0.7767,
-      0.5555,
-      0.8906,
-      0.7832,
-      0.4582,
-      0.4811,
-      0.5293,
-      0.4297,
-      0.7444,
-      0.2371,
-      0.4374,
-      0.0687,
-      0.0321,
-      0.4983,
-      0.8211,
-      0.2958,
-      0.5713,
-      0.0613,
-      0.0613
+      0.9972,
+      0.9987,
+      0.9998,
+      0.3076,
+      0.9478,
+      0.9987,
+      0.9996,
+      0.9995,
+      0.9987,
+      0.9987,
+      0.0016,
+      0.0092,
+      0.001,
+      0.9993,
+      0.0009,
+      0.0036,
+      0.0012,
+      0.0007,
+      0.0019,
+      0.0007,
+      0.9996,
+      0.3604,
+      0.8825,
+      0.9989,
+      0.9977,
+      0.9932,
+      0.9773,
+      0.0333,
+      0.0013,
+      0.9875,
+      0.0026,
+      0.998,
+      0.0008,
+      0.0008,
+      0.0323,
+      0.9999,
+      0.0133,
+      0.8545,
+      0.0011,
+      0.0011,
+      0.0162
     ]
   },
   "feature_importances": [
     {
       "feature": "procedural_penalty",
-      "importance": 0.2562,
+      "importance": 0.5736,
       "description": "Combined structural penalty for template markers (creepy eyes, generic torso, berry, mega stone)"
     },
     {
       "feature": "primary_color_dist",
-      "importance": 0.1522,
+      "importance": 0.2168,
       "description": "Euclidean color distance between SVG dominant color and Showdown official sprite"
     },
     {
-      "feature": "file_size_bytes",
-      "importance": 0.1218,
-      "description": "Total SVG XML code file size in bytes"
+      "feature": "vector_complexity",
+      "importance": 0.0908,
+      "description": "Sum of geometric polygons and custom bezier curves (drawing-style agnostic)"
     },
     {
       "feature": "distinct_colors",
-      "importance": 0.1055,
+      "importance": 0.0614,
       "description": "Number of unique hex color codes used across all vector elements"
     },
     {
       "feature": "total_elements",
-      "importance": 0.0895,
-      "description": "Sum of paths, polygons, circles, and ellipses"
+      "importance": 0.0569,
+      "description": "Sum of paths, polygons, circles, rectangles, and ellipses"
     },
     {
-      "feature": "num_paths",
-      "importance": 0.0888,
-      "description": "Number of custom bezier curve <path> elements"
+      "feature": "is_item",
+      "importance": 0.0002,
+      "description": "Category indicator (1 for items, 0 for Pok\u00e9mon sprites)"
     },
     {
       "feature": "unmatched_primary",
-      "importance": 0.0627,
+      "importance": 0.0001,
       "description": "Binary flag indicating if Showdown primary color has no close match (>85 distance)"
     },
     {
-      "feature": "has_generic_torso",
-      "importance": 0.0435,
-      "description": "Exact binary detection of procedural template mannequin torso bezier curve"
-    },
-    {
       "feature": "has_creepy_eye",
-      "importance": 0.0285,
+      "importance": 0.0001,
       "description": "Exact binary detection of procedural template blank triangle eyes"
     },
     {
       "feature": "has_text_fallback",
-      "importance": 0.0158,
+      "importance": 0.0,
       "description": "Binary detection of fallback 3-letter abbreviation text elements (MIR, WHI)"
     },
     {
-      "feature": "is_item",
-      "importance": 0.0135,
-      "description": "Category indicator (1 for items, 0 for Pok\u00e9mon sprites)"
+      "feature": "has_generic_torso",
+      "importance": 0.0,
+      "description": "Exact binary detection of procedural template mannequin torso bezier curve"
     },
     {
       "feature": "has_generic_berry",
-      "importance": 0.0119,
+      "importance": 0.0,
       "description": "Exact binary detection of cloned procedural berry silhouette"
-    },
-    {
-      "feature": "is_primitive_blob",
-      "importance": 0.0101,
-      "description": "Detection of ultra-simplistic sprites consisting exclusively of circles/ellipses without paths"
     },
     {
       "feature": "has_generic_mega",
       "importance": 0.0,
       "description": "Detection of generic radial gradient and default DNA glyph for mega stones"
+    },
+    {
+      "feature": "is_primitive_blob",
+      "importance": 0.0,
+      "description": "Detection of ultra-simplistic sprites consisting exclusively of circles/ellipses without paths"
     }
   ],
-  "sample_count": 40,
-  "good_samples": 20,
+  "sample_count": 41,
+  "good_samples": 21,
   "bad_samples": 20
 }

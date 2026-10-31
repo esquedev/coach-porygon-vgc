@@ -1,0 +1,5 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <polygon points="60,8 22,52 98,52" fill="#f472b6" stroke="#831843" stroke-width="2"/>
+  <ellipse cx="60" cy="74" rx="22" ry="26" fill="#93c5fd" stroke="#ec4899" stroke-width="2"/>
+  <circle cx="52" cy="62" r="3" fill="#831843"/><circle cx="68" cy="62" r="3" fill="#831843"/>
+</svg>

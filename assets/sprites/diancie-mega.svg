@@ -1,0 +1,12 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="60" cy="60" r="50" fill="#f472b6" fill-opacity="0.14"/>
+  <!-- Sparkling Chandelier Diamond Gown -->
+  <polygon points="44,56 76,56 94,108 26,108" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2"/>
+  <polygon points="60,56 70,82 60,108 50,82" fill="#e0f2fe"/>
+  <!-- Royal Pink Gemstone Crown / Tiara -->
+  <circle cx="60" cy="22" r="8" fill="#ec4899" stroke="#9d174d" stroke-width="1.5"/>
+  <polygon points="42,28 60,12 78,28" fill="#f472b6"/>
+  <!-- Delicate Grey Sprite Head with Pink Eyes -->
+  <circle cx="60" cy="38" r="14" fill="#cbd5e1" stroke="#64748b" stroke-width="1.5"/>
+  <circle cx="53" cy="38" r="3" fill="#ec4899"/><circle cx="67" cy="38" r="3" fill="#ec4899"/>
+</svg>

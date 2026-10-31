@@ -318,5 +318,13 @@
     "class_name": "REJECTED",
     "relative_path": "data/ml_asset_audit/training_set/items_bad/wacan-berry.svg",
     "showdown_ref": "data/ml_asset_audit/showdown_refs/wacan-berry.png"
+  },
+  {
+    "filename": "rotom-wash.svg",
+    "category": "sprite",
+    "label": 1,
+    "class_name": "APPROVED",
+    "relative_path": "data/ml_asset_audit/training_set/sprites_good/rotom-wash.svg",
+    "showdown_ref": "data/ml_asset_audit/showdown_refs/rotom-wash.png"
   }
 ]

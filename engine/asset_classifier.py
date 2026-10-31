@@ -7,9 +7,9 @@ into APPROVED (high quality, authentic vector art) and REJECTED (creepy/procedur
 
 Features:
 1. Procedural Template Fingerprints (uncanny eyes, generic torso, generic berry, generic mega stone, text fallback).
-2. Vector Complexity Metrics (path counts, polygon counts, primitive ratios, color diversity, file size).
+2. Vector Complexity Metrics (paths, polygons, vector complexity, primitive ratios, color diversity).
 3. Pokémon Showdown Ground-Truth Comparison (dominant palette divergence, primary color distance).
-4. Leave-One-Out & Stratified K-Fold Cross-Validation evaluation.
+4. Unbiased gradient boosted ensemble with Leave-One-Out Cross-Validation.
 5. Model persistence via Joblib.
 """
 
@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import LeaveOneOut
@@ -55,7 +55,7 @@ def rgb_dist(c1: Tuple[int, int, int], c2: Tuple[int, int, int]) -> float:
 
 def extract_showdown_palette(png_path: Path) -> List[Tuple[int, int, int]]:
     """Extract up to 8 dominant non-transparent colors from official Showdown sprite."""
-    if not png_path.exists():
+    if not png_path or not png_path.exists():
         return []
     try:
         im = Image.open(png_path).convert("RGBA")
@@ -88,10 +88,9 @@ class SVGFeatureExtractor:
         "procedural_penalty",
         "unmatched_primary",
         "primary_color_dist",
+        "vector_complexity",
         "total_elements",
-        "num_paths",
         "distinct_colors",
-        "file_size_bytes",
         "is_item"
     ]
 
@@ -107,18 +106,19 @@ class SVGFeatureExtractor:
         has_generic_mega = 1.0 if ('radialGradient id="mg-' in txt or 'Iconic Mega Evolution DNA Symbol' in txt) else 0.0
         has_text_fallback = 1.0 if '<text ' in txt else 0.0
 
-        # 2. Geometric complexity
+        # 2. Geometric complexity (unbiased towards drawing styles: polygons and bezier curves treated equally)
         num_paths = float(len(re.findall(r'<path\b', txt)))
         num_polygons = float(len(re.findall(r'<polygon\b', txt)))
         num_circles = float(len(re.findall(r'<circle\b', txt)))
         num_ellipses = float(len(re.findall(r'<ellipse\b', txt)))
-        total_elements = num_paths + num_polygons + num_circles + num_ellipses
+        num_rects = float(len(re.findall(r'<rect\b', txt)))
+        total_elements = num_paths + num_polygons + num_circles + num_ellipses + num_rects
+        vector_complexity = num_paths + num_polygons
 
-        is_primitive_blob = 1.0 if (category == "sprite" and total_elements <= 7.0 and num_paths == 0.0 and num_polygons == 0.0) else 0.0
+        is_primitive_blob = 1.0 if (category == "sprite" and total_elements <= 7.0 and vector_complexity == 0.0) else 0.0
 
         hex_colors = set(re.findall(r'#[0-9a-fA-F]{6}', txt))
         distinct_colors = float(len(hex_colors))
-        file_size_bytes = float(len(txt.encode("utf-8")))
 
         # 3. Showdown Ground Truth comparison
         showdown_colors = extract_showdown_palette(showdown_png_path) if showdown_png_path else []
@@ -154,21 +154,20 @@ class SVGFeatureExtractor:
             "procedural_penalty": procedural_penalty,
             "unmatched_primary": unmatched_primary,
             "primary_color_dist": primary_color_dist,
+            "vector_complexity": vector_complexity,
             "total_elements": total_elements,
-            "num_paths": num_paths,
             "distinct_colors": distinct_colors,
-            "file_size_bytes": file_size_bytes,
             "is_item": 1.0 if category == "item" else 0.0
         }
 
 
 class AssetQualityClassifier:
-    """Scikit-Learn ensemble model predicting whether an SVG asset is Approved or Rejected."""
+    """Scikit-Learn model predicting whether an SVG asset is Approved or Rejected."""
 
-    def __init__(self, n_estimators: int = 100, max_depth: int = 4, random_state: int = 42):
+    def __init__(self, n_estimators: int = 100, max_depth: int = 3, random_state: int = 42):
         self.pipeline = Pipeline([
             ("scaler", StandardScaler()),
-            ("rf", RandomForestClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state))
+            ("gb", GradientBoostingClassifier(n_estimators=n_estimators, max_depth=max_depth, random_state=random_state))
         ])
         self.feature_names = SVGFeatureExtractor.FEATURE_NAMES
         self.is_fitted = False
@@ -187,13 +186,19 @@ class AssetQualityClassifier:
         """Predict probability of class [P(Rejected), P(Approved)]."""
         return self.pipeline.predict_proba(X)
 
+    def get_acceptance_score(self, svg_path: Path, showdown_png_path: Optional[Path] = None, category: str = "sprite") -> float:
+        """Returns the model's approval probability (0.0 to 1.0) for a specific SVG file."""
+        feats = SVGFeatureExtractor.extract(svg_path, showdown_png_path, category=category)
+        vec = np.array([[feats[c] for c in self.feature_names]])
+        return float(self.predict_proba(vec)[0][1])
+
     def evaluate_loocv(self, X: np.ndarray, y: np.ndarray) -> Dict[str, Any]:
         """Perform rigorous Leave-One-Out Cross-Validation (LOOCV)."""
         loo = LeaveOneOut()
         preds = []
         probs = []
         for train_idx, test_idx in loo.split(X, y):
-            clf = RandomForestClassifier(n_estimators=100, max_depth=4, random_state=42)
+            clf = GradientBoostingClassifier(n_estimators=100, max_depth=3, random_state=42)
             scaler = StandardScaler()
             X_tr = scaler.fit_transform(X[train_idx])
             X_te = scaler.transform(X[test_idx])
@@ -203,9 +208,9 @@ class AssetQualityClassifier:
 
         y_true = list(y)
         acc = float(accuracy_score(y_true, preds))
-        prec = float(precision_score(y_true, preds))
-        rec = float(recall_score(y_true, preds))
-        f1 = float(f1_score(y_true, preds))
+        prec = float(precision_score(y_true, preds, zero_division=0))
+        rec = float(recall_score(y_true, preds, zero_division=0))
+        f1 = float(f1_score(y_true, preds, zero_division=0))
         auc = float(roc_auc_score(y_true, probs))
         cm = confusion_matrix(y_true, preds).tolist()
 
@@ -226,15 +231,14 @@ class AssetQualityClassifier:
         """Return sorted feature importances with descriptions."""
         if not self.is_fitted:
             raise RuntimeError("Model must be fitted before computing feature importances.")
-        rf = self.pipeline.named_steps["rf"]
-        importances = rf.feature_importances_
+        gb = self.pipeline.named_steps["gb"]
+        importances = gb.feature_importances_
         descriptions = {
             "procedural_penalty": "Combined structural penalty for template markers (creepy eyes, generic torso, berry, mega stone)",
             "primary_color_dist": "Euclidean color distance between SVG dominant color and Showdown official sprite",
             "distinct_colors": "Number of unique hex color codes used across all vector elements",
-            "file_size_bytes": "Total SVG XML code file size in bytes",
-            "total_elements": "Sum of paths, polygons, circles, and ellipses",
-            "num_paths": "Number of custom bezier curve <path> elements",
+            "vector_complexity": "Sum of geometric polygons and custom bezier curves (drawing-style agnostic)",
+            "total_elements": "Sum of paths, polygons, circles, rectangles, and ellipses",
             "unmatched_primary": "Binary flag indicating if Showdown primary color has no close match (>85 distance)",
             "has_creepy_eye": "Exact binary detection of procedural template blank triangle eyes",
             "has_generic_torso": "Exact binary detection of procedural template mannequin torso bezier curve",
@@ -255,18 +259,26 @@ class AssetQualityClassifier:
         ]
 
     def save(self, filepath: Path) -> None:
-        """Serialize trained pipeline to disk via Joblib."""
+        """Serialize trained pipeline to disk via Joblib using standard Scikit-Learn objects."""
         filepath.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self, filepath)
+        joblib.dump({"pipeline": self.pipeline, "feature_names": self.feature_names}, filepath)
 
     @classmethod
     def load(cls, filepath: Path) -> "AssetQualityClassifier":
         """Load serialized pipeline from disk."""
-        return joblib.load(filepath)
+        data = joblib.load(filepath)
+        obj = cls()
+        if isinstance(data, dict) and "pipeline" in data:
+            obj.pipeline = data["pipeline"]
+            obj.feature_names = data.get("feature_names", SVGFeatureExtractor.FEATURE_NAMES)
+        else:
+            obj.pipeline = getattr(data, "pipeline", data)
+        obj.is_fitted = True
+        return obj
 
 
 def build_and_evaluate_pipeline() -> Tuple[AssetQualityClassifier, Dict[str, Any]]:
-    """Runs Phase 1 feature extraction and Phase 2 training/evaluation on the 40 labeled samples."""
+    """Runs Phase 1 feature extraction and Phase 2 training/evaluation on labeled samples."""
     manifest_path = AUDIT_DATA_DIR / "training_set_manifest.json"
     if not manifest_path.exists():
         raise FileNotFoundError(f"Training manifest not found: {manifest_path}")
@@ -301,12 +313,12 @@ def build_and_evaluate_pipeline() -> Tuple[AssetQualityClassifier, Dict[str, Any
     json_out.write_text(json.dumps(dataset_rows, indent=2), encoding="utf-8")
     print(f"[OK] Exported feature dataset: {csv_out} ({len(dataset_rows)} samples)")
 
-    # Phase 2, Step 1 & 2: Train and evaluate Scikit-Learn ensemble model
+    # Phase 2, Step 1 & 2: Train and evaluate Scikit-Learn model
     feature_cols = SVGFeatureExtractor.FEATURE_NAMES
     X = np.array([[r[c] for c in feature_cols] for r in dataset_rows])
     y = np.array([r["label"] for r in dataset_rows])
 
-    model = AssetQualityClassifier(n_estimators=100, max_depth=4, random_state=42)
+    model = AssetQualityClassifier(n_estimators=100, max_depth=3, random_state=42)
     loocv_results = model.evaluate_loocv(X, y)
     print(f"[OK] LOOCV Evaluation: Accuracy={loocv_results['accuracy']*100:.2f}%, ROC-AUC={loocv_results['roc_auc']*100:.2f}%")
 

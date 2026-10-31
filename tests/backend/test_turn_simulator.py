@@ -21,6 +21,7 @@ sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 
 from engine.turn_simulator import (
+    evaluate_move_synergy,
     calculate_level_50_stats,
     get_type_effectiveness,
     is_airborne,
@@ -316,6 +317,46 @@ class TestTurnSimulator(unittest.TestCase):
         # Turn log must contain Turn 1 and move usage
         self.assertIn("Turn 1", log_text)
         self.assertIn("Earthquake", log_text)
+
+
+    def test_evaluate_move_synergy_no_guard_zap_cannon(self):
+        """Verify No Guard eliminates Zap Cannon inaccuracy and guarantees status."""
+        res = evaluate_move_synergy("Raichu-Mega-Y", "No Guard", "Focus Sash", "Zap Cannon")
+        self.assertTrue(res["synergy_detected"])
+        self.assertEqual(res["accuracy"], 100)
+        self.assertEqual(res["tactical_rating"], "Elite")
+        self.assertIn("No Guard", res["synergy_type"])
+
+    def test_evaluate_move_synergy_sheer_force_life_orb(self):
+        """Verify Sheer Force cancels Life Orb recoil while retaining both 1.3x boosts."""
+        res = evaluate_move_synergy("Nidoking", "Sheer Force", "Life Orb", "Sludge Bomb")
+        self.assertTrue(res["synergy_detected"])
+        self.assertEqual(res["damage_multiplier"], 1.69)
+        self.assertEqual(res["tactical_rating"], "Elite")
+
+    def test_evaluate_move_synergy_expanding_force_psychic_surge(self):
+        """Verify Expanding Force turns into 120 BP spread under Psychic Terrain."""
+        res = evaluate_move_synergy("Indeedee-F", "Psychic Surge", "Psychic Seed", "Expanding Force", field={"terrain": "psychic"})
+        self.assertTrue(res["synergy_detected"])
+        self.assertEqual(res["effective_bp"], 120)
+        self.assertEqual(res["target"], "allAdjacentFoes")
+
+    def test_accuracy_check_and_no_guard_in_simulator(self):
+        """Verify check_move_accuracy in simulator respects No Guard 100% guarantee."""
+        state = {
+            "turn": 1,
+            "field": {"weather": None, "terrain": None, "trick_room_turns": 0},
+            "p1": {"tailwind_turns": 0},
+            "p2": {"tailwind_turns": 0},
+            "slots": {
+                "p1a": {"species": "Raichu-Mega-Y", "ability": "No Guard", "hp": 135, "max_hp": 135, "current_hp_pct": 100.0, "stats": {"spe": 160}},
+                "p2a": {"species": "Garchomp", "ability": "Rough Skin", "hp": 183, "max_hp": 183, "current_hp_pct": 100.0, "stats": {"spe": 169}}
+            }
+        }
+        sim = ClientReplaySimulator(state, {}, pov_player="p1")
+        hit, reason = sim.check_move_accuracy(sim.state["slots"]["p1a"], sim.state["slots"]["p2a"], {"name": "Zap Cannon", "accuracy": 50})
+        self.assertTrue(hit)
+        self.assertEqual(reason, "No Guard")
 
 
 if __name__ == "__main__":

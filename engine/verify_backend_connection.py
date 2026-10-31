@@ -72,19 +72,19 @@ def test_frontend_bindings():
     has_item_sprites = "getItemSpritePath(" in html
     has_species_sprites = "getSpritePath(" in html
     has_ots_item_icons = 'getItemSpritePath(m.item)' in html
-    has_crucible_item_icons = 'getItemSpritePath(slot.item)' in html
+    has_flashcard_item_icons = 'getItemSpritePath(slot.item)' in html
     has_speed_item_icons = 'getItemSpritePath(monA.item)' in html
     has_munch_item_icons = 'getItemSpritePath(u.item)' in html
 
     print(f"  ✓ Helper getItemSpritePath presente: {has_item_sprites}")
     print(f"  ✓ Helper getSpritePath presente: {has_species_sprites}")
     print(f"  ✓ Íconos SVG de Objetos en Modo 4 (OTS Flowchart): {has_ots_item_icons}")
-    print(f"  ✓ Íconos SVG de Objetos en Modo 3 (Crucible Slots): {has_crucible_item_icons}")
+    print(f"  ✓ Íconos SVG de Objetos en Modo 3 (Flash Card Slots): {has_flashcard_item_icons}")
     print(f"  ✓ Íconos SVG de Objetos en Modo 3 (Speed Duels): {has_speed_item_icons}")
     print(f"  ✓ Íconos SVG de Objetos en Modo 6 (MunchStats Table): {has_munch_item_icons}")
 
     assert has_item_sprites and has_species_sprites, "Faltan helpers de SVG"
-    assert has_ots_item_icons and has_crucible_item_icons and has_speed_item_icons, "Faltan conexiones de SVGs en los paneles"
+    assert has_ots_item_icons and has_flashcard_item_icons and has_speed_item_icons, "Faltan conexiones de SVGs en los paneles"
 
     # 2. Mode 5 Psychology & Player Strengths
     has_health_ui = 'id="m5-health-score"' in html and 'id="m5-health-bar"' in html and 'id="m5-health-badge"' in html
@@ -99,9 +99,9 @@ def test_frontend_bindings():
 
     assert has_health_ui and has_tilt_ui and has_strengths_ui and has_psych_calc, "Faltan componentes de Psicología y Fortalezas"
 
-    # 3. Backend API Connection Calls in JS
-    has_sync_call = "fetch('/api/telemetry')" in html
-    has_ingest_call = "fetch('/api/telemetry/ingest'" in html
+    # 3. Backend API Connection Calls in JS (supports native fetch & resilient dual-origin fetchBackendApi)
+    has_sync_call = "fetch('/api/telemetry')" in html or "fetchBackendApi('/api/telemetry')" in html
+    has_ingest_call = "fetch('/api/telemetry/ingest'" in html or "fetchBackendApi('/api/telemetry/ingest'" in html
 
     print(f"  ✓ Llamada asíncrona a GET /api/telemetry en syncWithBackend: {has_sync_call}")
     print(f"  ✓ Llamada asíncrona a POST /api/telemetry/ingest: {has_ingest_call}")

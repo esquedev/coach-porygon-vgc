@@ -257,6 +257,155 @@ def is_airborne(slot: dict, field: Optional[dict] = None) -> bool:
     return False
 
 
+def evaluate_move_synergy(
+    species: str,
+    ability: str,
+    item: str,
+    move_name: str,
+    field: Optional[dict] = None
+) -> Dict[str, Any]:
+    """
+    Evaluates competitive tactical synergy between a Pokémon's species, ability,
+    held item, field state (weather/terrain), and selected move.
+    Eliminates analytical blindness (e.g. Zap Cannon accuracy on No Guard Raichu-Mega-Y,
+    Expanding Force under Psychic Surge, Life Orb Sheer Force recoil nullification).
+    """
+    field = field or {}
+    weather = field.get("weather")
+    terrain = field.get("terrain")
+    move_data = MOVE_DB.get(move_name, {})
+    pwr = int(move_data.get("power", 0))
+    cat = move_data.get("cat", "Status")
+    m_type = move_data.get("type", "Normal")
+    flags = move_data.get("flags", [])
+    raw_acc = move_data.get("accuracy", 100)
+    has_secondary = bool(move_data.get("secondary") or move_data.get("secondaries"))
+
+    # 1. No Guard Synergy (100% Accuracy guarantee)
+    if ability == "No Guard":
+        if move_name in ("Zap Cannon", "Dynamic Punch", "Inferno"):
+            return {
+                "synergy_detected": True,
+                "synergy_type": "No Guard Guaranteed Status & Power",
+                "tactical_rating": "Elite",
+                "accuracy": 100,
+                "description": (
+                    f"{species}'s No Guard ability completely bypasses {move_name}'s "
+                    f"nominal {raw_acc}% accuracy, guaranteeing a 100% hit rate with "
+                    f"a 100% guaranteed secondary status effect."
+                )
+            }
+        if isinstance(raw_acc, (int, float)) and raw_acc < 100:
+            return {
+                "synergy_detected": True,
+                "synergy_type": "No Guard High-BP Inaccuracy Elimination",
+                "tactical_rating": "Optimal",
+                "accuracy": 100,
+                "description": (
+                    f"{species}'s No Guard ensures {move_name} (normally {raw_acc}% acc) "
+                    "never misses in combat."
+                )
+            }
+
+    # 2. Sheer Force + Life Orb Synergy
+    if ability == "Sheer Force" and has_secondary:
+        if item == "Life Orb":
+            return {
+                "synergy_detected": True,
+                "synergy_type": "Sheer Force + Life Orb Recoil Nullification",
+                "tactical_rating": "Elite",
+                "damage_multiplier": 1.69,
+                "description": (
+                    f"{species}'s Sheer Force boosts {move_name} by 30% and cancels Life Orb "
+                    "recoil while retaining the 30% Life Orb damage bonus (1.69x effective boost)."
+                )
+            }
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Sheer Force Power Boost",
+            "tactical_rating": "Optimal",
+            "damage_multiplier": 1.3,
+            "description": f"Sheer Force boosts {move_name} by 30% in exchange for secondary effect removal."
+        }
+
+    # 3. Technician Synergy
+    if ability == "Technician" and 0 < pwr <= 60:
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Technician BP Amplification",
+            "tactical_rating": "Optimal",
+            "effective_bp": int(pwr * 1.5),
+            "description": f"Technician boosts {move_name} from {pwr} BP to {int(pwr * 1.5)} BP."
+        }
+
+    # 4. Expanding Force + Psychic Surge / Terrain
+    if move_name == "Expanding Force" and (terrain == "psychic" or ability == "Psychic Surge"):
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Psychic Surge + Expanding Force Spread",
+            "tactical_rating": "Elite",
+            "effective_bp": 120,
+            "target": "allAdjacentFoes",
+            "description": (
+                "Psychic Terrain empowers Expanding Force to 120 BP and converts it into "
+                "an un-redirectable spread move targeting both opponents."
+            )
+        }
+
+    # 5. Weather Synergy: Electro Shot under Rain
+    if move_name == "Electro Shot" and (weather == "rain" or ability == "Drizzle"):
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Rain Instant Electro Shot",
+            "tactical_rating": "Elite",
+            "description": "Rain allows Electro Shot to fire without charging, immediately granting +1 Sp. Atk."
+        }
+
+    # 6. Weather Speed Doublers (Swift Swim, Chlorophyll, Sand Rush, Slush Rush)
+    speed_weather_map = {
+        "Swift Swim": "rain",
+        "Chlorophyll": "sun",
+        "Sand Rush": "sand",
+        "Slush Rush": "snow"
+    }
+    if ability in speed_weather_map and weather == speed_weather_map[ability]:
+        return {
+            "synergy_detected": True,
+            "synergy_type": f"{ability} Dynamic Speed Doubling",
+            "tactical_rating": "Elite",
+            "speed_multiplier": 2.0,
+            "description": f"{ability} doubles effective Speed under {weather}."
+        }
+
+    # 7. Surge Surfer under Electric Terrain
+    if ability == "Surge Surfer" and (terrain == "electric" or ability == "Electric Surge"):
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Electric Terrain Surge Surfer",
+            "tactical_rating": "Elite",
+            "speed_multiplier": 2.0,
+            "description": "Electric Terrain doubles effective Speed via Surge Surfer."
+        }
+
+    # 8. Unburden + Consumable Items
+    if ability == "Unburden" and item in ("Focus Sash", "Sitrus Berry", "White Herb", "Booster Energy"):
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Unburden Speed Trigger",
+            "tactical_rating": "Optimal",
+            "speed_multiplier": 2.0,
+            "description": f"Consuming {item} will activate Unburden, permanently doubling Speed until switch-out."
+        }
+
+    # Default neutral
+    return {
+        "synergy_detected": False,
+        "synergy_type": "Neutral",
+        "tactical_rating": "Viable",
+        "description": f"Standard execution of {move_name}."
+    }
+
+
 # ==============================================================================
 # 3. SHOWDOWN-ACCURATE DOUBLES TURN MICRO-SIMULATOR
 # ==============================================================================
@@ -999,6 +1148,67 @@ class ClientReplaySimulator:
         final_bp = max(1, apply_mod_4096(pwr, bp_mod))
         return final_bp, m_type
 
+    def check_move_accuracy(self, user: dict, tgt: dict, move_data: dict, roll_mode: str = "random") -> Tuple[bool, str]:
+        """
+        Exact accuracy check accounting for No Guard, weather bypasses, stat stages,
+        items (Wide Lens), and abilities (Compound Eyes, Hustle).
+        Returns (hits: bool, reason: str).
+        """
+        # 1. No Guard guarantees 100% accuracy for both user and against target
+        if user.get("ability") == "No Guard" or tgt.get("ability") == "No Guard":
+            return True, "No Guard"
+
+        # 2. Bypasses (-- / True / 0 or specific move flags)
+        raw_acc = move_data.get("accuracy", 100)
+        if raw_acc is True or raw_acc is None or raw_acc == "--" or raw_acc == 0:
+            return True, "Bypass / Always Hits"
+
+        move_name = move_data.get("name", "")
+        f = self.state.get("field", {})
+        weather = "sun" if user.get("ability") == "Mega Sol" else f.get("weather")
+
+        # 3. Weather bypasses
+        if weather == "rain" and move_name in ("Thunder", "Hurricane", "Bleakwind Storm", "Wildbolt Storm", "Sandsear Storm", "Springtide Storm"):
+            return True, "Rain Bypass"
+        if weather == "snow" and move_name == "Blizzard":
+            return True, "Snow Bypass"
+        if move_name == "Toxic" and "Poison" in user.get("types", []):
+            return True, "Poison Toxic Bypass"
+
+        # 4. Modifiers
+        try:
+            base_acc = float(raw_acc)
+        except (ValueError, TypeError):
+            return True, "Standard Hit"
+
+        acc_mult = 1.0
+        if user.get("ability") == "Compound Eyes":
+            acc_mult *= 1.3
+        if user.get("item") == "Wide Lens":
+            acc_mult *= 1.1
+        if user.get("ability") == "Hustle" and move_data.get("cat") == "Physical":
+            acc_mult *= 0.8
+
+        # Accuracy / Evasion stages
+        acc_stage = max(-6, min(6, int(user.get("boosts", {}).get("accuracy", 0))))
+        eva_stage = max(-6, min(6, int(tgt.get("boosts", {}).get("evasion", 0))))
+        net_stage = max(-6, min(6, acc_stage - eva_stage))
+        if net_stage > 0:
+            stage_mod = (3 + net_stage) / 3.0
+        elif net_stage < 0:
+            stage_mod = 3.0 / (3 - net_stage)
+        else:
+            stage_mod = 1.0
+
+        eff_acc = min(100.0, base_acc * acc_mult * stage_mod)
+
+        if roll_mode == "fixed":
+            # In deterministic mode, moves hit reliably unless base accuracy is explicitly 0
+            return True, "Fixed Deterministic"
+        else:
+            hit = (random.random() * 100.0) <= eff_acc
+            return hit, "Hit" if hit else "Miss"
+
     def calculate_damage_full(
         self, attacker: dict, defender: dict, move_data: dict, is_spread: bool, roll: float, hit_num: int = 1
     ) -> Tuple[int, float, float, bool]:
@@ -1611,6 +1821,11 @@ class ClientReplaySimulator:
                 if tgt.get("protected") and "protect" in flags:
                     action_lines.append(f"{tgt_name} protected itself!")
                     continue
+                if not tgt["slot_id"].startswith(slot_id[:2]):
+                    hit, reason = self.check_move_accuracy(user, tgt, move_data, roll_mode)
+                    if not hit:
+                        action_lines.append(f"{user_name}'s {move_name} missed {tgt_name}!")
+                        continue
                 if self.check_target_immunity_and_absorption(user, tgt, move_name, move_data, move_data.get("type", "Normal"), action_lines):
                     continue
                 if move_data.get("status"):
@@ -1659,6 +1874,12 @@ class ClientReplaySimulator:
         for tgt in targets:
             tgt_name = self.format_mon_name(tgt["slot_id"])
             if self.check_target_immunity_and_absorption(user, tgt, move_name, move_data, eff_m_type, action_lines):
+                continue
+
+            # Accuracy Check
+            hit, reason = self.check_move_accuracy(user, tgt, move_data, roll_mode)
+            if not hit:
+                action_lines.append(f"{user_name}'s {move_name} missed {tgt_name}!")
                 continue
 
             # Protection Check

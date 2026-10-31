@@ -1,0 +1,15 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Imp Body Hidden Behind -->
+  <circle cx="60" cy="40" r="18" fill="#4c1d95" stroke="#2e1065" stroke-width="2"/>
+  <polygon points="44,28 34,16 46,24" fill="#4c1d95"/><polygon points="76,28 86,16 74,24" fill="#4c1d95"/>
+  <!-- Cyan Diamond Eyes Peeking Over Shield -->
+  <polygon points="50,34 54,30 58,34 54,38" fill="#38bdf8"/><polygon points="62,34 66,30 70,34 66,38" fill="#38bdf8"/>
+  <!-- Enormous Giant Cut Ruby Gemstone Shield -->
+  <polygon points="34,48 86,48 98,82 60,112 22,82" fill="#dc2626" stroke="#991b1b" stroke-width="3"/>
+  <polygon points="34,48 60,68 86,48" fill="#ef4444"/>
+  <polygon points="34,48 22,82 60,68" fill="#b91c1c"/>
+  <polygon points="86,48 98,82 60,68" fill="#7f1d1d"/>
+  <polygon points="22,82 60,112 60,68" fill="#ef4444"/>
+  <polygon points="98,82 60,112 60,68" fill="#b91c1c"/>
+  <ellipse cx="44" cy="56" rx="6" ry="3" fill="#ffffff" fill-opacity="0.6"/>
+</svg>
