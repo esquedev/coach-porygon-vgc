@@ -117,7 +117,7 @@ def build_manifest_and_audit():
             if len(row) > 6 and row[6].strip():
                 megas_seen.add(row[6].strip())
 
-    for it in items_seen:
+    for it in sorted(items_seen):
         slug = slugify(it)
         asset_file = None
         for cand in [ITEMS_DIR / f"{slug}.png", ITEMS_DIR / f"{slug}.svg"]:
@@ -131,7 +131,7 @@ def build_manifest_and_audit():
         manifest["items"][it] = rel_path
         manifest["items"][slug] = rel_path
 
-    for ms in megas_seen:
+    for ms in sorted(megas_seen):
         slug = slugify(ms)
         asset_file = None
         for cand in [MEGASTONES_DIR / f"{slug}.png", MEGASTONES_DIR / f"{slug}.svg"]:

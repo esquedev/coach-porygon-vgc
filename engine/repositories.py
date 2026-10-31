@@ -69,19 +69,16 @@ class IMatchRepository(ABC):
     @abstractmethod
     def log_match(self, match_data: Dict[str, Any]) -> Dict[str, Any]:
         """Append personal match record with Excel timestamp and sanitized cells."""
-        """Persists a match record and returns the persisted record with assigned ID."""
         pass
 
     @abstractmethod
     def get_all_matches(self) -> List[Dict[str, Any]]:
         """Retrieve all recorded match rows from disk."""
-        """Retrieves all logged match records."""
         pass
 
     @abstractmethod
     def get_next_id(self) -> float:
         """Compute next sequential floating-point match identifier."""
-        """Returns the next sequential numeric Match ID."""
         pass
 
 
@@ -91,13 +88,11 @@ class IDiagnosticsRepository(ABC):
     @abstractmethod
     def log_diagnostic(self, diag_data: Dict[str, Any]) -> Dict[str, Any]:
         """Log tactical misplay code, cognitive driver, and recovery lesson."""
-        """Persists a tactical diagnostic error and cognitive trap."""
         pass
 
     @abstractmethod
     def get_all_diagnostics(self) -> List[Dict[str, Any]]:
         """Retrieve all recorded diagnostic misplay rows."""
-        """Retrieves all logged playstyle diagnostic records."""
         pass
 
 
@@ -107,19 +102,16 @@ class ITeamRepository(ABC):
     @abstractmethod
     def register_team(self, team_data: Dict[str, Any]) -> str:
         """Register a 6-mon team roster with Showdown export paste."""
-        """Persists a verified 66-SP team roster and returns the assigned Team ID (e.g., T24)."""
         pass
 
     @abstractmethod
     def get_all_teams(self) -> List[Dict[str, Any]]:
         """Retrieve all registered team rosters."""
-        """Retrieves all registered team rosters."""
         pass
 
     @abstractmethod
     def get_next_team_id(self) -> str:
         """Generate next sequential team code (e.g., T01, T02)."""
-        """Computes next sequential Team ID."""
         pass
 
 
@@ -129,13 +121,11 @@ class IDamageCalcRepository(ABC):
     @abstractmethod
     def log_calculation(self, calc_data: Dict[str, Any]) -> Dict[str, Any]:
         """Persist official VGC damage calculation benchmark."""
-        """Persists a verified damage calculation benchmark."""
         pass
 
     @abstractmethod
     def get_all_calculations(self) -> List[Dict[str, Any]]:
         """Retrieve all stored damage calculation benchmarks."""
-        """Retrieves all damage calculation benchmarks."""
         pass
 
 

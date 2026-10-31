@@ -11,6 +11,7 @@ Compiles:
 
 import base64
 import json
+import os
 import re
 import shutil
 import sys
@@ -30,7 +31,9 @@ OUT_MAIN = ASSETS_DIR / "command_center.html"
 OUT_ES = ASSETS_DIR / "command_center_es.html"
 OUT_EN = ASSETS_DIR / "command_center_en.html"
 
-ARTIFACT_DIR = Path(r"C:\Users\unkil\.gemini\antigravity\brain\abb6a85e-c2b6-438b-9be3-8a43c6c50364")
+
+_env_artifact = os.environ.get("ANTIGRAVITY_ARTIFACT_DIR")
+ARTIFACT_DIR = Path(_env_artifact).resolve() if _env_artifact else None
 ARTIFACT_PATH = ARTIFACT_DIR / "command_center.html"
 
 from engine.ui_generator import POKEMON_SVGS, UI_ICONS
@@ -332,7 +335,7 @@ def update_command_center_files():
     print(f"[OK] Written {OUT_EN} ({len(en_content):,} bytes)")
 
     # 9. Sync Artifact
-    if ARTIFACT_DIR.exists():
+    if ARTIFACT_DIR and ARTIFACT_DIR.exists() and ARTIFACT_PATH:
         shutil.copyfile(OUT_MAIN, ARTIFACT_PATH)
         print(f"[OK] Synced Artifact -> {ARTIFACT_PATH}")
 

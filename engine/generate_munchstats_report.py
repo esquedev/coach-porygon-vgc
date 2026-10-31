@@ -10,6 +10,7 @@ And synchronizes both to the Antigravity Brain artifact directory.
 
 import base64
 import json
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -22,12 +23,32 @@ REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 SPRITES_DIR = ASSETS_DIR / "sprites"
 ITEMS_DIR = ASSETS_DIR / "items"
 
-ARTIFACT_DIR = Path(r"C:\Users\unkil\.gemini\antigravity\brain\abb6a85e-c2b6-438b-9be3-8a43c6c50364")
+
+
+_env_artifact = os.environ.get("ANTIGRAVITY_ARTIFACT_DIR")
+ARTIFACT_DIR = Path(_env_artifact).resolve() if _env_artifact else None
 
 HTML_OUT = REPORTS_DIR / "munchstats_theorybuild_report.html"
 PDF_OUT = REPORTS_DIR / "munchstats_theorybuild_report.pdf"
 
-CHROME_PATH = "C:/Program Files/Google/Chrome/Application/chrome.exe"
+def _find_chrome():
+    """Dynamically locates Google Chrome or Chromium executable across platforms."""
+    candidates = ["chrome", "google-chrome", "chromium", "chromium-browser", "msedge"]
+    for c in candidates:
+        found = shutil.which(c)
+        if found:
+            return found
+    for p in [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+    ]:
+        if Path(p).exists():
+            return p
+    return None
+
+CHROME_PATH = _find_chrome()
 
 def get_base64_img(folder: Path, filename: str) -> str:
     """Read image and return data URI."""
@@ -833,7 +854,7 @@ def build_report():
 
     # 3. Compile PDF using Headless Chrome
     print("[3/4] Compiling static HTML into downloadable PDF via Headless Chrome...")
-    if Path(CHROME_PATH).exists():
+    if CHROME_PATH and Path(CHROME_PATH).exists():
         cmd = [
             CHROME_PATH,
             "--headless=new",
@@ -853,7 +874,7 @@ def build_report():
 
     # 4. Sync Artifact to Brain Directory
     print("[4/4] Synchronizing artifacts to Antigravity Brain directory...")
-    if ARTIFACT_DIR.exists():
+    if ARTIFACT_DIR and ARTIFACT_DIR.exists():
         artifact_html = ARTIFACT_DIR / "munchstats_theorybuild_report.html"
         artifact_pdf = ARTIFACT_DIR / "munchstats_theorybuild_report.pdf"
         shutil.copyfile(HTML_OUT, artifact_html)

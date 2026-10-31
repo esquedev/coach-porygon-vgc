@@ -66,6 +66,7 @@ data/Scouted_Raw_Matches.csv
 data/Scouted_Teams.csv
 data/Recent_Matches.csv
 data/trainer_profile.json
+data/*_Dump.csv
 data/compendium/Proto*.md
 
 # 7. Explicitly Tracked Agent Customizations, Public Data & Schema Examples

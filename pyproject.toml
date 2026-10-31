@@ -22,6 +22,12 @@ classifiers = [
 ]
 dependencies = []
 
+[project.urls]
+Homepage = "https://github.com/unkil/coach-porygon-vgc"
+Documentation = "https://github.com/unkil/coach-porygon-vgc#readme"
+Repository = "https://github.com/unkil/coach-porygon-vgc.git"
+Issues = "https://github.com/unkil/coach-porygon-vgc/issues"
+
 [project.scripts]
 coach-porygon = "engine.ui_server:main"
 
@@ -35,6 +41,12 @@ dev = [
     "build>=1.0.0",
     "twine>=4.0.0",
     "tomli>=1.1.0; python_version < '3.11'"
+]
+ml = [
+    "scikit-learn>=1.3.0",
+    "joblib>=1.3.0",
+    "numpy>=1.24.0",
+    "Pillow>=9.5.0"
 ]
 
 [tool.setuptools.packages.find]

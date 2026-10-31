@@ -4,7 +4,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CACHE_PATH = REPO_ROOT / "data" / "pokedex_cache.json"
@@ -13,6 +13,9 @@ POKEMON_CSV_PATH = REPO_ROOT / "data" / "MC_Available_Pokemon.csv"
 
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 from turn_simulator import BASE_STATS_DB, MOVE_DB
+
+_CACHE_DATA: Optional[dict] = None
+_LEGAL_ITEMS_CACHE: Optional[List[dict]] = None
 
 
 def to_id(text: str) -> str:
@@ -28,10 +31,38 @@ def sanitize_identifier(raw: Optional[str]) -> str:
 
 
 def load_cache() -> dict:
-    """Load pokedex cache JSON from disk with fallback structure."""
+    """Load pokedex cache JSON from disk with fallback structure (cached in-memory)."""
+    global _CACHE_DATA
+    if _CACHE_DATA is not None:
+        return _CACHE_DATA
     if CACHE_PATH.exists():
-        return json.loads(CACHE_PATH.read_text(encoding="utf-8"))
-    return {"species": {}, "moves": {}, "items": {}, "abilities": {}, "mechanics": {}}
+        _CACHE_DATA = json.loads(CACHE_PATH.read_text(encoding="utf-8"))
+    else:
+        _CACHE_DATA = {"species": {}, "moves": {}, "items": {}, "abilities": {}, "mechanics": {}}
+    return _CACHE_DATA
+
+
+def _get_legal_items_list() -> List[dict]:
+    """Load and memoize legal items table from Regulation_MC_Items.csv."""
+    global _LEGAL_ITEMS_CACHE
+    if _LEGAL_ITEMS_CACHE is not None:
+        return _LEGAL_ITEMS_CACHE
+    items = []
+    if ITEMS_CSV_PATH.exists():
+        with open(ITEMS_CSV_PATH, "r", encoding="utf-8-sig") as f:
+            reader = csv.reader(f)
+            try:
+                next(reader)
+            except StopIteration:
+                pass
+            for row in reader:
+                for idx, category in [(0, "Hold Item"), (3, "Berry"), (6, "Mega Stone")]:
+                    if len(row) > idx and row[idx].strip():
+                        name = row[idx].replace("’", "'").strip()
+                        effect = row[idx + 1].strip() if len(row) > idx + 1 else ""
+                        items.append({"name": name, "category": category, "effect": effect})
+    _LEGAL_ITEMS_CACHE = items
+    return _LEGAL_ITEMS_CACHE
 
 
 def _find_species_in_cache(clean_sp: str, cache: dict) -> Optional[dict]:
@@ -99,28 +130,18 @@ def lookup_item(item_name: str) -> dict:
             cached_item = v
             break
 
-    if ITEMS_CSV_PATH.exists():
-        with open(ITEMS_CSV_PATH, "r", encoding="utf-8-sig") as f:
-            reader = csv.reader(f)
-            try:
-                next(reader)
-            except StopIteration:
-                pass
-            for row in reader:
-                for idx, category in [(0, "Hold Item"), (3, "Berry"), (6, "Mega Stone")]:
-                    if len(row) > idx and row[idx].strip():
-                        name = row[idx].replace("’", "'").strip()
-                        if name.lower() == clean_item or to_id(name) == to_id(clean_item):
-                            effect = row[idx + 1].strip() if len(row) > idx + 1 else ""
-                            res = {
-                                "status": "VERIFIED_LEGAL_ITEM",
-                                "item": name,
-                                "category": category,
-                                "effect": effect,
-                            }
-                            if cached_item and cached_item.get("megaStone"):
-                                res["mega_evolves"] = cached_item["megaStone"]
-                            return res
+    for it in _get_legal_items_list():
+        name = it["name"]
+        if name.lower() == clean_item or to_id(name) == to_id(clean_item):
+            res = {
+                "status": "VERIFIED_LEGAL_ITEM",
+                "item": name,
+                "category": it["category"],
+                "effect": it["effect"],
+            }
+            if cached_item and cached_item.get("megaStone"):
+                res["mega_evolves"] = cached_item["megaStone"]
+            return res
 
     return {
         "status": "ILLEGAL_ITEM",
