@@ -6,12 +6,9 @@ Tests live telemetry data loader, crawl dumper, and HTML template integrity.
 Uses in-memory streams to test HTTP handler logic with zero network socket dependency.
 """
 
-import io
-import json
 from pathlib import Path
 import re
 import unittest
-from unittest.mock import MagicMock
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 

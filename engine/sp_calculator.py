@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from turn_simulator import BASE_STATS_DB, NATURE_MODS, calculate_level_50_stats
+from turn_simulator import NATURE_MODS, calculate_level_50_stats
 
 STAT_ORDER = ["hp", "atk", "def", "spa", "spd", "spe"]
 STAT_LABELS = {"hp": "HP", "atk": "Atk", "def": "Def", "spa": "SpA", "spd": "SpD", "spe": "Spe"}

@@ -4,7 +4,6 @@
 Coach Porygon VGC — Unit & Acceptance Tests for Telemetry Logging (engine/telemetry.py)
 """
 
-import json
 from pathlib import Path
 import subprocess
 import sys
@@ -13,9 +12,7 @@ import unittest
 
 from engine.repositories import CsvDiagnosticsRepository, CsvMatchRepository
 from engine.telemetry import (
-    log_damage_calcs_to_csv,
     log_personal_match_to_csv,
-    log_scouted_match_to_csv,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent

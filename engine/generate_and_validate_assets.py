@@ -15,14 +15,12 @@ Enforces strict P(Approved) >= 90.0% and anti-repetition diversity across the ca
 import csv
 import json
 import math
-import os
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import List, Tuple
 
 import joblib
-import numpy as np
 from PIL import Image
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -30,8 +28,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from engine.asset_classifier import (
     AssetQualityClassifier, SVGFeatureExtractor,
-    extract_showdown_palette, hex_to_rgb, rgb_dist,
-    SHOWDOWN_REFS_DIR, MODELS_DIR
+    extract_showdown_palette, MODELS_DIR
 )
 
 ASSETS_DIR = REPO_ROOT / "assets"

@@ -7,7 +7,6 @@ Double Validation: Front-End & Python Backend Integration Test
 
 import io
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -16,8 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 sys.path.insert(0, str(REPO_ROOT / "scouts"))
 
-from ui_server import CoachPorygonHTTPHandler, execute_prompt_crawl_and_dump
-from ui_generator import load_live_telemetry
+from ui_server import CoachPorygonHTTPHandler
 
 class MockSocket:
     """Mock socket providing in-memory request simulation without network I/O."""
@@ -54,7 +52,7 @@ def run_mock_http_request(method: str, path: str, body: dict = None):
     raw_input = "\r\n".join(req_lines).encode("utf-8") + body_bytes
     mock_sock = MockSocket(raw_input)
 
-    _handler = CoachPorygonHTTPHandler(mock_sock, ("127.0.0.1", 12345), MockServer())
+    CoachPorygonHTTPHandler(mock_sock, ("127.0.0.1", 12345), MockServer())
 
     # Read output from handler
     output_bytes = mock_sock.wfile.getvalue()

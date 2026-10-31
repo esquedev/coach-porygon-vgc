@@ -13,14 +13,14 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 TEAMS_CSV_PATH = REPO_ROOT / "data" / "Teams.csv"
 TRAINER_PROFILE_PATH = REPO_ROOT / "data" / "trainer_profile.json"
 
 sys.path.insert(0, str(REPO_ROOT / "engine"))
-from sp_calculator import validate_and_calculate_sp, STAT_ORDER, STAT_LABELS, ev_to_sp, MAX_SINGLE_STAT_SP
+from sp_calculator import STAT_ORDER, ev_to_sp, MAX_SINGLE_STAT_SP
 from validate_roster import validate_roster
 
 

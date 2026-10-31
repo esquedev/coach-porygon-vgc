@@ -24,7 +24,7 @@ import re
 import sys
 import time
 import urllib.request
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -181,7 +181,6 @@ def run_pipeline():
     print("=" * 70)
 
     all_tournament_meta = []
-    _cross_species_counter = Counter()
     cross_species_weighted_counts = Counter()
     cross_mega_counter = Counter()
     cross_archetype_counter = Counter()
@@ -234,7 +233,6 @@ def run_pipeline():
         if standings_data:
             for s in standings_data:
                 place = s.get("placement")
-                _day_reached = s.get("day_reached", "")
                 team_list = s.get("team", [])
                 arch = infer_archetype_from_team(team_list)
                 cross_archetype_counter[arch] += 1

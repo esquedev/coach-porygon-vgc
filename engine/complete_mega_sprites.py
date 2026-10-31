@@ -11,7 +11,6 @@ Charizard-Megay, Charizard-Y-Mega, etc.).
 import csv
 import re
 import shutil
-import sys
 from pathlib import Path
 import requests
 

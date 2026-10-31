@@ -21,7 +21,6 @@ from engine.validate_roster import (
     load_legal_items,
     load_pokemon_registry,
     get_pokemon_entry,
-    to_id,
 )
 from engine.scenarios_data import CRUCIBLE_SCENARIOS
 from engine.speed_duels_data import SPEED_DUELS

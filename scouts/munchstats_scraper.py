@@ -461,11 +461,6 @@ def scrape_munchstats_url_or_json(
             t_title = clean_title
 
     # Extract player sections or table rows containing Pokémon
-    # MunchStats table pattern: Player Name, Placement, 6-Mon icons/names
-    _player_pattern = re.compile(
-        r'<tr[^>]*>.*?<td[^>]*>(.*?)</td>.*?<td[^>]*>(.*?)</td>.*?</tr>',
-        re.DOTALL | re.IGNORECASE
-    )
 
     # Simple fallback: extract lines matching "Player - Placement: Mon1, Mon2, Mon3, Mon4, Mon5, Mon6"
     text_standings = re.findall(

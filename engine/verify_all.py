@@ -3,7 +3,6 @@ import json
 import re
 import sys
 from pathlib import Path
-from collections import Counter
 
 sys.stdout.reconfigure(encoding='utf-8')
 

@@ -26,10 +26,7 @@ sys.path.insert(0, str(REPO_ROOT / "scouts"))
 from ui_generator import load_live_telemetry, write_svg_assets
 from munchstats_scraper import (
     SCOUTED_CSV,
-    add_scouted_team,
-    load_tournament_meta,
     scrape_munchstats_url_or_json,
-    summarize_scouted_meta,
 )
 
 PORT = 8000

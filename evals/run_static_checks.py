@@ -12,7 +12,6 @@ Executes 100% dependency-free static checks across the workspace:
 5. Verifies canonical Trainer terminology and zero internal hex leakage.
 """
 
-import os
 import re
 import sys
 from pathlib import Path

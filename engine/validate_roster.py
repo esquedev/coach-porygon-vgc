@@ -15,7 +15,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ITEMS_CSV_PATH = REPO_ROOT / "data" / "Regulation_MC_Items.csv"
@@ -24,7 +24,7 @@ CACHE_PATH = REPO_ROOT / "data" / "pokedex_cache.json"
 
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 from sp_calculator import validate_and_calculate_sp, STAT_ORDER, ev_to_sp, MAX_SINGLE_STAT_SP
-from turn_simulator import MOVE_DB, BASE_STATS_DB
+from turn_simulator import MOVE_DB
 
 
 def to_id(text: str) -> str:

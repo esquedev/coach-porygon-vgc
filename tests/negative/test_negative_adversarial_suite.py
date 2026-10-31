@@ -17,24 +17,21 @@ are strictly and properly rejected with expected failures, exceptions, or error 
 """
 
 import ast
-import csv
 import hashlib
-import json
 from pathlib import Path
 import re
 import unittest
 import xml.etree.ElementTree as ET
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-from engine.sp_calculator import validate_and_calculate_sp, ev_to_sp
+from engine.sp_calculator import validate_and_calculate_sp
 from engine.validate_roster import (
     load_legal_items,
     load_pokemon_registry,
     get_pokemon_entry,
     parse_showdown_paste,
-    to_id,
 )
-from engine.repositories import CsvMatchRepository, CsvTeamRepository, InMemoryMatchRepository
+from engine.repositories import InMemoryMatchRepository
 
 
 class TestNegativeSvgCoverage(unittest.TestCase):

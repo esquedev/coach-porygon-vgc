@@ -1673,7 +1673,7 @@ if violations:
         print(v)
     sys.exit(1)
 
-print(f"SUCCESS: All 42 scenarios verified with ZERO spoiler tokens in option labels!")
+print("SUCCESS: All 42 scenarios verified with ZERO spoiler tokens in option labels!")
 
 # Write to engine/scenarios_data.py
 out_py = REPO_ROOT / "engine" / "scenarios_data.py"

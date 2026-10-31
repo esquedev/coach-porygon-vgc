@@ -7,7 +7,6 @@ Generates:
 """
 
 import base64
-import html
 import json
 import math
 import re
@@ -38,7 +37,7 @@ def sanitize_inner_svg(svg_str, width=80, height=80):
         vb = root.attrib.get('viewBox', '0 0 100 100')
         inner = "".join(ET.tostring(child, encoding='utf-8').decode('utf-8') for child in root)
         return f'<svg x="15" y="8" width="{width}" height="{height}" viewBox="{vb}">{inner}</svg>'
-    except Exception as e:
+    except Exception:
         return f'<g transform="translate(15, 8) scale({width/100:.2f})">{clean}</g>'
 
 
@@ -190,7 +189,7 @@ def generate_master_catalog():
     try:
         ET.fromstring(master_svg_content)
         print("[OK] master_svg_catalog.svg is well-formed XML!")
-    except Exception as e:
+    except Exception:
         print("[WARNING] XML validation issue on master catalog SVG:", e)
 
     # 5. GENERATE COMPANION HTML AUDIT VIEWER ON WHITE BACKGROUND

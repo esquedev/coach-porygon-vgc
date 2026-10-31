@@ -10,11 +10,8 @@ And synchronizes both to the Antigravity Brain artifact directory.
 
 import base64
 import json
-import os
-import re
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent

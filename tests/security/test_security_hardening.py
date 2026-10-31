@@ -19,7 +19,7 @@ import unittest
 
 from engine.ui_server import CoachPorygonHTTPHandler
 from engine.verify_svg_inventory import DANGEROUS_SVG_PATTERNS
-from scouts.munchstats_scraper import ALLOWED_SCRAPING_DOMAINS, validate_scraping_target
+from scouts.munchstats_scraper import validate_scraping_target
 from engine.telemetry import append_csv_row
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
