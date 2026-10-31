@@ -7,3 +7,4 @@ pyhocon>=0.3.59
 autopep8>=2.0.0
 build>=1.0.0
 twine>=4.0.0
+tomli>=1.1.0; python_version < "3.11"
