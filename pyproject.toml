@@ -26,15 +26,23 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/unkil/coach-porygon-vgc"
-Documentation = "https://github.com/unkil/coach-porygon-vgc#readme"
-Repository = "https://github.com/unkil/coach-porygon-vgc.git"
-Issues = "https://github.com/unkil/coach-porygon-vgc/issues"
+Homepage = "https://github.com/esquedev/coach-porygon-vgc"
+Documentation = "https://github.com/esquedev/coach-porygon-vgc#readme"
+Repository = "https://github.com/esquedev/coach-porygon-vgc.git"
+Issues = "https://github.com/esquedev/coach-porygon-vgc/issues"
 
 [project.scripts]
 coach-porygon = "engine.ui_server:main"
 
 [project.optional-dependencies]
+gpu = [
+    "torch>=2.0.0",
+    "scipy>=1.10.0",
+    "numpy>=1.24.0"
+]
+report = [
+    "Pillow>=9.5.0"
+]
 dev = [
     "pytest>=7.4.0",
     "pytest-cov>=4.1.0",

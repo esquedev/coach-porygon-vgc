@@ -13,6 +13,7 @@ from engine.tactics.showdown_parser import ShowdownParser
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_LOG_PATH = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
+BO3_SAMPLE_PATH = REPO_ROOT / "tests" / "data" / "sample_showdown_bo3_ots_log.txt"
 
 
 class TestShowdownParser(unittest.TestCase):
@@ -97,6 +98,120 @@ class TestShowdownParser(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.parser.parse("   ")
+
+    def test_parse_bo3_ots_log_metadata_and_sheets(self) -> None:
+        """Verify Best-of-3 metadata, URL, and full 6-mon Open Team Sheets extraction."""
+        if not BO3_SAMPLE_PATH.exists():
+            self.skipTest("Sample Bo3 OTS log fixture not found.")
+        bo3_log = BO3_SAMPLE_PATH.read_text(encoding="utf-8")
+        history = self.parser.parse(bo3_log)
+
+        self.assertTrue(history.is_bo3)
+        self.assertEqual(history.bo3_game_number, 1)
+        self.assertIn("game-bestof3-gen9championsvgc2026regmcbo3-2707626996", history.bo3_url)
+        self.assertTrue(history.is_ots)
+        self.assertEqual(history.p1_name, "aws_secret")
+        self.assertEqual(history.p2_name, "Franconcino")
+        self.assertEqual(history.winner, "Franconcino")
+
+        # Open Team Sheets verification
+        self.assertIsNotNone(history.p1_ots)
+        self.assertIsNotNone(history.p2_ots)
+        self.assertEqual(len(history.p1_ots.pokemon), 6)
+        self.assertEqual(len(history.p2_ots.pokemon), 6)
+
+        # Check aws_secret team members
+        zard = history.p1_ots.get_member("Charizard")
+        self.assertIsNotNone(zard)
+        self.assertEqual(zard.item, "Charizardite Y")
+        self.assertEqual(zard.ability, "Blaze")
+        self.assertEqual(zard.nature, "Timid")
+        self.assertEqual(zard.moves, ["Heat Wave", "Scorching Sands", "Solar Beam", "Protect"])
+
+        # Check Franconcino team members
+        glalie = history.p2_ots.get_member("Glalie")
+        self.assertIsNotNone(glalie)
+        self.assertEqual(glalie.item, "Glalitite")
+        self.assertEqual(glalie.ability, "Inner Focus")
+        self.assertEqual(glalie.nature, "Jolly")
+        self.assertEqual(glalie.moves, ["Body Slam", "Explosion", "Earthquake", "Protect"])
+
+        gardevoir = history.p2_ots.get_member("Gardevoir")
+        self.assertIsNotNone(gardevoir)
+        self.assertEqual(gardevoir.item, "Gardevoirite")
+        self.assertEqual(gardevoir.ability, "Telepathy")
+        self.assertEqual(gardevoir.nature, "Timid")
+
+    def test_bo3_turn_snapshots_and_bench_tracking(self) -> None:
+        """Verify dynamic living bench species tracking and slot state propagation across turns."""
+        if not BO3_SAMPLE_PATH.exists():
+            self.skipTest("Sample Bo3 OTS log fixture not found.")
+        bo3_log = BO3_SAMPLE_PATH.read_text(encoding="utf-8")
+        history = self.parser.parse(bo3_log)
+
+        # Turn 1
+        t1 = history.turns[0]
+        self.assertEqual(t1.turn_number, 1)
+        self.assertTrue(t1.is_ots)
+        self.assertEqual(t1.p1_bench_alive, 2)
+        self.assertEqual(t1.p1_bench_species, ["Garchomp", "Kingambit"])
+        self.assertEqual(t1.p2_bench_alive, 2)
+        self.assertEqual(t1.p2_bench_species, ["Rillaboom", "Espathra"])
+
+        # Turn 1 Slot States: check items and abilities pre-populated
+        grim = next((s for s in t1.p1_slots if s.species == "Grimmsnarl"), None)
+        self.assertIsNotNone(grim)
+        self.assertEqual(grim.item, "Light Clay")
+        self.assertEqual(grim.ability, "Prankster")
+
+        # Turn 2: after Turn 1 Explosion double KO, P1 brings in both bench Pokemon
+        t2 = history.turns[1]
+        self.assertEqual(t2.turn_number, 2)
+        self.assertEqual(t2.p1_bench_species, [])
+        self.assertEqual(t2.p1_bench_alive, 0)
+        self.assertEqual(t2.p2_bench_species, ["Espathra"])
+        self.assertEqual(t2.p2_bench_alive, 1)
+
+    def test_ots_simulator_state_and_action_pruning(self) -> None:
+        """Verify simulator state export and ActionPruner line generation with real OTS moves."""
+        if not BO3_SAMPLE_PATH.exists():
+            self.skipTest("Sample Bo3 OTS log fixture not found.")
+        from engine.gpu.tensor_encoder import TensorEncoder
+        from engine.tactics.action_pruner import ActionPruner
+
+        bo3_log = BO3_SAMPLE_PATH.read_text(encoding="utf-8")
+        history = self.parser.parse(bo3_log)
+        t1 = history.turns[0]
+
+        # Simulator state conversion
+        sim_state = self.parser.to_simulator_state(t1)
+        self.assertIn("p1a", sim_state["slots"])
+        p1a = sim_state["slots"]["p1a"]
+        self.assertIn("moves", p1a)
+        self.assertGreater(len(p1a["moves"]), 0)
+        self.assertNotEqual(p1a["item"], "")
+
+        # ActionPruner with OTS
+        pruner = ActionPruner()
+        p2_lines = pruner.prune_side_actions(t1, side="p2")
+        self.assertEqual(len(p2_lines), 5)
+        # Glalie spread move should be Explosion from OTS!
+        line_2 = p2_lines[2]
+        self.assertEqual(line_2.category, "Spread / Area Move")
+        self.assertEqual(line_2.slot_b_move, "Explosion")
+
+        # Strategic pivot line for P1 should switch to actual bench Pokemon Garchomp!
+        p1_lines = pruner.prune_side_actions(t1, side="p1")
+        line_4 = p1_lines[4]
+        self.assertEqual(line_4.category, "Strategic Pivot / Switch")
+        self.assertEqual(line_4.simulator_choices["p1a"]["switch_to"], "Garchomp")
+
+        # TensorEncoder with OTS: features 59 and 60 should be populated (> 0.0) from Turn 1
+        encoder = TensorEncoder()
+        t_tensor = encoder.encode(t1)
+        # Check active slot 0 item/ability features
+        self.assertGreater(float(t_tensor.s_mons[0, 0, 59]), 0.0)
+        self.assertGreater(float(t_tensor.s_mons[0, 0, 60]), 0.0)
 
 
 if __name__ == "__main__":

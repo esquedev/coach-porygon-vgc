@@ -99,6 +99,37 @@ class TestUiServerEndpoints(unittest.TestCase):
         resp_mal = self.client.get("/api/telemetry", headers={"Origin": "https://malicious-hacker.com"})
         self.assertIsNone(resp_mal.headers.get("Access-Control-Allow-Origin"))
 
+    def test_flask_gpu_status_and_tactical_endpoints(self):
+        """Validate /api/status, /api/audit, /api/gpu-matrix, /api/report/<id>, and /api/benchmark."""
+        resp_status = self.client.get("/api/status")
+        self.assertEqual(resp_status.status_code, 200)
+        status_json = resp_status.get_json()
+        self.assertEqual(status_json.get("status"), "ONLINE")
+        self.assertIn("cuda_available", status_json)
+
+        resp_audit = self.client.post("/api/audit", json={"persist": False})
+        self.assertEqual(resp_audit.status_code, 200)
+        audit_json = resp_audit.get_json()
+        self.assertIn("payoff_matrix", audit_json)
+        self.assertIn("uncertainty_profile", audit_json)
+        self.assertIn("all_turns_analysis", audit_json)
+
+        resp_mat = self.client.post("/api/gpu-matrix", json={"turn": 3})
+        self.assertEqual(resp_mat.status_code, 200)
+        mat_json = resp_mat.get_json()
+        self.assertEqual(mat_json.get("turn_number"), 3)
+        self.assertEqual(len(mat_json.get("payoff_matrix", [])), 5)
+
+        resp_rep = self.client.get("/api/report/AUD-DEMO")
+        self.assertEqual(resp_rep.status_code, 200)
+        self.assertIn("text/html", resp_rep.content_type)
+
+        resp_bench = self.client.post("/api/benchmark", json={"batch_size": 4})
+        self.assertEqual(resp_bench.status_code, 200)
+        bench_json = resp_bench.get_json()
+        self.assertEqual(bench_json.get("status"), "OK")
+        self.assertIn("gpu_batch_benchmark", bench_json)
+
 
 if __name__ == "__main__":
     unittest.main()

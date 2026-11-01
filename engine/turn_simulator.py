@@ -2200,6 +2200,94 @@ class ClientReplaySimulator:
         formatted_replay = "\n\n".join(["\n".join(block) for block in self.log_blocks])
         return self.state, formatted_replay
 
+    @staticmethod
+    def batch_evaluate(
+        states: List[dict],
+        actions: List[dict],
+        seed: int = 2026,
+        roll_mode: str = "fixed",
+        fixed_roll: float = 0.925,
+    ) -> List[Tuple[dict, str]]:
+        """
+        Deterministically evaluate a batch of (state_dict, choices_dict) pairs with a fixed RNG seed.
+
+        Args:
+            states: List of board state dictionaries.
+            actions: List of joint action choice dictionaries matching states.
+            seed: Fixed integer seed for deterministic tie-breaking.
+            roll_mode: 'fixed' (default) or 'random'.
+            fixed_roll: Damage roll multiplier when roll_mode is 'fixed'.
+
+        Returns:
+            List of (post_turn_state_dict, formatted_replay_log) tuples.
+
+        Raises:
+            ValueError: If states and actions lists have mismatched lengths.
+        """
+        if len(states) != len(actions):
+            raise ValueError(
+                f"Mismatched batch lengths: {len(states)} states vs {len(actions)} action dicts."
+            )
+        rng_state = random.getstate()
+        random.seed(seed)
+        results: List[Tuple[dict, str]] = []
+        try:
+            for st, act in zip(states, actions):
+                sim = ClientReplaySimulator(st, act, pov_player="p1")
+                results.append(sim.run_turn(roll_mode=roll_mode, fixed_roll=fixed_roll))
+        finally:
+            random.setstate(rng_state)
+        return results
+
+    def compare_with_gpu(
+        self,
+        gpu_payoff_matrix: Any,
+        reference_matrix: Optional[Any] = None,
+        atol: float = 0.05,
+    ) -> Dict[str, Any]:
+        """
+        Compare a GPU-computed payoff matrix against the Golden Standard classic simulator.
+
+        Args:
+            gpu_payoff_matrix: 2D array/tensor of shape (N, M) from PayoffBuilder.
+            reference_matrix: Optional classic reference matrix (if omitted, compares self-consistency).
+            atol: Maximum allowed absolute deviation per cell for strict parity.
+
+        Returns:
+            Dictionary containing parity_passed (bool), max_abs_diff (float),
+            mean_abs_diff (float), and shape.
+        """
+        if hasattr(gpu_payoff_matrix, "detach"):
+            gpu_arr = gpu_payoff_matrix.detach().cpu().numpy()
+        else:
+            gpu_arr = [list(r) for r in gpu_payoff_matrix]
+
+        if reference_matrix is not None:
+            if hasattr(reference_matrix, "detach"):
+                ref_arr = reference_matrix.detach().cpu().numpy()
+            else:
+                ref_arr = [list(r) for r in reference_matrix]
+        else:
+            ref_arr = gpu_arr
+
+        diffs: List[float] = []
+        for r_g, r_c in zip(gpu_arr, ref_arr):
+            for val_g, val_c in zip(r_g, r_c):
+                diffs.append(abs(float(val_g) - float(val_c)))
+
+        max_diff = max(diffs) if diffs else 0.0
+        mean_diff = (sum(diffs) / len(diffs)) if diffs else 0.0
+        rows = len(gpu_arr)
+        cols = len(gpu_arr[0]) if rows > 0 else 0
+
+        return {
+            "parity_passed": max_diff <= atol,
+            "max_abs_diff": round(max_diff, 6),
+            "mean_abs_diff": round(mean_diff, 6),
+            "atol": atol,
+            "shape": (rows, cols),
+        }
+
 
 def main():
     """CLI runner for deterministic turn simulation."""

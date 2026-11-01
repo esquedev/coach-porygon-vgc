@@ -12,8 +12,8 @@
   <img src="assets/icons/mega-sigil.svg" width="36" height="36" alt="Mega Sigil" />
 </p>
 
-[![CI / CD Pipeline](https://github.com/unkil/coach-porygon-vgc/actions/workflows/ci.yml/badge.svg)](https://github.com/unkil/coach-porygon-vgc/actions/workflows/ci.yml)
-[![CodeQL Analysis](https://github.com/unkil/coach-porygon-vgc/actions/workflows/codeql.yml/badge.svg)](https://github.com/unkil/coach-porygon-vgc/actions/workflows/codeql.yml)
+[![CI / CD Pipeline](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml/badge.svg)](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml)
+[![CodeQL Analysis](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/codeql.yml/badge.svg)](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/codeql.yml)
 [![Python 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Format](https://img.shields.io/badge/VGC-Regulation%20M--C%20(2027)-e11d48.svg)](data/MC_Available_Pokemon.csv)
 [![Vector Assets](https://img.shields.io/badge/PNGs-916%20Curated%20Assets%20(SHA--256)-06b6d4.svg)](assets/png_manifest.json)
@@ -54,7 +54,7 @@ Coach Porygon VGC has **zero third-party dependencies** at runtime. You only nee
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/unkil/coach-porygon-vgc.git
+git clone https://github.com/esquedev/coach-porygon-vgc.git
 cd coach-porygon-vgc
 
 # 2. Launch the Secure Local Command Center Backend

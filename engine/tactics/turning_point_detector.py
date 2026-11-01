@@ -126,6 +126,38 @@ class TurningPointDetector:
             turn_scores=turn_scores,
         )
 
+    def classify_turn_shift(
+        self,
+        snapshot: TurnSnapshot,
+        delta_v_star: float = 0.0,
+        equity_loss: float = 0.0,
+        luck_delta: float = 0.0,
+    ) -> str:
+        """
+        Classify the primary driver of a turn's board value derivative (dV*/dt):
+        - 'Blunder' (Error Tactico): High player equity_loss (> 0.12) vs Nash optimal.
+        - 'Luck_Swing' (Impacto de la Suerte): High absolute luck_delta (|luck_delta| > 0.18).
+        - 'Brilliant_Read' (Prediccion Brillante): Positive dV* with zero equity loss and active Protect/Redirection/Mega pivot.
+        - 'Standard_Trade' (Intercambio Estandar): Normal positional progression.
+
+        Args:
+            snapshot: TurnSnapshot of the turn being classified.
+            delta_v_star: Derivative of game value V*(t) - V*(t-1).
+            equity_loss: Player 1 deviation from Nash equilibrium (v* - V_real).
+            luck_delta: Realized outcome minus expected payoff.
+
+        Returns:
+            Canonical classification string.
+        """
+        if equity_loss > 0.12:
+            return "Blunder"
+        if abs(luck_delta) > 0.18:
+            return "Luck_Swing"
+        if delta_v_star >= 0.10 or snapshot.protect_absorptions > 0 or snapshot.redirection_active or snapshot.mega_evolutions:
+            if equity_loss <= 0.05:
+                return "Brilliant_Read"
+        return "Standard_Trade"
+
 
 def detect_turning_point(history: BattleHistory) -> TurningPointResult:
     """

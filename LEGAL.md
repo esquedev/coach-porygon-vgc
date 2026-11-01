@@ -1,7 +1,7 @@
 # ⚖️ Legal Notice, Intellectual Property & Fair Use Policy
 
 **Project:** Coach Porygon VGC  
-**Maintainer / Lead Architect:** Esquedev (@unkil)  
+**Maintainer / Lead Architect:** Esquedev (@esquedev)  
 **Document Version:** 1.0  
 **Effective Date:** 2026
 
@@ -55,8 +55,8 @@ The scouting dataset ([`data/Scouted_Teams.csv`](data/Scouted_Teams.csv) and [`d
 We respect the privacy of competitive trainers and players:
 * **Esports Public Record:** Tournament rosters and placements are compiled strictly for historical analytics, meta-frequency tracking, and sports science research.
 * **Opt-Out / Anonymization Request:** Any competitive player, trainer, or tournament participant who wishes to have their username or personal identifier removed or anonymized in our scouted dataset may request an opt-out:
-  - **Via GitHub Issue / Chat:** Open an issue with the prefix `[Privacy/Opt-Out]` on the [GitHub Issues page](https://github.com/unkil/coach-porygon-vgc/issues).
-  - **Via GitHub Profile Contact:** Send an email or direct message to the maintainer via the contact email listed on the lead developer's [GitHub profile (@unkil)](https://github.com/unkil).
+  - **Via GitHub Issue / Chat:** Open an issue with the prefix `[Privacy/Opt-Out]` on the [GitHub Issues page](https://github.com/esquedev/coach-porygon-vgc/issues).
+  - **Via GitHub Profile Contact:** Send an email or direct message to the maintainer via the contact email listed on the lead developer's [GitHub profile (@esquedev)](https://github.com/esquedev).
 * Upon receiving a verified request, the maintainer will anonymize the player's handle (e.g., replacing it with `Anonymous Trainer`) within 72 business hours.
 
 ---

@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Coach Porygon VGC — Game-Theoretic AGI CLI Entry Point (main.py)
+Coach Porygon VGC — Game-Theoretic AGI CLI Entry Point & Pipeline Orchestrator (main.py)
 
-Executes the end-to-end simultaneous Nash equilibrium tactical audit pipeline
-over a Showdown Regulation M-C replay log or the built-in demonstration fixture.
+Executes the end-to-end simultaneous Nash equilibrium tactical audit pipeline,
+PyTorch CUDA/CPU tensor payoff evaluation, uncertainty modeling, HTML/PDF report
+generation, and GPU throughput benchmarking.
+
 Usage:
     python main.py --demo
     python main.py --log tests/data/sample_showdown_mc_log.txt
+    python main.py --demo --mode gpu --device cuda --format json
+    python main.py audit tests/data/sample_showdown_mc_log.txt --format html --output-dir reports
+    python main.py benchmark-gpu --device cuda
 """
 
 import argparse
+import json
 from pathlib import Path
 import sys
 from typing import List, Optional
 
 from engine.db import UnifiedCoachDatabase
-from engine.tactics.tactical_pipeline import TacticalAuditResult, audit_showdown_log
+from engine.tactics.tactical_pipeline import (
+    TacticalAuditResult,
+    TacticalPipeline,
+    audit_showdown_log,
+)
+from engine.ui_generator import render_tactical_audit_html
 
 
 REPO_ROOT = Path(__file__).resolve().parent
@@ -72,13 +83,85 @@ def format_telemetry_report(result: TacticalAuditResult) -> str:
     lines.append(f"      Equity Loss     : {result.equity_loss:.4f} (Delta Equity = v* - V_real)")
     lines.append(f"      Mistake Code    : {result.mistake_code}")
     lines.append(f"      Cognitive Driver: {result.cognitive_driver}")
+
+    if result.uncertainty_profile:
+        up = result.uncertainty_profile
+        lines.append("-" * 82)
+        lines.append("  [5] UNCERTAINTY & LUCK PROFILE (16 Rolls x Crit x Accuracy):")
+        lines.append(
+            f"      Quantiles       : P10={up.get('p10', 0.0):+.4f} | "
+            f"P50={up.get('p50', 0.0):+.4f} | P90={up.get('p90', 0.0):+.4f} | "
+            f"P95={up.get('p95', 0.0):+.4f}"
+        )
+        lines.append(
+            f"      Probabilities   : KO={up.get('ko_probability', 0.0):6.2%} | "
+            f"Survival={up.get('survival_probability', 0.0):6.2%} | "
+            f"Luck Delta={up.get('luck_delta', 0.0):+.4f}"
+        )
+
+    if result.all_turns_analysis:
+        lines.append("-" * 82)
+        lines.append("  [6] ALL-TURNS WIN-EQUITY TRAJECTORY (V*):")
+        for t_eval in result.all_turns_analysis:
+            lines.append(
+                f"      Turn {t_eval.get('turn_number', 0):2d} | "
+                f"V*={t_eval.get('game_value', 0.0):+.4f} "
+                f"(dV*={t_eval.get('delta_v_star', 0.0):+.4f}) | "
+                f"Class={t_eval.get('shift_classification', 'Standard_Trade'):14s} | "
+                f"Code={t_eval.get('mistake_code', 'POS-01')}"
+            )
+
     lines.append("=" * 82)
     return "\n".join(lines)
 
 
+def _export_audit_output(
+    result: TacticalAuditResult,
+    fmt: str,
+    output_dir: Optional[str],
+) -> None:
+    """
+    Export audit result to JSON, HTML, or PDF when requested via CLI flags.
+
+    Args:
+        result: Populated TacticalAuditResult.
+        fmt: Output format ('text', 'json', 'html', 'pdf').
+        output_dir: Target output directory path string, if provided.
+    """
+    payload = result.to_dict()
+    if fmt == "json":
+        json_text = json.dumps(payload, indent=2, ensure_ascii=False)
+        if output_dir:
+            out_dir = Path(output_dir)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            out_path = out_dir / f"{result.audit_id}.json"
+            out_path.write_text(json_text, encoding="utf-8")
+            print(f"[EXPORT] JSON audit saved to: {out_path}")
+        else:
+            print(json_text)
+    elif fmt in ("html", "pdf"):
+        html_doc = render_tactical_audit_html(payload)
+        out_dir = Path(output_dir) if output_dir else (REPO_ROOT / "reports")
+        out_dir.mkdir(parents=True, exist_ok=True)
+        html_path = out_dir / f"{result.audit_id}.html"
+        html_path.write_text(html_doc, encoding="utf-8")
+        print(format_telemetry_report(result))
+        print(f"[EXPORT] HTML tactical report saved to: {html_path}")
+        if fmt == "pdf":
+            try:
+                from engine.pdf_exporter import export_html_to_pdf
+                pdf_path = out_dir / f"{result.audit_id}.pdf"
+                export_html_to_pdf(str(html_path), str(pdf_path))
+                print(f"[EXPORT] PDF tactical report saved to: {pdf_path}")
+            except Exception as exc:
+                print(f"[WARN] PDF export fallback (HTML generated at {html_path}): {exc}")
+    else:
+        print(format_telemetry_report(result))
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """
-    Parse CLI arguments and run the Game-Theoretic replay audit.
+    Parse CLI arguments and run the Game-Theoretic replay audit or subcommand.
 
     Args:
         argv: Optional list of CLI arguments.
@@ -88,6 +171,17 @@ def main(argv: Optional[List[str]] = None) -> int:
     """
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
+
+    raw_args = list(argv) if argv is not None else sys.argv[1:]
+
+    # Detect positional subcommand if present
+    subcommand: Optional[str] = None
+    subcommand_target: Optional[str] = None
+    valid_subcommands = {"audit", "eval-turn", "benchmark-gpu", "serve-ui"}
+    if raw_args and raw_args[0] in valid_subcommands:
+        subcommand = raw_args.pop(0)
+        if raw_args and not raw_args[0].startswith("-"):
+            subcommand_target = raw_args.pop(0)
 
     parser = argparse.ArgumentParser(
         description="Coach Porygon VGC — Game-Theoretic AGI Replay Auditor (Regulation M-C)"
@@ -108,21 +202,73 @@ def main(argv: Optional[List[str]] = None) -> int:
         action="store_true",
         help="Run in read-only mode without appending to data/tactical_audits.jsonl.",
     )
-    args = parser.parse_args(argv)
+    parser.add_argument(
+        "--mode",
+        type=str,
+        choices=["classic", "gpu", "hybrid", "report", "benchmark"],
+        default="hybrid",
+        help="Execution pipeline mode (classic|gpu|hybrid|report|benchmark).",
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        choices=["auto", "cuda", "cpu"],
+        default="auto",
+        help="Compute device preference (auto|cuda|cpu).",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default=None,
+        help="Optional directory for saving exported JSON/HTML/PDF reports.",
+    )
+    parser.add_argument(
+        "--format",
+        type=str,
+        choices=["text", "json", "html", "pdf"],
+        default="text",
+        help="Output format (text|json|html|pdf).",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port for serve-ui mode (default: 8000).",
+    )
+    args = parser.parse_args(raw_args)
 
-    log_path = Path(args.log) if args.log else DEMO_LOG_PATH
+    device_pref = None if args.device == "auto" else args.device
+
+    # Handle benchmark subcommand or mode
+    if subcommand == "benchmark-gpu" or args.mode == "benchmark":
+        pipeline = TacticalPipeline(device=device_pref)
+        raw_bench_log = DEMO_LOG_PATH.read_text(encoding="utf-8")
+        metrics = pipeline.run_benchmark(raw_log=raw_bench_log, batch_size=32)
+        print(json.dumps(metrics, indent=2))
+        return 0
+
+    # Handle serve-ui subcommand
+    if subcommand == "serve-ui":
+        from engine.ui_server import run_server
+        run_server(port=args.port)
+        return 0
+
+    log_target = subcommand_target or args.log
+    log_path = Path(log_target) if log_target else DEMO_LOG_PATH
     if not log_path.exists():
         print(f"[ERROR] Battle log file not found: {log_path}", file=sys.stderr)
         return 1
 
     raw_log = log_path.read_text(encoding="utf-8")
     db = UnifiedCoachDatabase()
-    result = audit_showdown_log(
+    pipeline = TacticalPipeline(db=db, device=device_pref)
+    result = pipeline.run_audit(
         raw_log,
         auto_persist=not args.no_persist,
-        db=db,
     )
-    print(format_telemetry_report(result))
+
+    out_fmt = "html" if args.mode == "report" and args.format == "text" else args.format
+    _export_audit_output(result, fmt=out_fmt, output_dir=args.output_dir)
     db.close()
     return 0
 

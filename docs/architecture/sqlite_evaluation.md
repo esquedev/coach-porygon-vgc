@@ -28,7 +28,7 @@ As this repository prepares for public open-source deployment on GitHub, we eval
 ---
 
 ## 3. The OneDrive File-Locking Hazard
-A critical operational factor for this workspace is its deployment environment: `c:\Users\unkil\OneDrive\...`.
+A critical operational factor for this workspace is its deployment across cloud-synced directories (such as Microsoft OneDrive or Dropbox).
 SQLite creates temporary journal and write-ahead log files (`.db-wal`, `.db-shm`) alongside the database. Cloud sync clients (specifically Microsoft OneDrive and Dropbox) aggressively scan and lock these temporary database files during sync cycles, leading to frequent `sqlite3.OperationalError: database is locked` errors during rapid battle telemetry logging.
 
 Plain CSV appending using append mode (`open(path, 'a', newline='', encoding='utf-8')`) avoids persistent file lock handles and operates seamlessly across synced cloud directories.

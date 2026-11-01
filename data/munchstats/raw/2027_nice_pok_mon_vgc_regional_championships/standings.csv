@@ -1,0 +1,863 @@
+Placement,Player_Name,Record,Day_Reached,Pokemon_1,Pokemon_2,Pokemon_3,Pokemon_4,Pokemon_5,Pokemon_6
+1,Louis Fontvieille,15-2,top8,Raichu-Mega-X @ Raichunite X,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Pelipper @ Damp Rock,Basculegion-F @ Focus Sash,Sneasler @ Electric Seed
+2,Eduardo Cunha,14-3,top8,Rillaboom @ Miracle Seed,Vivillon @ Focus Sash,Incineroar @ Leftovers,Primarina @ Sitrus Berry,Gengar-Mega @ Gengarite,Garchomp-Mega-Z @ Garchompite Z
+3,Simone Sanvito,13-3,top8,Excadrill @ Focus Sash,Staraptor-Mega @ Staraptite,Sinistcha @ Rocky Helmet,Milotic @ Sitrus Berry,Gholdengo @ Life Orb,Tyranitar-Mega @ Tyranitarite
+4,Francesco Pio Pero,13-3,top8,Pelipper @ Damp Rock,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Basculegion-F @ Focus Sash,Raichu-Mega-X @ Raichunite X,Sneasler @ Electric Seed
+5,Ko Tsukide,13-2,top8,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Kingambit @ Chople Berry,Garchomp @ Life Orb,Basculegion @ Mystic Water,Whimsicott @ Focus Sash
+6,Riccardo Stellini,12-3,top8,Incineroar @ White Herb,Camerupt-Mega @ Cameruptite,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Rillaboom @ Life Orb
+7,Giovanni Piscitelli,12-3,top8,Garchomp @ Life Orb,Kingambit @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Whimsicott @ Focus Sash,Basculegion @ Mystic Water,Sneasler @ White Herb
+8,Giuseppe Musicco,12-3,top8,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Dragonite-Mega @ Dragoninite,Gholdengo @ Life Orb,Sneasler @ White Herb
+9,Jude Gerard Lee Wei Cong,12-2,top16,Garchomp-Mega @ Garchompite,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Kingambit @ Life Orb
+10,Nicolò Lazzerini Denchi,12-2,top16,Whimsicott @ Focus Sash,Venusaur @ Wide Lens,Incineroar @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Life Orb,Milotic @ Leftovers
+11,Fran Martínez Pérez,11-3,top16,Staraptor-Mega @ Staraptite,Indeedee @ Focus Sash,Garchomp @ Choice Scarf,Glimmora @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Whimsicott @ Occa Berry
+12,Samuel Pereira,11-3,top16,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Toxapex @ Leftovers,Venusaur @ Focus Sash
+13,Stefano De Maria,11-3,top16,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Politoed @ Mystic Water,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Farigiraf @ Sitrus Berry
+14,Luca Lussignoli,11-3,top16,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Sneasler @ White Herb,Dragonite-Mega @ Dragoninite,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite
+15,Evan Graham,11-3,top16,Incineroar @ Sitrus Berry,Hippowdon @ Leftovers,Kommo-o @ Dragon Fang,Rillaboom @ Life Orb,Gengar-Mega @ Gengarite,Excadrill @ Focus Sash
+16,Vikram Thiagarajan,11-3,top16,Arcanine-Hisui @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet,Milotic @ Sitrus Berry,Sneasler @ Psychic Seed,Gengar-Mega @ Gengarite
+17,Arian Herter,10-3,day2,Basculegion @ Choice Scarf,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed
+18,Louis Markl,9-3,day2,Basculegion @ Choice Scarf,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Volcarona @ Leftovers
+19,Nelson Meyzindi,9-3,day2,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Primarina @ Leftovers
+20,Oliver Gausden,9-3,day2,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Venusaur @ Focus Sash
+21,Davide Carrer,9-3,day2,Salamence-Mega @ Salamencite,Glimmora-Mega @ Glimmoranite,Kingambit @ Life Orb,Volcarona @ Charti Berry,Garchomp @ Choice Scarf,Rillaboom @ Miracle Seed
+22,Matteo Donati,9-3,day2,Sylveon @ Fairy Feather,Kingambit @ Focus Sash,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Aerodactyl-Mega @ Aerodactylite,Garchomp @ Choice Scarf
+23,Luca Schianchi,9-3,day2,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Primarina @ Leftovers,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite
+24,PAU SERRA UJALDÓN,9-3,day2,Torkoal @ Life Orb,Basculegion @ Choice Scarf,Sneasler @ Psychic Seed,Indeedee-F @ Rocky Helmet,Pyroar-Mega @ Pyroarite,Gardevoir-Mega @ Gardevoirite
+25,Karl Akpovi,9-3,day2,Sneasler @ White Herb,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Dragonite-Mega @ Dragoninite,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed
+26,sali resuli,9-3,day2,Gliscor @ Psychic Seed,Gardevoir-Mega @ Gardevoirite,Venusaur @ Focus Sash,Indeedee-F @ Rocky Helmet,Incineroar @ Chople Berry,Charizard-Mega-Y @ Charizardite Y
+27,Alejandro Ávalos Barrios,9-3,day2,Farigiraf @ Sitrus Berry,Garchomp @ Choice Scarf,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Life Orb,Aerodactyl-Mega @ Aerodactylite
+28,Faaiz Ashfaq,9-3,day2,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry,Gengar-Mega @ Gengarite,Kommo-o @ Leftovers,Vivillon @ Focus Sash,Rillaboom @ Miracle Seed
+29,Eliott Oblinger,9-3,day2,Indeedee-F @ Rocky Helmet,Garchomp @ Life Orb,Metagross-Mega @ Metagrossite,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry,Whimsicott @ Focus Sash
+30,Bachir Zaboul,9-3,day2,Garchomp @ Choice Scarf,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Lycanroc-Dusk @ Focus Sash,Kingambit @ Life Orb,Staraptor-Mega @ Staraptite
+31,Minh Duc Invernizzi,9-3,day2,Venusaur @ Life Orb,Farigiraf @ Sitrus Berry,Torkoal @ Charcoal,Incineroar @ White Herb,Aerodactyl-Mega @ Aerodactylite,Floette-Mega @ Floettite
+32,Daniele Kaygorodova,9-3,day2,Farigiraf @ Sitrus Berry,Rillaboom @ Life Orb,Incineroar @ White Herb,Camerupt-Mega @ Cameruptite,Sylveon @ Fairy Feather,Raichu-Mega-Y @ Raichunite Y
+33,Riccardo Appamea,9-3,day2,Volcarona @ Sitrus Berry,Rillaboom @ Occa Berry,Tinkaton @ Eject Button,Gengar-Mega @ Gengarite,Incineroar @ Lum Berry,Kommo-o @ Leftovers
+34,Joan Perelló,9-3,day2,Raichu-Mega-X @ Raichunite X,Pelipper @ Damp Rock,Golisopod-Mega @ Golisopite,Basculegion-F @ Focus Sash,Sneasler @ White Herb,Archaludon @ Leftovers
+35,Mattie Morgan,9-3,day2,Incineroar @ Sitrus Berry,Hippowdon @ Leftovers,Rillaboom @ Occa Berry,Kingambit @ Chople Berry,Ninetales-Alola @ Choice Scarf,Gengar-Mega @ Gengarite
+36,Markus Hamann,9-3,day2,Vivillon @ Focus Sash,Gengar-Mega @ Gengarite,Kommo-o @ Leftovers,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Rillaboom @ Miracle Seed
+37,Luca Soldati,9-3,day2,Sinistcha @ Occa Berry,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Kingambit @ Black Glasses,Sneasler @ Focus Sash
+38,Gauthier Clanet,9-3,day2,Kommo-o @ Life Orb,Kingambit @ Black Glasses,Charizard-Mega-Y @ Charizardite Y,Aegislash @ Occa Berry,Whimsicott @ Focus Sash,Glimmora-Mega @ Glimmoranite
+39,Federico Isola,9-3,day2,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Froslass-Mega @ Froslassite,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf
+40,Juan Pescador,9-3,day2,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Garchomp @ Choice Scarf,Raichu-Mega-X @ Raichunite X,Floette-Mega @ Floettite
+41,Maurice Uteg,9-3,day2,Gengar-Mega @ Gengarite,Kommo-o @ Leftovers,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Vivillon @ Focus Sash,Delphox-Mega @ Delphoxite
+42,Antoine De La Forest,9-3,day2,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Basculegion @ Choice Scarf
+43,Rayan GUEZI,9-3,day2,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Sneasler @ White Herb,Floette-Mega @ Floettite,Basculegion @ Choice Scarf,Dragonite-Mega @ Dragoninite
+44,Alessandro Fantinato,9-3,day2,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Kingambit @ Chople Berry,Basculegion @ Mystic Water,Garchomp @ Life Orb,Whimsicott @ Focus Sash
+45,Jannik Koch,9-3,day2,Incineroar @ Sitrus Berry,Gengar-Mega @ Gengarite,Vivillon @ Focus Sash,Rillaboom @ Miracle Seed,Kommo-o @ Leftovers,Delphox-Mega @ Delphoxite
+46,Andrea Pagano,9-3,day2,Garchomp @ Choice Scarf,Delphox-Mega @ Delphoxite,Indeedee-F @ Rocky Helmet,Incineroar @ Sitrus Berry,Sinistcha @ Coba Berry,Floette-Mega @ Floettite
+47,Stefano Greppi,9-3,day2,Sylveon @ Fairy Feather,Aerodactyl-Mega @ Aerodactylite,Farigiraf @ Sitrus Berry,Garchomp @ Life Orb,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+48,Javier Freire,9-3,day2,Incineroar @ Passho Berry,Mamoswine @ Focus Sash,Politoed @ Sitrus Berry,Gengar-Mega @ Gengarite,Rillaboom @ Eject Button,Archaludon @ Leftovers
+49,Francesco Rasini,9-3,day2,Gengar-Mega @ Gengarite,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Chople Berry,Volcarona @ Grassy Seed,Kommo-o @ Leftovers,Rillaboom @ Miracle Seed
+50,Mattia Vinti,9-3,day2,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Kingambit @ Life Orb,Sinistcha @ Coba Berry,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite
+51,Leonardo Bonanomi,9-3,day2,Volcarona @ Charti Berry,Kingambit @ Life Orb,Rillaboom @ Miracle Seed,Garchomp @ Choice Scarf,Salamence-Mega @ Salamencite,Glimmora-Mega @ Glimmoranite
+52,Anthony-Christopher Manolache,9-3,day2,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Archaludon @ Leftovers
+53,Valerio Amici,8-4,day2,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Kingambit @ Black Glasses,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry
+54,Andrea Fiorini,8-4,day2,Sneasler @ White Herb,Tyranitar-Mega @ Tyranitarite,Indeedee @ Choice Scarf,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Corviknight @ Occa Berry
+55,Riccardo Castellari,8-4,day2,Incineroar @ Sitrus Berry,Rillaboom @ Life Orb,Salamence-Mega @ Salamencite,Floette-Mega @ Floettite,Volcarona @ Charti Berry,Basculegion @ Choice Scarf
+56,Alessandro Avino,8-4,day2,Delphox-Mega @ Delphoxite,Kingambit @ Black Glasses,Floette-Mega @ Floettite,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry
+57,Luis Sanchez Marin,8-4,day2,Ceruledge @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Garchomp @ Choice Scarf,Rillaboom @ Miracle Seed
+58,Francesco Di Biase,8-4,day2,Charizard-Mega-Y @ Charizardite Y,Kingambit @ Chople Berry,Floette-Mega @ Floettite,Garchomp @ Life Orb,Whimsicott @ Focus Sash,Basculegion @ Rindo Berry
+59,Matthias Loong,8-4,day2,Incineroar @ Chople Berry,Venusaur @ Focus Sash,Sylveon @ Fairy Feather,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry
+60,Max Musumeci,8-4,day2,Venusaur @ Life Orb,Toxapex @ Leftovers,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y
+61,Lorenzo Colombo,8-4,day2,Milotic @ Electric Seed,Kingambit @ Life Orb,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Raichu-Mega-X @ Raichunite X,Volcarona @ Charti Berry
+62,Javier Corrales Martinez,8-4,day2,Primarina @ Leftovers,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y
+63,Jordan Guy,8-4,day2,Gholdengo @ Life Orb,Milotic @ Leftovers,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Rillaboom @ Miracle Seed,Tyranitar-Mega @ Tyranitarite
+64,Lukas Kiefl,8-4,day2,Kingambit @ Black Glasses,Volcarona @ Rocky Helmet,Rillaboom @ Miracle Seed,Blaziken-Mega @ Blazikenite,Ninetales-Alola @ Choice Scarf,Dragapult @ Life Orb
+65,Luca Arosio,8-4,day2,Gholdengo @ Life Orb,Pelipper @ Sitrus Berry,Sinistcha @ Kasib Berry,Staraptor-Mega @ Staraptite,Archaludon @ Leftovers,Swampert-Mega @ Swampertite
+66,João Santos,8-4,day2,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Primarina @ Leftovers
+67,Alessio Fuscà,8-4,day2,Floette-Mega @ Floettite,Kingambit @ Chople Berry,Sneasler @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry
+68,Luca Costa,8-4,day2,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Milotic @ Leftovers,Staraptor-Mega @ Staraptite
+69,Joseph Martin,8-4,day2,Kommo-o @ Life Orb,Pyroar-Mega @ Pyroarite,Whimsicott @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Psychic Seed,Basculegion @ Choice Scarf
+70,Fraser Johnson,8-4,day2,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry,Sylveon @ Fairy Feather
+71,Alex Soto,8-4,day2,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Kingambit @ Life Orb,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite
+72,Didac Peinado,8-4,day2,Garchomp @ Choice Scarf,Incineroar @ Chople Berry,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+73,Jonathan Marston,8-4,day2,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Rillaboom @ Miracle Seed,Garchomp @ Choice Scarf,Espathra @ Grassy Seed
+74,Max van Westrop,8-4,day2,Raichu-Mega-X @ Raichunite X,Golisopod-Mega @ Golisopite,Sneasler @ Electric Seed,Archaludon @ Leftovers,Basculegion-F @ Focus Sash,Pelipper @ Damp Rock
+75,Tirso Buttafuoco,8-4,day2,Kommo-o @ Leftovers,Kingambit @ Life Orb,Rillaboom @ Occa Berry,Gengar-Mega @ Gengarite,Volcarona @ Charti Berry,Incineroar @ Sitrus Berry
+76,Arash Ommati,8-4,day2,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite,Incineroar @ Passho Berry,Maushold @ Focus Sash,Sinistcha @ Occa Berry,Gholdengo @ Life Orb
+77,Noah van der Voort,8-4,day2,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Primarina @ Leftovers
+78,Archie Maltman-McAuley,8-4,day2,Sylveon @ Fairy Feather,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Aerodactyl-Mega @ Aerodactylite,Kingambit @ Focus Sash,Farigiraf @ Sitrus Berry
+79,Conor McCormack,8-4,day2,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet,Sneasler @ Psychic Seed,Farigiraf @ Sitrus Berry,Camerupt-Mega @ Cameruptite,Incineroar @ White Herb
+80,Sam Plassgård,8-4,day2,Swampert-Mega @ Swampertite,Raichu-Mega-Y @ Raichunite Y,Archaludon @ Leftovers,Meowscarada @ Choice Scarf,Farigiraf @ Sitrus Berry,Pelipper @ Focus Sash
+81,Luca Bellinato,8-4,day2,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Kingambit @ Chople Berry,Salamence-Mega @ Salamencite,Basculegion @ Life Orb,Rillaboom @ Miracle Seed
+82,Chris Daoud,8-4,day2,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay
+83,Jamie Edwards,8-4,day2,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Life Orb,Sneasler @ White Herb
+84,Emanuele Briganti,8-4,day2,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite,Floette-Mega @ Floettite,Sneasler @ White Herb,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry
+85,Euan Legg,8-4,day2,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay
+86,Audric David,8-4,day2,Venusaur @ Life Orb,Toxapex @ Leftovers,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf
+87,Davide Longobardi,8-4,day2,Sneasler @ White Herb,Delphox-Mega @ Delphoxite,Basculegion @ Focus Sash,Dragonite-Mega @ Dragoninite,Rillaboom @ Miracle Seed,Kingambit @ Life Orb
+88,Takaaki Ando,8-4,day2,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Life Orb,Toxapex @ Leftovers
+89,Evan JEANNIN,8-4,day2,Incineroar @ Passho Berry,Rillaboom @ Miracle Seed,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Floette-Mega @ Floettite
+90,Jorge Hernández Acosta,8-4,day2,Sneasler @ Focus Sash,Sinistcha @ Rocky Helmet,Kingambit @ Life Orb,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite
+91,Simone Caletti,8-4,day2,Sinistcha @ Colbur Berry,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Black Glasses,Incineroar @ Sitrus Berry,Primarina @ Life Orb,Delphox-Mega @ Delphoxite
+92,Antoine Guyader,8-4,day2,Sneasler @ White Herb,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+93,René Oertel,8-4,day2,Venusaur @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Toxapex @ Leftovers
+94,Marcos López Salgado,8-4,day2,Primarina @ Leftovers,Volcarona @ Charti Berry,Glimmora-Mega @ Glimmoranite,Garchomp @ Choice Scarf,Salamence-Mega @ Salamencite,Rillaboom @ Miracle Seed
+95,Mirko Fioravanti,7-5,day2,Kingambit @ Chople Berry,Garchomp @ Life Orb,Whimsicott @ Focus Sash,Sneasler @ White Herb,Basculegion @ Mystic Water,Charizard-Mega-Y @ Charizardite Y
+96,Lorenzo Silvestrini,7-5,day2,Volcarona @ Grassy Seed,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Raichu-Mega-Y @ Raichunite Y
+97,Luigi Romanelli,7-5,day2,Ninetales-Alola @ Choice Scarf,Kommo-o @ Leftovers,Rillaboom @ Occa Berry,Incineroar @ Chople Berry,Kingambit @ Life Orb,Gengar-Mega @ Gengarite
+98,Gustav Bredberg,7-5,day2,Garchomp @ Choice Scarf,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Kingambit @ Life Orb
+99,Paschalis Dermentzis,7-5,day2,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Sneasler @ Grassy Seed,Altaria @ Haban Berry,Rillaboom @ Eject Button
+100,Roberto Carbonara,7-5,day2,Incineroar @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Garchomp @ Choice Scarf,Venusaur @ Focus Sash
+101,Matteo Raganini,7-5,day2,Whimsicott @ Focus Sash,Sneasler @ White Herb,Kingambit @ Chople Berry,Garchomp @ Life Orb,Basculegion @ Mystic Water,Charizard-Mega-Y @ Charizardite Y
+102,Vincent Allard,7-5,day2,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed
+103,Matteo Sodero,7-5,day2,Rillaboom @ Miracle Seed,Garchomp @ Choice Scarf,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Sneasler @ White Herb,Dragonite-Mega @ Dragoninite
+104,Niklas Schurse,7-5,day2,Talonflame @ Sharp Beak,Gengar-Mega @ Gengarite,Rillaboom @ Miracle Seed,Tyranitar-Mega @ Tyranitarite,Kommo-o @ Life Orb,Primarina @ Sitrus Berry
+105,José Luis García Sánchez,7-5,day2,Sneasler @ Psychic Seed,Indeedee @ Choice Scarf,Excadrill @ Focus Sash,Sinistcha @ Sitrus Berry,Tyranitar-Mega @ Tyranitarite,Garchomp-Mega-Z @ Garchompite Z
+106,Gennaro Matteo,7-5,day2,Dragapult @ Life Orb,Kingambit @ Focus Sash,Camerupt-Mega @ Cameruptite,Rillaboom @ Miracle Seed,Farigiraf @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+107,Théotime Massaut,7-5,day2,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z
+108,Leon Drescher,7-5,day2,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Archaludon @ Leftovers
+109,Nicolò Pollato,7-5,day2,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Basculegion @ Life Orb
+110,Miguel Morales Alarcon,7-5,day2,Volcarona @ Charti Berry,Sneasler @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Salamence-Mega @ Salamencite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed
+111,Hao Lu,7-5,day2,Armarouge @ Focus Sash,Milotic @ Psychic Seed,Staraptor-Mega @ Staraptite,Dragapult @ Life Orb,Indeedee-F @ Rocky Helmet,Arcanine-Hisui @ Choice Scarf
+112,Matt Maynard,7-5,day2,Sinistcha @ Colbur Berry,Floette-Mega @ Floettite,Incineroar @ Passho Berry,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb,Sneasler @ Focus Sash
+113,Bruno Marotta,7-5,day2,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Garchomp-Mega @ Garchompite,Rillaboom @ Miracle Seed,Kingambit @ Life Orb,Floette-Mega @ Floettite
+114,Yuhao Yang,7-5,day2,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Primarina @ Expert Belt
+115,Qiyuan Sun,7-5,day2,Indeedee-F @ Rocky Helmet,Maushold-Three @ Chople Berry,Sinistcha @ Coba Berry,Blastoise-Mega @ Blastoisinite,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash
+116,Massimiliano Franco,7-5,day2,Kommo-o @ Leftovers,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry
+117,Carlos Giráldez Pérez,7-5,day2,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed
+118,Tarik Fayazi,7-5,day2,Politoed @ Choice Scarf,Archaludon @ Leftovers,Sneasler @ White Herb,Starmie-Mega @ Starminite,Gengar-Mega @ Gengarite,Indeedee-F @ Psychic Seed
+119,Joseph Gomis,7-5,day2,Indeedee-F @ Colbur Berry,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Kingambit @ Occa Berry,Garchomp @ Choice Scarf
+120,Filippo Badioli,7-5,day2,Annihilape @ Choice Scarf,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+121,joel Pando Fernandez,6-6,day2,Kingambit @ Black Glasses,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry,Garchomp @ Choice Scarf
+122,Eugenio Calafato,6-6,day2,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Primarina @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Sinistcha @ Colbur Berry,Kingambit @ Black Glasses
+123,Fynn Denecke,6-6,day2,Lucario-Mega-Z @ Lucarionite Z,Garchomp-Mega-Z @ Garchompite Z,Espathra @ Life Orb,Incineroar @ Sitrus Berry,Sneasler @ Psychic Seed,Indeedee-F @ Rocky Helmet
+124,Matteo Centrone,6-6,day2,Tyranitar-Mega @ Tyranitarite,Gengar-Mega @ Gengarite,Kommo-o @ Leftovers,Rillaboom @ Eject Button,Incineroar @ Sitrus Berry,Maushold @ Focus Sash
+125,Aaron Lea,6-6,day2,Volcarona @ Rocky Helmet,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed
+126,Nathan Moreau,5-3,day1,Sneasler @ White Herb,Whimsicott @ Focus Sash,Basculegion @ Mystic Water,Kingambit @ Chople Berry,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y
+127,Aurélien Le Fur,5-3,day1,Primarina @ Leftovers,Sneasler @ Focus Sash,Golisopod-Mega @ Golisopite,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Rocky Helmet,Farigiraf @ Sitrus Berry
+128,Vincenzo Giovanni Malagodi,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Sneasler @ White Herb,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry
+129,Alex Sleath,5-3,day1,Incineroar @ Rocky Helmet,Floette-Mega @ Floettite,Rillaboom @ Sitrus Berry,Kingambit @ Life Orb,Salamence-Mega @ Salamencite,Sneasler @ Grassy Seed
+130,Selahattin Sturm,5-3,day1,Incineroar @ Chople Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry
+131,Ivan Vespa,5-3,day1,Golisopod-Mega @ Golisopite,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Farigiraf @ Sitrus Berry
+132,Alessio Ferrara,5-3,day1,Sneasler @ White Herb,Primarina @ Grassy Seed,Kingambit @ Black Glasses,Froslass-Mega @ Froslassite,Blaziken-Mega @ Blazikenite,Rillaboom @ Occa Berry
+133,Matteo Bombini,5-3,day1,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay
+134,Ángel Otero,5-3,day1,Sneasler @ White Herb,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Torkoal @ Charcoal,Incineroar @ Chople Berry
+135,Lorenzo Allemagna,5-3,day1,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Garchomp @ Choice Scarf
+136,Andrea Piasso,5-3,day1,Aerodactyl-Mega @ Aerodactylite,Garchomp @ Life Orb,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Kingambit @ Focus Sash
+137,Marcus Blixenkrone-Møller,5-3,day1,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Floette-Mega @ Floettite,Basculegion @ Choice Scarf,Rillaboom @ Life Orb,Volcarona @ Grassy Seed
+138,Raphaël Foisselon,5-3,day1,Rillaboom @ Life Orb,Swampert-Mega @ Swampertite,Sneasler @ Grassy Seed,Pelipper @ Focus Sash,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers
+139,Justin Cerioni,5-3,day1,Basculegion @ Mystic Water,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Kingambit @ Chople Berry,Whimsicott @ Focus Sash
+140,Matteo Ferrari,5-3,day1,Sneasler @ White Herb,Charizard-Mega-Y @ Charizardite Y,Basculegion @ Mystic Water,Whimsicott @ Focus Sash,Garchomp @ Life Orb,Kingambit @ Chople Berry
+141,Domingo Tundidor,5-3,day1,Basculegion @ Rindo Berry,Garchomp @ Life Orb,Whimsicott @ Focus Sash,Floette-Mega @ Floettite,Kingambit @ Chople Berry,Charizard-Mega-Y @ Charizardite Y
+142,Alex Finnis,5-3,day1,Incineroar @ Passho Berry,Rhyperior @ Life Orb,Venusaur @ Focus Sash,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry
+143,luca gesualdo,5-3,day1,Kingambit @ Chople Berry,Floette-Mega @ Floettite,Basculegion @ Life Orb,Whimsicott @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb
+144,Adria Rodriguez Pol,5-3,day1,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z
+145,Edoardo Cocco,5-3,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Milotic @ Leftovers,Gholdengo @ Life Orb,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash
+146,Rodolfo Roncallo,5-3,day1,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y
+147,Ihsan Said Ankilani,5-3,day1,Milotic @ Sitrus Berry,Volcarona @ Passho Berry,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash,Gholdengo @ Life Orb,Salamence-Mega @ Salamencite
+148,Michele Trevisan,5-3,day1,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z,Venusaur @ Life Orb,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Leftovers
+149,Nicolo' Venturin,5-3,day1,Dragonite @ Life Orb,Sneasler @ White Herb,Rillaboom @ Occa Berry,Primarina @ Grassy Seed,Froslass-Mega @ Froslassite,Blaziken-Mega @ Blazikenite
+150,Simone Di felici,5-3,day1,Hippowdon @ Leftovers,Rillaboom @ Life Orb,Incineroar @ Sitrus Berry,Gengar-Mega @ Gengarite,Annihilape @ Choice Scarf,Kingambit @ Black Glasses
+151,Sam Marshall-Smith,5-3,day1,Archaludon @ Leftovers,Basculegion-F @ Focus Sash,Sneasler @ Electric Seed,Pelipper @ Damp Rock,Raichu-Mega-X @ Raichunite X,Golisopod-Mega @ Golisopite
+152,Daniel López González,5-3,day1,Basculegion @ Rindo Berry,Garchomp @ Life Orb,Whimsicott @ Focus Sash,Floette-Mega @ Floettite,Kingambit @ Occa Berry,Charizard-Mega-Y @ Charizardite Y
+153,Lorenzo D'Ambrosio,5-3,day1,Arcanine-Hisui @ Focus Sash,Primarina @ Leftovers,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite
+154,Ivan De falco,5-3,day1,Rillaboom @ Life Orb,Camerupt-Mega @ Cameruptite,Incineroar @ White Herb,Farigiraf @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather
+155,Matthew Potter,5-3,day1,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Aerodactyl-Mega @ Aerodactylite,Primarina @ Grassy Seed
+156,Nelson Fonkoua,5-3,day1,Basculegion @ Mystic Water,Charizard-Mega-Y @ Charizardite Y,Kingambit @ Life Orb,Garchomp @ Choice Scarf,Floette-Mega @ Floettite,Whimsicott @ Focus Sash
+157,Josep Vallbona Fuster,5-3,day1,Farigiraf @ Sitrus Berry,Garchomp @ Choice Scarf,Aerodactyl-Mega @ Aerodactylite,Sylveon @ Life Orb,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+158,Salvatore Rega,5-3,day1,Kommo-o @ Life Orb,Indeedee-F @ Rocky Helmet,Pyroar-Mega @ Pyroarite,Whimsicott @ Focus Sash,Basculegion @ Mystic Water,Gardevoir-Mega @ Gardevoirite
+159,Lucas Rosset,5-3,day1,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Primarina @ Leftovers
+160,Filip Idczak,5-3,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Garchomp-Mega-Z @ Garchompite Z,Gholdengo @ Life Orb,Volcarona @ Rocky Helmet,Incineroar @ Sitrus Berry
+161,Jack Kent,5-3,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Primarina @ Leftovers,Garchomp-Mega-Z @ Garchompite Z
+162,Adrià Martínez Danaila,5-3,day1,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Venusaur @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Sitrus Berry
+163,Chirag Wadhwa,5-3,day1,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Volcarona @ Rocky Helmet,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+164,Francisco Aquino Pareja,5-3,day1,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+165,Oscar Gilley,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Rocky Helmet,Sneasler @ Focus Sash,Rillaboom @ Miracle Seed,Kingambit @ Black Glasses,Floette-Mega @ Floettite
+166,Soren Gibernon,5-3,day1,Floette-Mega @ Floettite,Volcarona @ Sitrus Berry,Rillaboom @ Miracle Seed,Dragapult @ Life Orb,Kingambit @ Focus Sash,Blaziken-Mega @ Blazikenite
+167,Giacomo Tenti,5-3,day1,Floette-Mega @ Floettite,Garchomp @ Choice Scarf,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Talonflame @ Expert Belt,Raichu-Mega-Y @ Raichunite Y
+168,Anthony Liuzzo,5-3,day1,Vivillon @ Focus Sash,Politoed @ Sitrus Berry,Gengar-Mega @ Gengarite,Incineroar @ Passho Berry,Rillaboom @ Occa Berry,Kommo-o @ Leftovers
+169,Hengyue Zhang,5-3,day1,Indeedee-F @ Rocky Helmet,Gardevoir-Mega @ Gardevoirite,Kommo-o @ Life Orb,Arcanine-Hisui @ Focus Sash,Whimsicott @ Babiri Berry,Basculegion @ Choice Scarf
+170,Mathias Brion,5-3,day1,Salamence-Mega @ Salamencite,Golisopod-Mega @ Golisopite,Rillaboom @ Miracle Seed,Pelipper @ Focus Sash,Basculegion @ Choice Scarf,Archaludon @ Leftovers
+171,Joseph Di Vincenti,5-3,day1,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Primarina @ Leftovers,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash
+172,Davide Iurato,5-3,day1,Rillaboom @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Primarina @ Leftovers,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry
+173,Gianmaria Sorbino,5-3,day1,Rillaboom @ Miracle Seed,Basculegion @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z
+174,Lucy Hinderink,5-3,day1,Rillaboom @ Life Orb,Vanilluxe @ Choice Scarf,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Sneasler @ White Herb,Raichu-Mega-Y @ Raichunite Y
+175,Femi Jordanovic,5-3,day1,Gengar-Mega @ Gengarite,Archaludon @ Leftovers,Rillaboom @ Eject Button,Incineroar @ Bright Powder,Politoed @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y
+176,Joshua Piearcey,5-3,day1,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Rhyperior @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Passho Berry
+177,Daniele Seghizzi,5-3,day1,Staraptor-Mega @ Staraptite,Rillaboom @ Life Orb,Excadrill @ Focus Sash,Tyranitar-Mega @ Tyranitarite,Volcarona @ Grassy Seed,Annihilape @ Choice Scarf
+178,Adrian Cabero,5-3,day1,Grimmsnarl @ Light Clay,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Metagross-Mega @ Metagrossite
+179,Ariel Rai Rodrigues,5-3,day1,Kingambit @ Focus Sash,Sinistcha @ Occa Berry,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Kommo-o @ Leftovers
+180,Federico Camporesi,5-3,day1,Incineroar @ Chople Berry,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z,Sneasler @ White Herb,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y
+181,Davide Iavarone,5-3,day1,Raichu-Mega-Y @ Raichunite Y,Pelipper @ Sitrus Berry,Gholdengo @ Life Orb,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers
+182,Alberto Spada,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z
+183,Sebastian Pinkawa,5-3,day1,Kommo-o @ Leftovers,Gengar-Mega @ Gengarite,Kingambit @ Life Orb,Incineroar @ Chople Berry,Politoed @ Sitrus Berry,Rillaboom @ Eject Button
+184,Marc Morales Romero,5-3,day1,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+185,Matteo Turbessi,5-3,day1,Kommo-o @ Leftovers,Incineroar @ Sitrus Berry,Altaria-Mega @ Altarianite,Basculegion @ Choice Scarf,Gengar-Mega @ Gengarite,Rillaboom @ Eject Button
+186,Roxanne Joniau,5-3,day1,Volcarona @ Lum Berry,Absol-Mega-Z @ Absolite Z,Sneasler @ White Herb,Milotic @ Psychic Seed,Indeedee @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z
+187,Naoya Takasago,5-3,day1,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Farigiraf @ Sitrus Berry,Garchomp @ Choice Scarf,Venusaur @ Life Orb
+188,Antonio Pala,5-3,day1,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash
+189,David Barker,5-3,day1,Maushold @ Lum Berry,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Blastoise-Mega @ Blastoisinite,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite
+190,Jun Lin Wong,5-3,day1,Primarina @ Leftovers,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash
+191,Lorenzo Procopio,5-3,day1,Garchomp @ Choice Scarf,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Basculegion @ Sitrus Berry,Kingambit @ Chople Berry,Dragonite-Mega @ Dragoninite
+192,Nicolò Berardo,5-3,day1,Dragonite-Mega @ Dragoninite,Delphox-Mega @ Delphoxite,Basculegion @ Sitrus Berry,Kingambit @ Chople Berry,Sneasler @ Focus Sash,Garchomp @ Choice Scarf
+193,Charley Owen,5-3,day1,Rhyperior @ Life Orb,Sylveon @ Fairy Feather,Incineroar @ Passho Berry,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+194,Callam Jarvis,5-3,day1,Whimsicott @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Kingambit @ Chople Berry,Garchomp @ Life Orb,Basculegion @ Mystic Water
+195,Alberto Baldi,5-3,day1,Volcarona @ Lum Berry,Indeedee-F @ Psychic Seed,Dragapult @ Life Orb,Annihilape @ Choice Scarf,Gardevoir-Mega @ Gardevoirite,Absol-Mega-Z @ Absolite Z
+196,Sean Parsons,5-3,day1,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet,Whimsicott @ Focus Sash,Kommo-o @ Life Orb,Basculegion @ Choice Scarf,Pyroar-Mega @ Pyroarite
+197,Nicola Schlüter,5-3,day1,Sinistcha @ Occa Berry,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Sneasler @ Focus Sash
+198,Ethan Gabriel Leskovec,5-3,day1,Dragonite-Mega @ Dragoninite,Incineroar @ Sitrus Berry,Sneasler @ White Herb,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb
+199,James Clough,5-3,day1,Sylveon @ Fairy Feather,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Incineroar @ Sitrus Berry,Toxapex @ Leftovers
+200,Matteo Ballini,5-3,day1,Kingambit @ Life Orb,Volcarona @ Charti Berry,Sneasler @ White Herb,Raichu-Mega-X @ Raichunite X,Milotic @ Electric Seed,Froslass-Mega @ Froslassite
+201,Kris Gillies,5-3,day1,Whimsicott @ Focus Sash,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry,Venusaur @ Life Orb
+202,Gabriele Cosma Gervasi,5-3,day1,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Venusaur @ Focus Sash,Archaludon @ Leftovers,Grimmsnarl @ Light Clay
+203,Jacob Fereday,5-3,day1,Swampert-Mega @ Swampertite,Farigiraf @ Sitrus Berry,Incineroar @ White Herb,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Pelipper @ Life Orb
+204,Romain Giavitto,5-3,day1,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb
+205,Laura Schmenk,5-3,day1,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Primarina @ Leftovers
+206,Sean Sumner,5-3,day1,Gengar-Mega @ Gengarite,Kommo-o @ Leftovers,Kingambit @ Life Orb,Incineroar @ Chople Berry,Sneasler @ White Herb,Rillaboom @ Eject Button
+207,Mattia Martini,5-3,day1,Garchomp @ Choice Scarf,Kingambit @ Life Orb,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Sinistcha @ Occa Berry,Delphox-Mega @ Delphoxite
+208,Wes Stembert,5-3,day1,Pelipper @ Choice Scarf,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Golisopod-Mega @ Golisopite,Basculegion @ Life Orb,Grimmsnarl @ Light Clay
+209,MIKAEL ECHAUBARD,5-3,day1,Dragonite-Mega @ Dragoninite,Arcanine-Hisui @ Focus Sash,Basculegion @ Life Orb,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Kingambit @ Chople Berry
+210,Clément Lehmann,5-3,day1,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+211,Jack Baker,5-3,day1,Rillaboom @ Life Orb,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather,Garchomp @ Choice Scarf,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y
+212,Luis Miguel Montesdeoca Martínez,5-3,day1,Froslass-Mega @ Froslassite,Dragonite-Mega @ Dragoninite,Basculegion @ Focus Sash,Kingambit @ Chople Berry,Sneasler @ White Herb,Garchomp @ Choice Scarf
+213,Hugo Rodrigues,5-3,day1,Farigiraf @ Sitrus Berry,Sneasler @ White Herb,Torkoal @ Charcoal,Incineroar @ Chople Berry,Garchomp-Mega-Z @ Garchompite Z,Sylveon @ Fairy Feather
+214,Gabriele Balsamo,5-3,day1,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Sinistcha @ Colbur Berry,Floette-Mega @ Floettite,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb
+215,Jordan Anversa,5-3,day1,Rillaboom @ Eject Button,Politoed @ Sitrus Berry,Archaludon @ Leftovers,Incineroar @ Chople Berry,Garchomp @ Expert Belt,Gengar-Mega @ Gengarite
+216,Jose Ignacio Gonzalez,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Garchomp @ Choice Scarf,Archaludon @ Leftovers
+217,Mier Barsanjy,5-3,day1,Grimmsnarl @ Light Clay,Basculegion-F @ Focus Sash,Tyranitar-Mega @ Tyranitarite,Pelipper @ Damp Rock,Farigiraf @ Sitrus Berry,Golisopod-Mega @ Golisopite
+218,Giovanni Panarello,5-3,day1,Kangaskhan-Mega @ Kangaskhanite,Farigiraf @ Sitrus Berry,Venusaur @ Life Orb,Vivillon @ Focus Sash,Torkoal @ Charcoal,Barbaracle-Mega @ Barbaracite
+219,Tommaso Oldani,5-3,day1,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Blastoise-Mega @ Blastoisinite,Sneasler @ Focus Sash,Kingambit @ Life Orb
+220,Alexander Ross,5-3,day1,Corviknight @ Psychic Seed,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Indeedee @ Choice Scarf,Sneasler @ White Herb,Tyranitar-Mega @ Tyranitarite
+221,Enrico Sbuttoni,5-3,day1,Basculegion @ Mystic Water,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry
+222,Sergio Maestre Fernández,5-3,day1,Farigiraf @ Sitrus Berry,Swampert-Mega @ Swampertite,Sneasler @ White Herb,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Pelipper @ Focus Sash
+223,Matteo Velata,5-3,day1,Grimmsnarl @ Light Clay,Politoed @ Mystic Water,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Raichu-Mega-X @ Raichunite X,Venusaur @ Focus Sash
+224,Loris Di Mella,5-3,day1,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Sinistcha @ Colbur Berry,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Focus Sash,Kommo-o @ Leftovers
+225,juan salerno,5-3,day1,Sylveon @ Fairy Feather,Toxapex @ Leftovers,Garchomp @ Choice Scarf,Venusaur @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry
+226,Paul Semmel,5-3,day1,Kingambit @ Chople Berry,Gengar-Mega @ Gengarite,Snorlax @ Leftovers,Rillaboom @ Eject Button,Garchomp @ Life Orb,Incineroar @ Passho Berry
+227,Jack Webb,5-3,day1,Indeedee-F @ Rocky Helmet,Whimsicott @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Basculegion @ Choice Scarf,Kommo-o @ Life Orb,Pyroar-Mega @ Pyroarite
+228,Christopher Dilley,5-3,day1,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Gholdengo @ Focus Sash
+229,Marc Torralba Brosa,5-3,day1,Torkoal @ Charcoal,Basculegion @ Focus Sash,Vivillon @ Choice Scarf,Blastoise-Mega @ Blastoisinite,Farigiraf @ Sitrus Berry,Kangaskhan @ Life Orb
+230,Luca Bertani,5-3,day1,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Life Orb,Archaludon @ Leftovers,Farigiraf @ Sitrus Berry,Swampert-Mega @ Swampertite
+231,Roi Gómez García,5-3,day1,Garchomp @ Life Orb,Aerodactyl-Mega @ Aerodactylite,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Kingambit @ Focus Sash
+232,Steven Van,5-3,day1,Incineroar @ Sitrus Berry,Garchomp @ Life Orb,Rillaboom @ Miracle Seed,Farigiraf @ Colbur Berry,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite
+233,Enea Valentini,5-3,day1,Politoed @ Sitrus Berry,Vivillon @ Focus Sash,Archaludon @ Leftovers,Gengar-Mega @ Gengarite,Rillaboom @ Occa Berry,Incineroar @ Passho Berry
+234,Simon Bernard,5-3,day1,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf
+235,Pierluigi Berardino,5-3,day1,Farigiraf @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Sneasler @ White Herb,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Sylveon @ Fairy Feather
+236,David Fernández,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay
+237,Andreas Haumann,5-3,day1,Dragonite-Mega @ Dragoninite,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Pelipper @ Life Orb,Sneasler @ White Herb,Farigiraf @ Sitrus Berry
+238,Alexis Morton,5-3,day1,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers,Pelipper @ Damp Rock,Basculegion-F @ Focus Sash,Sneasler @ Electric Seed,Golisopod-Mega @ Golisopite
+239,Ben White,5-3,day1,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite
+240,Shai Giuseppe Rabà,5-3,day1,Politoed @ Sitrus Berry,Vivillon @ Focus Sash,Gengar-Mega @ Gengarite,Incineroar @ Passho Berry,Kommo-o @ Leftovers,Rillaboom @ Occa Berry
+241,Violane Geraghty,5-3,day1,Incineroar @ Sitrus Berry,Kommo-o @ Leftovers,Rillaboom @ Occa Berry,Absol-Mega-Z @ Absolite Z,Gengar-Mega @ Gengarite,Sneasler @ Grassy Seed
+242,Baris “BillaVGC” Akcos,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Incineroar @ Chople Berry,Venusaur @ Focus Sash
+243,Walid Souak,5-3,day1,Raichu-Mega-X @ Raichunite X,Salamence-Mega @ Salamencite,Kingambit @ Life Orb,Primarina @ Leftovers,Sneasler @ Electric Seed,Rillaboom @ Miracle Seed
+244,Juan José Soler,5-3,day1,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Ceruledge @ Grassy Seed,Milotic @ Sitrus Berry
+245,Lamberto Pio Traverso,5-3,day1,Hatterene @ Focus Sash,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Camerupt-Mega @ Cameruptite,Gallade @ White Herb,Indeedee-F @ Rocky Helmet
+246,Andrea D'Angelantonio,5-3,day1,Sneasler @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Froslass-Mega @ Froslassite
+247,Lucie Marron,5-3,day1,Farigiraf @ Sitrus Berry,Rhyperior @ Life Orb,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Incineroar @ Passho Berry
+248,Yu Xiang,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed
+249,Amrit Mann,5-3,day1,Incineroar @ Passho Berry,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Rhyperior @ Life Orb,Sylveon @ Fairy Feather,Venusaur @ Focus Sash
+250,Jorge Ramírez,5-3,day1,Sneasler @ White Herb,Indeedee @ Choice Scarf,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Corviknight @ Psychic Seed,Tyranitar-Mega @ Tyranitarite
+251,Andrea Robustelli,5-3,day1,Dragapult @ Life Orb,Rillaboom @ Miracle Seed,Farigiraf @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Focus Sash,Camerupt-Mega @ Cameruptite
+252,Federico Masu,5-3,day1,Grimmsnarl @ Light Clay,Farigiraf @ Sitrus Berry,Golisopod-Mega @ Golisopite,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Politoed @ Mystic Water
+253,Driss Habi,5-3,day1,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+254,Alex Butters,5-3,day1,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Dragonite-Mega @ Dragoninite,Sneasler @ Focus Sash,Kingambit @ Black Glasses,Rillaboom @ Miracle Seed
+255,Guillaume Camelin,5-3,day1,Politoed @ Mystic Water,Charizard-Mega-Y @ Charizardite Y,Raichu-Mega-X @ Raichunite X,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Archaludon @ Leftovers
+256,David Peralta Bozada,5-3,day1,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Toxapex @ Leftovers,Sylveon @ Fairy Feather
+257,Gia Long Hoang,5-3,day1,Armarouge @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Annihilape @ Choice Scarf,Lucario-Mega-Z @ Lucarionite Z,Sneasler @ Psychic Seed,Indeedee-F @ Colbur Berry
+258,Romain MONTEIRO,5-3,day1,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite,Kingambit @ Focus Sash,Sinistcha @ Occa Berry
+259,Flavio Colognato,5-3,day1,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf
+260,Andrew Picornell,5-3,day1,Incineroar @ White Herb,Kingambit @ Black Glasses,Hatterene @ Life Orb,Farigiraf @ Sitrus Berry,Camerupt-Mega @ Cameruptite,Indeedee-F @ Psychic Seed
+261,Rubén Gómez,5-3,day1,Archaludon @ Leftovers,Metagross-Mega @ Metagrossite,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry
+262,Forhad Chodhoury,5-3,day1,Garchomp @ Choice Scarf,Sneasler @ White Herb,Kingambit @ Chople Berry,Dragonite-Mega @ Dragoninite,Froslass-Mega @ Froslassite,Basculegion @ Focus Sash
+263,Dylan Husher,5-3,day1,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Swampert-Mega @ Swampertite
+264,Mazar Reda-Neil,5-3,day1,Torkoal @ Charcoal,Sylveon @ Fairy Feather,Sneasler @ White Herb,Incineroar @ Chople Berry,Garchomp-Mega-Z @ Garchompite Z,Farigiraf @ Sitrus Berry
+265,Francesco Iozzia,5-3,day1,Volcarona @ Grassy Seed,Annihilape @ Choice Scarf,Rillaboom @ Life Orb,Excadrill @ Focus Sash,Staraptor-Mega @ Staraptite,Tyranitar-Mega @ Tyranitarite
+266,Cris Eklund,5-3,day1,Whimsicott @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Volcarona @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Life Orb
+267,Liam Westland,5-3,day1,Sinistcha @ Colbur Berry,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite,Sneasler @ Focus Sash,Kingambit @ Life Orb
+268,Raydevy MPENA MENGO,5-3,day1,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Delphox-Mega @ Delphoxite,Kingambit @ Focus Sash,Floette-Mega @ Floettite,Sinistcha @ Occa Berry
+269,Víctor Medina,5-3,day1,Gengar-Mega @ Gengarite,Kingambit @ Life Orb,Volcarona @ Charti Berry,Incineroar @ Sitrus Berry,Kommo-o @ Leftovers,Rillaboom @ Occa Berry
+270,Jurre De Mare,5-3,day1,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay
+271,Alessandro Bugari,5-3,day1,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry,Politoed @ Mystic Water,Sneasler @ White Herb,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z
+272,Miguel Paquete,5-3,day1,Rillaboom @ Occa Berry,Gengar-Mega @ Gengarite,Politoed @ Sitrus Berry,Kommo-o @ Leftovers,Vivillon @ Focus Sash,Incineroar @ Chople Berry
+273,Giulio Bassetti,5-3,day1,Indeedee @ Focus Sash,Typhlosion-Hisui @ Choice Scarf,Milotic @ Sitrus Berry,Metagross-Mega @ Metagrossite,Dragonite-Mega @ Dragoninite,Sneasler @ Psychic Seed
+274,Davide Piroddu,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay
+275,Leonardo Beninato,5-3,day1,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Garchomp-Mega-Z @ Garchompite Z
+276,andrea carissimi,5-3,day1,Sinistcha @ Occa Berry,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Blastoise-Mega @ Blastoisinite
+277,Adrián Lozano Navarro,5-3,day1,Kommo-o @ Leftovers,Delphox-Mega @ Delphoxite,Incineroar @ Chople Berry,Gengar-Mega @ Gengarite,Rillaboom @ Occa Berry,Clefable @ Sitrus Berry
+278,Pietro Iovino,5-3,day1,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Volcarona @ Rocky Helmet,Gholdengo @ Life Orb,Tyranitar-Mega @ Tyranitarite
+279,Alessandro Maccabiani,5-3,day1,Swampert-Mega @ Swampertite,Basculegion @ Choice Scarf,Pelipper @ Focus Sash,Archaludon @ Leftovers,Indeedee-F @ Sitrus Berry,Gardevoir-Mega @ Gardevoirite
+280,Vincenzo Zugaro,5-3,day1,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z,Floette-Mega @ Floettite,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry
+281,Angelo Piscitelli,5-3,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Dragapult @ Life Orb,Primarina @ Sitrus Berry,Glimmora-Mega @ Glimmoranite,Volcarona @ Grassy Seed
+282,Arianna Deiro,5-3,day1,Raichu-Mega-X @ Raichunite X,Basculegion-F @ Focus Sash,Sneasler @ White Herb,Pelipper @ Damp Rock,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers
+283,Pablo Ruiz,5-3,day1,Garchomp @ Choice Scarf,Kingambit @ Life Orb,Whimsicott @ Coba Berry,Staraptor-Mega @ Staraptite,Glimmora @ Focus Sash,Froslass-Mega @ Froslassite
+284,Calvin Atkinson,5-3,day1,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Primarina @ Leftovers,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+285,Laurence Archer,5-3,day1,Rillaboom @ Life Orb,Venusaur @ Focus Sash,Kommo-o @ Leftovers,Floette-Mega @ Floettite,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry
+286,Michele Cenacchi,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash
+287,Fabio Palmieri,5-3,day1,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y
+288,Mathieu Dusanter,5-3,day1,Blaziken-Mega @ Blazikenite,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Occa Berry,Dragapult @ Life Orb,Farigiraf @ Sitrus Berry,Vivillon @ Focus Sash
+289,Julien ABUKE,5-3,day1,Kingambit @ Focus Sash,Pelipper @ Life Orb,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Raichu-Mega-Y @ Raichunite Y,Farigiraf @ Sitrus Berry
+290,James Batshon,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Whimsicott @ Focus Sash,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+291,Adrian TECHER,5-3,day1,Indeedee-F @ Rocky Helmet,Pyroar-Mega @ Pyroarite,Whimsicott @ Focus Sash,Kommo-o @ Life Orb,Gardevoir-Mega @ Gardevoirite,Basculegion @ Mystic Water
+292,Nicolas LEGOUX,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay
+293,gabriele bertani,5-3,day1,Sneasler @ Grassy Seed,Basculegion @ Choice Scarf,Gardevoir-Mega @ Gardevoirite,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Focus Sash,Rillaboom @ Miracle Seed
+294,Davide Siciliano,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Incineroar @ Chople Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather
+295,Enrico Genovese,5-3,day1,Kingambit @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Camerupt-Mega @ Cameruptite,Dragapult @ Life Orb,Farigiraf @ Grassy Seed
+296,Xavier Ramírez,5-3,day1,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite,Kingambit @ Black Glasses,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry,Sneasler @ Focus Sash
+297,Rahim Farzan,5-3,day1,Vivillon @ Focus Sash,Delphox-Mega @ Delphoxite,Kommo-o @ Leftovers,Rillaboom @ Miracle Seed,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry
+298,Daniele Passacantilli,5-3,day1,Volcarona @ Rocky Helmet,Gholdengo @ Life Orb,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z
+299,Robin Lacroix,5-3,day1,Garchomp-Mega-Z @ Garchompite Z,Zoroark-Hisui @ Choice Scarf,Kingambit @ Focus Sash,Glimmora-Mega @ Glimmoranite,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed
+300,Lorenzo Dal Prato,5-3,day1,Rillaboom @ Miracle Seed,Sneasler @ Grassy Seed,Kingambit @ Focus Sash,Floette-Mega @ Floettite,Dragapult @ Life Orb,Incineroar @ Sitrus Berry
+301,Kyle Young,5-3,day1,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Focus Sash,Delphox-Mega @ Delphoxite,Kommo-o @ Leftovers,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry
+302,Liam Chatterjee,5-3,day1,Charizard-Mega-Y @ Charizardite Y,Glimmora @ Focus Sash,Froslass-Mega @ Froslassite,Kingambit @ Chople Berry,Garchomp @ Life Orb,Whimsicott @ Occa Berry
+303,Orazio Massimiliano Costantino,5-3,day1,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Primarina @ Leftovers,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y
+304,Enrico Damiani,5-3,day1,Farigiraf @ Colbur Berry,Camerupt-Mega @ Cameruptite,Floette-Mega @ Floettite,Aerodactyl @ Focus Sash,Rillaboom @ Grassy Seed,Milotic @ Leftovers
+305,Asterios Xougkas,5-3,day1,Incineroar @ Sitrus Berry,Volcarona @ Rocky Helmet,Milotic @ Leftovers,Garchomp @ Choice Scarf,Floette-Mega @ Floettite,Grimmsnarl @ Light Clay
+306,Alberto Russo,5-3,day1,Farigiraf @ Sitrus Berry,Incineroar @ Rocky Helmet,Sylveon @ Fairy Feather,Raichu-Mega-Y @ Raichunite Y,Camerupt-Mega @ Cameruptite,Rillaboom @ Life Orb
+307,Antonio Galotta,4-4,day1,Basculegion @ Life Orb,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb,Rillaboom @ Miracle Seed,Delphox-Mega @ Delphoxite,Kingambit @ Chople Berry
+308,Octavio Barajas,4-4,day1,Kingambit @ Occa Berry,Indeedee-F @ Rocky Helmet,Sneasler @ Psychic Seed,Salamence-Mega @ Salamencite,Armarouge @ Life Orb,Raichu-Mega-Y @ Raichunite Y
+309,Alessandro Cinardi,4-4,day1,Sneasler @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Froslass-Mega @ Froslassite,Kingambit @ Life Orb,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed
+310,Kevin Laranjeira,4-4,day1,Basculegion-F @ Focus Sash,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Raichu-Mega-X @ Raichunite X,Pelipper @ Damp Rock,Sneasler @ Electric Seed
+311,Roberto Parente,4-4,day1,Blaziken-Mega @ Blazikenite,Dragapult @ Life Orb,Volcarona @ Sitrus Berry,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Kingambit @ Focus Sash
+312,James Bostock,4-4,day1,Maushold-Three @ Chople Berry,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Blastoise-Mega @ Blastoisinite,Sneasler @ Focus Sash
+313,Alessandro Mandirola,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry,Kingambit @ Focus Sash,Sinistcha @ Kasib Berry,Kommo-o @ Leftovers
+314,Daniel Zamora Caballano,4-4,day1,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Garchomp @ Choice Scarf
+315,Patrizio Facchinetti,4-4,day1,Kingambit @ Life Orb,Salamence-Mega @ Salamencite,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Primarina @ Grassy Seed,Arcanine-Hisui @ Focus Sash
+316,Daniele Belfanti,4-4,day1,Gengar-Mega @ Gengarite,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash,Salamence-Mega @ Salamencite,Kingambit @ Chople Berry
+317,Sandro Pocrnja,4-4,day1,Basculegion-F @ Focus Sash,Pelipper @ Damp Rock,Golisopod-Mega @ Golisopite,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers,Sneasler @ Electric Seed
+318,Aaron Molyneux,4-4,day1,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Life Orb,Toxapex @ Leftovers,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry
+319,Stephane Giangaspero,4-4,day1,Delphox-Mega @ Delphoxite,Garchomp @ Choice Scarf,Sinistcha @ Coba Berry,Indeedee-F @ Rocky Helmet,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+320,Luke Wray,4-4,day1,Golisopod-Mega @ Golisopite,Pelipper @ Damp Rock,Sneasler @ Electric Seed,Basculegion-F @ Focus Sash,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers
+321,Sara Spiller,4-4,day1,Espathra @ Electric Seed,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Politoed @ Sitrus Berry,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers
+322,Alejandro Tovar,4-4,day1,Staraptor-Mega @ Staraptite,Tyranitar @ Focus Sash,Indeedee-F @ Colbur Berry,Gholdengo @ Life Orb,Gardevoir-Mega @ Gardevoirite,Garchomp @ Choice Scarf
+323,Mads Lehde Fischer,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Volcarona @ Charti Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+324,Matthew Neeson,4-4,day1,Gardevoir-Mega @ Gardevoirite,Venusaur @ Focus Sash,Incineroar @ Sitrus Berry,Indeedee-F @ Psychic Seed,Basculegion @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y
+325,Alessandro de Angelis,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Venusaur @ Life Orb,Pelipper @ Focus Sash
+326,Lucas PEREZ,4-4,day1,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Salamence-Mega @ Salamencite,Incineroar @ Sitrus Berry,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash
+327,alejandro fernandez,4-4,day1,Salamence-Mega @ Salamencite,Sneasler @ White Herb,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash,Milotic @ Sitrus Berry,Indeedee @ Choice Scarf
+328,Gianluca Fini,4-4,day1,Pyroar-Mega @ Pyroarite,Gardevoir-Mega @ Gardevoirite,Ninetales @ Choice Scarf,Basculegion @ Life Orb,Whimsicott @ Focus Sash,Indeedee-F @ Rocky Helmet
+329,Giuseppe Alario,4-4,day1,Tyranitar-Mega @ Tyranitarite,Sneasler @ White Herb,Indeedee @ Choice Scarf,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Corviknight @ Occa Berry
+330,Teddy BONNET,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed
+331,Michał Chyra,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Kommo-o @ Leftovers,Rillaboom @ Miracle Seed,Sinistcha @ Occa Berry,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry
+332,Thierry Small,4-4,day1,Delphox-Mega @ Delphoxite,Kingambit @ Black Glasses,Sneasler @ Focus Sash,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite
+333,Gabriele Pronzati,4-4,day1,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry
+334,Diego Barbieri,4-4,day1,Pelipper @ Damp Rock,Basculegion-F @ Focus Sash,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Raichu-Mega-X @ Raichunite X,Sneasler @ White Herb
+335,William Bassolino,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf
+336,Oscar Princivalle,4-3,day1,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Sneasler @ White Herb,Basculegion-F @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Pelipper @ Damp Rock
+337,gaetano cannella,4-4,day1,Politoed @ Sitrus Berry,Rillaboom @ Eject Button,Archaludon @ Leftovers,Gengar-Mega @ Gengarite,Swampert-Mega @ Swampertite,Incineroar @ Chople Berry
+338,Juanma Luque,4-4,day1,Mawile-Mega @ Mawilite,Archaludon @ Leftovers,Swampert-Mega @ Swampertite,Incineroar @ Passho Berry,Pelipper @ Sitrus Berry,Sinistcha @ Colbur Berry
+339,Edoardo Bedogna,4-4,day1,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y
+340,Mattia Repetto,4-4,day1,Rillaboom @ Miracle Seed,Basculegion @ Choice Scarf,Floette-Mega @ Floettite,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb,Incineroar @ Chople Berry
+341,Matteo De Ruvo,4-4,day1,Salamence-Mega @ Salamencite,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Sneasler @ Grassy Seed,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash
+342,Julian Saint paul,4-4,day1,Armarouge @ Life Orb,Sneasler @ Psychic Seed,Annihilape @ Leftovers,Indeedee-F @ Sitrus Berry,Salamence-Mega @ Salamencite,Gardevoir-Mega @ Gardevoirite
+343,Nicolò Noseda,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Gholdengo @ Life Orb
+344,David Mackinnon,4-4,day1,Basculegion-F @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Golisopod-Mega @ Golisopite,Pelipper @ Damp Rock,Sneasler @ White Herb,Archaludon @ Leftovers
+345,Francesco Mammucari,4-4,day1,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Floette-Mega @ Floettite,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y
+346,Marco Croci,4-4,day1,Sinistcha @ Sitrus Berry,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Tyranitar-Mega @ Tyranitarite,Primarina @ Leftovers,Gholdengo @ Life Orb
+347,Maria Gras,4-4,day1,Kingambit @ Life Orb,Sneasler @ Focus Sash,Sinistcha @ Kasib Berry,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite
+348,Joey Davey,4-4,day1,Farigiraf @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Leftovers,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y
+349,Krystian Bachorski,4-4,day1,Sneasler @ Psychic Seed,Kingambit @ Black Glasses,Floette-Mega @ Floettite,Garchomp-Mega-Z @ Garchompite Z,Indeedee-F @ Rocky Helmet,Armarouge @ Focus Sash
+350,Glenn Rackley,4-4,day1,Glimmora-Mega @ Glimmoranite,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Froslass-Mega @ Froslassite,Garchomp @ Choice Scarf,Rillaboom @ Miracle Seed
+351,Dominic Owen,4-4,day1,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed
+352,Nicholas Rottoli,4-4,day1,Hatterene @ Focus Sash,Kangaskhan @ Life Orb,Kingambit @ Black Glasses,Indeedee-F @ Psychic Seed,Farigiraf @ Sitrus Berry,Camerupt-Mega @ Cameruptite
+353,Murhaf Al-Shalabi,4-4,day1,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Sinistcha @ Occa Berry,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry
+354,Davide Aondio,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash
+355,Matthias Brandhofer,4-4,day1,Rillaboom @ Miracle Seed,Sneasler @ Focus Sash,Salamence-Mega @ Salamencite,Basculegion @ Life Orb,Floette-Mega @ Floettite,Kingambit @ Chople Berry
+356,Fernando Risoto,4-4,day1,Kingambit @ Occa Berry,Whimsicott @ Coba Berry,Basculegion @ Life Orb,Glimmora @ Focus Sash,Volcarona @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z
+357,Frank Voltaggio,4-4,day1,Kingambit @ Black Glasses,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash
+358,Gianluca Belli,4-4,day1,Rillaboom @ Miracle Seed,Basculegion @ Choice Scarf,Froslass-Mega @ Froslassite,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Glimmora-Mega @ Glimmoranite
+359,Xavier Perin,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Incineroar @ Rocky Helmet,Rillaboom @ Sitrus Berry,Volcarona @ Grassy Seed,Floette-Mega @ Floettite
+360,Kurt Wonka,4-4,day1,Delphox-Mega @ Delphoxite,Garchomp @ Choice Scarf,Dragonite-Mega @ Dragoninite,Kingambit @ Chople Berry,Basculegion @ Focus Sash,Sneasler @ White Herb
+361,Jiahao Cheng,4-4,day1,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Incineroar @ Chople Berry
+362,Gustavo MOREIRA VIDAL PEREIRA,4-4,day1,Incineroar @ Sitrus Berry,Whimsicott @ Focus Sash,Basculegion @ Life Orb,Mawile-Mega @ Mawilite,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Rocky Helmet
+363,Sidy Badiane,4-4,day1,Milotic @ Electric Seed,Kingambit @ Life Orb,Raichu-Mega-X @ Raichunite X,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Volcarona @ Charti Berry
+364,Chahine Dagher,4-4,day1,Volcarona @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+365,Marco Salvini,4-4,day1,Volcarona @ Rocky Helmet,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry
+366,Frédéric Boulant,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed
+367,Malte Rogoll,4-4,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Milotic @ Sitrus Berry,Staraptor-Mega @ Staraptite,Ceruledge @ Grassy Seed
+368,Luca Rissone,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Primarina @ Leftovers
+369,Lorenzo Ghezzo,4-4,day1,Indeedee @ Focus Sash,Sneasler @ Psychic Seed,Charizard-Mega-Y @ Charizardite Y,Gardevoir-Mega @ Gardevoirite,Hydreigon @ Life Orb,Milotic @ Leftovers
+370,Christopher BLE,4-4,day1,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf
+371,Matteo Paviza,4-4,day1,Volcarona @ Rocky Helmet,Garchomp @ Choice Scarf,Glimmora-Mega @ Glimmoranite,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Kingambit @ Life Orb
+372,Davide Sisimbro,4-4,day1,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash,Hydreigon @ Life Orb,Indeedee-F @ Rocky Helmet,Gardevoir-Mega @ Gardevoirite,Sneasler @ Psychic Seed
+373,Manuel Di Gaetano,4-4,day1,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+374,Daniel Norton,4-4,day1,Incineroar @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Clefable @ Sitrus Berry,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+375,Pablo Sales,4-4,day1,Rillaboom @ Miracle Seed,Volcarona @ Rocky Helmet,Salamence-Mega @ Salamencite,Kingambit @ Life Orb,Garchomp @ Choice Scarf,Glimmora-Mega @ Glimmoranite
+376,Mateusz Bodnar,4-4,day1,Sneasler @ White Herb,Basculegion-F @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Archaludon @ Leftovers,Pelipper @ Damp Rock,Golisopod-Mega @ Golisopite
+377,Connor O'Sullivan,4-4,day1,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Primarina @ Leftovers,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed
+378,Benjamin Osborne,4-4,day1,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash,Sneasler @ White Herb,Corviknight @ Occa Berry,Tyranitar-Mega @ Tyranitarite,Indeedee @ Choice Scarf
+379,Juan Francisco Alcaraz,4-4,day1,Garchomp @ Life Orb,Sneasler @ Grassy Seed,Sylveon @ Fairy Feather,Rillaboom @ Miracle Seed,Aerodactyl-Mega @ Aerodactylite,Charizard-Mega-Y @ Charizardite Y
+380,Mathias Jensen,4-4,day1,Garchomp @ Choice Scarf,Sneasler @ White Herb,Whimsicott @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet,Charizard-Mega-Y @ Charizardite Y
+381,Rob Cushing,4-4,day1,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Primarina @ Leftovers
+382,Jordi Montero Bizcarri,4-3,day1,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z
+383,Luigi Calidonna,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Sneasler @ White Herb,Whimsicott @ Life Orb,Weavile @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf
+384,Giorgio Ciantelli,4-4,day1,Espathra @ Focus Sash,Indeedee @ Choice Scarf,Sneasler @ Psychic Seed,Milotic @ Leftovers,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+385,Luca Mattei,4-4,day1,Mimikyu @ White Herb,Rillaboom @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Ninetales-Alola @ Choice Scarf,Charizard-Mega-X @ Charizardite X,Milotic @ Leftovers
+386,Andrea Crico,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Basculegion-F @ Focus Sash,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Pelipper @ Damp Rock,Sableye @ Sitrus Berry
+387,Ruben Escudero,4-4,day1,Indeedee-F @ Rocky Helmet,Incineroar @ White Herb,Farigiraf @ Wise Glasses,Kingambit @ Black Glasses,Camerupt-Mega @ Cameruptite,Hatterene @ Life Orb
+388,Alessio Mannucci,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Chople Berry,Farigiraf @ Sitrus Berry,Sneasler @ White Herb,Torkoal @ Charcoal,Sylveon @ Fairy Feather
+389,Jasdil Deo,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Garchomp @ Choice Scarf
+390,Martin BERNARD,4-4,day1,Araquanid @ Mystic Water,Froslass-Mega @ Froslassite,Rillaboom @ Sitrus Berry,Kingambit @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash
+391,Cosimo Migliorini,4-4,day1,Delphox-Mega @ Delphoxite,Kingambit @ Black Glasses,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Floette-Mega @ Floettite
+392,Mario Taris Rojas,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Garchomp @ Choice Scarf,Gholdengo @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Rillaboom @ Miracle Seed,Sneasler @ White Herb
+393,Alessandro Virgili,4-4,day1,Sylveon @ Fairy Feather,Garchomp @ Life Orb,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Aerodactyl-Mega @ Aerodactylite,Farigiraf @ Sitrus Berry
+394,Kevin Primus,4-4,day1,Kommo-o @ Life Orb,Volcarona @ Rocky Helmet,Milotic @ Leftovers,Meowscarada @ Choice Scarf,Metagross-Mega @ Metagrossite,Raichu-Mega-Y @ Raichunite Y
+395,Kira Pfister,4-4,day1,Kingambit @ Chople Berry,Basculegion @ Life Orb,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Sylveon @ Fairy Feather,Raichu-Mega-Y @ Raichunite Y
+396,Blaise Braymand,4-4,day1,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed
+397,Nicola Gini,4-4,day1,Toxapex @ Leftovers,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Venusaur @ Life Orb,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y
+398,Kevin Corbetta,4-4,day1,Staraptor-Mega @ Staraptite,Glimmora @ Focus Sash,Whimsicott @ Occa Berry,Gholdengo @ Life Orb,Volcarona @ Charti Berry,Raichu-Mega-Y @ Raichunite Y
+399,Valerio Cerrato,4-4,day1,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Life Orb,Aerodactyl-Mega @ Aerodactylite,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather
+400,Sebastiano Trinchitelli,4-4,day1,Floette-Mega @ Floettite,Basculegion @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Volcarona @ Lum Berry,Incineroar @ Sitrus Berry
+401,Claudio Lombardo,4-4,day1,Rillaboom @ Miracle Seed,Sneasler @ Focus Sash,Salamence-Mega @ Salamencite,Kingambit @ Chople Berry,Basculegion @ Colbur Berry,Floette-Mega @ Floettite
+402,Adiel Caleb Camacho Aguilera,4-4,day1,Sneasler @ White Herb,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Gholdengo @ Life Orb
+403,Marco Girardi,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+404,Wolfgang Wilflinger,4-4,day1,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z
+405,Enrico Geraci,4-4,day1,Golisopod-Mega @ Golisopite,Floette-Mega @ Floettite,Basculegion-F @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Damp Rock,Sneasler @ White Herb
+406,Umberto Selva,4-4,day1,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb,Sinistcha @ Colbur Berry,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+407,Davide Lombardo,4-4,day1,Floette-Mega @ Floettite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry
+408,Federico Piazza,4-4,day1,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y
+409,Tommaso Benedetti,4-4,day1,Basculegion @ Mystic Water,Charizard-Mega-Y @ Charizardite Y,Kingambit @ Chople Berry,Sneasler @ White Herb,Whimsicott @ Focus Sash,Garchomp @ Life Orb
+410,Ozan Karagöz,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Milotic @ Expert Belt,Ceruledge @ Grassy Seed,Staraptor-Mega @ Staraptite
+411,Kevin Salvetto,4-4,day1,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y
+412,Ottavia Piro,4-4,day1,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Primarina @ Leftovers
+413,Lucas Bouligaud,4-4,day1,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Floette-Mega @ Floettite,Glimmora-Mega @ Glimmoranite,Volcarona @ Grassy Seed
+414,Mika Hommel,4-4,day1,Golisopod-Mega @ Golisopite,Pelipper @ Sitrus Berry,Raichu-Mega-X @ Raichunite X,Basculegion @ Life Orb,Archaludon @ Leftovers,Grimmsnarl @ Light Clay
+415,Jacob Kendrick,4-4,day1,Indeedee-F @ Sitrus Berry,Annihilape @ Choice Scarf,Excadrill @ Focus Sash,Armarouge @ Life Orb,Tyranitar-Mega @ Tyranitarite,Salamence-Mega @ Salamencite
+416,Luca Collecorvino,4-4,day1,Arcanine-Hisui @ Focus Sash,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,
+417,Harry Kent,4-4,day1,Volcarona @ Sitrus Berry,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Sneasler @ Psychic Seed,Indeedee-F @ Rocky Helmet,Gardevoir-Mega @ Gardevoirite
+418,Falko Boere,4-4,day1,Politoed @ Mystic Water,Raichu-Mega-X @ Raichunite X,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers
+419,Alessandro Chiesurin,4-4,day1,Farigiraf @ Sitrus Berry,Golisopod-Mega @ Golisopite,Incineroar @ Chople Berry,Garchomp-Mega-Z @ Garchompite Z,Politoed @ Mystic Water,Archaludon @ Leftovers
+420,Mikel Ortega Aguado,4-4,day1,Incineroar @ Leftovers,Rillaboom @ Miracle Seed,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z
+421,Adame FAKIR,4-4,day1,Farigiraf @ Sitrus Berry,Chandelure-Mega @ Chandelurite,Whimsicott @ Focus Sash,Golisopod-Mega @ Golisopite,Basculegion @ Mystic Water,Hydreigon @ Choice Scarf
+422,Mattia Soave,4-4,day1,Basculegion @ Life Orb,Pyroar-Mega @ Pyroarite,Ninetales @ Choice Scarf,Whimsicott @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet
+423,Freddie Meah,4-4,day1,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Gholdengo @ Life Orb
+424,Andrea Chiotto,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay
+425,lorenzo ulivi,4-4,day1,Incineroar @ Sitrus Berry,Kommo-o @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Focus Sash,Delphox-Mega @ Delphoxite,Sinistcha @ Kasib Berry
+426,Sergio Sanz Frías,4-4,day1,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Maushold-Three @ Chople Berry,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Blastoise-Mega @ Blastoisinite
+427,Jack Clarke,4-4,day1,Pelipper @ Life Orb,Raichu-Mega-X @ Raichunite X,Sinistcha @ Sitrus Berry,Grimmsnarl @ Light Clay,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers
+428,David Conesa,4-4,day1,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Gholdengo @ Sitrus Berry,Arcanine-Hisui @ Focus Sash,Manectric-Mega @ Manectite,Rillaboom @ Life Orb
+429,Antoine Larrieu-Igoudjil,4-4,day1,Gholdengo @ Grassy Seed,Milotic @ Leftovers,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite
+430,Jaydon Martin-Jones,4-4,day1,Sneasler @ White Herb,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Garchomp-Mega-Z @ Garchompite Z,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry
+431,Takafumi Yukimori,4-4,day1,Volcarona @ Charti Berry,Rillaboom @ Sitrus Berry,Primarina @ Life Orb,Incineroar @ Chople Berry,Kommo-o @ Leftovers,Gengar-Mega @ Gengarite
+432,Diego Canapini,4-4,day1,Gholdengo @ Life Orb,Floette-Mega @ Floettite,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry
+433,Federica Rinello,4-4,day1,Incineroar @ Chople Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather
+434,Alessandro Sicco,4-4,day1,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y
+435,Mario Giuseppe Vincitorio,4-4,day1,Kingambit @ Chople Berry,Basculegion @ Life Orb,Floette-Mega @ Floettite,Charizard-Mega-Y @ Charizardite Y,Whimsicott @ Focus Sash,Sneasler @ White Herb
+436,Milan Kovacevic,4-4,day1,Garchomp @ Choice Scarf,Delphox-Mega @ Delphoxite,Floette-Mega @ Floettite,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry
+437,Marc Hooijenga,4-4,day1,Rillaboom @ Life Orb,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Floette-Mega @ Floettite,Sneasler @ White Herb
+438,Enrico Ricci,4-4,day1,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+439,Callum Lea,4-4,day1,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Pelipper @ Sitrus Berry
+440,Ben Fruhauf,4-4,day1,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Milotic @ Leftovers,Volcarona @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Weavile @ Focus Sash
+441,Alessio Verni,4-4,day1,Garchomp @ Choice Scarf,Kingambit @ Life Orb,Sneasler @ Focus Sash,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite
+442,Bas Bauer,4-4,day1,Indeedee-F @ Sitrus Berry,Torkoal @ Charcoal,Armarouge @ Life Orb,Sneasler @ Psychic Seed,Gardevoir-Mega @ Gardevoirite,Kingambit @ Black Glasses
+443,Adrien Marcaillou,4-4,day1,Raichu-Mega-X @ Raichunite X,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+444,Emanuele Barba,4-4,day1,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Primarina @ Leftovers,Gholdengo @ Life Orb,Staraptor-Mega @ Staraptite
+445,Till Rey,4-4,day1,Farigiraf @ Sitrus Berry,Aerodactyl-Mega @ Aerodactylite,Kingambit @ Focus Sash,Sylveon @ Fairy Feather,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y
+446,Max Purdon,4-4,day1,Raichu-Mega-X @ Raichunite X,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Sneasler @ Grassy Seed,Volcarona @ Rocky Helmet
+447,Vincenzo Emanuele Ciliberto,4-4,day1,Farigiraf @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Focus Sash,Rillaboom @ Miracle Seed,Dragapult @ Life Orb,Camerupt-Mega @ Cameruptite
+448,Daniel Forner,4-4,day1,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Kingambit @ Life Orb,Volcarona @ Rocky Helmet,Raichu-Mega-Y @ Raichunite Y,Froslass-Mega @ Froslassite
+449,Moatassem BEN AMARA,4-4,day1,Venusaur @ Wide Lens,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Pelipper @ Focus Sash,Indeedee-F @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y
+450,Axel Thomas,4-4,day1,Whimsicott @ Focus Sash,Staraptor-Mega @ Staraptite,Armarouge @ Kasib Berry,Glimmora-Mega @ Glimmoranite,Kingambit @ Chople Berry,Garchomp @ Life Orb
+451,Daniel Schäfer,4-4,day1,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Kingambit @ Black Glasses,Sneasler @ Focus Sash,Floette-Mega @ Floettite
+452,Julien Lanoë-Decker,4-4,day1,Floette-Mega @ Floettite,Sneasler @ Grassy Seed,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z
+453,Daniel Davies,4-4,day1,Staraptor-Mega @ Staraptite,Basculegion-F @ Choice Scarf,Rillaboom @ Miracle Seed,Incineroar @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Sneasler @ White Herb
+454,Martin Baufine,4-4,day1,Gengar-Mega @ Gengarite,Vivillon @ Focus Sash,Incineroar @ Passho Berry,Rillaboom @ Occa Berry,Kommo-o @ Leftovers,Politoed @ Sitrus Berry
+455,Fabio Iudicello,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Kingambit @ Focus Sash,Sylveon @ Fairy Feather,Aerodactyl-Mega @ Aerodactylite,Farigiraf @ Sitrus Berry,Garchomp @ Life Orb
+456,Omar ZIYANI,4-4,day1,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Rocky Helmet,Kommo-o @ Life Orb,Whimsicott @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Armarouge @ Charcoal
+457,Alejandro Arco Hierves,4-4,day1,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Milotic @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Grassy Seed
+458,Gaspare Mannina,4-4,day1,Ceruledge @ Grassy Seed,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Primarina @ Leftovers
+459,Valentin Da silva jacarias,4-4,day1,Rillaboom @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Gallade @ Focus Sash,Incineroar @ Life Orb,Sylveon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z
+460,hugo DAUVERGNE,4-4,day1,Sylveon @ Fairy Feather,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Gholdengo @ Life Orb,Volcarona @ Charti Berry,Excadrill @ Focus Sash
+461,Francesco Sottile,4-4,day1,Farigiraf @ Sitrus Berry,Incineroar @ White Herb,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Camerupt-Mega @ Cameruptite,Rillaboom @ Life Orb
+462,Arianna Tarzia,4-4,day1,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Swampert-Mega @ Swampertite,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry
+463,Denis Six,4-4,day1,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z
+464,Iga Raczyńska,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay
+465,Mathys Tescher,4-4,day1,Metagross-Mega @ Metagrossite,Arcanine-Hisui @ Focus Sash,Milotic @ Psychic Seed,Staraptor-Mega @ Staraptite,Indeedee-F @ Rocky Helmet,Dragapult @ Life Orb
+466,Fausto Terrana,4-4,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Primarina @ Leftovers,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite
+467,Simon Schlütter,4-4,day1,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Kingambit @ Black Glasses,Sylveon @ Fairy Feather
+468,Giacomo Bogliolo,4-4,day1,Garchomp @ Choice Scarf,Toxapex @ Leftovers,Incineroar @ Sitrus Berry,Venusaur @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Fairy Feather
+469,Damiano Crivelli,4-4,day1,Incineroar @ Sitrus Berry,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Kingambit @ Life Orb,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite
+470,Martina Tomio,4-4,day1,Camerupt-Mega @ Cameruptite,Indeedee-F @ Rocky Helmet,Incineroar @ Passho Berry,Kingambit @ Life Orb,Farigiraf @ Colbur Berry,Hatterene @ Focus Sash
+471,Mattia Podestà,4-4,day1,Incineroar @ Sitrus Berry,Dragonite-Mega @ Dragoninite,Floette-Mega @ Floettite,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Sneasler @ White Herb
+472,Helmy BEN MESSAOUD,4-4,day1,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay
+473,Marcel Jenke,4-4,day1,Delphox-Mega @ Delphoxite,Indeedee-F @ Sitrus Berry,Garchomp @ Choice Scarf,Gyarados-Mega @ Gyaradosite,Rillaboom @ Leftovers,Sneasler @ White Herb
+474,Yacine Ahmed Yahia,4-4,day1,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Pelipper @ Damp Rock,Raichu-Mega-Y @ Raichunite Y,Basculegion-F @ Focus Sash,Sneasler @ White Herb
+475,Jesus Marchena Carrera,4-4,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Basculegion @ Choice Scarf
+476,Federico Paolucci,4-4,day1,Corviknight @ Psychic Seed,Indeedee @ Choice Scarf,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Sneasler @ White Herb,Tyranitar-Mega @ Tyranitarite
+477,Louis Girault,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Sneasler @ Grassy Seed,Arcanine-Hisui @ Focus Sash,Salamence-Mega @ Salamencite,Kingambit @ Life Orb,Rillaboom @ Miracle Seed
+478,Lorenzo Bruno,4-4,day1,Sneasler @ White Herb,Pelipper @ Sitrus Berry,Staraptor-Mega @ Staraptite,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Rillaboom @ Miracle Seed
+479,Davide Sforzin,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Milotic @ Leftovers,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Charti Berry,Rillaboom @ Life Orb
+480,Giuliana Lanni,4-4,day1,Floette-Mega @ Floettite,Garchomp @ Choice Scarf,Delphox-Mega @ Delphoxite,Indeedee-F @ Rocky Helmet,Sinistcha @ Coba Berry,Incineroar @ Sitrus Berry
+481,Craig Davis,4-4,day1,Sneasler @ White Herb,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Swampert-Mega @ Swampertite,Basculegion-F @ Focus Sash,Pelipper @ Damp Rock
+482,Jamie North,4-4,day1,Sneasler @ Grassy Seed,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Primarina @ Leftovers,Manectric-Mega @ Manectite,Incineroar @ Sitrus Berry
+483,Aurore Anne-Denise,4-4,day1,Basculegion @ Choice Scarf,Altaria-Mega @ Altarianite,Rillaboom @ Life Orb,Incineroar @ Sitrus Berry,Volcarona @ Leftovers,Raichu-Mega-Y @ Raichunite Y
+484,Corentin Simon,4-4,day1,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed
+485,Sébastien Roberto,4-4,day1,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed,Incineroar @ Chople Berry,Rillaboom @ Occa Berry,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y
+486,Florian Foirest,4-4,day1,Blaziken @ Focus Sash,Pelipper @ Sitrus Berry,Basculegion-F @ Life Orb,Kingambit @ Occa Berry,Metagross-Mega @ Metagrossite,Ninetales-Alola @ Never-Melt Ice
+487,Sebastian Manuel Alvarez Mercado,4-4,day1,Volcarona @ Grassy Seed,Floette-Mega @ Floettite,Indeedee-F @ Rocky Helmet,Basculegion @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+488,Nicolas PAQUOT,4-4,day1,Kingambit @ Occa Berry,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Garchomp @ Choice Scarf,Basculegion @ Sitrus Berry,Dragonite-Mega @ Dragoninite
+489,Meaghan Blakey,4-4,day1,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Swampert-Mega @ Swampertite,Pelipper @ Damp Rock,Sneasler @ White Herb,Basculegion-F @ Focus Sash
+490,Andrea Maiellaro,4-4,day1,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash
+491,David Ammann,4-4,day1,Basculegion @ Choice Scarf,Sneasler @ Grassy Seed,Salamence-Mega @ Salamencite,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite
+492,Samuele Pavan,4-4,day1,Dragonite-Mega @ Dragoninite,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Sneasler @ White Herb
+493,Emilio Nesi,4-4,day1,Raichu-Mega-Y @ Raichunite Y,Ninetales-Alola @ Light Clay,Basculegion @ Choice Scarf,Volcarona @ Leftovers,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed
+494,Chiara Perego,4-4,day1,Camerupt-Mega @ Cameruptite,Indeedee-F @ Psychic Seed,Incineroar @ White Herb,Kingambit @ Black Glasses,Hatterene @ Life Orb,Farigiraf @ Sitrus Berry
+495,Jordan Jourdan,4-4,day1,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Garchomp @ Choice Scarf,Incineroar @ Chople Berry
+496,Lee Watson,4-4,day1,Gholdengo @ Focus Sash,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Milotic @ Leftovers,Incineroar @ Sitrus Berry,Dragonite-Mega @ Dragoninite
+497,Fabio Agostini,4-4,day1,Basculegion @ Choice Scarf,Talonflame @ Focus Sash,Tsareena,Garchomp @ White Herb,Kingambit @ Chople Berry,Floette-Mega @ Floettite
+498,Bas Mulder,4-4,day1,Golisopod-Mega @ Golisopite,Pelipper @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Sinistcha @ Kasib Berry,Archaludon @ Leftovers,Grimmsnarl @ Light Clay
+499,Stephane Brard,4-4,day1,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Glimmora-Mega @ Glimmoranite,Froslass-Mega @ Froslassite,Basculegion @ Choice Scarf
+500,Alexandre Bur,4-4,day1,Staraptor-Mega @ Staraptite,Empoleon @ Chople Berry,Volcarona @ Electric Seed,Garchomp @ Life Orb,Raichu-Mega-X @ Raichunite X,Whimsicott @ Focus Sash
+501,Jamie Pratchett,4-4,day1,Incineroar @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Clefable @ Sitrus Berry,Gholdengo @ Life Orb
+502,Francesco Magurno,4-4,day1,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Farigiraf @ Sitrus Berry,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y
+503,Michele Orlandi,4-4,day1,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Raichu-Mega-X @ Raichunite X
+504,Jens Kassner,4-4,day1,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Colbur Berry,Armarouge @ Focus Sash,Annihilape @ Choice Scarf,Lucario-Mega-Z @ Lucarionite Z,Sneasler @ Psychic Seed
+505,Alberto Gini,4-4,day1,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Sneasler @ Focus Sash,Basculegion @ Life Orb,Floette-Mega @ Floettite,Kingambit @ Chople Berry
+506,Luigi De Filpo,4-4,day1,Delphox-Mega @ Delphoxite,Kingambit @ Focus Sash,Sneasler @ Psychic Seed,Indeedee-F @ Lum Berry,Salamence-Mega @ Salamencite,Mamoswine @ Choice Scarf
+507,Gerardo Rodriguez,4-4,day1,Venusaur @ Focus Sash,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y
+508,Lorenzo Pugliese,4-4,day1,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers,Politoed @ Mystic Water,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay
+509,Loïc VINGATAMA,4-4,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Ceruledge @ Grassy Seed,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Milotic @ Leftovers
+510,Alessio Pizzo,4-4,day1,Farigiraf @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Golisopod-Mega @ Golisopite,Politoed @ Mystic Water,Archaludon @ Leftovers
+511,Guido Maria Secondulfo,4-4,day1,Farigiraf @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Dragapult @ Life Orb,Camerupt-Mega @ Cameruptite,Kingambit @ Focus Sash
+512,James March,4-4,day1,Sneasler @ Psychic Seed,Kingambit @ Chople Berry,Indeedee @ Focus Sash,Kommo-o @ Leftovers,Meowstic-F-Mega @ Meowsticite,Charizard-Mega-Y @ Charizardite Y
+513,vanessa Van vlierberghe,4-4,day1,Dragapult @ Life Orb,Golisopod-Mega @ Golisopite,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Basculegion @ Mystic Water,Whimsicott @ Focus Sash
+514,Hadrien Pierlovisi,4-4,day1,Salamence-Mega @ Salamencite,Kingambit @ Life Orb,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Sneasler @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+515,Sean Cuddihy,4-4,day1,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay
+516,Ben Simon,4-4,day1,Rillaboom @ Miracle Seed,Basculegion @ Sitrus Berry,Sneasler @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Leftovers,Glimmora-Mega @ Glimmoranite
+517,Martin Daescu,3-5,day1,Kommo-o @ Life Orb,Clefable @ Rocky Helmet,Swampert @ Sitrus Berry,Rillaboom @ Occa Berry,Gengar-Mega @ Gengarite,Volcarona @ Grassy Seed
+518,Quentin Rothman,3-4,day1,Raichu-Mega-Y @ Raichunite Y,Salamence-Mega @ Salamencite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash
+519,Jean CHAZELLE,3-3,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Basculegion @ Choice Scarf
+520,Maurice Verhaag,3-3,day1,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Gholdengo @ Life Orb,Volcarona @ Rocky Helmet,Pelipper @ Sitrus Berry,Kommo-o @ Leftovers
+521,Tommaso Marras,3-3,day1,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z
+522,Ryan Kendrick,3-5,day1,Basculegion @ Choice Scarf,Rillaboom @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Grimmsnarl @ Light Clay,Kommo-o @ Leftovers,Delphox-Mega @ Delphoxite
+523,Lennart Christe,3-4,day1,Torkoal @ Charcoal,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Incineroar @ Chople Berry,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z
+524,Valentino Ranieri,3-5,day1,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay,Garchomp-Mega-Z @ Garchompite Z
+525,Mattéo Dorey,3-5,day1,Milotic @ Sitrus Berry,Gholdengo @ Life Orb,Volcarona @ Passho Berry,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash
+526,David Pérez Bermejo,3-5,day1,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Primarina @ Leftovers
+527,Kieran Wagg,3-5,day1,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Whimsicott @ Focus Sash,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Garchomp @ Life Orb
+528,Sylvain Tiset,3-5,day1,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather
+529,Achraf Jamal El Idrissi Faiz,3-3,day1,Farigiraf @ Sitrus Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Sylveon @ Fairy Feather,Venusaur @ Focus Sash
+530,Alessandro Albertin,3-5,day1,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Garchomp @ Choice Scarf
+531,Sylvia Fuentelsaz,3-5,day1,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Gholdengo @ Life Orb,Basculegion @ Choice Scarf
+532,Nathan Rouby,3-5,day1,Incineroar @ Life Orb,Torkoal @ Charcoal,Garchomp-Mega-Z @ Garchompite Z,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Sneasler @ White Herb
+533,alessandro Danesi,3-5,day1,Skeledirge @ Sitrus Berry,Milotic @ Leftovers,Excadrill @ Focus Sash,Rillaboom @ Miracle Seed,Farigiraf @ Grassy Seed,Tyranitar-Mega @ Tyranitarite
+534,Roy Lazzerini,3-4,day1,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb,Sinistcha @ Coba Berry,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Sneasler @ Focus Sash
+535,Corentin RIVIERE,3-5,day1,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Chople Berry,Torkoal @ Charcoal
+536,Alessandro Astegiano,3-5,day1,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Toxapex @ Leftovers,Venusaur @ Life Orb,Charizard-Mega-Y @ Charizardite Y
+537,Karim Awad,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay
+538,Marc Adrià Marqués,3-4,day1,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Leftovers,Farigiraf @ Sitrus Berry,Rillaboom @ Miracle Seed
+539,Danilo Grattarola,3-5,day1,Sneasler @ Grassy Seed,Lucario-Mega-Z @ Lucarionite Z,Indeedee-F @ Rocky Helmet,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Armarouge @ Life Orb
+540,Thomas Wall,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Farigiraf @ Sitrus Berry,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Sylveon @ Fairy Feather
+541,Nicola Vavassori,3-4,day1,Indeedee @ Choice Scarf,Sneasler @ White Herb,Corviknight @ Occa Berry,Tyranitar-Mega @ Tyranitarite,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash
+542,Casper Verschuuren,3-4,day1,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Primarina @ Leftovers,Volcarona @ Grassy Seed
+543,Salvatore Cuomo,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash
+544,Simon Van der Borght,3-5,day1,Kingambit @ Chople Berry,Whimsicott @ Occa Berry,Glimmora @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Froslass-Mega @ Froslassite,Garchomp @ Life Orb
+545,Tianle Feng,3-5,day1,Rillaboom @ Eject Button,Pelipper @ Focus Sash,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Incineroar @ Sitrus Berry,Gengar-Mega @ Gengarite
+546,Scarlet Andrews,3-5,day1,Garchomp @ Life Orb,Glimmora @ Focus Sash,Delphox-Mega @ Delphoxite,Staraptor-Mega @ Staraptite,Kingambit @ Chople Berry,Whimsicott @ Occa Berry
+547,Gabriele Bricola,3-4,day1,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z
+548,Antonio Lujan Franco,3-5,day1,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Incineroar @ Chople Berry,Garchomp-Mega-Z @ Garchompite Z,Charizard-Mega-Y @ Charizardite Y,Rillaboom @ Grassy Seed
+549,Nicholas Hutchings,3-5,day1,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Life Orb,Raichu-Mega-X @ Raichunite X,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed
+550,Chiara Galleani,3-5,day1,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Indeedee-F @ Rocky Helmet,Sinistcha @ Coba Berry,Floette-Mega @ Floettite,Delphox-Mega @ Delphoxite
+551,bilal hatrouf,3-5,day1,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Sinistcha @ Colbur Berry,Incineroar @ Chople Berry,Floette-Mega @ Floettite,Farigiraf @ Sitrus Berry
+552,James Thomas,3-5,day1,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed
+553,Jacopo Cappocchia,3-3,day1,Delphox-Mega @ Delphoxite,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Sinistcha @ Kasib Berry,Kingambit @ Focus Sash,Kommo-o @ Leftovers
+554,Ryan Powney,3-3,day1,Sneasler @ Psychic Seed,Kingambit @ Black Glasses,Meowstic-F-Mega @ Meowsticite,Charizard-Mega-Y @ Charizardite Y,Indeedee @ Focus Sash,Kommo-o @ Leftovers
+555,Henri Logel,3-4,day1,Ceruledge @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Sylveon @ Fairy Feather,Garchomp-Mega-Z @ Garchompite Z,Kingambit @ Focus Sash,Rillaboom @ Miracle Seed
+556,Daniel Soler Sanchez,3-4,day1,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Kingambit @ Chople Berry,Sneasler @ Focus Sash,Rillaboom @ Miracle Seed,Glimmora-Mega @ Glimmoranite
+557,Daniel Spadavecchia,3-5,day1,Farigiraf @ Colbur Berry,Garchomp-Mega-Z @ Garchompite Z,Torkoal @ Charcoal,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Sneasler @ White Herb
+558,Emiliano Sciandra,3-5,day1,Delphox-Mega @ Delphoxite,Garchomp @ Choice Scarf,Dragonite-Mega @ Dragoninite,Basculegion @ Sitrus Berry,Kingambit @ Chople Berry,Sneasler @ Focus Sash
+559,Luca Antonelli,3-5,day1,Floette-Mega @ Floettite,Golisopod-Mega @ Golisopite,Sneasler @ White Herb,Basculegion-F @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Damp Rock
+560,Nigel Baker,3-5,day1,Sneasler @ White Herb,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+561,Valerio Volpi,3-5,day1,Gallade @ Focus Sash,Scovillain-Mega @ Scovillainite,Overqwil @ Life Orb,Dragonite-Mega @ Dragoninite,Gholdengo @ Choice Scarf,Politoed @ Sitrus Berry
+562,Timo Florian,3-5,day1,Ceruledge @ Grassy Seed,Dragonite-Mega @ Dragoninite,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Rillaboom @ Life Orb,Kingambit @ Focus Sash
+563,Giancarlo Poenisch,3-5,day1,Archaludon @ Leftovers,Dragapult @ Focus Sash,Annihilape @ Choice Scarf,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry,Incineroar @ Chople Berry
+564,Gianluca Tavola,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Gallade-Mega @ Galladite,Primarina @ Leftovers,Arcanine-Hisui @ Focus Sash,Kingambit @ Chople Berry,Rillaboom @ Sitrus Berry
+565,Louis Fingonnet,3-5,day1,Milotic @ Psychic Seed,Arcanine-Hisui @ Focus Sash,Altaria @ Haban Berry,Indeedee-F @ Rocky Helmet,Dragapult @ Life Orb,Metagross-Mega @ Metagrossite
+566,Andrea Ferrino,3-5,day1,Rillaboom @ Miracle Seed,Hydreigon @ Chople Berry,Gengar-Mega @ Gengarite,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Life Orb
+567,Peter Blunt,3-5,day1,Kommo-o @ Leftovers,Rillaboom @ Eject Button,Incineroar @ Lum Berry,Volcarona @ Sitrus Berry,Altaria-Mega @ Altarianite,Gengar-Mega @ Gengarite
+568,Mohamed Salah Jouini,3-5,day1,Kingambit @ Life Orb,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Kommo-o @ Leftovers,Delphox-Mega @ Delphoxite,Sinistcha @ Colbur Berry
+569,Simone Gambaro,3-5,day1,Sinistcha @ Occa Berry,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry
+570,Michael Ahmed,3-5,day1,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Pelipper @ Focus Sash,Archaludon @ Leftovers
+571,Mario Abronzino,3-4,day1,Basculegion @ Mystic Water,Whimsicott @ Focus Sash,Indeedee-F @ Rocky Helmet,Pyroar-Mega @ Pyroarite,Gardevoir-Mega @ Gardevoirite,Kommo-o @ Life Orb
+572,ROBERT VALENTIN MOLDOVANU,3-5,day1,Delphox-Mega @ Delphoxite,Kingambit @ Life Orb,Sinistcha @ Occa Berry,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf
+573,Arnaud Clément,3-5,day1,Kleavor @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Milotic @ Sitrus Berry,Gholdengo @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Rillaboom @ Miracle Seed
+574,Gregory Mohr,3-5,day1,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Volcarona @ Rocky Helmet
+575,Alessandro Gulino,3-5,day1,Venusaur @ Occa Berry,Kingambit @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Aerodactyl-Mega @ Aerodactylite,Whimsicott @ Focus Sash,Farigiraf @ Sitrus Berry
+576,Emanuele Foresi,3-5,day1,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry
+577,Osman Kantar,3-5,day1,Farigiraf @ Sitrus Berry,Aerodactyl-Mega @ Aerodactylite,Garchomp @ Life Orb,Kingambit @ Focus Sash,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y
+578,Naader Bajwa,3-5,day1,Incineroar @ Chople Berry,Raichu-Mega-Y @ Raichunite Y,Kommo-o @ Leftovers,Kingambit @ Life Orb,Gengar-Mega @ Gengarite,Rillaboom @ Eject Button
+579,Kerry Johnstone,3-5,day1,Excadrill @ Focus Sash,Indeedee-F @ Sitrus Berry,Armarouge @ Life Orb,Sneasler @ Psychic Seed,Tyranitar-Mega @ Tyranitarite,Salamence-Mega @ Salamencite
+580,Aurélien Louesdon,3-5,day1,Archaludon @ Leftovers,Salamence-Mega @ Salamencite,Annihilape @ Choice Scarf,Pelipper @ Focus Sash,Rillaboom @ Miracle Seed,Golisopod-Mega @ Golisopite
+581,Ethan Bonaventure,3-5,day1,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Politoed @ Life Orb
+582,Andrea Brasola,3-5,day1,Whimsicott @ Focus Sash,Gardevoir-Mega @ Gardevoirite,Sneasler @ Psychic Seed,Charizard-Mega-Y @ Charizardite Y,Indeedee-F @ Rocky Helmet,Garchomp @ Choice Scarf
+583,Tony Viales,3-5,day1,Kingambit @ Life Orb,Sneasler @ White Herb,Kommo-o @ Leftovers,Incineroar @ Chople Berry,Gengar-Mega @ Gengarite,Rillaboom @ Occa Berry
+584,Filippo Capurro,3-5,day1,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Froslass-Mega @ Froslassite,Volcarona @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z
+585,Omar AlAnsari,3-5,day1,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Sinistcha @ Occa Berry,Delphox-Mega @ Delphoxite,Kingambit @ Black Glasses
+586,Ludwig Moussaly,3-5,day1,Camerupt-Mega @ Cameruptite,Incineroar @ Leftovers,Farigiraf @ Sitrus Berry,Floette-Mega @ Floettite,Milotic @ Grassy Seed,Whimsicott @ Focus Sash
+587,Juan TARIS ROJAS,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Sneasler @ White Herb,Garchomp @ Choice Scarf
+588,Angel Marcos,3-5,day1,Incineroar @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+589,Raphaël Luis Chantepie,3-5,day1,Talonflame @ Charcoal,Gholdengo @ Life Orb,Indeedee-F @ Colbur Berry,Kommo-o @ Leftovers,Samurott-Hisui @ Choice Scarf,Gardevoir-Mega @ Gardevoirite
+590,Fabio David,3-4,day1,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed
+591,tommaso camponeschi,3-5,day1,Kommo-o @ Leftovers,Kingambit @ Focus Sash,Delphox-Mega @ Delphoxite,Sinistcha @ Kasib Berry,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry
+592,PAOLO TARZIA,3-5,day1,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Primarina @ Leftovers
+593,Jack Marshall,3-5,day1,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry
+594,Kaidi Guo,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed
+595,Pol-Emmanuel LEDRON,3-5,day1,Milotic @ Sitrus Berry,Arcanine-Hisui @ Focus Sash,Rillaboom @ Life Orb,Staraptor-Mega @ Staraptite,Gholdengo @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+596,Niccolò Chiarato,3-5,day1,Indeedee-F @ Rocky Helmet,Basculegion @ Mystic Water,Gardevoir-Mega @ Gardevoirite,Pyroar-Mega @ Pyroarite,Whimsicott @ Focus Sash,Kommo-o @ Life Orb
+597,Maxime Mezeray,3-5,day1,Rillaboom @ Miracle Seed,Glimmora-Mega @ Glimmoranite,Kingambit @ Chople Berry,Sneasler @ Grassy Seed,Milotic @ Leftovers,Garchomp-Mega-Z @ Garchompite Z
+598,Amelia Picone,3-5,day1,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z
+599,Ilan Petit-Khacem,3-5,day1,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Garchomp-Mega-Z @ Garchompite Z,Venusaur @ Focus Sash,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y
+600,Giuseppe Casanova,3-5,day1,Indeedee @ Focus Sash,Excadrill @ Life Orb,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Sneasler @ Psychic Seed,Corviknight @ Leftovers
+601,Clément Dezon,3-5,day1,Kommo-o @ Leftovers,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Froslass-Mega @ Froslassite,Meowscarada @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y
+602,Guillaume Miralles,3-3,day1,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Dragonite-Mega @ Dragoninite,Rillaboom @ Miracle Seed,Primarina @ Focus Sash
+603,francesco tomasino,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Mawile-Mega @ Mawilite,Archaludon @ Leftovers,Farigiraf @ Sitrus Berry,Politoed @ Mystic Water,Incineroar @ Chople Berry
+604,Benjamin Kurtzemann,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite,Whimsicott @ Focus Sash,Sneasler @ White Herb,Basculegion @ Choice Scarf,Volcarona @ Rocky Helmet
+605,William Butters,3-5,day1,Rillaboom @ Sitrus Berry,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Sneasler @ White Herb,Kingambit @ Black Glasses,Froslass-Mega @ Froslassite
+606,Cristian Meirone,3-5,day1,Gholdengo @ Life Orb,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed
+607,Gonzalo Hernández,3-5,day1,Kingambit @ Focus Sash,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Aerodactyl-Mega @ Aerodactylite,Farigiraf @ Sitrus Berry
+608,manuel dellabona,3-5,day1,Rillaboom @ Miracle Seed,Volcarona,Kommo-o @ Leftovers,Tyranitar-Mega @ Tyranitarite,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+609,Baptiste DEREYGER,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf,Floette-Mega @ Floettite
+610,Mattia Angelini,3-4,day1,Dragapult @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Farigiraf @ Grassy Seed,Camerupt-Mega @ Cameruptite,Rillaboom @ Miracle Seed,Kingambit @ Focus Sash
+611,Félix Chazé,3-5,day1,Slowbro-Mega @ Slowbronite,Excadrill @ Focus Sash,Corviknight @ Psychic Seed,Indeedee @ Choice Scarf,Sneasler @ White Herb,Tyranitar-Mega @ Tyranitarite
+612,Naim Khan,3-5,day1,Gholdengo @ Life Orb,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Sableye @ Focus Sash,Pelipper @ Sitrus Berry,Staraptor-Mega @ Staraptite
+613,Arthur Grzechca,3-5,day1,Corviknight @ Leftovers,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Indeedee @ Rocky Helmet,Excadrill @ Focus Sash,Kingambit @ Chople Berry
+614,Ryan Macphee,3-5,day1,Froslass-Mega @ Froslassite,Milotic @ Leftovers,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather,Hydreigon @ Focus Sash,Blaziken-Mega @ Blazikenite
+615,Simone Ferrandu,3-5,day1,Incineroar @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed
+616,Tristan Spicht,3-5,day1,Volcarona @ Rocky Helmet,Froslass-Mega @ Froslassite,Hydreigon @ Choice Scarf,Rillaboom @ Miracle Seed,Kingambit @ Life Orb,Sneasler @ White Herb
+617,Marc Seguí Coll,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Venusaur @ Focus Sash,Sylveon @ Fairy Feather,Garchomp @ Choice Scarf,Incineroar @ Chople Berry
+618,Mathéo Obiang,3-5,day1,Dragonite-Mega @ Dragoninite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Sneasler @ White Herb
+619,Maurice Aegidius Schweers,3-5,day1,Annihilape @ Choice Scarf,Salamence-Mega @ Salamencite,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Excadrill @ Focus Sash,Tyranitar-Mega @ Tyranitarite
+620,Lorenzo Di Palma,3-5,day1,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Volcarona @ Rocky Helmet,Gholdengo @ Life Orb,Garchomp-Mega-Z @ Garchompite Z
+621,Léo RAUD,3-5,day1,Farigiraf @ Colbur Berry,Rillaboom @ Grassy Seed,Lucario-Mega-Z @ Lucarionite Z,Volcarona @ Sitrus Berry,Salamence-Mega @ Salamencite,Basculegion @ Choice Scarf
+622,Klaus Bögl,3-5,day1,Sneasler @ Grassy Seed,Gholdengo @ Life Orb,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Rillaboom @ Occa Berry
+623,Niels Hofman,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Primarina @ Leftovers,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite
+624,Blair McHale,3-5,day1,Lopunny-Mega @ Lopunnite,Milotic @ Leftovers,Archaludon @ Choice Scarf,Farigiraf @ Sitrus Berry,Whimsicott @ Focus Sash,Baxcalibur @ Life Orb
+625,Alexandre Funel,3-5,day1,Floette-Mega @ Floettite,Sinistcha @ Coba Berry,Glimmora-Mega @ Glimmoranite,Talonflame @ Focus Sash,Incineroar @ Passho Berry,Goodra-Hisui @ Leftovers
+626,Rani De Schoenmacker,3-5,day1,Farigiraf @ Sitrus Berry,Pelipper @ Focus Sash,Golisopod-Mega @ Golisopite,Sceptile-Mega @ Sceptilite,Archaludon @ Leftovers,Basculegion @ Choice Scarf
+627,Alessandro Settimi,3-5,day1,Sneasler @ White Herb,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Dragonite-Mega @ Dragoninite,Garchomp @ Choice Scarf,Rillaboom @ Miracle Seed
+628,Mikkel Simsek,3-4,day1,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Kingambit @ Black Glasses,Incineroar @ Sitrus Berry
+629,Pierre Coste,3-3,day1,Kommo-o @ Leftovers,Vivillon @ Focus Sash,Gengar-Mega @ Gengarite,Politoed @ Sitrus Berry,Incineroar @ Passho Berry,Rillaboom @ Occa Berry
+630,Antonin Parmentier,3-5,day1,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Sneasler @ White Herb,Dragonite-Mega @ Dragoninite,Incineroar @ Sitrus Berry
+631,Dario Sancho,3-5,day1,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Incineroar @ Chople Berry,Venusaur @ Focus Sash,Farigiraf @ Sitrus Berry
+632,Bastien Tremblay,3-5,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Arcanine-Hisui @ Focus Sash,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Sneasler @ White Herb
+633,Idrissa KANE,3-5,day1,Sneasler @ White Herb,Charizard-Mega-Y @ Charizardite Y,Floette-Mega @ Floettite,Hydreigon @ Choice Scarf,Indeedee-F @ Colbur Berry,Sinistcha @ Occa Berry
+634,Sébastien Delolme-Sabatier,3-5,day1,Salamence-Mega @ Salamencite,Garchomp @ Life Orb,Glimmora-Mega @ Glimmoranite,Archaludon @ Leftovers,Volcarona @ Sitrus Berry,Klefki @ Light Clay
+635,Clément BOUCLY,3-5,day1,Milotic @ Leftovers,Froslass-Mega @ Froslassite,Scovillain-Mega @ Scovillainite,Pawmot @ Focus Sash,Staraptor @ Choice Scarf,Kingambit @ Life Orb
+636,Nicolas Derenes,3-5,day1,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y
+637,Diego Valle,3-5,day1,Swampert-Mega @ Swampertite,Sneasler @ Focus Sash,Golisopod-Mega @ Golisopite,Indeedee-F @ Colbur Berry,Hatterene @ Life Orb,Pelipper @ Sitrus Berry
+638,Lukas Neier,3-5,day1,Lucario-Mega-Z @ Lucarionite Z,Garchomp-Mega-Z @ Garchompite Z,Ninetales-Alola @ Focus Sash,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf
+639,Mauro Salvatore Inguglia,3-5,day1,Blaziken-Mega @ Blazikenite,Froslass-Mega @ Froslassite,Sneasler @ Grassy Seed,Kingambit @ Life Orb,Milotic,Rillaboom @ Miracle Seed
+640,Luke Coltman,3-5,day1,Meganium-Mega @ Meganiumite,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Politoed @ Leftovers,Hydreigon @ Choice Scarf
+641,Gilang Kusumawardana,3-5,day1,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Annihilape @ Choice Scarf,Gholdengo @ Life Orb,Excadrill @ Focus Sash
+642,Erwan Gandeboeuf,3-5,day1,Mawile-Mega @ Mawilite,Archaludon @ Leftovers,Farigiraf @ Sitrus Berry,Grapploct @ Life Orb,Pelipper @ Damp Rock,Kangaskhan-Mega @ Kangaskhanite
+643,Francesco Ferrini,3-4,day1,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Primarina @ Leftovers
+644,Alessandro Anselmo Azzoni,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Life Orb,Basculegion @ Mystic Water,Ninetales-Alola @ Light Clay,Talonflame @ Focus Sash,Staraptor-Mega @ Staraptite
+645,Mathieu Canton,3-5,day1,Garchomp @ Choice Scarf,Venusaur @ Focus Sash,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Chople Berry
+646,Marco De Cicco,3-5,day1,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay
+647,Zharim De San Vicente,3-5,day1,Metagross-Mega @ Metagrossite,Milotic @ Sitrus Berry,Volcarona @ Rocky Helmet,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash,Houndstone @ Spell Tag
+649,Julius Neier,3-4,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Salamence-Mega @ Salamencite,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash,Kingambit @ Black Glasses
+650,Sébastien Bazin,3-5,day1,Garchomp @ Life Orb,Sneasler @ White Herb,Charizard-Mega-Y @ Charizardite Y,Whimsicott @ Focus Sash,Kingambit @ Chople Berry,Basculegion @ Mystic Water
+651,Lucas Miel,3-5,day1,Basculegion @ Choice Scarf,Archaludon @ Leftovers,Indeedee-F @ Colbur Berry,Gardevoir-Mega @ Gardevoirite,Pelipper @ Focus Sash,Sneasler @ Psychic Seed
+652,Simo Mattioli,3-5,day1,Floette-Mega @ Floettite,Milotic @ Leftovers,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+653,Quim Lazaro,3-5,day1,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Metagross-Mega @ Metagrossite
+654,Alex Wamsteker,3-5,day1,Sneasler @ White Herb,Basculegion @ Life Orb,Delphox-Mega @ Delphoxite,Kingambit @ Chople Berry,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed
+655,Giorgio Menconi,3-5,day1,Gholdengo @ Life Orb,Salamence-Mega @ Salamencite,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash,Primarina @ Leftovers
+656,Jose Martin,3-5,day1,Toxapex @ Leftovers,Venusaur @ Focus Sash,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y
+657,Nicolas Roche,3-5,day1,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Volcarona @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed
+658,Pablo Gallego,3-5,day1,Sneasler @ Focus Sash,Grimmsnarl @ Light Clay,Golisopod-Mega @ Golisopite,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Pelipper @ Sitrus Berry
+659,mirco serra,3-5,day1,Gholdengo @ Life Orb,Farigiraf @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+660,Gabriele Tartaglia,3-5,day1,Gholdengo @ Life Orb,Floette-Mega @ Floettite,Sneasler @ Grassy Seed,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+661,Riccardo Cinotti,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed
+662,Rafael JJ Morel,3-5,day1,Charizard-Mega-Y @ Charizardite Y,Hydreigon @ Choice Scarf,Venusaur @ Life Orb,Sylveon @ Fairy Feather,Raichu-Mega-X @ Raichunite X,Farigiraf @ Sitrus Berry
+663,Dario Cioffi,3-5,day1,Kommo-o @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Lum Berry,Grimmsnarl @ Light Clay,Rillaboom @ Miracle Seed,Delphox-Mega @ Delphoxite
+664,Arno MATTOZZA,3-5,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Sneasler @ Grassy Seed,Kingambit @ Life Orb,Arcanine-Hisui @ Focus Sash,Floette-Mega @ Floettite
+665,Lorenzo Canaccini,3-5,day1,Kommo-o @ Leftovers,Vivillon @ Focus Sash,Politoed @ Sitrus Berry,Incineroar @ Chople Berry,Gengar-Mega @ Gengarite,Rillaboom @ Eject Button
+666,Guilyan Terrin,3-5,day1,Archaludon @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Basculegion-F @ Focus Sash,Incineroar @ Chople Berry,Politoed @ Sitrus Berry,Scizor-Mega @ Scizorite
+667,Louis Lafon,3-5,day1,Rillaboom @ Miracle Seed,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Kingambit @ Black Glasses,Incineroar @ Sitrus Berry
+668,Adjeb Callisen,3-5,day1,Torkoal @ Charcoal,Kingambit @ Black Glasses,Indeedee-F @ Psychic Seed,Blaziken-Mega @ Blazikenite,Hatterene @ Life Orb,Venusaur @ Focus Sash
+669,Blair Johnston,3-5,day1,Annihilape @ Choice Scarf,Incineroar @ Sitrus Berry,Froslass-Mega @ Froslassite,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Life Orb,Volcarona @ Grassy Seed
+670,Renato Andrade,3-5,day1,Sneasler @ White Herb,Rillaboom @ Miracle Seed,Gholdengo @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Weavile @ Focus Sash,Salamence-Mega @ Salamencite
+671,Anthony MAGAIL,3-5,day1,Arcanine-Hisui @ Choice Scarf,Espathra @ Grassy Seed,Primarina @ Leftovers,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Dragonite-Mega @ Dragoninite
+672,Jessy Ferreiro,3-5,day1,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Aerodactyl-Mega @ Aerodactylite,Rillaboom @ Miracle Seed,Volcarona @ Leftovers,Basculegion @ Life Orb
+673,Tommaso Agosti,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z
+674,Louis-arthur Nicoletti,3-5,day1,Farigiraf @ Sitrus Berry,Archaludon @ Leftovers,Pelipper @ Life Orb,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Golisopod-Mega @ Golisopite
+675,George Foley,3-5,day1,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Volcarona @ Grassy Seed
+676,Daniele Alseni,3-5,day1,Staraptor-Mega @ Staraptite,Swampert-Mega @ Swampertite,Gholdengo @ Life Orb,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Sinistcha @ Colbur Berry
+677,Hugo Pereira,3-5,day1,Metagross-Mega @ Metagrossite,Indeedee-F @ Psychic Seed,Blaziken @ Focus Sash,Rillaboom @ Miracle Seed,Pincurchin @ Magnet,Milotic @ Choice Scarf
+678,Kevin Menden,3-5,day1,Sneasler @ Psychic Seed,Indeedee @ Focus Sash,Kingambit @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Kommo-o @ Leftovers,Meowstic-F-Mega @ Meowsticite
+679,Nicolas Bosc,2-3,day1,Froslass-Mega @ Froslassite,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Basculegion @ Choice Scarf
+680,Sam Tabner,2-3,day1,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry,Sneasler @ Focus Sash,Kingambit @ Life Orb,Floette-Mega @ Floettite
+681,Filippo Maccarini,2-3,day1,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers
+682,Leonardo Bertazzolo,2-3,day1,Volcarona @ Sitrus Berry,Tyranitar-Mega @ Tyranitarite,Gholdengo @ Life Orb,Milotic @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Excadrill @ Focus Sash
+683,Angel Henin,2-3,day1,Raichu-Mega-X @ Raichunite X,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Kingambit @ Life Orb,Sneasler @ Electric Seed,Basculegion @ Choice Scarf
+684,Edoardo Marasà,2-4,day1,Venusaur @ Focus Sash,Archaludon @ Leftovers,Pelipper @ Sitrus Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay
+685,Nathan Boutevillain,2-5,day1,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+686,Théo Poncelet,2-5,day1,Indeedee @ Choice Scarf,Tyranitar-Mega @ Tyranitarite,Corviknight @ Psychic Seed,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Sneasler @ White Herb
+687,Tomeu Colom,2-5,day1,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Farigiraf @ Sitrus Berry,Incineroar @ Leftovers,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather
+688,Lorenzo Antognoni,2-3,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Primarina @ Leftovers
+689,Joan Codina Roig,2-3,day1,Gholdengo @ Life Orb,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y
+690,Quentin CLÉMENT,2-4,day1,Camerupt-Mega @ Cameruptite,Indeedee-F @ Rocky Helmet,Farigiraf @ Focus Sash,Maushold @ Wide Lens,Drampa @ Dragon Fang,Hatterene @ Life Orb
+691,Andrea Pelegatti,2-4,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Gholdengo @ Life Orb,Primarina @ Leftovers
+692,Romain Brandi,2-5,day1,Sneasler @ White Herb,Basculegion @ Choice Scarf,Farigiraf @ Sitrus Berry,Golisopod-Mega @ Golisopite,Incineroar @ Chople Berry,Salamence-Mega @ Salamencite
+693,Hugo Seytier,2-5,day1,Gholdengo @ Life Orb,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Rillaboom @ Miracle Seed
+694,Amine Same,2-5,day1,Indeedee @ Choice Scarf,Tyranitar-Mega @ Tyranitarite,Milotic @ Sitrus Berry,Volcarona @ Rocky Helmet,Excadrill @ Focus Sash,Rillaboom @ Miracle Seed
+695,Florian Henry,2-5,day1,Sneasler @ White Herb,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Raichu-Mega-Y @ Raichunite Y,Basculegion-F @ Focus Sash,Pelipper @ Damp Rock
+696,Lorenzo Serrano-Rojas,2-6,day1,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Volcarona @ Rocky Helmet,Froslass-Mega @ Froslassite,Primarina @ Grassy Seed,Salamence-Mega @ Salamencite
+697,Clément BESSET,2-6,day1,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Golisopod-Mega @ Golisopite,Basculegion-F @ Focus Sash,Grimmsnarl @ Light Clay,Archaludon @ Leftovers
+698,christian barretta,2-5,day1,Raichu-Mega-Y @ Raichunite Y,Milotic @ Sitrus Berry,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Ceruledge @ Grassy Seed,Staraptor-Mega @ Staraptite
+699,Andrea Tedeschi,2-3,day1,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Kingambit @ Life Orb,Floette-Mega @ Floettite,Sinistcha @ Occa Berry,Incineroar @ Sitrus Berry
+700,Samuel Schoirfer,2-4,day1,Gholdengo @ Air Balloon,Rillaboom @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry
+701,Joseph Eckhart,2-5,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Arcanine-Hisui @ Choice Scarf,Whimsicott @ Focus Sash,Gholdengo @ Life Orb,Staraptor-Mega @ Staraptite
+702,Lorenzo Lazzari,2-3,day1,Farigiraf @ Sitrus Berry,Kingambit @ Focus Sash,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Aerodactyl-Mega @ Aerodactylite,Sylveon @ Fairy Feather
+703,Marco Locatelli,2-6,day1,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite,Basculegion @ Life Orb,Incineroar @ Sitrus Berry,Sneasler @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y
+704,Sean Ogles,2-5,day1,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Primarina @ Life Orb,Gholdengo @ Choice Scarf
+705,Dylan MIFSUD,2-5,day1,Raichu-Mega-Y @ Raichunite Y,Golisopod-Mega @ Golisopite,Gholdengo @ Leftovers,Politoed @ Sitrus Berry,Incineroar @ Chople Berry,Rillaboom @ Miracle Seed
+706,Alessandro Ficarella,2-4,day1,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Garchomp @ Choice Scarf
+707,Clément Petrolesi,2-4,day1,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed
+708,Jaime González Bustos,2-4,day1,Dragapult @ Life Orb,Kingambit @ Black Glasses,Raichu-Mega-X @ Raichunite X,Toxapex @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry
+709,Sam Davies,2-6,day1,Incineroar @ Chople Berry,Pelipper @ Focus Sash,Basculegion @ Choice Scarf,Rillaboom @ Grassy Seed,Archaludon @ Leftovers,Gengar-Mega @ Gengarite
+710,Alessandro Barbanti,2-6,day1,Sneasler @ Mental Herb,Salamence-Mega @ Salamencite,Armarouge @ Life Orb,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash,Indeedee-F @ Psychic Seed
+711,Samuel Botly,2-6,day1,Farigiraf @ Sitrus Berry,Rillaboom @ Life Orb,Ninetales-Alola @ Choice Scarf,Vivillon @ Focus Sash,Camerupt-Mega @ Cameruptite,Sneasler @ White Herb
+712,Frederick Altavilla,2-5,day1,Rillaboom @ Miracle Seed,Sneasler @ Electric Seed,Kingambit @ Life Orb,Primarina @ Leftovers,Dragonite-Mega @ Dragoninite,Raichu-Mega-X @ Raichunite X
+713,Lea Turmeau,2-5,day1,Rillaboom @ Miracle Seed,Volcarona @ Grassy Seed,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry
+714,Nicolas Benstaali,2-5,day1,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry
+715,Davide Anzeloni Bignotti,2-5,day1,Garchomp-Mega-Z @ Garchompite Z,Sneasler @ Life Orb,Milotic @ Leftovers,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry,Incineroar @ Rocky Helmet
+716,Francesco Stroppa,2-6,day1,Basculegion @ Life Orb,Dragonite-Mega @ Dragoninite,Kingambit @ Chople Berry,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb
+717,François Chetail,2-6,day1,Indeedee @ Choice Scarf,Corviknight @ Psychic Seed,Tyranitar-Mega @ Tyranitarite,Sneasler @ White Herb,Salamence-Mega @ Salamencite,Excadrill @ Focus Sash
+718,Lucas Loubeyre,2-6,day1,Archaludon @ Leftovers,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+719,Victor XIE,2-4,day1,Dragonite-Mega @ Dragoninite,Garchomp @ Choice Scarf,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Lopunny-Mega @ Lopunnite
+720,David Edmunds,2-4,day1,Charizard-Mega-Y @ Charizardite Y,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Chople Berry,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather
+721,Davide Gritta,2-5,day1,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Basculegion @ Choice Scarf,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Grassy Seed
+722,Nils Schlatter,2-6,day1,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry,Annihilape @ Choice Scarf,Hippowdon @ Leftovers,Delphox-Mega @ Delphoxite,Rillaboom @ Life Orb
+723,Gabriel Roller,2-6,day1,Gardevoir-Mega @ Gardevoirite,Venusaur @ Focus Sash,Indeedee-F @ Sitrus Berry,Basculegion @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Sneasler @ Psychic Seed
+724,Jamie Rabbetts,2-5,day1,Indeedee-F @ Rocky Helmet,Rotom-Heat @ Choice Scarf,Sneasler @ Psychic Seed,Sceptile-Mega @ Sceptilite,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash
+725,Aaron O'Doherty,2-4,day1,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z
+726,Sam Sperl,2-4,day1,Volcarona @ Sitrus Berry,Garchomp @ Choice Scarf,Salamence-Mega @ Salamencite,Floette-Mega @ Floettite,Gholdengo @ Occa Berry,Rillaboom @ Miracle Seed
+727,Javier Mora,2-6,day1,Sneasler @ Psychic Seed,Charizard-Mega-Y @ Charizardite Y,Indeedee @ Focus Sash,Kommo-o @ Leftovers,Meowstic-F-Mega @ Meowsticite,Kingambit @ Chople Berry
+728,Enzo Vallier,2-6,day1,Milotic @ Leftovers,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Garchomp-Mega @ Garchompite
+729,Jonathan Silvestre,2-6,day1,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Indeedee-F @ Rocky Helmet,Sneasler @ Psychic Seed,Armarouge @ Life Orb
+730,Alessandro Mazzocca,2-6,day1,Whimsicott @ Focus Sash,Sneasler @ Psychic Seed,Metagross-Mega @ Metagrossite,Garchomp-Mega-Z @ Garchompite Z,Indeedee @ Choice Scarf,Kingambit @ Chople Berry
+731,Endy Aouadi,2-4,day1,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Pelipper @ Sitrus Berry,Grimmsnarl @ Light Clay,Archaludon @ Leftovers
+732,Fabrizio Pagoto,2-4,day1,Incineroar @ Sitrus Berry,Rillaboom @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Milotic @ Leftovers,Gengar-Mega @ Gengarite,Sneasler @ White Herb
+733,Pierre Dietlin,2-6,day1,Incineroar @ Sitrus Berry,Garchomp @ Choice Scarf,Sylveon @ Fairy Feather,Toxapex @ Leftovers,Venusaur @ Life Orb,Charizard-Mega-Y @ Charizardite Y
+734,Massimiliano Russo,2-6,day1,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Grimmsnarl @ Light Clay,Politoed @ Mystic Water
+735,Alvaro Navarro Marin,2-6,day1,Sinistcha @ Occa Berry,Maushold-Three @ Chople Berry,Blastoise-Mega @ Blastoisinite,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Incineroar @ Sitrus Berry
+736,Baptiste Mut,2-6,day1,Sneasler @ Grassy Seed,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Kingambit @ Life Orb,Arcanine-Hisui @ Focus Sash,Raichu-Mega-Y @ Raichunite Y
+737,Ståle Reklev,2-6,day1,Archaludon @ Leftovers,Salamence-Mega @ Salamencite,Arcanine-Hisui @ Focus Sash,Rotom-Wash @ Sitrus Berry,Metagross-Mega @ Metagrossite,Sableye @ Bright Powder
+738,Ousmane Bah,2-6,day1,Gengar-Mega @ Gengarite,Rillaboom @ Occa Berry,Kommo-o @ Leftovers,Politoed @ Sitrus Berry,Incineroar @ Passho Berry,Vivillon @ Focus Sash
+739,Matteo Mecca,2-6,day1,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Pelipper @ Damp Rock,Grimmsnarl @ Light Clay,Farigiraf @ Sitrus Berry,Swampert-Mega @ Swampertite
+740,Kyle Bagley,2-6,day1,Metagross-Mega @ Metagrossite,Sneasler @ White Herb,Basculegion @ Life Orb,Volcarona @ Charti Berry,Salamence-Mega @ Salamencite,Indeedee @ Focus Sash
+741,Joan Pons,2-6,day1,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Arcanine-Hisui @ Focus Sash,Milotic @ Sitrus Berry
+742,Timo Spetter,2-6,day1,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Salamence-Mega @ Salamencite,Basculegion @ Life Orb,Sneasler @ White Herb,Raichu-Mega-Y @ Raichunite Y
+743,Vincent Estezet,2-6,day1,Golisopod-Mega @ Golisopite,Sneasler @ Psychic Seed,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Indeedee-F @ Rocky Helmet,Floette-Mega @ Floettite
+744,Adrian Lange,2-4,day1,Raichu-Mega-X @ Raichunite X,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Sneasler @ Electric Seed,Pelipper @ Damp Rock,Basculegion-F @ Focus Sash
+745,Matias Wikström,2-6,day1,Garchomp @ Choice Scarf,Basculegion @ Life Orb,Sneasler @ White Herb,Kingambit @ Chople Berry,Charizard-Mega-Y @ Charizardite Y,Whimsicott @ Focus Sash
+746,Jonas Symynck,2-6,day1,Milotic @ Sitrus Berry,Tyranitar-Mega @ Tyranitarite,Charizard-Mega-Y @ Charizardite Y,Excadrill @ Focus Sash,Sneasler @ Psychic Seed,Indeedee @ Choice Scarf
+747,Julien Pottin,2-6,day1,Pawmot @ Focus Sash,Floette-Mega @ Floettite,Zoroark-Hisui @ Life Orb,Sinistcha @ Colbur Berry,Talonflame @ Sharp Beak,Glimmora-Mega @ Glimmoranite
+748,Tom Finana,2-3,day1,Charizard-Mega-Y @ Charizardite Y,Indeedee @ Focus Sash,Sneasler @ Psychic Seed,Kommo-o @ Leftovers,Kingambit @ Chople Berry,Meowstic-F-Mega @ Meowsticite
+749,Clément MIQUEL,2-4,day1,Rillaboom @ Life Orb,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Milotic @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Grassy Seed
+750,Nathan Grimaud,2-6,day1,Indeedee @ Choice Scarf,Milotic @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Sneasler @ Psychic Seed,Salamence-Mega @ Salamencite,Gholdengo @ Life Orb
+751,Kalvin Bernard Boularas,2-6,day1,Rillaboom @ Miracle Seed,Indeedee-F @ Sitrus Berry,Arcanine-Hisui @ Focus Sash,Sneasler @ White Herb,Lucario-Mega-Z @ Lucarionite Z,Gardevoir-Mega @ Gardevoirite
+752,Daniele Concas,2-6,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Garchomp @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y
+753,Rajmund Séra,2-4,day1,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Venusaur @ Life Orb,Toxapex @ Leftovers,Sylveon @ Fairy Feather,Incineroar @ Sitrus Berry
+754,Perrine Gatard,2-6,day1,Garchomp-Mega-Z @ Garchompite Z,Sinistcha @ Kasib Berry,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Rillaboom @ Miracle Seed,Pelipper @ Sitrus Berry
+755,Francesco Valentini,2-4,day1,Garchomp-Mega-Z @ Garchompite Z,Floette-Mega @ Floettite,Kingambit @ Focus Sash,Volcarona @ Grassy Seed,Sneasler @ White Herb,Rillaboom @ Miracle Seed
+756,Tidiane Polo,2-6,day1,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Primarina @ Leftovers,Rillaboom @ Miracle Seed
+757,Wilfried Mabire,2-6,day1,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Archaludon @ Leftovers,Venusaur @ Focus Sash
+758,Nicolas Maligoj,2-6,day1,Sneasler @ Focus Sash,Ampharos-Mega @ Ampharosite,Torkoal @ Life Orb,Sinistcha @ Sitrus Berry,Farigiraf @ Colbur Berry,Incineroar @ Chople Berry
+759,Nathan Gomes,2-6,day1,Excadrill @ Focus Sash,Tyranitar-Mega @ Tyranitarite,Salamence-Mega @ Salamencite,Indeedee @ Choice Scarf,Corviknight @ Psychic Seed,Sneasler @ White Herb
+760,Pau Villaverde Magrí,2-6,day1,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Dragonite-Mega @ Dragoninite,Sneasler @ White Herb
+761,Cosimo Sebastiano Ciccarese,2-6,day1,Basculegion @ Mystic Water,Indeedee-F @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Sneasler @ Psychic Seed,Armarouge @ Life Orb,Mawile-Mega @ Mawilite
+762,Dylan VICHARD,2-6,day1,Whimsicott @ Focus Sash,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Venusaur @ Life Orb,Sylveon @ Fairy Feather
+763,Marine Moulinard,2-6,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb
+764,cyril bacquet,2-6,day1,Greninja-Mega @ Greninjite,Farigiraf @ Sitrus Berry,Archaludon @ Leftovers,Venusaur @ Focus Sash,Pelipper @ Damp Rock,Charizard-Mega-Y @ Charizardite Y
+765,Andoni Pedrouzo,2-6,day1,Garchomp-Mega-Z @ Garchompite Z,Arcanine-Hisui @ Focus Sash,Sneasler @ Grassy Seed,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Kingambit @ Life Orb
+766,Alexander Pitt,2-6,day1,Maushold @ Chople Berry,Rillaboom @ Sitrus Berry,Gholdengo @ Grassy Seed,Basculegion @ Choice Scarf,Salamence-Mega @ Salamencite,Zoroark-Hisui @ Focus Sash
+767,Yazid Saadi-Haddad,2-6,day1,Incineroar @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite,Samurott-Hisui @ Focus Sash
+768,Jacopo Muzzì,2-6,day1,Pelipper @ Sitrus Berry,Metagross-Mega @ Metagrossite,Volcarona @ Rocky Helmet,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Grimmsnarl @ Light Clay
+769,Lucy Carter,2-6,day1,Raichu-Mega-Y @ Raichunite Y,Salamence-Mega @ Salamencite,Sylveon @ Fairy Feather,Arcanine-Hisui @ Focus Sash,Sneasler @ Grassy Seed,Rillaboom @ Miracle Seed
+770,Gabriel Vigneau,2-6,day1,Corviknight @ Leftovers,Baxcalibur-Mega @ Baxcalibrite,Pawmot @ Life Orb,Typhlosion-Hisui @ Focus Sash,Ninetales-Alola @ Light Clay,Garchomp-Mega-Z @ Garchompite Z
+771,Khaeta Chittick,2-6,day1,Ninetales-Alola @ Light Clay,Rillaboom @ Life Orb,Ceruledge @ Grassy Seed,Hydreigon @ Choice Scarf,Glimmora-Mega @ Glimmoranite,Raichu-Mega-Y @ Raichunite Y
+772,Adonis HARROUK,2-3,day1,Sneasler @ Psychic Seed,Indeedee @ Choice Scarf,Excadrill @ Focus Sash,Corviknight @ Sitrus Berry,Tyranitar-Mega @ Tyranitarite,Salamence-Mega @ Salamencite
+773,Jarod Patry,2-6,day1,Ceruledge @ Focus Sash,Baxcalibur-Mega @ Baxcalibrite,Rillaboom @ Life Orb,Ninetales-Alola @ Light Clay,Empoleon @ Leftovers,Sneasler @ Grassy Seed
+774,Enzo Zanotti,2-6,day1,Indeedee-F @ Colbur Berry,Kingambit @ Chople Berry,Golisopod-Mega @ Golisopite,Sneasler @ Psychic Seed,Gardevoir-Mega @ Gardevoirite,Pelipper @ Focus Sash
+775,Renato Boschetti,2-6,day1,Rillaboom @ Miracle Seed,Sneasler @ White Herb,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Dragonite-Mega @ Dragoninite,Incineroar @ Sitrus Berry
+776,Abdeljalil Hazim,2-6,day1,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite,Milotic @ Leftovers,Arcanine-Hisui @ Focus Sash
+777,Johan Rigaudeau,2-6,day1,Ceruledge @ Grassy Seed,Milotic @ Sitrus Berry,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Staraptor-Mega @ Staraptite
+778,Daniele Marchesi,2-6,day1,Farigiraf @ Sitrus Berry,Incineroar @ White Herb,Torkoal @ Charcoal,Indeedee-F @ Rocky Helmet,Mawile-Mega @ Mawilite,Hatterene @ Life Orb
+779,Guyllian PAKULA,2-6,day1,Gholdengo @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Rillaboom @ Miracle Seed
+780,Gaétan Cassar,2-6,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Floette-Mega @ Floettite,Volcarona @ Grassy Seed,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry
+781,Nicholas Scialanca,2-6,day1,Excadrill @ Focus Sash,Sceptile-Mega @ Sceptilite,Rotom-Heat @ Choice Scarf,Tyranitar-Mega @ Tyranitarite,Indeedee-F @ Rocky Helmet,Sneasler @ Psychic Seed
+782,Esteban Moreno Mendoza,1-4,day1,Aerodactyl-Mega @ Aerodactylite,Kingambit @ Focus Sash,Garchomp @ Choice Scarf,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Sylveon @ Life Orb
+783,Angelo Trapletti,1-4,day1,Golisopod-Mega @ Golisopite,Sneasler @ Psychic Seed,Indeedee-F @ Rocky Helmet,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Pelipper @ Focus Sash
+784,Paolo Superbo,1-3,day1,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Venusaur @ Focus Sash,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y
+785,Khalil HOGGUI,1-2,day1,Rillaboom @ Eject Button,Vivillon @ Focus Sash,Politoed @ Sitrus Berry,Archaludon @ Leftovers,Gengar-Mega @ Gengarite,Incineroar @ Passho Berry
+786,Rudy Rousseau,1-6,day1,Venusaur @ Focus Sash,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Charizard-Mega-Y @ Charizardite Y,Grimmsnarl @ Light Clay
+787,Giorgio Orlandi,1-4,day1,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Sneasler @ Focus Sash,Delphox-Mega @ Delphoxite
+788,Renaud Duchaine,1-5,day1,Charizard-Mega-Y @ Charizardite Y,Raichu-Mega-X @ Raichunite X,Archaludon @ Leftovers,Venusaur @ Focus Sash,Politoed @ Mystic Water,Grimmsnarl @ Light Clay
+789,Pablo Arredondo,1-4,day1,Mawile-Mega @ Mawilite,Torkoal @ Charcoal,Armarouge @ Twisted Spoon,Gallade @ Iron Ball,Indeedee-F @ Psychic Seed,Hatterene @ Life Orb
+790,Matteo Spadaro,1-5,day1,Rillaboom @ Miracle Seed,Floette-Mega @ Floettite,Basculegion @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Volcarona @ Lum Berry
+791,Marco Saccomandi,1-5,day1,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Rocky Helmet,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed
+792,Gaëtan CAPELLE,1-4,day1,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Garchomp @ Choice Scarf,Floette-Mega @ Floettite,Pelipper @ Sitrus Berry
+793,Alberto Fornaini,1-3,day1,Volcarona @ Grassy Seed,Incineroar @ Sitrus Berry,Rillaboom @ Miracle Seed,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z
+794,Matteo Moscardini,1-3,day1,Garchomp @ Choice Scarf,Gholdengo @ Life Orb,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Dragonite-Mega @ Dragoninite
+795,Corentin Lesoille,1-3,day1,Raichu-Mega-Y @ Raichunite Y,Incineroar @ Sitrus Berry,Sylveon @ Fairy Feather,Kommo-o @ Leftovers,Whimsicott @ Focus Sash,Charizard-Mega-Y @ Charizardite Y
+796,Aurora Lacalandra,1-3,day1,Gardevoir-Mega @ Gardevoirite,Armarouge @ Focus Sash,Kommo-o @ Life Orb,Basculegion @ Mystic Water,Whimsicott @ Occa Berry,Indeedee-F @ Rocky Helmet
+797,Kieran Ward,1-3,day1,Rillaboom @ Miracle Seed,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Staraptor-Mega @ Staraptite,Raichu-Mega-Y @ Raichunite Y,Primarina @ Leftovers
+798,Sergio Ramirez,1-4,day1,Froslass-Mega @ Froslassite,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Sitrus Berry,Glimmora-Mega @ Glimmoranite,Rillaboom @ Miracle Seed,Incineroar @ Chople Berry
+799,Davide Paganin,1-4,day1,Golisopod-Mega @ Golisopite,Grimmsnarl @ Light Clay,Pelipper @ Focus Sash,Sinistcha @ Sitrus Berry,Archaludon @ Leftovers,Swampert-Mega @ Swampertite
+800,Antony Fernandes,1-4,day1,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Volcarona @ Passho Berry
+801,Christos Stylianos Kylantonidis,1-4,day1,Kingambit @ Life Orb,Froslass-Mega @ Froslassite,Arcanine-Hisui @ Focus Sash,Sneasler @ Grassy Seed,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y
+802,Marco Chiarenza,1-4,day1,Sneasler @ White Herb,Charizard-Mega-Y @ Charizardite Y,Garchomp-Mega-Z @ Garchompite Z,Farigiraf @ Sitrus Berry,Incineroar @ Chople Berry,Sylveon @ Fairy Feather
+803,Lorenzo De Luca,1-4,day1,Raichu-Mega-Y @ Raichunite Y,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed
+804,Dylan Bedrane,1-4,day1,Incineroar @ Sitrus Berry,Floette-Mega @ Floettite,Delphox-Mega @ Delphoxite,Sinistcha @ Occa Berry,Sneasler @ Focus Sash,Kingambit @ Life Orb
+805,Axel Mestdagh,1-4,day1,Blastoise-Mega @ Blastoisinite,Incineroar @ White Herb,Kingambit @ Life Orb,Gourgeist @ Sitrus Berry,Pyroar-Mega @ Pyroarite,Torkoal @ Charcoal
+806,Esteban Cardona,1-4,day1,Sinistcha @ Colbur Berry,Pawmot @ Expert Belt,Metagross-Mega @ Metagrossite,Arcanine-Hisui @ Focus Sash,Primarina @ Life Orb,Froslass-Mega @ Froslassite
+807,Massimiliano Tinervia,1-7,day1,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Volcarona @ Leftovers,Sneasler @ White Herb,Garchomp-Mega-Z @ Garchompite Z,Kingambit @ Focus Sash
+808,Florian Benac,1-4,day1,Sneasler @ Psychic Seed,Excadrill @ Focus Sash,Salamence-Mega @ Salamencite,Tyranitar-Mega @ Tyranitarite,Armarouge @ Life Orb,Indeedee-F @ Rocky Helmet
+809,Daniele Bianchi,1-3,day1,Raichu-Mega-Y @ Raichunite Y,Farigiraf @ Grassy Seed,Rillaboom @ Miracle Seed,Camerupt-Mega @ Cameruptite,Kingambit @ Focus Sash,Dragapult @ Life Orb
+810,james rhucroft,1-3,day1,Golisopod-Mega @ Golisopite,Rillaboom @ Coba Berry,Gengar-Mega @ Gengarite,Politoed @ Leftovers,Farigiraf @ Grassy Seed,Incineroar @ Sitrus Berry
+811,Soeren Schlichting,1-3,day1,Garchomp-Mega-Z @ Garchompite Z,Milotic @ Life Orb,Rillaboom @ Miracle Seed,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Focus Sash,Sneasler @ Grassy Seed
+812,Federica Ruffino,1-7,day1,Baxcalibur-Mega @ Baxcalibrite,Eelektross-Mega @ Eelektrossite,Vanilluxe @ Choice Scarf,Sinistcha @ Kasib Berry,Incineroar @ Sitrus Berry,Milotic @ Leftovers
+813,Axel Dagout Fournier,1-7,day1,Lucario-Mega-Z @ Lucarionite Z,Sneasler @ Psychic Seed,Annihilape @ Choice Scarf,Gardevoir-Mega @ Gardevoirite,Armarouge @ Focus Sash,Indeedee-F @ Colbur Berry
+814,Léo Gaudinet,1-4,day1,Pelipper @ Sitrus Berry,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers
+815,Robert Bailey,1-4,day1,Politoed @ Sitrus Berry,Kangaskhan-Mega @ Kangaskhanite,Archaludon @ Leftovers,Runerigus @ Rindo Berry,Scizor-Mega @ Scizorite,Rillaboom @ Life Orb
+816,Moussa Diamoye,1-5,day1,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Volcarona @ Rocky Helmet,Floette-Mega @ Floettite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb
+817,Luke Bentley,1-4,day1,Pelipper @ Focus Sash,Golisopod-Mega @ Golisopite,Gardevoir-Mega @ Gardevoirite,Armarouge @ Life Orb,Indeedee-F @ Colbur Berry,Grapploct @ Black Belt
+818,Federico Nocerini,1-4,day1,Garchomp-Mega-Z @ Garchompite Z,Volcarona @ Rocky Helmet,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb
+819,Maria Pacella,1-4,day1,Arcanine-Hisui @ Focus Sash,Sneasler @ White Herb,Froslass-Mega @ Froslassite,Kingambit @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed
+820,stefano gatti,1-4,day1,Basculegion @ Choice Scarf,Raichu-Mega-Y @ Raichunite Y,Sneasler @ White Herb,Rillaboom @ Occa Berry,Blaziken-Mega @ Blazikenite,Kingambit @ Black Glasses
+821,Michele Mattia Renda,1-4,day1,Sneasler @ White Herb,Raichu-Mega-Y @ Raichunite Y,Basculegion @ Choice Scarf,Kingambit @ Black Glasses,Rillaboom @ Life Orb,Blaziken-Mega @ Blazikenite
+822,Joseph Russell,1-4,day1,Rillaboom @ Miracle Seed,Incineroar @ Sitrus Berry,Goodra-Hisui @ Leftovers,Floette-Mega @ Floettite,Espathra @ Grassy Seed,Absol-Mega-Z @ Absolite Z
+823,Quentin Gallet,1-7,day1,Grimmsnarl @ Light Clay,Sinistcha @ Sitrus Berry,Incineroar @ Chople Berry,Annihilape @ Leftovers,Pelipper @ Life Orb,Metagross-Mega @ Metagrossite
+824,Brice Balmer,1-7,day1,Indeedee @ Focus Sash,Heracross-Mega @ Heracronite,Gholdengo @ Life Orb,Garchomp-Mega-Z @ Garchompite Z,Charizard @ Charcoal,Whimsicott @ Occa Berry
+825,Wilfrid TIRIAU,1-7,day1,Garchomp-Mega-Z @ Garchompite Z,Froslass-Mega @ Froslassite,Volcarona @ Grassy Seed,Rillaboom @ Miracle Seed,Basculegion @ Choice Scarf,Incineroar @ Sitrus Berry
+826,Chiara Benzerrouk,1-7,day1,Incineroar @ Sitrus Berry,Kingambit @ Black Glasses,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Sinistcha @ Occa Berry
+827,Mustapha Ba,1-5,day1,Staraptor-Mega @ Staraptite,Indeedee-F @ Sitrus Berry,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Tyranitar-Mega @ Tyranitarite,Excadrill @ Focus Sash
+828,Davide Santoro,1-4,day1,Aerodactyl-Mega @ Aerodactylite,Garchomp @ Life Orb,Sylveon @ Fairy Feather,Kingambit @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,
+829,Adrian Fernandez barral,1-5,day1,Charizard-Mega-Y @ Charizardite Y,Farigiraf @ Sitrus Berry,Sylveon @ Fairy Feather,Incineroar @ Leftovers,Kingambit @ Occa Berry,Garchomp-Mega-Z @ Garchompite Z
+830,Tim Van Belleghem,1-7,day1,Sableye @ Roseli Berry,Basculegion @ Life Orb,Archaludon @ Leftovers,Swampert-Mega @ Swampertite,Sinistcha @ Sitrus Berry,Pelipper @ Charti Berry
+831,Alex Moreno,1-4,day1,Staraptor-Mega @ Staraptite,Gardevoir-Mega @ Gardevoirite,Indeedee-F @ Colbur Berry,Tyranitar @ Focus Sash,Gholdengo @ Life Orb,Garchomp @ Choice Scarf
+832,Nicola Romani,1-6,day1,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Sitrus Berry,Kingambit @ Chople Berry,Floette-Mega @ Floettite,Sneasler @ Focus Sash,Rillaboom @ Miracle Seed
+833,Aurèle Chatelin,1-7,day1,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Incineroar @ Sitrus Berry,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed,Sneasler @ White Herb
+834,Guillaume MARIE,1-7,day1,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Kingambit @ Chople Berry,Whimsicott @ Focus Sash,Basculegion @ Mystic Water,Garchomp @ Life Orb
+835,Alexandre Sfregola,1-7,day1,Castform @ Focus Sash,Torkoal @ Rocky Helmet,Salamence-Mega @ Salamencite,Swalot @ Leftovers,Froslass-Mega @ Froslassite,Politoed @ Damp Rock
+836,Nicolas CLAVERIE,1-5,day1,Swampert-Mega @ Swampertite,Charizard-Mega-Y @ Charizardite Y,Archaludon @ Leftovers,Grimmsnarl @ Light Clay,Pelipper @ Sitrus Berry,Venusaur @ Focus Sash
+837,Rudgy PAJANY,1-7,day1,Kommo-o @ Life Orb,Sneasler @ Focus Sash,Floette-Mega @ Floettite,Dragonite-Mega @ Dragoninite,Volcarona @ Rocky Helmet,Rillaboom @ Miracle Seed
+838,Francesco Angileri,1-7,day1,Sneasler @ Grassy Seed,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Life Orb,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Miracle Seed,Sylveon @ Fairy Feather
+839,william EGOT,1-7,day1,Gholdengo @ Life Orb,Volcarona @ Rocky Helmet,Incineroar @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Raichu-Mega-Y @ Raichunite Y,Rillaboom @ Grassy Seed
+840,Nicolas Pontoglio,1-7,day1,Garchomp-Mega-Z @ Garchompite Z,Swampert-Mega @ Swampertite,Archaludon @ Leftovers,Rillaboom @ Grassy Seed,Gholdengo @ Life Orb,Pelipper @ Focus Sash
+841,Allan Ouriaghli,1-7,day1,Charizard-Mega-Y @ Charizardite Y,Metagross-Mega @ Metagrossite,Incineroar @ Sitrus Berry,Garchomp @ Life Orb,Whimsicott @ Focus Sash,Indeedee-F @ Rocky Helmet
+842,Dario Cozzo,0-1,day1,Gengar-Mega @ Gengarite,Incineroar @ Sitrus Berry,Altaria-Mega @ Altarianite,Rillaboom @ Eject Button,Basculegion @ Choice Scarf,Kommo-o @ Leftovers
+843,Ken Verstralen,0-1,day1,Manectric-Mega @ Manectite,Liepard @ Focus Sash,Sneasler @ Grassy Seed,Lucario-Mega-Z @ Lucarionite Z,Goodra-Hisui @ Expert Belt,Rillaboom @ Miracle Seed
+844,Yann EAT,0-1,day1,Whimsicott @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Sneasler @ White Herb,Garchomp @ Life Orb,Basculegion @ Mystic Water,Kingambit @ Chople Berry
+845,Ariel García Fernández,0-3,day1,Garchomp-Mega-Z @ Garchompite Z,Farigiraf @ Sitrus Berry,Torkoal @ Charcoal,Sylveon @ Fairy Feather,Incineroar @ Chople Berry,Sneasler @ White Herb
+846,Xavier LESUR,0-5,day1,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y,Staraptor-Mega @ Staraptite,Arcanine-Hisui @ Focus Sash,Gholdengo @ Life Orb,Rillaboom @ Miracle Seed
+847,Nikolajs Precenieks,0-2,day1,Sinistcha @ Colbur Berry,Raichu-Mega-Y @ Raichunite Y,Kommo-o @ Leftovers,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Delphox-Mega @ Delphoxite
+848,Simon Schulz,0-5,day1,Whimsicott @ Focus Sash,Kingambit @ Chople Berry,Venusaur @ Wide Lens,Garchomp @ Life Orb,Charizard-Mega-Y @ Charizardite Y,Incineroar @ Sitrus Berry
+849,ANDREA LAI,0-5,day1,Torkoal @ Charcoal,Sneasler @ White Herb,Sylveon @ Fairy Feather,Farigiraf @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Incineroar @ Chople Berry
+850,Matteo Girardi,0-3,day1,Arcanine-Hisui @ Focus Sash,Staraptor-Mega @ Staraptite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Primarina @ Leftovers,Raichu-Mega-Y @ Raichunite Y
+851,Alan Bir,0-3,day1,Garchomp-Mega-Z @ Garchompite Z,Basculegion @ Choice Scarf,Rillaboom @ Miracle Seed,Sneasler @ Electric Seed,Raichu-Mega-X @ Raichunite X,Kingambit @ Life Orb
+852,Daan Rütten,0-4,day1,Grimmsnarl @ Light Clay,Venusaur @ Focus Sash,Charizard-Mega-Y @ Charizardite Y,Garchomp @ Choice Scarf,Pelipper @ Sitrus Berry,Archaludon @ Leftovers
+853,Matteo Franceschini,0-4,day1,Politoed @ Mystic Water,Grimmsnarl @ Light Clay,Archaludon @ Leftovers,Raichu-Mega-X @ Raichunite X,Charizard-Mega-Y @ Charizardite Y,Venusaur @ Focus Sash
+854,Andrea Giuseppe Cristaldi,0-5,day1,Sneasler @ Mental Herb,Garchomp-Mega-Z @ Garchompite Z,Politoed @ Life Orb,Archaludon @ Leftovers,Golisopod-Mega @ Golisopite,Farigiraf @ Sitrus Berry
+855,Oriol Gonzalez,0-7,day1,Incineroar @ Sitrus Berry,Kingambit @ Life Orb,Sinistcha @ Occa Berry,Floette-Mega @ Floettite,Delphox-Mega @ Delphoxite,Sneasler @ Focus Sash
+856,Oliver Bøgebjerg,0-4,day1,Blaziken-Mega @ Blazikenite,Vileplume @ Focus Sash,Torkoal @ Charcoal,Indeedee-F @ Psychic Seed,Hatterene @ Life Orb,Kingambit @ Occa Berry
+857,Shoichiro Imai,0-4,day1,Pelipper @ Sitrus Berry,Garchomp-Mega-Z @ Garchompite Z,Archaludon @ Leftovers,Venusaur @ Focus Sash,Grimmsnarl @ Light Clay,Charizard-Mega-Y @ Charizardite Y
+858,David Perez,0-4,day1,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Raichu-Mega-Y @ Raichunite Y,Gholdengo @ Life Orb,Volcarona @ Rocky Helmet,Incineroar @ Sitrus Berry
+859,Gabriele Karol Lopez,0-3,day1,Floette-Mega @ Floettite,Sinistcha @ Coba Berry,Garchomp @ Choice Scarf,Incineroar @ Sitrus Berry,Delphox-Mega @ Delphoxite,Indeedee-F @ Rocky Helmet
+860,Romain REMY,0-3,day1,Rillaboom @ Occa Berry,Politoed @ Sitrus Berry,Gengar-Mega @ Gengarite,Vivillon @ Focus Sash,Incineroar @ Passho Berry,Kommo-o @ Leftovers
+861,Albéric Villebasse,0-8,day1,Incineroar @ Sitrus Berry,Dragonite-Mega @ Dragoninite,Rillaboom @ Miracle Seed,Gholdengo @ Life Orb,Floette-Mega @ Floettite,Sneasler @ White Herb
+862,Axel Reyes Exposito,0-8,day1,Golisopod-Mega @ Golisopite,Archaludon @ Leftovers,Sneasler @ White Herb,Pelipper @ Damp Rock,Raichu-Mega-Y @ Raichunite Y,Basculegion-F @ Focus Sash
+9999,Damien Dumenil,3-5,day1,Sneasler @ Electric Seed,Rillaboom @ Miracle Seed,Garchomp-Mega-Z @ Garchompite Z,Raichu-Mega-X @ Raichunite X,Kingambit @ Life Orb,Volcarona @ Rocky Helmet

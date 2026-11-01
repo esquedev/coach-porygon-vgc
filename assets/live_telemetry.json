@@ -1,8 +1,8 @@
 {
-  "total_matches": 324,
+  "total_matches": 325,
   "wins": 173,
-  "losses": 151,
-  "win_rate": 53.4,
+  "losses": 152,
+  "win_rate": 53.2,
   "teams_count": 24,
   "teams": [
     {
@@ -1333,6 +1333,1542 @@
         "None @ Focus Sash",
         "None @ Passho Berry",
         "None @ Delphoxite"
+      ]
+    },
+    {
+      "id": "ST65",
+      "player": "Kiran Singh",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 1 (14-1)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Archaludon @ Leftovers",
+        "Pelipper @ Sitrus Berry",
+        "Grimmsnarl @ Light Clay",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Venusaur @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST66",
+      "player": "Haruki Sato",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 2 (12-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Floette-Mega @ Floettite",
+        "Kingambit @ Chople Berry",
+        "Basculegion @ Colbur Berry",
+        "Rillaboom @ Miracle Seed",
+        "Salamence-Mega @ Salamencite",
+        "Sneasler @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST67",
+      "player": "Jude Gerard Lee Wei Cong",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 3 (11-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp-Mega @ Garchompite",
+        "Sneasler @ Focus Sash",
+        "Floette-Mega @ Floettite",
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Kingambit @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST68",
+      "player": "Joshua Sutherland-Smith",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 4 (11-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Basculegion @ Choice Scarf",
+        "Floette-Mega @ Floettite",
+        "Archaludon @ Leftovers",
+        "Pelipper @ Focus Sash",
+        "Incineroar @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST69",
+      "player": "Matthew Henry",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 5 (11-2)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Miracle Seed",
+        "Gengar-Mega @ Gengarite",
+        "Incineroar @ Sitrus Berry",
+        "Kingambit @ Life Orb",
+        "Sneasler @ Grassy Seed",
+        "Floette-Mega @ Floettite"
+      ]
+    },
+    {
+      "id": "ST70",
+      "player": "Daniel walker",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 6 (10-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Salamence-Mega @ Salamencite",
+        "Armarouge @ Focus Sash",
+        "Sneasler @ White Herb",
+        "Indeedee-F @ Psychic Seed",
+        "Politoed @ Choice Scarf",
+        "Archaludon @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST71",
+      "player": "Keigo Tanizawa",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 7 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Kingambit @ Focus Sash",
+        "Sneasler @ White Herb",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Floette-Mega @ Floettite",
+        "Rillaboom @ Miracle Seed",
+        "Volcarona @ Rocky Helmet"
+      ]
+    },
+    {
+      "id": "ST72",
+      "player": "Daniel Quek",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 8 (10-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Archaludon @ Leftovers",
+        "Grimmsnarl @ Light Clay",
+        "Venusaur @ Focus Sash",
+        "Pelipper @ Sitrus Berry",
+        "Swampert-Mega @ Swampertite",
+        "Charizard-Mega-Y @ Charizardite Y"
+      ]
+    },
+    {
+      "id": "ST73",
+      "player": "Scott Kennedy",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 9 (9-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sinistcha @ Sitrus Berry",
+        "Mawile-Mega @ Mawilite",
+        "Sableye @ Roseli Berry",
+        "Pelipper @ Focus Sash",
+        "Swampert-Mega @ Swampertite",
+        "Archaludon @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST74",
+      "player": "Alfredo Chang-Gonzalez",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 10 (9-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Delphox-Mega @ Delphoxite",
+        "Sneasler @ Focus Sash",
+        "Kingambit @ Life Orb",
+        "Floette-Mega @ Floettite",
+        "Sinistcha @ Colbur Berry",
+        "Incineroar @ Rocky Helmet"
+      ]
+    },
+    {
+      "id": "ST75",
+      "player": "Aristo Wibowanto",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 11 (9-3)",
+      "archetype": "Sand Rush Physical Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Indeedee @ Choice Scarf",
+        "Tyranitar-Mega @ Tyranitarite",
+        "Excadrill @ Focus Sash",
+        "Salamence-Mega @ Salamencite",
+        "Corviknight @ Psychic Seed",
+        "Sneasler @ White Herb"
+      ]
+    },
+    {
+      "id": "ST76",
+      "player": "Diego Ferreira",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 12 (8-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Armarouge @ Psychic Seed",
+        "Kingambit @ Focus Sash",
+        "Torkoal @ Life Orb",
+        "Staraptor-Mega @ Staraptite",
+        "Indeedee-F @ Rocky Helmet",
+        "Glimmora-Mega @ Glimmoranite"
+      ]
+    },
+    {
+      "id": "ST77",
+      "player": "Yuya Tada",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 13 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Choice Scarf",
+        "Rillaboom @ Occa Berry",
+        "Politoed @ Sitrus Berry",
+        "Incineroar @ Chople Berry",
+        "Gengar-Mega @ Gengarite",
+        "Archaludon @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST78",
+      "player": "William Pye",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 14 (8-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp @ Lum Berry",
+        "Kingambit @ Chople Berry",
+        "Gengar-Mega @ Gengarite",
+        "Incineroar @ Sitrus Berry",
+        "Milotic @ Grassy Seed",
+        "Rillaboom @ Miracle Seed"
+      ]
+    },
+    {
+      "id": "ST79",
+      "player": "J\u00e9r\u00e9my C\u00f4t\u00e9",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 15 (8-3)",
+      "archetype": "Standard Competitive Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Salamence-Mega @ Salamencite",
+        "Sneasler @ Psychic Seed",
+        "Arcanine-Hisui @ Focus Sash",
+        "Milotic @ Sitrus Berry",
+        "Metagross-Mega @ Metagrossite",
+        "Indeedee @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST80",
+      "player": "Elio Stone",
+      "tournament": "2027 Brisbane Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 16 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Brisbane Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Choice Scarf",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Kommo-o @ Life Orb",
+        "Glimmora-Mega @ Glimmoranite",
+        "Whimsicott @ Focus Sash",
+        "Indeedee @ Twisted Spoon"
+      ]
+    },
+    {
+      "id": "ST81",
+      "player": "Eric Rios",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 1 (17-0)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gholdengo @ Life Orb",
+        "Volcarona @ Rocky Helmet",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Raichu-Mega-Y @ Raichunite Y"
+      ]
+    },
+    {
+      "id": "ST82",
+      "player": "Sebastian Liu Li",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 2 (14-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Farigiraf @ Sitrus Berry",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Sneasler @ White Herb",
+        "Torkoal @ Charcoal",
+        "Sylveon @ Fairy Feather",
+        "Incineroar @ Chople Berry"
+      ]
+    },
+    {
+      "id": "ST83",
+      "player": "Yvar Vlieger",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 3 (14-2)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Kingambit @ Chople Berry",
+        "Meowstic-F-Mega @ Meowsticite",
+        "Sneasler @ Psychic Seed",
+        "Indeedee @ Focus Sash",
+        "Kommo-o @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST84",
+      "player": "Eden Batchelor",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 4 (13-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gholdengo @ Life Orb",
+        "Dragonite-Mega @ Dragoninite",
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Sneasler @ White Herb",
+        "Floette-Mega @ Floettite"
+      ]
+    },
+    {
+      "id": "ST85",
+      "player": "Anthony Liuzzo",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 5 (12-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Vivillon @ Focus Sash",
+        "Politoed @ Sitrus Berry",
+        "Gengar-Mega @ Gengarite",
+        "Incineroar @ Passho Berry",
+        "Rillaboom @ Occa Berry",
+        "Kommo-o @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST86",
+      "player": "Juan Manuel Odriozola",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 6 (12-3)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Toxapex @ Leftovers",
+        "Sylveon @ Fairy Feather",
+        "Garchomp @ Choice Scarf",
+        "Incineroar @ Sitrus Berry",
+        "Venusaur @ Life Orb",
+        "Charizard-Mega-Y @ Charizardite Y"
+      ]
+    },
+    {
+      "id": "ST87",
+      "player": "Valentijn Visser",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 7 (12-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Froslass-Mega @ Froslassite",
+        "Incineroar @ Sitrus Berry",
+        "Basculegion @ Choice Scarf",
+        "Glimmora-Mega @ Glimmoranite",
+        "Rillaboom @ Miracle Seed",
+        "Volcarona @ Grassy Seed"
+      ]
+    },
+    {
+      "id": "ST88",
+      "player": "Koen van Cann",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 9 (11-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ Grassy Seed",
+        "Salamence-Mega @ Salamencite",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Miracle Seed",
+        "Kingambit @ Life Orb",
+        "Arcanine-Hisui @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST89",
+      "player": "Nico Davide Cognetta",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 10 (11-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Incineroar @ Sitrus Berry",
+        "Sinistcha @ Kasib Berry",
+        "Kommo-o @ Leftovers",
+        "Kingambit @ Focus Sash",
+        "Delphox-Mega @ Delphoxite"
+      ]
+    },
+    {
+      "id": "ST90",
+      "player": "Finn Seipold",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 11 (11-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Pelipper @ Life Orb",
+        "Golisopod-Mega @ Golisopite",
+        "Kingambit @ Focus Sash",
+        "Archaludon @ Leftovers",
+        "Farigiraf @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST91",
+      "player": "Francesco Pio Pero",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 13 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Staraptor-Mega @ Staraptite",
+        "Rillaboom @ Miracle Seed",
+        "Primarina @ Leftovers",
+        "Gholdengo @ Life Orb",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Arcanine-Hisui @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST92",
+      "player": "Giovanni Manuel Tonelli",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 14 (10-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Archaludon @ Leftovers",
+        "Pelipper @ Focus Sash",
+        "Garchomp @ Choice Scarf",
+        "Golisopod-Mega @ Golisopite",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Farigiraf @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST93",
+      "player": "Lorenzo Colombo",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 15 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Sitrus Berry",
+        "Kingambit @ Life Orb",
+        "Arcanine-Hisui @ Focus Sash",
+        "Froslass-Mega @ Froslassite",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Sneasler @ White Herb"
+      ]
+    },
+    {
+      "id": "ST94",
+      "player": "Naoya Takasago",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 16 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sylveon @ Fairy Feather",
+        "Arcanine-Hisui @ Focus Sash",
+        "Gholdengo @ Life Orb",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Miracle Seed",
+        "Staraptor-Mega @ Staraptite"
+      ]
+    },
+    {
+      "id": "ST95",
+      "player": "Francesco Rasini",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 17 (10-3)",
+      "archetype": "Psychic Terrain Expanding Force",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ Psychic Seed",
+        "Armarouge @ Kasib Berry",
+        "Dragonite-Mega @ Dragoninite",
+        "Gengar-Mega @ Gengarite",
+        "Indeedee @ Focus Sash",
+        "Sylveon @ Fairy Feather"
+      ]
+    },
+    {
+      "id": "ST96",
+      "player": "Andrea Pagano",
+      "tournament": "2027 Frankfurt Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 18 (10-3)",
+      "archetype": "Trick Room Hard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Frankfurt Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp @ Choice Scarf",
+        "Delphox-Mega @ Delphoxite",
+        "Indeedee-F @ Rocky Helmet",
+        "Incineroar @ Sitrus Berry",
+        "Sinistcha @ Coba Berry",
+        "Floette-Mega @ Floettite"
+      ]
+    },
+    {
+      "id": "ST97",
+      "player": "Luciano Begot",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 2 (12-2)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Politoed @ Mystic Water",
+        "Incineroar @ Chople Berry",
+        "Archaludon @ Leftovers",
+        "Farigiraf @ Sitrus Berry",
+        "Golisopod-Mega @ Golisopite"
+      ]
+    },
+    {
+      "id": "ST98",
+      "player": "Pedro H Soares Feitosa",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 6 (9-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Miracle Seed",
+        "Sneasler @ White Herb",
+        "Dragonite-Mega @ Dragoninite",
+        "Delphox-Mega @ Delphoxite",
+        "Kingambit @ Life Orb",
+        "Basculegion @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST99",
+      "player": "Victor Vieira",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 7 (9-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Salamence-Mega @ Salamencite",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Miracle Seed",
+        "Volcarona @ Sitrus Berry",
+        "Arcanine-Hisui @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST100",
+      "player": "Gabriel Agati",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 8 (9-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gholdengo @ Life Orb",
+        "Incineroar @ Sitrus Berry",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Rillaboom @ Miracle Seed",
+        "Floette-Mega @ Floettite",
+        "Volcarona @ Grassy Seed"
+      ]
+    },
+    {
+      "id": "ST101",
+      "player": "Thiago Lattanzi",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 9 (8-3)",
+      "archetype": "Psychic Terrain Expanding Force",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ Psychic Seed",
+        "Armarouge @ Focus Sash",
+        "Gardevoir-Mega @ Gardevoirite",
+        "Indeedee-F @ Rocky Helmet",
+        "Kommo-o @ Life Orb",
+        "Talonflame @ Expert Belt"
+      ]
+    },
+    {
+      "id": "ST102",
+      "player": "Sergio Igarashi",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 11 (8-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Farigiraf @ Sitrus Berry",
+        "Sylveon @ Fairy Feather",
+        "Aerodactyl-Mega @ Aerodactylite",
+        "Garchomp @ Life Orb",
+        "Kingambit @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST103",
+      "player": "J\u00falio Eller",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 12 (8-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Floette-Mega @ Floettite",
+        "Sneasler @ White Herb",
+        "Whimsicott @ Focus Sash",
+        "Kingambit @ Chople Berry",
+        "Basculegion @ Life Orb",
+        "Garchomp-Mega-Z @ Garchompite Z"
+      ]
+    },
+    {
+      "id": "ST104",
+      "player": "Pedro Cadaval",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 14 (7-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp @ Focus Sash",
+        "Volcarona @ Grassy Seed",
+        "Ninetales-Alola @ Choice Scarf",
+        "Incineroar @ Chople Berry",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST105",
+      "player": "Valentin I\u00f1igo Leiva Lopez",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 18 (7-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Sneasler @ Grassy Seed",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Floette-Mega @ Floettite",
+        "Arcanine-Hisui @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST106",
+      "player": "Fernando Albuquerque",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 19 (7-3)",
+      "archetype": "Sand Rush Physical Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Indeedee-F @ Rocky Helmet",
+        "Salamence-Mega @ Salamencite",
+        "Sneasler @ Psychic Seed",
+        "Excadrill @ Focus Sash",
+        "Gholdengo @ Life Orb",
+        "Tyranitar-Mega @ Tyranitarite"
+      ]
+    },
+    {
+      "id": "ST107",
+      "player": "Tiago Pimentel",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 20 (7-3)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Glimmora @ Focus Sash",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Gholdengo @ Life Orb",
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Garchomp @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST108",
+      "player": "Gabriel Rigo",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 21 (7-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Volcarona @ Sitrus Berry",
+        "Glimmora-Mega @ Glimmoranite",
+        "Salamence-Mega @ Salamencite",
+        "Klefki @ Light Clay",
+        "Garchomp @ Life Orb",
+        "Archaludon @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST109",
+      "player": "Raul Gioielli",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 24 (7-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Grassy Seed",
+        "Kingambit @ Chople Berry",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Floette-Mega @ Floettite",
+        "Sneasler @ Focus Sash",
+        "Rillaboom @ Miracle Seed"
+      ]
+    },
+    {
+      "id": "ST110",
+      "player": "Jo\u00e3o Victor Lopes Barbosa Moreira",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 26 (7-3)",
+      "archetype": "Trick Room Hard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Talonflame @ Sharp Beak",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Kommo-o @ Dragon Fang",
+        "Indeedee-F @ Sitrus Berry",
+        "Garchomp @ Life Orb",
+        "Vivillon @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST111",
+      "player": "Rog\u00e9rio da Costa Junior",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 27 (6-4)",
+      "archetype": "Sand Rush Physical Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Tyranitar-Mega @ Tyranitarite",
+        "Dragapult @ Life Orb",
+        "Excadrill @ Focus Sash",
+        "Sylveon @ Fairy Feather",
+        "Staraptor-Mega @ Staraptite"
+      ]
+    },
+    {
+      "id": "ST112",
+      "player": "Eduardo Oliveira",
+      "tournament": "2027 Recife Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 30 (6-4)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Recife Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Miracle Seed",
+        "Sneasler @ Grassy Seed",
+        "Basculegion @ Choice Scarf",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Incineroar @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST113",
+      "player": "Joseph Ugarte",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 1 (15-2)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Farigiraf @ Sitrus Berry",
+        "Incineroar @ Chople Berry",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Sylveon @ Fairy Feather",
+        "Venusaur @ Focus Sash",
+        "Garchomp @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST114",
+      "player": "Andrew Figueras",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 2 (14-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Archaludon @ Leftovers",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Pelipper @ Sitrus Berry",
+        "Venusaur @ Focus Sash",
+        "Grimmsnarl @ Light Clay",
+        "Garchomp @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST115",
+      "player": "Dorian Kang",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 3 (13-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Venusaur @ Focus Sash",
+        "Politoed @ Mystic Water",
+        "Grimmsnarl @ Light Clay",
+        "Raichu-Mega-X @ Raichunite X",
+        "Archaludon @ Leftovers",
+        "Charizard-Mega-Y @ Charizardite Y"
+      ]
+    },
+    {
+      "id": "ST116",
+      "player": "JJ Miller",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 4 (13-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gholdengo @ Life Orb",
+        "Archaludon @ Leftovers",
+        "Pelipper @ Sitrus Berry",
+        "Swampert-Mega @ Swampertite",
+        "Staraptor-Mega @ Staraptite",
+        "Sinistcha @ Colbur Berry"
+      ]
+    },
+    {
+      "id": "ST117",
+      "player": "Toler Webb",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 6 (12-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Golisopod-Mega @ Golisopite",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Pelipper @ Life Orb",
+        "Archaludon @ Leftovers",
+        "Farigiraf @ Sitrus Berry",
+        "Sneasler @ White Herb"
+      ]
+    },
+    {
+      "id": "ST118",
+      "player": "Brian Hough",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 8 (12-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gholdengo @ Life Orb",
+        "Dragonite-Mega @ Dragoninite",
+        "Incineroar @ Sitrus Berry",
+        "Sneasler @ White Herb",
+        "Rillaboom @ Miracle Seed",
+        "Garchomp @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST119",
+      "player": "Cary D'Ortona",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 10 (12-2)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Basculegion @ Mystic Water",
+        "Whimsicott @ Focus Sash",
+        "Garchomp @ Life Orb",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Kingambit @ Chople Berry"
+      ]
+    },
+    {
+      "id": "ST120",
+      "player": "Justin Burns",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 11 (12-2)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Basculegion @ Colbur Berry",
+        "Salamence-Mega @ Salamencite",
+        "Kingambit @ Chople Berry",
+        "Whimsicott @ Focus Sash",
+        "Floette-Mega @ Floettite"
+      ]
+    },
+    {
+      "id": "ST121",
+      "player": "Caden Croft",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 13 (11-3)",
+      "archetype": "Trick Room Hard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Froslass-Mega @ Froslassite",
+        "Whimsicott @ Fairy Feather",
+        "Staraptor-Mega @ Staraptite",
+        "Glimmora @ Focus Sash",
+        "Armarouge @ Sitrus Berry",
+        "Kingambit @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST122",
+      "player": "Carson Confer",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 14 (11-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion-F @ Focus Sash",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Golisopod-Mega @ Golisopite",
+        "Pelipper @ Damp Rock",
+        "Archaludon @ Leftovers",
+        "Sneasler @ White Herb"
+      ]
+    },
+    {
+      "id": "ST123",
+      "player": "London Faust",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 16 (11-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Kingambit @ Occa Berry",
+        "Torkoal @ Charcoal",
+        "Farigiraf @ Sitrus Berry",
+        "Venusaur @ Focus Sash",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Alcremie @ Rocky Helmet"
+      ]
+    },
+    {
+      "id": "ST124",
+      "player": "Joey Scudiero",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 17 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Rillaboom @ Eject Button",
+        "Incineroar @ Chople Berry",
+        "Kommo-o @ Leftovers",
+        "Kingambit @ Life Orb",
+        "Gengar-Mega @ Gengarite"
+      ]
+    },
+    {
+      "id": "ST125",
+      "player": "Bobby Rochelle",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 19 (10-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Incineroar @ Sitrus Berry",
+        "Rillaboom @ Miracle Seed",
+        "Garchomp @ Choice Scarf",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Milotic @ Grassy Seed",
+        "Gholdengo @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST126",
+      "player": "Ethan Rauchwerk",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 20 (10-3)",
+      "archetype": "Psychic Terrain Expanding Force",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Armarouge @ Life Orb",
+        "Sneasler @ Psychic Seed",
+        "Milotic @ Leftovers",
+        "Indeedee-F @ Rocky Helmet",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Froslass-Mega @ Froslassite"
+      ]
+    },
+    {
+      "id": "ST127",
+      "player": "Luca Santelli",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 21 (9-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Politoed @ Sitrus Berry",
+        "Grimmsnarl @ Light Clay",
+        "Archaludon @ Leftovers",
+        "Venusaur @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST128",
+      "player": "Jacob Acker",
+      "tournament": "2027 Louisville Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 22 (9-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Louisville Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Garchomp @ Choice Scarf",
+        "Basculegion @ Sitrus Berry",
+        "Sneasler @ Focus Sash",
+        "Delphox-Mega @ Delphoxite",
+        "Kingambit @ Occa Berry",
+        "Dragonite-Mega @ Dragoninite"
+      ]
+    },
+    {
+      "id": "ST129",
+      "player": "Louis Fontvieille",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 1 (15-2)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Raichu-Mega-X @ Raichunite X",
+        "Golisopod-Mega @ Golisopite",
+        "Archaludon @ Leftovers",
+        "Pelipper @ Damp Rock",
+        "Basculegion-F @ Focus Sash",
+        "Sneasler @ Electric Seed"
+      ]
+    },
+    {
+      "id": "ST130",
+      "player": "Eduardo Cunha",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 2 (14-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Miracle Seed",
+        "Vivillon @ Focus Sash",
+        "Incineroar @ Leftovers",
+        "Primarina @ Sitrus Berry",
+        "Gengar-Mega @ Gengarite",
+        "Garchomp-Mega-Z @ Garchompite Z"
+      ]
+    },
+    {
+      "id": "ST131",
+      "player": "Simone Sanvito",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 3 (13-3)",
+      "archetype": "Sand Rush Physical Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Excadrill @ Focus Sash",
+        "Staraptor-Mega @ Staraptite",
+        "Sinistcha @ Rocky Helmet",
+        "Milotic @ Sitrus Berry",
+        "Gholdengo @ Life Orb",
+        "Tyranitar-Mega @ Tyranitarite"
+      ]
+    },
+    {
+      "id": "ST132",
+      "player": "Riccardo Stellini",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 6 (12-3)",
+      "archetype": "Trick Room Hard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Incineroar @ White Herb",
+        "Camerupt-Mega @ Cameruptite",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Sylveon @ Fairy Feather",
+        "Farigiraf @ Sitrus Berry",
+        "Rillaboom @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST133",
+      "player": "Nicol\u00f2 Lazzerini Denchi",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 10 (12-2)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Whimsicott @ Focus Sash",
+        "Venusaur @ Wide Lens",
+        "Incineroar @ Sitrus Berry",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Garchomp @ Life Orb",
+        "Milotic @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST134",
+      "player": "Fran Mart\u00ednez P\u00e9rez",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 11 (11-3)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Staraptor-Mega @ Staraptite",
+        "Indeedee @ Focus Sash",
+        "Garchomp @ Choice Scarf",
+        "Glimmora @ Life Orb",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Whimsicott @ Occa Berry"
+      ]
+    },
+    {
+      "id": "ST135",
+      "player": "Stefano De Maria",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 13 (11-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Grimmsnarl @ Light Clay",
+        "Politoed @ Mystic Water",
+        "Golisopod-Mega @ Golisopite",
+        "Archaludon @ Leftovers",
+        "Farigiraf @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST136",
+      "player": "Evan Graham",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 15 (11-3)",
+      "archetype": "Sand Rush Physical Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Incineroar @ Sitrus Berry",
+        "Hippowdon @ Leftovers",
+        "Kommo-o @ Dragon Fang",
+        "Rillaboom @ Life Orb",
+        "Gengar-Mega @ Gengarite",
+        "Excadrill @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST137",
+      "player": "Vikram Thiagarajan",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 16 (11-3)",
+      "archetype": "Trick Room Hard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Arcanine-Hisui @ Focus Sash",
+        "Gardevoir-Mega @ Gardevoirite",
+        "Indeedee-F @ Rocky Helmet",
+        "Milotic @ Sitrus Berry",
+        "Sneasler @ Psychic Seed",
+        "Gengar-Mega @ Gengarite"
+      ]
+    },
+    {
+      "id": "ST138",
+      "player": "Arian Herter",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 17 (10-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Choice Scarf",
+        "Gengar-Mega @ Gengarite",
+        "Incineroar @ Sitrus Berry",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Volcarona @ Grassy Seed",
+        "Rillaboom @ Miracle Seed"
+      ]
+    },
+    {
+      "id": "ST139",
+      "player": "Louis Markl",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 18 (9-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Choice Scarf",
+        "Floette-Mega @ Floettite",
+        "Incineroar @ Sitrus Berry",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Miracle Seed",
+        "Volcarona @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST140",
+      "player": "Nelson Meyzindi",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 19 (9-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Incineroar @ Sitrus Berry",
+        "Gholdengo @ Life Orb",
+        "Rillaboom @ Miracle Seed",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Primarina @ Leftovers"
+      ]
+    },
+    {
+      "id": "ST141",
+      "player": "Davide Carrer",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 21 (9-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Salamence-Mega @ Salamencite",
+        "Glimmora-Mega @ Glimmoranite",
+        "Kingambit @ Life Orb",
+        "Volcarona @ Charti Berry",
+        "Garchomp @ Choice Scarf",
+        "Rillaboom @ Miracle Seed"
+      ]
+    },
+    {
+      "id": "ST142",
+      "player": "PAU SERRA UJALD\u00d3N",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 24 (9-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Torkoal @ Life Orb",
+        "Basculegion @ Choice Scarf",
+        "Sneasler @ Psychic Seed",
+        "Indeedee-F @ Rocky Helmet",
+        "Pyroar-Mega @ Pyroarite",
+        "Gardevoir-Mega @ Gardevoirite"
+      ]
+    },
+    {
+      "id": "ST143",
+      "player": "Karl Akpovi",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 25 (9-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Incineroar @ Sitrus Berry",
+        "Basculegion @ Choice Scarf",
+        "Dragonite-Mega @ Dragoninite",
+        "Floette-Mega @ Floettite",
+        "Rillaboom @ Miracle Seed"
+      ]
+    },
+    {
+      "id": "ST144",
+      "player": "sali resuli",
+      "tournament": "2027 Nice Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 26 (9-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Nice Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Gliscor @ Psychic Seed",
+        "Gardevoir-Mega @ Gardevoirite",
+        "Venusaur @ Focus Sash",
+        "Indeedee-F @ Rocky Helmet",
+        "Incineroar @ Chople Berry",
+        "Charizard-Mega-Y @ Charizardite Y"
+      ]
+    },
+    {
+      "id": "ST145",
+      "player": "Kyle Livinghouse",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 1 (13-2)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ White Herb",
+        "Whimsicott @ Focus Sash",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Kingambit @ Chople Berry",
+        "Garchomp @ Life Orb",
+        "Froslass-Mega @ Froslassite"
+      ]
+    },
+    {
+      "id": "ST146",
+      "player": "Zach Holowiak",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 4 (11-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Rillaboom @ Miracle Seed",
+        "Blaziken-Mega @ Blazikenite",
+        "Kingambit @ Black Glasses",
+        "Sneasler @ Grassy Seed",
+        "Primarina @ Leftovers",
+        "Raichu-Mega-Y @ Raichunite Y"
+      ]
+    },
+    {
+      "id": "ST147",
+      "player": "Luis Perez Alcocer",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 8 (10-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Incineroar @ Leftovers",
+        "Venusaur @ Focus Sash",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Sylveon @ Fairy Feather",
+        "Farigiraf @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST148",
+      "player": "alexander canseco salas",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 10 (9-3)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sneasler @ Focus Sash",
+        "Farigiraf @ Sitrus Berry",
+        "Staraptor-Mega @ Staraptite",
+        "Delphox-Mega @ Delphoxite",
+        "Torkoal @ Charcoal",
+        "Kingambit @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST149",
+      "player": "Jonathan Josue Barradas Ruiz",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 12 (8-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Golisopod-Mega @ Golisopite",
+        "Archaludon @ Leftovers",
+        "Grimmsnarl @ Light Clay",
+        "Pelipper @ Mystic Water",
+        "Raichu-Mega-X @ Raichunite X",
+        "Basculegion-F @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST150",
+      "player": "Emanuel Hernandez",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 13 (8-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Primarina @ Leftovers",
+        "Rillaboom @ Sitrus Berry",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Sneasler @ White Herb",
+        "Kingambit @ Life Orb",
+        "Arcanine-Hisui @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST151",
+      "player": "Enrique Grimaldo",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 14 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Sinistcha @ Colbur Berry",
+        "Basculegion @ Choice Scarf",
+        "Archaludon @ Leftovers",
+        "Floette-Mega @ Floettite",
+        "Pelipper @ Focus Sash",
+        "Incineroar @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST152",
+      "player": "Alejandro Rol\u00f3n",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 16 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Floette-Mega @ Floettite",
+        "Basculegion @ Choice Scarf",
+        "Vivillon @ Focus Sash",
+        "Kingambit @ Life Orb",
+        "Salamence-Mega @ Salamencite",
+        "Incineroar @ Sitrus Berry"
+      ]
+    },
+    {
+      "id": "ST153",
+      "player": "Bruno P\u00e9rez",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 20 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Meowstic @ Sitrus Berry",
+        "Pelipper @ Focus Sash",
+        "Garchomp-Mega-Z @ Garchompite Z",
+        "Golisopod-Mega @ Golisopite",
+        "Archaludon @ Leftovers",
+        "Basculegion @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST154",
+      "player": "Jos\u00e9 Ramon Castillo Nu\u00f1ez",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 24 (8-3)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Grimmsnarl @ Light Clay",
+        "Venusaur @ Wide Lens",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Archaludon @ Leftovers",
+        "Pelipper @ Sitrus Berry",
+        "Basculegion-F @ Focus Sash"
+      ]
+    },
+    {
+      "id": "ST155",
+      "player": "Jeshua Rivera",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 26 (8-3)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Basculegion @ Choice Scarf",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Sneasler @ Electric Seed",
+        "Raichu-Mega-X @ Raichunite X",
+        "Whimsicott @ Focus Sash",
+        "Kingambit @ Life Orb"
+      ]
+    },
+    {
+      "id": "ST156",
+      "player": "Ayraldo azaael Andrade ortiz",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 28 (8-3)",
+      "archetype": "Goodstuffs Pivot Balance",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Delphox-Mega @ Delphoxite",
+        "Maushold-Three @ Chople Berry",
+        "Incineroar @ Sitrus Berry",
+        "Sneasler @ Focus Sash",
+        "Sinistcha @ Occa Berry",
+        "Blastoise-Mega @ Blastoisinite"
+      ]
+    },
+    {
+      "id": "ST157",
+      "player": "Daniela Hernandez",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 29 (8-3)",
+      "archetype": "Sun Mega Charizard Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Venusaur @ Focus Sash",
+        "Sylveon @ Fairy Feather",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Incineroar @ Chople Berry",
+        "Garchomp @ Choice Scarf"
+      ]
+    },
+    {
+      "id": "ST158",
+      "player": "Eduardo Trejo",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 32 (7-4)",
+      "archetype": "Rain Archaludon Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Metagross-Mega @ Metagrossite",
+        "Garchomp @ Choice Scarf",
+        "Pelipper @ Sitrus Berry",
+        "Archaludon @ Leftovers",
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Grimmsnarl @ Light Clay"
+      ]
+    },
+    {
+      "id": "ST159",
+      "player": "Mario Semerena",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 34 (7-4)",
+      "archetype": "Sun Trick Room Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Charizard-Mega-Y @ Charizardite Y",
+        "Garchomp @ Life Orb",
+        "Whimsicott @ Focus Sash",
+        "Metagross-Mega @ Metagrossite",
+        "Incineroar @ Sitrus Berry",
+        "Indeedee-F @ Rocky Helmet"
+      ]
+    },
+    {
+      "id": "ST160",
+      "player": "Julian Alberto Castellanos Vargas",
+      "tournament": "2027 Puebla Pok\u00e9mon VGC Regional Championships",
+      "placement": "Rank 39 (7-4)",
+      "archetype": "Rain Electric Seed Offense",
+      "notes": "Official Play! Pok\u00e9mon Top Cut finish at 2027 Puebla Pok\u00e9mon VGC Regional Championships. Ingested via MunchStats Crawler.",
+      "mons": [
+        "Milotic @ Leftovers",
+        "Raichu-Mega-Y @ Raichunite Y",
+        "Rillaboom @ Life Orb",
+        "Pelipper @ Sitrus Berry",
+        "Golisopod-Mega @ Golisopite",
+        "Sneasler @ Grassy Seed"
       ]
     }
   ],
@@ -12216,6 +13752,37 @@
       ],
       "turning_point": "Turno 1: Quiebre por [CAT:POS|Turn:1|Code:POS-01|Detail:Never dry-switch fragile sweepers into active un-weathered Water Spout; Mega Evolve Charizard Y on Turn 1 to halve Water damage via Drought while setting Light Screen.] (-2.0 VP)",
       "turning_point_turn": 1
+    },
+    {
+      "id": "325.0",
+      "date": "46327.5202",
+      "opponent": "Franconcino",
+      "format": "VGC Reg M-C",
+      "result": "Loss",
+      "team_id": "T24",
+      "turns": "4.0",
+      "enemy_archetype": "Telepathy Refrigerate Explosion",
+      "user_mega": "Charizard-Mega-Y",
+      "enemy_mega": "Glalie-Mega",
+      "user_leads": "Grimmsnarl + Charizard",
+      "opp_leads": "Gardevoir + Glalie",
+      "user_back": "Garchomp + Kingambit",
+      "first_blood_side": "Opponent",
+      "mvp_pokemon": "Glalie-Mega",
+      "mvp_move": "Explosion",
+      "misplay_type": "[CAT:POS|Turn:1|Code:POS-02|Detail:Against telegraphed Telepathy + Refrigerate Explosion on OTS, lead Kingambit/Raichu or execute Protect on Charizard slot with physical Reflect.]",
+      "key_rng_event": "None",
+      "core_lesson": "Always read opposing 4-move Open Team Sheets for Telepathy + Explosion/Earthquake combos before committing Turn 1 leads.",
+      "notes": "Turn 1 double KO collapse: Opposing Mega Glalie executed Refrigerate Explosion into Telepathy Gardevoir, wiping Grimmsnarl and Mega Charizard Y.",
+      "vp_curve": [
+        0.0,
+        -1.9,
+        -2.1,
+        -2.9,
+        -4.0
+      ],
+      "turning_point": "Turno 1: Quiebre por [CAT:POS|Turn:1|Code:POS-02|Detail:Against telegraphed Telepathy + Refrigerate Explosion on OTS, lead Kingambit/Raichu or execute Protect on Charizard slot with physical Reflect.] (-1.9 VP)",
+      "turning_point_turn": 1
     }
   ],
   "diagnostics": [
@@ -12323,22 +13890,29 @@
       "root_cognitive_trap": "Autopilot",
       "vp_delta_lost": 4.0,
       "fix_directives": ""
+    },
+    {
+      "match_id": "325.0",
+      "mistake_code": "POS-02",
+      "root_cognitive_trap": "Autopilot",
+      "vp_delta_lost": 6.0,
+      "fix_directives": ""
     }
   ],
   "trap_counts": {
     "Tunnel_Vision": 6,
     "Format_Divergence": 3,
-    "Autopilot": 5,
+    "Autopilot": 6,
     "Tilt": 1
   },
   "code_counts": {
-    "POS-02": 2,
+    "POS-02": 3,
     "TGT-01": 4,
     "POS-01": 6,
     "SPD-02": 1,
     "POS-03": 2
   },
-  "vp_bleed": -57.0,
+  "vp_bleed": -51.0,
   "all_calcs": [
     {
       "id": "CALC_001",
