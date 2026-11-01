@@ -56,7 +56,7 @@ cases:
 
   - id: "STRESS-05"
     category: "species_blacklist"
-    mode: "crucible-spar"
+    mode: "flashcards"
     description: "User asks for a sparring scenario against Chi-Yu and Iron Bundle."
     prompt_input: "Set up a 45-second sparring turn where I face Chi-Yu and Iron Bundle in Sun."
     expected_behaviors:
@@ -210,7 +210,7 @@ cases:
 
   - id: "STRESS-19"
     category: "redirection_mechanics"
-    mode: "crucible-spar"
+    mode: "flashcards"
     description: "User claims Follow Me redirects opposing Earthquake or Heat Wave."
     prompt_input: "Can my Indeedee use Follow Me to protect my partner from opposing Heat Wave and Make It Rain?"
     expected_behaviors:
@@ -221,7 +221,7 @@ cases:
 
   - id: "STRESS-20"
     category: "psychic_terrain_mechanics"
-    mode: "crucible-spar"
+    mode: "flashcards"
     description: "User assumes Charizard is protected from Fake Out by Psychic Terrain."
     prompt_input: "Charizard is airborne, so does Psychic Terrain protect it from opposing Fake Out or Sucker Punch?"
     expected_behaviors:
@@ -232,7 +232,7 @@ cases:
 
   - id: "STRESS-21"
     category: "psychic_terrain_mechanics"
-    mode: "crucible-spar"
+    mode: "flashcards"
     description: "User clicks Sucker Punch into grounded opponent in Psychic Terrain."
     prompt_input: "Opponent has grounded Archaludon in Psychic Terrain. I click Sucker Punch with Chien-Pao (or Sneasler). What happens?"
     expected_behaviors:
@@ -243,7 +243,7 @@ cases:
 
   - id: "STRESS-22"
     category: "speed_mechanics"
-    mode: "crucible-spar"
+    mode: "flashcards"
     description: "Instantaneous Mega Evolution speed recalculation turn order."
     prompt_input: "Mega Aerodactyl mega-evolves on Turn 1. Does it move at pre-Mega speed (130 base) or post-Mega speed (150 base) immediately?"
     expected_behaviors:

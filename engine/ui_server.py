@@ -46,7 +46,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 sys.path.insert(0, str(REPO_ROOT / "scouts"))
 
-from ui_generator import load_live_telemetry, write_svg_assets
+from ui_generator import load_live_telemetry
 
 try:
     from munchstats_scraper import SCOUTED_CSV, scrape_munchstats_url_or_json
@@ -54,6 +54,7 @@ except ImportError:
     SCOUTED_CSV = REPO_ROOT / "data" / "Scouted_Teams.csv"
 
     def scrape_munchstats_url_or_json(url, save_to_csv=True):
+        """Fallback mock for MunchStats live scraper when module is offline."""
         return [{"warning": "MunchStats live scraper offline; falling back to local Scouted_Teams.csv."}]
 
 PORT = 8000
@@ -961,7 +962,6 @@ def run_server(host: str = DEFAULT_HOST, port: int = PORT):
     print(f"  Dynamic Sprites API:  http://{host}:{port}/api/sprites/<species>")
     print("=================================================================")
 
-    write_svg_assets()
     data = load_live_telemetry()
     (ASSETS_DIR / "live_telemetry.json").write_text(json.dumps(data, indent=2), encoding="utf-8")
     n_m, n_c, n_p = data["total_matches"], data["total_calcs"], len(data["pokedex"])

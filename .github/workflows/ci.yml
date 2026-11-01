@@ -46,9 +46,9 @@ jobs:
         run: |
           python evals/run_static_checks.py
 
-      - name: Run SVG Asset Inventory & XML Audit
+      - name: Run PNG Asset Inventory & Integrity Audit
         run: |
-          python engine/verify_svg_inventory.py
+          python engine/verify_png_inventory.py
 
       - name: Run Full Test Suite (pytest)
         run: |

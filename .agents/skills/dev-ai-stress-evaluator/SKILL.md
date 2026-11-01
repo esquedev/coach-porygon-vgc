@@ -30,7 +30,7 @@ An offline Python test script in CI/CD cannot invoke a large language model. To 
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │               STEP 2: DETERMINISTIC PYTHON EVALUATOR                   │
-│             (.\python.cmd evals/evaluate_release_health.py --generate) │
+│               (python evals/evaluate_release_health.py --generate)     │
 │                                                                        │
 │  1. Deterministically grades model_output in stress_eval_input.json    │
 │  2. Checks 7 AI Health Pillars, forbidden tokens & blacklist rules     │
@@ -42,7 +42,7 @@ An offline Python test script in CI/CD cannot invoke a large language model. To 
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │            STEP 3: CI/CD RELEASE GATE (run_tests.cmd Phase 3)          │
-│                (.\python.cmd evals/evaluate_release_health.py)         │
+│                  (python evals/evaluate_release_health.py)             │
 │                                                                        │
 │  1. Verifies that ai_health_stress_report.json is FRESH (unconsumed)   │
 │  2. Verifies verdict is [PASS - PRODUCTION AIRTIGHT]                   │
@@ -52,7 +52,7 @@ An offline Python test script in CI/CD cannot invoke a large language model. To 
 
 ---
 
-## 2. The Designated Input File: `stress_eval_input.json`
+## 2. The Designated Input File: `reports/agent_audits/stress_eval_input.json`
 
 When this skill is invoked, the agent compiles all tested prompts and captured model responses into:
 [`reports/agent_audits/stress_eval_input.json`](../../../reports/agent_audits/stress_eval_input.json)
@@ -110,10 +110,10 @@ Save all prompt-response pairs to [`reports/agent_audits/stress_eval_input.json`
 Invoke the unified Python evaluation engine:
 
 ```powershell
-.\python.cmd evals/evaluate_release_health.py --generate --verbose
+python evals/evaluate_release_health.py --generate --verbose
 ```
 
-This reads `stress_eval_input.json`, grades the outputs against the 7 pillars, verifies static code references, and generates:
+This reads `reports/agent_audits/stress_eval_input.json`, grades the outputs against the 7 pillars, verifies static code references, and generates:
 * **JSON Report:** [`reports/agent_audits/ai_health_stress_report.json`](../../../reports/agent_audits/ai_health_stress_report.json) (`"audit_consumed": false`)
 * **Markdown Document:** [`reports/agent_audits/ai_health_stress_report.md`](../../../reports/agent_audits/ai_health_stress_report.md)
 * **HTML Scorecard:** [`reports/agent_audits/ai_health_stress_report.html`](../../../reports/agent_audits/ai_health_stress_report.html)
@@ -124,7 +124,7 @@ This reads `stress_eval_input.json`, grades the outputs against the 7 pillars, v
 
 When `run_tests.cmd` executes Phase 3:
 ```powershell
-.\python.cmd evals/evaluate_release_health.py
+python evals/evaluate_release_health.py
 ```
 - It inspects `reports/agent_audits/ai_health_stress_report.json`.
 - If missing or already consumed (`"audit_consumed": true`), Phase 3 fails and instructs the developer to re-run the skill.

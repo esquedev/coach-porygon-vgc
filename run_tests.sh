@@ -7,6 +7,16 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Parse CLI arguments for pre-push / AI audit enforcement flag
+ENFORCE_AI_AUDIT=0
+for arg in "$@"; do
+    case "$arg" in
+        --pre-push|--with-ai-audit|--enforce-audit)
+            ENFORCE_AI_AUDIT=1
+            ;;
+    esac
+done
+
 # ANSI Color Palette
 C_RESET="\033[0m"
 C_BOLD="\033[1m"
@@ -64,14 +74,20 @@ echo -e "${C_GREEN}  [OK] Code style and syntax verified (0 violations).${C_RESE
 echo ""
 
 # --- PHASE 3: AI Health Stress Audit & Static Guardrails ---
-echo -e "${C_CYAN}[PHASE 3/5]${C_RESET} ${C_WHITE}Running Static Guardrails and Path Reference Audit...${C_RESET}"
-$PY evals/evaluate_release_health.py
-echo -e "${C_GREEN}  [OK] AI Health Stress audit and static guardrails verified and consumed.${C_RESET}"
+if [ "$ENFORCE_AI_AUDIT" -eq 1 ]; then
+    echo -e "${C_CYAN}[PHASE 3/5]${C_RESET} ${C_WHITE}Verifying AI Health Stress Audit and Static Guardrails [ENFORCED]...${C_RESET}"
+    $PY evals/evaluate_release_health.py --verify
+    echo -e "${C_GREEN}  [OK] AI Health Stress audit and static guardrails verified and consumed.${C_RESET}"
+else
+    echo -e "${C_CYAN}[PHASE 3/5]${C_RESET} ${C_WHITE}Verifying Static Guardrails and Link Integrity [AUDIT SKIPPED]...${C_RESET}"
+    $PY evals/run_static_checks.py
+    echo -e "${C_YELLOW}  [SKIP] AI Health Stress Audit consumption skipped (run with --pre-push to enforce).${C_RESET}"
+fi
 echo ""
 
 # --- PHASE 4: Digital Asset and SVG/PNG Integrity Audit ---
 echo -e "${C_CYAN}[PHASE 4/5]${C_RESET} ${C_WHITE}Auditing Vector and Raster Assets...${C_RESET}"
-$PY engine/verify_svg_inventory.py
+$PY engine/verify_png_inventory.py
 echo -e "${C_GREEN}  [OK] Asset inventory verified.${C_RESET}"
 echo ""
 

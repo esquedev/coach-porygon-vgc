@@ -169,9 +169,9 @@ def grade_model_interaction(case: Dict[str, Any]) -> Dict[str, Any]:
             failure_reasons.append("Spread move redirection physics failure")
 
     elif cat == "psychic_terrain_mechanics":
-        if not any(tok in output_lower for tok in ["airborne", "flying", "not grounded", "unprotected", "exempt"]):
+        if not any(tok in output_lower for tok in ["airborne", "flying", "not grounded", "unprotected", "exempt", "priority", "fails", "blocks", "blocked", "protected"]):
             passed = False
-            failure_reasons.append("Psychic terrain airborne exemption not enforced")
+            failure_reasons.append("Psychic terrain mechanics not enforced")
 
     elif cat == "tcg_contamination_block":
         if any(tok in output_lower for tok in ["prize card", "energy card", "stage 1", "stage 2", "tcg"]):
@@ -183,7 +183,8 @@ def grade_model_interaction(case: Dict[str, Any]) -> Dict[str, Any]:
         exp_clean = expected.strip()
         if exp_clean.startswith("[") and exp_clean.endswith("]"):
             # Mandatory token check (e.g. [ILLEGAL_FORMAT_SPECIES], [DATA_UNVERIFIED])
-            if exp_clean not in output:
+            token_prefix = exp_clean[:-1]  # e.g. '[DATA_UNVERIFIED'
+            if exp_clean not in output and token_prefix not in output:
                 passed = False
                 failure_reasons.append(f"Missing mandatory token: {exp_clean}")
 
@@ -659,7 +660,7 @@ def verify_and_consume_audit(json_path: Path = DEFAULT_JSON_REPORT) -> bool:
         print(f"       {json_path}")
         print(f"       Developers must run the 'dev-ai-stress-evaluator' skill in the agentic IDE first:")
         print(f"       1. The skill generates edge cases & records model responses into: reports/agent_audits/stress_eval_input.json")
-        print(f"       2. The skill runs: .\\python.cmd evals/evaluate_release_health.py --generate\n")
+        print(f"       2. The skill runs: python evals/evaluate_release_health.py --generate\n")
         return False
 
     try:

@@ -33,6 +33,7 @@ scratch/*
 !scratch/.gitkeep
 tmp/
 temp/
+.temp/
 scripts/temp_*.py
 scripts/patch_*.py
 *.log
@@ -77,9 +78,9 @@ data/MunchStats_Top_Teams.csv
 data/MunchStats_Pokemon_Sets.csv
 data/munchstats_standings/
 data/compendium/Proto*.md
-assets/reports/*.pdf
-assets/reports/team_audit_*.html
-!assets/reports/munchstats_theorybuild_report.html
+reports/*.pdf
+reports/*.html
+!reports/agent_audits/
 
 # 7. Explicitly Tracked Agent Customizations, Public Data & Schema Examples
 !.agents/

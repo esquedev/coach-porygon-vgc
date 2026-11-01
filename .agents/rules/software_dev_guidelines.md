@@ -30,7 +30,7 @@ This document establishes the mandatory software engineering standards, reposito
     2. `[PHASE 1/5]` Schema & Template Initialization (`data/*.example.csv`)
     3. `[PHASE 2/5]` Linting and Syntax Compilation (`flake8` / `pycodestyle` with 0 violations)
     4. `[PHASE 3/5]` Static Guardrails & Stress Evaluation (`evals/evaluate_release_health.py`)
-    5. `[PHASE 4/5]` Vector/Raster Asset Audit & Manifest Generation (`engine/verify_svg_inventory.py`)
+    5. `[PHASE 4/5]` Vector/Raster Asset Audit & Manifest Generation (`engine/verify_png_inventory.py`)
     6. `[PHASE 5/5]` Acceptance, Security, and Regression Test Suite (`tests/run_all_tests.py`)
 
 ---
@@ -40,8 +40,8 @@ This document establishes the mandatory software engineering standards, reposito
 * **Windows & POSIX Synchronization:**
   * Any modification to runner logic, arguments, or environment variables in `run_tests.cmd` must be faithfully mirrored in `run_tests.sh` and vice versa.
 * **Dynamic Python Runtime Launching:**
-  * Use the workspace portable launcher (`python.cmd` on Windows, `$PY` on POSIX) rather than assuming a system-wide python path.
-  * `python.cmd` prioritizes the local workspace virtual environment (`.venv\Scripts\python.exe`) first before falling back to system interpreters.
+  * Use the workspace virtual environment interpreter (`.venv\Scripts\python.exe` on Windows, `$PY` on POSIX) or active Python environment rather than assuming a system-wide python path.
+  * Local runners (`run_tests.cmd` and `run_tests.sh`) dynamically discover `.venv` first before falling back to system interpreters.
 
 ---
 
@@ -64,3 +64,24 @@ This document establishes the mandatory software engineering standards, reposito
   * Always use **Trainer** (English) or **Entrenador** (Spanish). Mecha or aviation terms (`pilot`, `piloto`) are strictly forbidden.
 * **Zero Engine Hex Jargon in User Faces:**
   * User-facing text, reports, and UI labels must refer to the calculator and turn engine naturally (e.g., *Official VGC Damage Calculator* / *Simulador Oficial VGC*), never exposing raw internal hex multipliers or engine variables.
+
+---
+
+## 6. Test Suite Architecture & Taxonomy (testUT & testAT)
+
+* **Dual-Tier Test Segregation:**
+  * **Unit Tests (`tests/testUT/`):** Fast, in-memory, deterministic tests that validate individual classes, methods, and mathematical functions in strict isolation with zero network calls and mocked disk I/O.
+  * **Acceptance & Integration Tests (`tests/testAT/`):** End-to-end user workflows, multi-turn battle simulations, Swiss flowcharting, security hardening, live Flask endpoint probing, schema validation, and cross-platform packaging.
+* **Root-Mirroring Subfolder Topology:**
+  * Both `tests/testUT/` and `tests/testAT/` must maintain internal subfolder structures that mirror the root repository architecture:
+    * `tests/testUT/engine/` and `tests/testAT/engine/` mirror `engine/`.
+    * `tests/testUT/evals/` and `tests/testAT/evals/` mirror `evals/`.
+    * `tests/testUT/assets/` and `tests/testAT/assets/` mirror `assets/`.
+    * `tests/testAT/frontend/` mirrors the dashboard UI layer (`assets/command_center.html`, `ui_server.py`).
+    * `tests/testAT/rules/` mirrors `.agents/rules/` (anti-hallucination, banned species, translation parity).
+* **1-to-1 Class Parity & Strict Naming Conventions:**
+  * Test files must be named strictly and unambiguously after the class or domain service they are testing: `test_<TargetClass>.py`.
+  * Every test file must contain a single primary test class following `class Test<TargetClass>(unittest.TestCase)`.
+  * Monolithic multi-class test catch-alls (e.g. bundling disparate domain components into a single file) are strictly prohibited.
+  * Negative adversarial tests must be co-located or mapped directly to their target unit (e.g., `test_Negative<TargetClass>.py` or as dedicated negative test methods within `Test<TargetClass>`).
+

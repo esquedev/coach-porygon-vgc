@@ -20,7 +20,7 @@ flowchart TD
 
     subgraph QA ["Security & Quality Verification"]
         D --> E["Run Prompt Guardrails Evals<br/><code>python evals/run_static_checks.py</code>"]
-        E --> F["Run SVG & SHA-256 Audit<br/><code>python engine/verify_svg_inventory.py</code>"]
+        E --> F["Run PNG & SHA-256 Audit<br/><code>python engine/verify_png_inventory.py</code>"]
     end
 
     subgraph CI_CD ["Continuous Integration & Delivery (GitHub Actions)"]
@@ -45,7 +45,7 @@ We have structured the codebase so contributors can make immediate, high-value i
 
 | Track | Impact Domain | Target Files | Difficulty | Description |
 | :---: | :--- | :--- | :---: | :--- |
-| ⚔️ | **Crucible Sparring Scenarios (Mode 3)** | [`engine/scenarios_data.py`](engine/scenarios_data.py) | **Easy** | Author new 45-second high-pressure turn puzzles (Weather wars, Trick Room vs Tailwind, Perish Song traps, Unburden setups). |
+| ⚔️ | **Board Sparring Flashcards (Mode 3)** | [`engine/scenarios_data.py`](engine/scenarios_data.py) | **Easy** | Author new 45-second high-pressure turn puzzles (Weather wars, Trick Room vs Tailwind, Perish Song traps, Unburden setups). |
 | ⚡ | **Speed Duel Flashcards (Mode 3)** | [`engine/speed_duels_data.py`](engine/speed_duels_data.py) | **Easy** | Add new Level 50 speed tier matchups and priority bracket showdowns with detailed competitive explanations. |
 | 🏆 | **Metagame Regulation Adaptors** | [`data/MC_Available_Pokemon.csv`](data/MC_Available_Pokemon.csv), [`engine/validate_roster.py`](engine/validate_roster.py) | **Medium** | Extend format legality checkers for upcoming tournament rulesets and regional championships. |
 | 📊 | **Win-Rate Machine Learning** | [`engine/telemetry.py`](engine/telemetry.py), [`data/Raw_Matches.csv`](data/Raw_Matches.csv) | **Medium** | Train local scikit-learn / XGBoost classifiers to predict real-time Victory Point (VP) inflection points and live win percentages. |
@@ -90,7 +90,7 @@ python tests/run_all_tests.py
 
 ### 3. Verify Backend-to-Frontend Integration
 ```bash
-python engine/verify_backend_connection.py
+python -m unittest tests/testAT/engine/test_UiServerEndpoints.py
 ```
 
 ---
@@ -152,9 +152,9 @@ When adding or modifying vector sprites, items, or mega stones:
    - **Zero Scripts:** Never include `<script>` tags or event handlers (`onload=`, `onerror=`, `onclick=`, `javascript:`).
 2. **Rebuild Manifest & Audit:**
    ```bash
-   python engine/verify_svg_inventory.py
+   python engine/verify_png_inventory.py
    ```
-   This automatically updates [`assets/svg_manifest.json`](assets/svg_manifest.json) with fresh SHA-256 cryptographic digests across all 539 files.
+   This automatically updates [`assets/png_manifest.json`](assets/png_manifest.json) with fresh SHA-256 cryptographic digests across all curated files.
 
 ---
 
@@ -165,10 +165,10 @@ When adding or modifying vector sprites, items, or mega stones:
    - Fixes: `fix/issue-description` (e.g., `fix/psychic-terrain-priority`)
    - Documentation: `docs/topic-name`
 2. **Quality Checklist Before Opening PR:**
-   - [ ] All 46 tests pass (`.\run_tests.cmd` or `python tests/run_all_tests.py`).
+   - [ ] All 147 tests pass (`.\run_tests.cmd` or `python tests/run_all_tests.py`).
    - [ ] Static health checks pass (`python evals/run_static_checks.py`).
-   - [ ] SVG inventory check passes with 0 script injections (`python engine/verify_svg_inventory.py`).
-   - [ ] Backend-frontend connection check passes (`python engine/verify_backend_connection.py`).
+   - [ ] Asset inventory check passes with 0 script injections (`python engine/verify_png_inventory.py`).
+   - [ ] Backend-frontend connection check passes (`python -m unittest tests/testAT/engine/test_UiServerEndpoints.py`).
    - [ ] 100% of new functions/classes have PEP 257 docstrings.
 3. **Automated Release Tags:**
    - When a version tag matching `v*` (e.g. `v1.1.0`) is pushed to `master`, GitHub Actions triggers `.github/workflows/release.yml`, builds distribution wheels and source archives, generates SHA-256 checksums, and publishes the release with downloadable assets automatically.

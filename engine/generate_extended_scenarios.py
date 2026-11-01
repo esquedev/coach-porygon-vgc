@@ -1678,7 +1678,7 @@ print("SUCCESS: All 42 scenarios verified with ZERO spoiler tokens in option lab
 # Write to engine/scenarios_data.py
 out_py = REPO_ROOT / "engine" / "scenarios_data.py"
 with open(out_py, "w", encoding="utf-8") as f:
-    f.write('true = True\nfalse = False\nnull = None\n# -*- coding: utf-8 -*-\n"""\nCoach Porygon VGC — Mode 3 Crucible Sparring Scenarios\n42 Deterministic Scenarios (SC-01 to SC-42) with 4 options each (168 Total Options)\n"""\n\n')
+    f.write('true = True\nfalse = False\nnull = None\n# -*- coding: utf-8 -*-\n"""\nCoach Porygon VGC — Mode 3 Flashcard Sparring Scenarios\n42 Deterministic Scenarios (SC-01 to SC-42) with 4 options each (168 Total Options)\n"""\n\n')
     f.write("CRUCIBLE_SCENARIOS = ")
     import json
     f.write(json.dumps(ALL_42, indent=2, ensure_ascii=False))

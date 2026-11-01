@@ -1,30 +1,41 @@
 ---
 name: munchstats-meta
-description: Ingests, clusters, analyzes, and dumps tournament metagame data from MunchStats (www.munchstats.com/tournaments/) into structured datasets for filtering, telemetry, and UI visualization.
+description: >-
+  Ingests, clusters, analyzes, and queries tournament metagame data from MunchStats
+  (www.munchstats.com/tournaments/) into structured datasets for filtering, telemetry, and coaching strategy.
 ---
 
-# Mode 6: MunchStats Meta Analysis & Tournament Dumper
+# MunchStats Metagame Intelligence & Tournament Analytics
+
+Autonomous metagame intelligence powered by competitive tournament data from **MunchStats** (`www.munchstats.com/tournaments/`) and official Play! Pokémon tournament brackets.
 
 ## 1. Purpose & Overview
-Mode 6 provides autonomous metagame intelligence by scraping, parsing, clustering, and dumping competitive tournament data from **MunchStats** (`www.munchstats.com/tournaments/`) and official Play! Pokémon tournament brackets.
-
-It powers:
+Provides empirical metagame grounding for Coach Porygon:
 1. **Tournament Usage Tracking:** Species usage rates, Mega Evolution distribution, common items, abilities, movesets, and Champion archetypes per tournament.
-2. **Day 1 vs. Day 2 Conversion Rates:** Rigorous statistical ratio calculations measuring how effectively species and cores transition from Swiss Day 1 into Day 2 and Top Cut.
-3. **Core Clustering & Archetype Identification:** Identification of 2-mon and 6-mon core clusters across tournament Top Cuts.
-4. **Structured Data Dumper & Governance:** Continuous export to the 5 official MunchStats datasets (`data/MunchStats_Overview.csv`, `data/MunchStats_Usage.csv`, `data/MunchStats_Standings.csv`, `data/MunchStats_Top_Teams.csv`, `data/MunchStats_Pokemon_Sets.csv`) and their corresponding schema templates (`data/MunchStats_Overview.example.csv`, etc.).
+2. **Multiphase Conversion Dynamics:** Rigorous statistical ratio calculations measuring how effectively species, cores, and archetypes transition across all tournament stages:
+   $$\text{D1} \to \text{D2 Conversion (\%)} = \left(\frac{\text{Day 2 Count}}{\text{Day 1 Count}}\right) \times 100\%$$
+   $$\text{D2} \to \text{Top Cut Conversion (\%)} = \left(\frac{\text{Top Cut Count}}{\text{Day 2 Count}}\right) \times 100\%$$
+3. **Pick Evaluation Taxonomy:** Categorizes competitive species into actionable tactical tiers:
+   - `CHAMPIONSHIP_CONVERTER`: Disproportionately high Day 2 $\to$ Top Cut conversion ($\ge 10.0\%$) or Champion presence.
+   - `DAY2_GATEKEEPER`: Strong Day 1 $\to$ Day 2 conversion ($\ge 15.0\%$), but severely drops off in Top Cut ($\le 4.0\%$).
+   - `SLEEPER_PUNISHER`: Low Day 1 field share ($\le 12.0\%$), but explosive Day 2 $\to$ Top Cut efficiency ($\ge 8.0\%$).
+   - `SWISS_TRAP`: High Day 1 popularity that collapses in Day 2 or achieves 0 Top Cut finishes.
+   - `META_PILLAR`: High field share ($\ge 20.0\%$) with consistent multi-phase survival.
+4. **Hive-Mind Consensus & Repeated Teams Mining:** Tracks identical 6-mon team registrations brought by testing squads, evaluating pilot attrition, collective conversion rates, and best pilot finishes.
+5. **Archetype Attrition Waterfall:** Measures macro-archetype shifts from the open field into the Top 8 podium.
+6. **Structured Data Governance:** Ingestion and management of persistent datasets:
+   - `data/MunchStats_Overview.csv` (Template: `data/MunchStats_Overview.example.csv`)
+   - `data/MunchStats_Usage.csv` (Template: `data/MunchStats_Usage.example.csv`)
+   - `data/MunchStats_Top_Teams.csv` (Template: `data/MunchStats_Top_Teams.example.csv`)
+   - `data/MunchStats_Pokemon_Sets.csv` (Template: `data/MunchStats_Pokemon_Sets.example.csv`)
+   - `data/Scouted_Teams.csv` (Curated Top Cut Open Team Sheets)
+   - `data/munchstats/raw/{tournament_slug}/` (Raw crawled JSON/CSV dumps)
+   - `data/munchstats/output/{tournament_slug}/` (Statistical audits, HTML reports, and compiled PDFs)
+7. **Visual Publication Engine:** Run [`engine/munchstats_analyzer.py`](../../../engine/munchstats_analyzer.py) to compile tournament analysis data, and invoke the [`report-generator`](../report-generator/SKILL.md) skill with [`engine/pdf_exporter.py`](../../../engine/pdf_exporter.py) to compile print-ready, publication-grade HTML and headless Chrome/Edge PDF metagame reports.
 
 ---
 
-## 2. Ingestion & Analytics Pipeline
-
-Run the automated pipeline to compile and refresh all 5 governance datasets across all 7 official VGC 2027 regional tournaments (`PB002`, `NC002`, `LO002`, `RE002`, `FR002`, `BR002`, `BA002`):
-
-```powershell
-python scouts/munchstats_pipeline.py
-```
-
-### Supported VGC 2027 Tournaments
+## 2. Supported VGC 2027 Tournaments
 | Code | ID | Tournament Name | Location | Format |
 |---|---|---|---|---|
 | `PB002` | `TM_PUEBLA_2027` | Puebla Regional Championships | Puebla, Mexico | Regulation M-C |
@@ -37,33 +48,101 @@ python scouts/munchstats_pipeline.py
 
 ---
 
-## 3. Data Governance & Table Schemas
+## 3. Execution Pipeline & 3-Tier Fallback Hierarchy
 
-### Table 1: `data/MunchStats_Overview.csv` (Template: `data/MunchStats_Overview.example.csv`)
-High-level tournament intelligence, attendance numbers, Day 2 cuts, Champion identity, and dominant Mega Evolution.
-* **Fields:** `Tournament_ID`, `MunchStats_ID`, `Tournament_Name`, `Location`, `Date`, `Division`, `Total_Players`, `Day2_Players`, `Top_Cut_Size`, `Champion_Player`, `Champion_Archetype`, `Dominant_Mega`, `Dominant_Mega_Usage_Pct`, `Notes`
+Whenever a tournament link or identifier is submitted (e.g. `https://www.munchstats.com/tournaments/BA002-JL3KVbvivVKNAc/all/`):
 
-### Table 2: `data/MunchStats_Usage.csv` (Template: `data/MunchStats_Usage.example.csv`)
-Species usage metrics across tournament phases with conversion rate mathematics.
-* **Fields:** `Tournament_ID`, `Phase`, `Rank`, `Species`, `Raw_Count`, `Usage_Pct`, `Day1_Count`, `Day1_Usage_Pct`, `Day2_Count`, `Day2_Usage_Pct`, `Conversion_Rate_Pct`, `Top_Cut_Count`, `Top_Cut_Usage_Pct`, `Most_Common_Item`, `Most_Common_Ability`, `Most_Common_Moves`
-* **Conversion Rate Formula:**
-  $$\text{Conversion Rate (\%)} = \left(\frac{\text{Day 2 Count}}{\text{Day 1 Count}}\right) \times 100\%$$
+### 🥇 Tier 1 (Primary): Deterministic Python Crawler & Analyzer Pipeline
+1. **Extraction & Raw Dump (`engine/munchstats_crawler.py`):**
+   ```bash
+   python engine/munchstats_crawler.py --url "<TOURNAMENT_URL>"
+   ```
+   - Fetches official REST API endpoints (`/tournaments/api/{id}/all/`, `/standings?day=all`, `/day1/`, `/day2/`, `/top8/`).
+   - Extracts complete tournament overview, stages, and Day 1 $\to$ Day 2 movers.
+   - Writes raw datasets to `data/munchstats/raw/{tournament_slug}/` (*overview.json*, *standings.json*, *standings.csv*, *usage.json*, *usage.csv*).
+   - Automatically registers the top 16 highest-impact teams (Top Cut finalists & top archetypes) into `data/Scouted_Teams.csv` with sequential `STxx` IDs without saturating storage.
 
-### Table 3: `data/MunchStats_Standings.csv` (Template: `data/MunchStats_Standings.example.csv`)
-Every competitor's final placement, Swiss record, Day reached, and full 6-mon Open Team Sheet roster.
-* **Fields:** `Tournament_ID`, `Placement`, `Numeric_Rank`, `Player_Name`, `Record`, `Day_Reached`, `Archetype`, `Pokemon_1`..`Pokemon_6`
+2. **Statistical Analysis & Visual Report Compilation (`engine/munchstats_analyzer.py`):**
+   ```bash
+   python engine/munchstats_analyzer.py --tournament-slug "<TOURNAMENT_SLUG>"
+   ```
+   - Computes multi-phase conversion dynamics across Day 1, Day 2, Top 16, and Top 8.
+   - Evaluates picks under the competitive taxonomy (`CHAMPIONSHIP_CONVERTER`, `DAY2_GATEKEEPER`, `SLEEPER_PUNISHER`, `SWISS_TRAP`, `META_PILLAR`).
+   - Mines hive-mind consensus teams (most repeated 6-mon rosters) with conversion rates and Showdown pastes.
+   - Computes the macro-archetype attrition waterfall.
+   - Generates executive Markdown report (*vgc_coaching_report.md*) and structured JSON (*vgc_analytics_summary.json*).
+   - Compiles publication-grade, self-contained HTML report (*tournament_report.html*) with embedded base64 sprites.
+   - Compiles print-ready PDF (*tournament_report.pdf*) using local headless Google Chrome or Microsoft Edge.
 
-### Table 4: `data/MunchStats_Top_Teams.csv` (Template: `data/MunchStats_Top_Teams.example.csv`)
-Repeated 6-mon core clusters, frequency count, archetype, cluster tournament share, and best placement.
-* **Fields:** `Tournament_ID`, `Team_Cluster_ID`, `Archetype`, `Roster_Size`, `Frequency_Count`, `Cluster_Share_Pct`, `Highest_Placement`, `Best_Player`, `Pokemon_1`..`Pokemon_6`, `Core_Synergy_Notes`
+3. **Ad-Hoc In-Memory Relational Queries (`--sql` / `--query`):**
+   Agents and coaches can interrogate tournament standings directly using standard SQL without disk overhead or database locks. `MunchStatsRelationalEngine` spins up an in-memory SQLite database (`:memory:`) and indexes all competitors, team slots, items, and moves in <15ms:
+   ```bash
+   python engine/munchstats_analyzer.py -s "<TOURNAMENT_SLUG>" --sql "<SQL_QUERY>"
+   ```
 
-### Table 5: `data/MunchStats_Pokemon_Sets.csv` (Template: `data/MunchStats_Pokemon_Sets.example.csv`)
-Empirical item, ability, nature, and 4-move distributions per species.
-* **Fields:** `Tournament_ID`, `Species`, `Set_Rank`, `Item`, `Ability`, `Nature`, `Move_1`, `Move_2`, `Move_3`, `Move_4`, `Count`, `Set_Share_Pct`
+   **In-Memory Relational Schema:**
+   - `competitors`: `player_id`, `name`, `placement`, `day_reached` (`day1` | `day2` | `top16` | `top8`), `wins`, `losses`
+   - `team_members`: `member_id`, `player_id`, `slot`, `species`, `item`, `ability`, `nature`, `tera_type`
+   - `moves`: `move_id`, `member_id`, `move_name`
+
+   **High-Leverage Relational Queries:**
+   - *Top Cut Conversion Rates:*
+     ```sql
+     SELECT tm.species, COUNT(DISTINCT c.player_id) AS total_pilots,
+            COUNT(DISTINCT CASE WHEN c.day_reached IN ('day2', 'top16', 'top8') THEN c.player_id END) AS d2_pilots,
+            ROUND(COUNT(DISTINCT CASE WHEN c.day_reached IN ('day2', 'top16', 'top8') THEN c.player_id END) * 100.0 / COUNT(DISTINCT c.player_id), 1) AS conv_pct
+     FROM team_members tm JOIN competitors c ON tm.player_id = c.player_id
+     GROUP BY tm.species HAVING total_pilots >= 5
+     ORDER BY conv_pct DESC LIMIT 10;
+     ```
+   - *Dominant 2-Mon Cores in Top 16:*
+     ```sql
+     SELECT m1.species AS mon_1, m2.species AS mon_2, COUNT(*) AS frequency
+     FROM team_members m1
+     JOIN team_members m2 ON m1.player_id = m2.player_id AND m1.species < m2.species
+     JOIN competitors c ON m1.player_id = c.player_id
+     WHERE c.placement <= 16
+     GROUP BY mon_1, mon_2 ORDER BY frequency DESC LIMIT 10;
+     ```
+   - *Item & Move Distribution for Specific Species:*
+     ```sql
+     SELECT tm.item, tm.ability, m.move_name, COUNT(*) AS count
+     FROM team_members tm
+     JOIN moves m ON tm.member_id = m.member_id
+     WHERE tm.species = 'Charizard-Mega-Y'
+     GROUP BY tm.item, tm.ability, m.move_name ORDER BY count DESC LIMIT 15;
+     ```
 
 ---
 
-## 4. Guardrails & Compliance
+### 🥈 Tier 2 (Fallback 1): HTML DOM Parsing & Elevated Sandbox Probing
+If external API access is blocked or restricted by network boundaries:
+1. Parse the initial HTML page source to extract `window.hubOverview` (`stages`, `movers`, and top 10 species per phase).
+2. Request manual elevation / sandbox bypass for probing network endpoints if live API requests fail with permission errors.
+3. Serialize recovered data directly into `data/munchstats/raw/` and trigger `engine/munchstats_analyzer.py`.
+
+---
+
+### 🥉 Tier 3 (Fallback 2): Conversational Agent Synthesis & Local Compendium
+If external network is completely offline or the remote host is unreachable:
+1. Fallback to local offline tournament archives: `data/Tournament_Meta.json`, `data/Munchstats_Aggregate_Meta.json`, and `data/Scouted_Teams.csv`.
+2. Synthesize metagame intelligence directly in chat using natural language reasoning:
+   - Identify counter-leads for active archetypes (Rain, Sun, Trick Room, Psyspam, Goodstuffs Balance).
+   - Formulate Swiss Day 1 vs. Day 2 flowcharting recommendations grounded in verified Regulation M-C data.
+
+---
+
+## 4. Head Coach Tactical Interpretation Directives
+
+When coaching a Trainer on tournament telemetry, enforce the following strategic rules:
+
+1. **Avoid Day 1 Popularity Bias:** Never recommend a Pokémon solely based on high Day 1 usage. Cross-reference whether the pick is a **Day 2 Gatekeeper** (e.g. Gholdengo or Incineroar in Baltimore, which convert well in early Swiss but hit a ceiling before Top 8) versus a **Championship Converter** (e.g. Politoed, Milotic, or Staraptor-Mega, whose conversion to Top 8 is 2x–5x higher than average).
+2. **Exploiting Hive-Mind Consensus Teams:** In Mode 4 (OTS Swiss Flowcharting), check if the opponent's roster matches one of the most repeated 6-mon teams mined in *vgc_analytics_summary.json*. If it matches, the Trainer gains full foreknowledge of the squad's testing group origin, EV tendencies, and standard turn-1 lead patterns.
+3. **Archetype Divergence Warnings:** Always highlight when a popular variant within an archetype is failing while another thrives (e.g. in Baltimore 2027: *Rain Archaludon* achieved 25% of Top 8, whereas *Rain Electric Seed* suffered a 0.0% Top Cut conversion rate).
+
+---
+
+## 5. Guardrails & Compliance
 1. **Regulation M-C Legal Grounding:** Validate all ingested species against `data/MC_Available_Pokemon.csv` and items against `data/Regulation_MC_Items.csv`.
 2. **Species Blacklist Enforcement:** Reject non-format staples (`Ursaluna`, `Flutter Mane`, `Urshifu`, `Amoonguss`, `Gastrodon`, `Landorus-T`, etc.) with `[ILLEGAL_FORMAT_SPECIES]`.
 3. **OWASP Formula Injection Defense:** Sanitize any cells beginning with `=`, `+`, `-`, or `@` with a leading apostrophe before serializing to CSV.

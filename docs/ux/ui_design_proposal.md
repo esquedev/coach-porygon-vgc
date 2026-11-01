@@ -54,7 +54,7 @@ To achieve viral clout on GitHub and stand out as the most visually captivating 
    - Visual segmented HP bars highlighting guaranteed OHKO, 2HKO, and roll ranges with color gradients (Emerald -> Gold -> Ruby).
 2. **Speed Tier Interactive Matrix:**
    - Active Tailwind / Weather / Mega switches instantly re-sort speed cards in real-time with smooth CSS layout transitions.
-3. **Crucible 45-Second Countdown Gauge:**
+3. **Flashcards 45-Second Countdown Gauge:**
    - Circular SVG stroke-dasharray animation counting down from 45.0s to 0.0s with pulse warning under 10 seconds.
 4. **Live Bilingual Switcher:**
    - Instant 1-click toggle between **English** and **Español Latinoamericano** with zero page reload.

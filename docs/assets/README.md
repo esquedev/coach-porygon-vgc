@@ -1,9 +1,9 @@
 # 🎨 Coach Porygon VGC — Digital Vector Asset Library & IP Specification
 
-[![Total Assets](https://img.shields.io/badge/Total%20Assets-539%20Vector%20SVGs-06b6d4.svg)](../../assets/svg_manifest.json)
-[![Vector Quality](https://img.shields.io/badge/Format-100%25%20Pure%20XML%20Vector-10b981.svg)](../../assets/svg_manifest.json)
-[![Security](https://img.shields.io/badge/Security-Anti--XSS%20Certified%20(0%20Scripts)-e11d48.svg)](../../engine/verify_svg_inventory.py)
-[![Integrity](https://img.shields.io/badge/Integrity-SHA--256%20Cryptographic%20Manifest-f59e0b.svg)](../../assets/svg_manifest.json)
+[![Total Assets](https://img.shields.io/badge/Total%20Assets-916%20Curated%20PNGs-06b6d4.svg)](../../assets/png_manifest.json)
+[![Vector Quality](https://img.shields.io/badge/Format-100%25%20Pure%20XML%20Vector-10b981.svg)](../../assets/png_manifest.json)
+[![Security](https://img.shields.io/badge/Security-Anti--XSS%20Certified%20(0%20Scripts)-e11d48.svg)](../../engine/verify_png_inventory.py)
+[![Integrity](https://img.shields.io/badge/Integrity-SHA--256%20Cryptographic%20Manifest-f59e0b.svg)](../../assets/png_manifest.json)
 
 This directory details the autonomous vector graphics inventory powering the Coach Porygon VGC Command Center HUD and competitive battle micro-simulator.
 
@@ -24,7 +24,7 @@ Coach Porygon VGC houses **539 custom vector graphics** providing 100% visual co
 
 ## 🔒 2. Technical Standards & Security Architecture
 
-Every SVG asset in this repository is strictly audited by our automated curator pipeline ([`engine/verify_svg_inventory.py`](../../engine/verify_svg_inventory.py)):
+Every SVG asset in this repository is strictly audited by our automated curator pipeline ([`engine/verify_png_inventory.py`](../../engine/verify_png_inventory.py)):
 
 ```mermaid
 flowchart LR
@@ -32,7 +32,7 @@ flowchart LR
     B --> C["2. Zero Raster Bitmaps (No PNG/JPEG embeds)"]
     C --> D["3. Anti-XSS Audit (No &lt;script&gt; or onload=)"]
     D --> E["4. Cryptographic SHA-256 Digest Calculation"]
-    E --> F["assets/svg_manifest.json (Immutable Manifest)"]
+    E --> F["assets/png_manifest.json (Immutable Manifest)"]
 ```
 
 1. **100% Pure Vector Graphics:**
@@ -41,7 +41,7 @@ flowchart LR
 2. **Anti-XSS & Script Injection Shield (SEC-05):**
    - Active content, `<script>` tags, and inline event handlers (`onload=`, `onerror=`, `onclick=`, `javascript:`) are strictly forbidden and audited in every test run.
 3. **Cryptographic SHA-256 Tamper-Proofing:**
-   - The unified manifest ([`assets/svg_manifest.json`](../../assets/svg_manifest.json)) records an immutable 64-character SHA-256 hash for every asset. Any unauthorized modification or corruption is detected immediately during test execution.
+   - The unified manifest ([`assets/png_manifest.json`](../../assets/png_manifest.json)) records an immutable 64-character SHA-256 hash for every asset. Any unauthorized modification or corruption is detected immediately during test execution.
 
 ---
 

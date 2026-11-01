@@ -16,7 +16,7 @@
 [![CodeQL Analysis](https://github.com/unkil/coach-porygon-vgc/actions/workflows/codeql.yml/badge.svg)](https://github.com/unkil/coach-porygon-vgc/actions/workflows/codeql.yml)
 [![Python 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Format](https://img.shields.io/badge/VGC-Regulation%20M--C%20(2027)-e11d48.svg)](data/MC_Available_Pokemon.csv)
-[![Vector Assets](https://img.shields.io/badge/SVGs-539%20Pure%20Vectors%20(SHA--256)-06b6d4.svg)](assets/svg_manifest.json)
+[![Vector Assets](https://img.shields.io/badge/PNGs-916%20Curated%20Assets%20(SHA--256)-06b6d4.svg)](assets/png_manifest.json)
 [![Zero Runtime Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Standard%20Library)-10b981.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b.svg)](LICENSE)
 [![Legal & Fair Use](https://img.shields.io/badge/Legal-Nominative%20Fair%20Use-purple.svg)](LEGAL.md)
@@ -100,7 +100,7 @@ If you operate from terminal with Claude Code:
 No local terminal? Turn any web LLM into an official Regulation M-C referee:
 1. **System Prompt Grounding:** Copy the contents of `.agents/rules/engine_rules.md` and `.agents/rules/mistake_taxonomy.md` directly into your Custom GPT or Gemini Gem instructions.
 2. **Zero Hallucination:** Prompt the LLM with your Showdown paste; it will strictly enforce the 66-SP cap and format item legality rules.
-3. **Flashcards & Crucible:** Paste scenarios from `data/Crucible_Scenarios.csv` to drill turn execution directly in web chat.
+3. **Interactive Flashcards:** Paste scenarios from `data/Flashcard_Scenarios.csv` to drill turn execution directly in web chat.
 ```
 <!-- slide -->
 ```python
@@ -131,7 +131,7 @@ Embed Coach Porygon as a deterministic microservice in larger software systems:
 graph LR
     M0["<b>Mode 0</b><br/>Theorycrafting"] --> M1["<b>Mode 1</b><br/>Replay Audit"]
     M1 --> M2["<b>Mode 2</b><br/>66-SP Roster"]
-    M2 --> M3["<b>Mode 3</b><br/>Crucible Spar"]
+    M2 --> M3["<b>Mode 3</b><br/>Flashcards"]
     M3 --> M4["<b>Mode 4</b><br/>OTS Flowchart"]
     M4 --> M5["<b>Mode 5</b><br/>Sports Psych"]
     M5 --> M6["<b>Mode 6</b><br/>MunchStats"]
@@ -143,8 +143,8 @@ graph LR
 | **Mode 0** | **General Coaching & Meta Theorycrafting** | `engine_rules.md` | *"What is the optimal counter-lead against Rain Archaludon?"* |
 | **Mode 1** | **Asynchronous Replay Breakdown** | `turn_simulator.py` + `telemetry.py` | *"Audit my replay vs Ash: Identify Turn 3 VP inflection point."* |
 | **Mode 2** | **66-SP Deterministic Roster Engineering** | `sp_calculator.py` + `validate_roster.py` | *"Optimize 66-SP spread for Mega Charizard Y to survive Timid Specs Draco Meteor."* |
-| **Mode 3** | **Interactive Crucible Sparring & Speed Duels** | `scenarios_data.py` + `speed_duels_data.py` | *"Start a 45-Second Crucible scenario with unrevealed option evaluations."* |
-| **Mode 4** | **Open Team Sheet (OTS) Swiss Flowcharting** | `munchstats_scraper.py` | *"Opponent OTS: Garchomp, Incineroar, Rillaboom, Primarina, Chandelure, Urshifu."* |
+| **Mode 3** | **Interactive Board Sparring & Reflex Flashcards** | `scenarios_data.py` + `speed_duels_data.py` | *"Start a 45-Second flashcard scenario with unrevealed option evaluations."* |
+| **Mode 4** | **Open Team Sheet (OTS) Swiss Flowcharting** | `munchstats_scraper.py` | *"Opponent OTS: Garchomp, Incineroar, Rillaboom, Primarina, Chandelure, Archaludon."* |
 | **Mode 5** | **Cognitive Leak Eradication & Sports Psych** | `mistake_taxonomy.md` | *"Review my last 10 losses: Am I leaking VP due to Greed or Autopilot?"* |
 | **Mode 6** | **MunchStats Tournament Meta Ingestion** | `munchstats_scraper.py` + `/api/munchstats` | *"Crawl and cluster 2027 Nice Regional Masters top cut."* |
 | **Mode 7** | **Release Health Auditor & Prompt Stress Evaluator** | `evals/run_static_checks.py` | `python evals/run_static_checks.py` *(26 adversarial tests)* |
@@ -221,7 +221,7 @@ Well-formed XML Checks:   539 / 539 Valid XML.
 Raster Bitmap Check:      0 Embedded Bitmaps (Target: 0).
 Active Scripting Check:   0 Injected Scripts (Target: 0).
 SHA-256 Digest Audit:     539 / 539 Cryptographic Hashes.
-Manifest Generated:       assets\svg_manifest.json
+Manifest Generated:       assets\png_manifest.json
 ==============================================================================
   [PASS] 35 Unit & Acceptance Tests (Repositories, Telemetry, SP Math, Roster)
   [PASS]  4 Packaging & Release Artifact Tests (pyproject.toml, HTML Footprint)

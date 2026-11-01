@@ -35,7 +35,7 @@ All references to Pokémon names, abilities, items, battle mechanics, and compet
 
 1. **Authentic Vector Code:** All **539 vector graphics (SVGs)** contained in the [`assets/`](assets/) directory are original, hand-crafted, or programmatically rendered geometric vector illustrations created specifically for this open-source tool.
 2. **Zero ROM Rips or Proprietary Binaries:** This repository does **not** host, extract, redistribute, or link to any copyrighted game ROMs, proprietary 3D models, sound files, proprietary textures, or commercial game binaries.
-3. **Audit Verification:** All assets are tracked in [`assets/svg_manifest.json`](assets/svg_manifest.json) with cryptographic SHA-256 digests and audited to ensure zero embedded raster bitmaps and zero active scripts.
+3. **Audit Verification:** All assets are tracked in [`assets/png_manifest.json`](assets/png_manifest.json) with cryptographic SHA-256 digests and audited to ensure zero embedded raster bitmaps and zero active scripts.
 
 ---
 

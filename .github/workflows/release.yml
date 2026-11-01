@@ -33,9 +33,9 @@ jobs:
         run: |
           python evals/run_static_checks.py
 
-      - name: Run SVG Asset & Cryptographic SHA-256 Audit
+      - name: Run PNG Asset & Cryptographic SHA-256 Audit
         run: |
-          python engine/verify_svg_inventory.py
+          python engine/verify_png_inventory.py
 
       - name: Run Full Test Suite
         run: |
@@ -72,7 +72,7 @@ jobs:
           cp dist/*.whl release_assets/
           cp dist/*.tar.gz release_assets/
           cp assets/command_center.html release_assets/coach-porygon-command-center-${{ github.ref_name }}.html
-          cp assets/svg_manifest.json release_assets/svg_manifest.json
+          cp assets/png_manifest.json release_assets/png_manifest.json
           cd release_assets
           sha256sum * > checksums.sha256
           echo "SHA-256 Checksums for Release ${{ github.ref_name }}:"

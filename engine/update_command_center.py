@@ -35,21 +35,21 @@ OUT_EN = ASSETS_DIR / "command_center_en.html"
 
 
 def resolve_artifact_dir() -> Path | None:
-    """Dynamically resolves the active Antigravity brain artifact directory."""
+    """Dynamically resolves the active Antigravity brain artifact directory for command_center.html."""
     env_dir = os.environ.get("ANTIGRAVITY_ARTIFACT_DIR")
     if env_dir and Path(env_dir).exists():
         return Path(env_dir).resolve()
     brain_root = Path.home() / ".gemini" / "antigravity" / "brain"
     if brain_root.exists():
-        direct = brain_root / "cf584036-b905-4920-962f-82887aafeaab"
-        if direct.exists():
-            return direct
-        subdirs = [d for d in brain_root.iterdir() if d.is_dir() and d.name != "tempmediaStorage"]
+        subdirs = [
+            d for d in brain_root.iterdir()
+            if d.is_dir() and d.name != "tempmediaStorage" and not d.name.startswith(".")
+        ]
         if subdirs:
             return max(subdirs, key=lambda d: d.stat().st_mtime)
     return None
 
-from engine.ui_generator import POKEMON_SVGS, UI_ICONS, load_live_telemetry
+from engine.ui_generator import load_live_telemetry
 
 
 def build_base64_maps():
@@ -112,26 +112,16 @@ def build_base64_maps():
             item_map[key] = data_uri
             sprite_map[f"mega-{key}"] = data_uri
 
-    # 4. Mascot Coach Porygon & UI Icons only (NEVER inject species SVGs into sprite_map)
-    if "porygon-coach" in POKEMON_SVGS:
-        b64 = base64.b64encode(POKEMON_SVGS["porygon-coach"].strip().encode("utf-8")).decode("utf-8")
-        data_uri = f"data:image/svg+xml;base64,{b64}"
-        sprite_map["porygon-coach"] = data_uri
-
-    rotom_icon = ASSETS_DIR / "icons" / "rotom-wash.svg"
-    if rotom_icon.exists():
-        b64 = base64.b64encode(rotom_icon.read_bytes()).decode("utf-8")
-        data_uri = f"data:image/svg+xml;base64,{b64}"
-        sprite_map["rotom-wash-coach"] = data_uri
-        sprite_map["rotom-wash-logo"] = data_uri
-
-    for name, svg_code in UI_ICONS.items():
-        k = name.lower()
-        b64 = base64.b64encode(svg_code.strip().encode("utf-8")).decode("utf-8")
-        data_uri = f"data:image/svg+xml;base64,{b64}"
-        sprite_map[k] = data_uri
-        if k == "pokeball":
-            sprite_map["placeholder"] = data_uri
+    # 4. Mascot Coach Porygon & UI Icons loaded directly from assets/icons
+    icons_dir = ASSETS_DIR / "icons"
+    if icons_dir.exists():
+        for asset_path in sorted(icons_dir.glob("*.svg")):
+            key = asset_path.stem.lower()
+            b64 = base64.b64encode(asset_path.read_bytes()).decode("utf-8")
+            data_uri = f"data:image/svg+xml;base64,{b64}"
+            sprite_map[key] = data_uri
+            if key == "pokeball":
+                sprite_map["placeholder"] = data_uri
 
     return sprite_map, item_map
 
@@ -462,12 +452,14 @@ def update_command_center_files():
     OUT_EN.write_text(en_content, encoding="utf-8")
     print(f"[OK] Written {OUT_EN} ({len(en_content):,} bytes)")
 
-    # 9. Sync Artifact
+    # 9. Sync Artifact (Exclusive Lock: command_center.html is ALWAYS generated and synced)
     art_dir = resolve_artifact_dir()
     if art_dir and art_dir.exists():
         art_path = art_dir / "command_center.html"
         shutil.copyfile(OUT_MAIN, art_path)
-        print(f"[OK] Synced Artifact -> {art_path}")
+        print(f"[OK] [EXCLUSIVE ARTIFACT LOCK] Always Generated & Synced -> {art_path}")
+    else:
+        print("[WARNING] Could not resolve active Antigravity artifact directory for command_center.html sync.")
 
 
 if __name__ == "__main__":

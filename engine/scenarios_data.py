@@ -3,12 +3,11 @@ false = False
 null = None
 # -*- coding: utf-8 -*-
 """
-Coach Porygon VGC — Mode 3 Reflex Flashcards & Sparring Scenarios (ex-Crucibles)
+Coach Porygon VGC — Mode 3 Flashcard Sparring Scenarios
 42 Deterministic Scenarios (SC-01 to SC-42) with 4 options each (168 Total Options)
-Enriched with multi-turn (+2/+3 turns) tactical projections and Regulation M-C legality.
 """
 
-FLASHCARD_SCENARIOS = [
+CRUCIBLE_SCENARIOS = [
   {
     "id": "SC-01",
     "title": "M308 Turno 1: POS-02 Lead Compression vs Unburden Sneasler + Pelipper Rain",
@@ -4088,4 +4087,4 @@ FLASHCARD_SCENARIOS = [
 ]
 
 # Backward compatibility alias
-CRUCIBLE_SCENARIOS = FLASHCARD_SCENARIOS
+FLASHCARD_SCENARIOS = CRUCIBLE_SCENARIOS

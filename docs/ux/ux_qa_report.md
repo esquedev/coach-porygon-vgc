@@ -8,7 +8,7 @@
 ---
 
 ## 1. Executive Summary
-The Command Center is an ambitious, feature-dense competitive interface featuring 7 operational modes, interactive Crucible flashcards, live damage calculators, telemetry tables, and psychology meters.
+The Command Center is an ambitious, feature-dense competitive interface featuring 7 operational modes, interactive sparring flashcards, live damage calculators, telemetry tables, and psychology meters.
 
 However, the QA stress test uncovered major architectural inefficiencies:
 - **Massive Inlining Bloat:** Each HTML file is ~2.1 MB due to multi-megabyte base64 string maps (`window.__COACH_PORYGON_SPRITES__` and `window.__COACH_PORYGON_ITEMS__`).
@@ -36,7 +36,7 @@ However, the QA stress test uncovered major architectural inefficiencies:
 1. **Consolidated i18n Architecture:**
    - Single source of truth HTML file with lightweight client-side locale toggle (EN/ES) switching data attributes dynamically.
 2. **De-bloat Assets via Manifest:**
-   - Replace inlined Base64 blobs with clean vector path references using `assets/svg_manifest.json` or direct URL paths (`assets/sprites/{slug}.svg`).
+   - Replace inlined Base64 blobs with clean vector path references using `assets/png_manifest.json` or direct URL paths (`assets/sprites/{slug}.svg`).
 3. **Strict HTML Escaping Utility:**
    - Implement an immutable `escapeHtml()` function for all dynamic table rows, opponent names, and battle notes.
 4. **Resilient Offline Fallback:**
