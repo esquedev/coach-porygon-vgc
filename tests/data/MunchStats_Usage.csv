@@ -1,0 +1,1031 @@
+Tournament_ID,Phase,Rank,Species,Raw_Count,Usage_Pct,Day1_Count,Day1_Usage_Pct,Day2_Count,Day2_Usage_Pct,Conversion_Rate_Pct,Top_Cut_Count,Top_Cut_Usage_Pct,Most_Common_Item,Most_Common_Ability,Most_Common_Moves
+TM_BALTIMORE_2027,All_Rounds,1,Rillaboom,591,54.8%,591,54.8%,85,54.5%,14.4%,5,62.5%,Miracle Seed,Grassy Surge,Grassy Glide / Fake Out / Wood Hammer / High Horsepower
+TM_BALTIMORE_2027,All_Rounds,2,Sneasler,505,46.8%,505,46.8%,61,39.1%,12.1%,4,50.0%,Grassy Seed,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_BALTIMORE_2027,All_Rounds,3,Salamence-Mega,402,37.3%,402,37.3%,49,31.4%,12.2%,2,25.0%,Salamencite,Intimidate,Protect / Hyper Voice / Tailwind / Draco Meteor
+TM_BALTIMORE_2027,All_Rounds,4,Gholdengo,335,31.0%,335,31.0%,60,38.5%,17.9%,2,25.0%,Life Orb,Good as Gold,Make It Rain / Shadow Ball / Protect / Nasty Plot
+TM_BALTIMORE_2027,All_Rounds,5,Incineroar,317,29.4%,317,29.4%,51,32.7%,16.1%,2,25.0%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Throat Chop
+TM_BALTIMORE_2027,All_Rounds,6,Kingambit,279,25.9%,279,25.9%,53,34.0%,19.0%,2,25.0%,Chople Berry,Defiant,Kowtow Cleave / Sucker Punch / Iron Head / Protect
+TM_BALTIMORE_2027,All_Rounds,7,Arcanine-Hisui,263,24.4%,263,24.4%,44,28.2%,16.7%,3,37.5%,Focus Sash,Rock Head,Flare Blitz / Protect / Head Smash / Extreme Speed
+TM_BALTIMORE_2027,All_Rounds,8,Raichu-Mega-Y,232,21.5%,232,21.5%,44,28.2%,19.0%,3,37.5%,Raichunite Y,Lightning Rod,Zap Cannon / Focus Blast / Protect / Fake Out
+TM_BALTIMORE_2027,All_Rounds,9,Indeedee-F,216,20.0%,216,20.0%,27,17.3%,12.5%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Helping Hand / Trick Room / Psychic
+TM_BALTIMORE_2027,All_Rounds,10,Basculegion,189,17.5%,189,17.5%,15,9.6%,7.9%,0,0.0%,Choice Scarf,Adaptability,Last Respects / Wave Crash / Aqua Jet / Protect
+TM_BALTIMORE_2027,All_Rounds,11,Milotic,168,15.6%,168,15.6%,17,10.9%,10.1%,2,25.0%,Leftovers,Competitive,Protect / Scald / Ice Beam / Icy Wind
+TM_BALTIMORE_2027,All_Rounds,12,Golisopod-Mega,152,14.1%,152,14.1%,16,10.3%,10.5%,1,12.5%,Golisopite,Emergency Exit,Leech Life / Iron Head / Protect / Swords Dance
+TM_BALTIMORE_2027,All_Rounds,13,Farigiraf,141,13.1%,141,13.1%,24,15.4%,17.0%,1,12.5%,Sitrus Berry,Armor Tail,Trick Room / Protect / Thunderbolt / Psychic
+TM_BALTIMORE_2027,All_Rounds,14,Charizard-Mega-Y,140,13.0%,140,13.0%,24,15.4%,17.1%,1,12.5%,Charizardite Y,Blaze,Protect / Heat Wave / Weather Ball / Solar Beam
+TM_BALTIMORE_2027,All_Rounds,15,Pelipper,134,12.4%,134,12.4%,12,7.7%,9.0%,0,0.0%,Focus Sash,Drizzle,Hurricane / Weather Ball / Tailwind / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,16,Archaludon,133,12.3%,133,12.3%,19,12.2%,14.3%,2,25.0%,Leftovers,Stamina,Electro Shot / Protect / Dragon Pulse / Flash Cannon
+TM_BALTIMORE_2027,All_Rounds,17,Floette-Mega,128,11.9%,128,11.9%,24,15.4%,18.8%,1,12.5%,Floettite,Flower Veil,Protect / Dazzling Gleam / Calm Mind / Moonblast
+TM_BALTIMORE_2027,All_Rounds,18,Sylveon,127,11.8%,127,11.8%,25,16.0%,19.7%,1,12.5%,Fairy Feather,Pixilate,Hyper Voice / Hyper Beam / Detect / Quick Attack
+TM_BALTIMORE_2027,All_Rounds,19,Gardevoir-Mega,113,10.5%,113,10.5%,11,7.1%,9.7%,0,0.0%,Gardevoirite,Trace,Protect / Expanding Force / Hyper Voice / Trick Room
+TM_BALTIMORE_2027,All_Rounds,20,Staraptor-Mega,103,9.5%,103,9.5%,22,14.1%,21.4%,2,25.0%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_BALTIMORE_2027,All_Rounds,21,Garchomp,94,8.7%,94,8.7%,21,13.5%,22.3%,0,0.0%,Life Orb,Rough Skin,Dragon Claw / Stomping Tantrum / Earthquake / Protect
+TM_BALTIMORE_2027,All_Rounds,22,Tyranitar-Mega,82,7.6%,82,7.6%,7,4.5%,8.5%,1,12.5%,Tyranitarite,Sand Stream,Protect / Rock Slide / Knock Off / Low Kick
+TM_BALTIMORE_2027,All_Rounds,23,Froslass-Mega,72,6.7%,72,6.7%,11,7.1%,15.3%,1,12.5%,Froslassite,Cursed Body,Blizzard / Protect / Aurora Veil / Shadow Ball
+TM_BALTIMORE_2027,All_Rounds,24,Armarouge,71,6.6%,71,6.6%,8,5.1%,11.3%,0,0.0%,Life Orb,Flash Fire,Expanding Force / Armor Cannon / Protect / Trick Room
+TM_BALTIMORE_2027,All_Rounds,25,Excadrill,69,6.4%,69,6.4%,7,4.5%,10.1%,1,12.5%,Focus Sash,Sand Rush,Protect / Iron Head / High Horsepower / Rock Slide
+TM_BALTIMORE_2027,All_Rounds,26,Metagross-Mega,69,6.4%,69,6.4%,4,2.6%,5.8%,1,12.5%,Metagrossite,Clear Body,Protect / Psychic Fangs / Steel Roller / Body Press
+TM_BALTIMORE_2027,All_Rounds,27,Whimsicott,65,6.0%,65,6.0%,10,6.4%,15.4%,0,0.0%,Focus Sash,Prankster,Moonblast / Tailwind / Protect / Encore
+TM_BALTIMORE_2027,All_Rounds,28,Garchomp-Mega-Z,64,5.9%,64,5.9%,8,5.1%,12.5%,0,0.0%,Garchompite Z,Rough Skin,Protect / Power Gem / Flamethrower / Draco Meteor
+TM_BALTIMORE_2027,All_Rounds,29,Indeedee,59,5.5%,59,5.5%,7,4.5%,11.9%,2,25.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Protect / Trick
+TM_BALTIMORE_2027,All_Rounds,30,Volcarona,57,5.3%,57,5.3%,7,4.5%,12.3%,0,0.0%,Grassy Seed,Flame Body,Protect / Quiver Dance / Rage Powder / Heat Wave
+TM_BALTIMORE_2027,All_Rounds,31,Grimmsnarl,55,5.1%,55,5.1%,5,3.2%,9.1%,1,12.5%,Light Clay,Prankster,Parting Shot / Reflect / Light Screen / Spirit Break
+TM_BALTIMORE_2027,All_Rounds,32,Gengar-Mega,48,4.4%,48,4.4%,9,5.8%,18.8%,1,12.5%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_BALTIMORE_2027,All_Rounds,33,Venusaur,48,4.4%,48,4.4%,5,3.2%,10.4%,0,0.0%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Sleep Powder / Leaf Storm
+TM_BALTIMORE_2027,All_Rounds,34,Politoed,46,4.3%,46,4.3%,8,5.1%,17.4%,2,25.0%,Sitrus Berry,Drizzle,Protect / Weather Ball / Perish Song / Encore
+TM_BALTIMORE_2027,All_Rounds,35,Swampert-Mega,45,4.2%,45,4.2%,8,5.1%,17.8%,0,0.0%,Swampertite,Torrent,Protect / Wave Crash / Ice Punch / Earthquake
+TM_BALTIMORE_2027,All_Rounds,36,Kommo-o,44,4.1%,44,4.1%,11,7.1%,25.0%,0,0.0%,Leftovers,Soundproof,Clanging Scales / Protect / Aura Sphere / Clangorous Soul
+TM_BALTIMORE_2027,All_Rounds,37,Sinistcha,39,3.6%,39,3.6%,10,6.4%,25.6%,0,0.0%,Colbur Berry,Hospitality,Matcha Gotcha / Rage Powder / Trick Room / Protect
+TM_BALTIMORE_2027,All_Rounds,38,Aerodactyl-Mega,33,3.1%,33,3.1%,9,5.8%,27.3%,0,0.0%,Aerodactylite,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_BALTIMORE_2027,All_Rounds,39,Dragapult,32,3.0%,32,3.0%,6,3.8%,18.8%,0,0.0%,Life Orb,Infiltrator,Shadow Ball / Draco Meteor / Protect / Will-O-Wisp
+TM_BALTIMORE_2027,All_Rounds,40,Glimmora-Mega,30,2.8%,30,2.8%,6,3.8%,20.0%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_BALTIMORE_2027,All_Rounds,41,Torkoal,30,2.8%,30,2.8%,3,1.9%,10.0%,0,0.0%,Charcoal,Drought,Eruption / Protect / Weather Ball / Earth Power
+TM_BALTIMORE_2027,All_Rounds,42,Delphox-Mega,28,2.6%,28,2.6%,7,4.5%,25.0%,1,12.5%,Delphoxite,Blaze,Heat Wave / Protect / Psychic / Nasty Plot
+TM_BALTIMORE_2027,All_Rounds,43,Lucario-Mega-Z,27,2.5%,27,2.5%,3,1.9%,11.1%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Flash Cannon / Detect / Calm Mind
+TM_BALTIMORE_2027,All_Rounds,44,Primarina,23,2.1%,23,2.1%,7,4.5%,30.4%,0,0.0%,Life Orb,Liquid Voice,Hyper Voice / Moonblast / Protect / Calm Mind
+TM_BALTIMORE_2027,All_Rounds,45,Camerupt-Mega,23,2.1%,23,2.1%,2,1.3%,8.7%,0,0.0%,Cameruptite,Solid Rock,Ancient Power / Earth Power / Protect / Heat Wave
+TM_BALTIMORE_2027,All_Rounds,46,Dragonite-Mega,20,1.9%,20,1.9%,3,1.9%,15.0%,0,0.0%,Dragoninite,Multiscale,Protect / Dragon Pulse / Heat Wave / Tailwind
+TM_BALTIMORE_2027,All_Rounds,47,Pawmot,19,1.8%,19,1.8%,4,2.6%,21.1%,0,0.0%,Focus Sash,Iron Fist,Double Shock / Close Combat / Revival Blessing / Fake Out
+TM_BALTIMORE_2027,All_Rounds,48,Ninetales-Alola,19,1.8%,19,1.8%,1,0.6%,5.3%,0,0.0%,Light Clay,Snow Warning,Blizzard / Protect / Aurora Veil / Moonblast
+TM_BALTIMORE_2027,All_Rounds,49,Hatterene,18,1.7%,18,1.7%,3,1.9%,16.7%,0,0.0%,Life Orb,Magic Bounce,Expanding Force / Trick Room / Dazzling Gleam / Protect
+TM_BALTIMORE_2027,All_Rounds,50,Blastoise-Mega,15,1.4%,15,1.4%,2,1.3%,13.3%,0,0.0%,Blastoisinite,Rain Dish,Water Spout / Shell Smash / Protect / Terrain Pulse
+TM_BALTIMORE_2027,All_Rounds,51,Hydreigon,15,1.4%,15,1.4%,1,0.6%,6.7%,0,0.0%,Choice Scarf,Levitate,Draco Meteor / Dark Pulse / Snarl / Earth Power
+TM_BALTIMORE_2027,All_Rounds,52,Baxcalibur-Mega,14,1.3%,14,1.3%,2,1.3%,14.3%,0,0.0%,Baxcalibrite,Thermal Exchange,Glaive Rush / Protect / Ice Shard / High Horsepower
+TM_BALTIMORE_2027,All_Rounds,53,Tyranitar,14,1.3%,14,1.3%,2,1.3%,14.3%,0,0.0%,Chople Berry,Sand Stream,Knock Off / Rock Slide / Low Kick / Protect
+TM_BALTIMORE_2027,All_Rounds,54,Talonflame,14,1.3%,14,1.3%,2,1.3%,14.3%,0,0.0%,Focus Sash,Gale Wings,Tailwind / Flare Blitz / Protect / Brave Bird
+TM_BALTIMORE_2027,All_Rounds,55,Absol-Mega-Z,14,1.3%,14,1.3%,0,0.0%,0.0%,0,0.0%,Absolite Z,Justified,Night Slash / Detect / Close Combat / Shadow Claw
+TM_BALTIMORE_2027,All_Rounds,56,Maushold,14,1.3%,14,1.3%,0,0.0%,0.0%,0,0.0%,Wide Lens,Friend Guard,Follow Me / Protect / Super Fang / Taunt
+TM_BALTIMORE_2027,All_Rounds,57,Ceruledge,13,1.2%,13,1.2%,3,1.9%,23.1%,1,12.5%,Colbur Berry,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_BALTIMORE_2027,All_Rounds,58,Blaziken-Mega,12,1.1%,12,1.1%,3,1.9%,25.0%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Flare Blitz / Rock Slide / Detect
+TM_BALTIMORE_2027,All_Rounds,59,Annihilape,12,1.1%,12,1.1%,3,1.9%,25.0%,0,0.0%,Choice Scarf,Defiant,Close Combat / Ice Punch / Shadow Claw / Phantom Force
+TM_BALTIMORE_2027,All_Rounds,60,Kleavor,12,1.1%,12,1.1%,1,0.6%,8.3%,0,0.0%,Focus Sash,Sharpness,Stone Axe / X-Scissor / Protect / Tailwind
+TM_BALTIMORE_2027,All_Rounds,61,Sirfetch’d,11,1.0%,11,1.0%,0,0.0%,0.0%,0,0.0%,Leek,Scrappy,Detect / Meteor Assault / Close Combat / Feint
+TM_BALTIMORE_2027,All_Rounds,62,Scovillain-Mega,10,0.9%,10,0.9%,1,0.6%,10.0%,0,0.0%,Scovillainite,Moody,Protect / Rage Powder / Overheat / Giga Drain
+TM_BALTIMORE_2027,All_Rounds,63,Glimmora,10,0.9%,10,0.9%,3,1.9%,30.0%,0,0.0%,Focus Sash,Toxic Debris,Power Gem / Sludge Bomb / Spiky Shield / Earth Power
+TM_BALTIMORE_2027,All_Rounds,64,Aerodactyl,10,0.9%,10,0.9%,0,0.0%,0.0%,0,0.0%,Focus Sash,Unnerve,Rock Slide / Tailwind / Protect / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,65,Toxapex,9,0.8%,9,0.8%,2,1.3%,22.2%,0,0.0%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,66,Empoleon,9,0.8%,9,0.8%,0,0.0%,0.0%,0,0.0%,Life Orb,Competitive,Protect / Flash Cannon / Hydro Pump / Ice Beam
+TM_BALTIMORE_2027,All_Rounds,67,Corviknight,8,0.7%,8,0.7%,1,0.6%,12.5%,1,12.5%,Leftovers,Mirror Armor,Roost / Brave Bird / Bulk Up / Tailwind
+TM_BALTIMORE_2027,All_Rounds,68,Vivillon,8,0.7%,8,0.7%,1,0.6%,12.5%,1,12.5%,Focus Sash,Compound Eyes,Hurricane / Protect / Sleep Powder / Rage Powder
+TM_BALTIMORE_2027,All_Rounds,69,Dragonite,7,0.6%,7,0.6%,1,0.6%,14.3%,0,0.0%,Life Orb,Inner Focus,Dragon Claw / Protect / Rock Slide / Extreme Speed
+TM_BALTIMORE_2027,All_Rounds,70,Vanilluxe,7,0.6%,7,0.6%,1,0.6%,14.3%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Icy Wind / Sheer Cold
+TM_BALTIMORE_2027,All_Rounds,71,Sableye,7,0.6%,7,0.6%,1,0.6%,14.3%,0,0.0%,Light Clay,Prankster,Light Screen / Reflect / Rain Dance / Will-O-Wisp
+TM_BALTIMORE_2027,All_Rounds,72,Rotom-Heat,7,0.6%,7,0.6%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Levitate,Overheat / Protect / Thunderbolt / Volt Switch
+TM_BALTIMORE_2027,All_Rounds,73,Lycanroc-Dusk,6,0.6%,6,0.6%,2,1.3%,33.3%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Rock Slide / Close Combat / Protect
+TM_BALTIMORE_2027,All_Rounds,74,Mawile-Mega,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Mawilite,Hyper Cutter,Play Rough / Protect / Sucker Punch / Iron Head
+TM_BALTIMORE_2027,All_Rounds,75,Rotom-Wash,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Hydro Pump / Will-O-Wisp / Thunderbolt / Electroweb
+TM_BALTIMORE_2027,All_Rounds,76,Blaziken,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Focus Sash,Speed Boost,Detect / Aura Sphere / Coaching / Heat Wave
+TM_BALTIMORE_2027,All_Rounds,77,Klefki,5,0.5%,5,0.5%,3,1.9%,60.0%,0,0.0%,Light Clay,Prankster,Light Screen / Rain Dance / Reflect / Thunder Wave
+TM_BALTIMORE_2027,All_Rounds,78,Altaria,5,0.5%,5,0.5%,2,1.3%,40.0%,0,0.0%,Haban Berry,Cloud Nine,Tailwind / Ice Beam / Protect / Will-O-Wisp
+TM_BALTIMORE_2027,All_Rounds,79,Aegislash,5,0.5%,5,0.5%,2,1.3%,40.0%,0,0.0%,Life Orb,Stance Change,Wide Guard / Shadow Sneak / Poltergeist / King’s Shield
+TM_BALTIMORE_2027,All_Rounds,80,Tsareena,5,0.5%,5,0.5%,1,0.6%,20.0%,0,0.0%,Wide Lens,Queenly Majesty,Triple Axel / Protect / Taunt / Power Whip
+TM_BALTIMORE_2027,All_Rounds,81,Manectric-Mega,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Manectite,Lightning Rod,Protect / Overheat / Snarl / Volt Switch
+TM_BALTIMORE_2027,All_Rounds,82,Grapploct,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Technician,Storm Throw / Topsy-Turvy / Payback / Protect
+TM_BALTIMORE_2027,All_Rounds,83,Gallade,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Life Orb,Sharpness,Psycho Cut / Sacred Sword / Wide Guard / Trick Room
+TM_BALTIMORE_2027,All_Rounds,84,Raichu-Mega-X,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Raichunite X,Lightning Rod,Fake Out / Volt Switch / Volt Tackle / Protect
+TM_BALTIMORE_2027,All_Rounds,85,Pyroar-Mega,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Overheat / Protect / Flamethrower
+TM_BALTIMORE_2027,All_Rounds,86,Staraptor,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Choice Scarf,Intimidate,Close Combat / Final Gambit / U-turn / Dual Wingbeat
+TM_BALTIMORE_2027,All_Rounds,87,Mamoswine,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Focus Sash,Oblivious,Ice Shard / Protect / Icicle Crash / Earthquake
+TM_BALTIMORE_2027,All_Rounds,88,Venusaur-Mega,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Venusaurite,Chlorophyll,Earth Power / Sludge Bomb / Protect / Giga Drain
+TM_BALTIMORE_2027,All_Rounds,89,Ampharos-Mega,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Ampharosite,Static,Dragon Pulse / Protect / Thunderbolt / Power Gem
+TM_BALTIMORE_2027,All_Rounds,90,Typhlosion-Hisui,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Blaze,Eruption / Heat Wave / Shadow Ball / Flamethrower
+TM_BALTIMORE_2027,All_Rounds,91,Noivern,3,0.3%,3,0.3%,1,0.6%,33.3%,0,0.0%,Focus Sash,Infiltrator,Draco Meteor / Super Fang / Tailwind / Protect
+TM_BALTIMORE_2027,All_Rounds,92,Swampert,3,0.3%,3,0.3%,2,1.3%,66.7%,0,0.0%,Leftovers,Damp,Protect / High Horsepower / Wave Crash / Yawn
+TM_BALTIMORE_2027,All_Rounds,93,Starmie-Mega,3,0.3%,3,0.3%,1,0.6%,33.3%,0,0.0%,Starminite,Natural Cure,Ice Spinner / Liquidation / Protect / Bulk Up
+TM_BALTIMORE_2027,All_Rounds,94,Charizard-Mega-X,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Charizardite X,Blaze,Protect / Dragon Claw / Dragon Dance / Flare Blitz
+TM_BALTIMORE_2027,All_Rounds,95,Scizor,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Technician,Bug Bite / Bullet Punch / Knock Off / Protect
+TM_BALTIMORE_2027,All_Rounds,96,Overqwil,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Intimidate,Minimize / Protect / Stockpile / Throat Chop
+TM_BALTIMORE_2027,All_Rounds,97,Espathra,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Speed Boost,Baton Pass / Calm Mind / Lumina Crash / Protect
+TM_BALTIMORE_2027,All_Rounds,98,Chandelure-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Chandelurite,Flash Fire,Protect / Shadow Ball / Flamethrower / Heat Wave
+TM_BALTIMORE_2027,All_Rounds,99,Drampa-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Drampanite,Cloud Nine,Earth Power / Thunderbolt / Hyper Voice / Hurricane
+TM_BALTIMORE_2027,All_Rounds,100,Toxtricity-Low-Key,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Punk Rock,Overdrive / Snarl / Protect / Sludge Bomb
+TM_BALTIMORE_2027,All_Rounds,101,Baxcalibur,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Thermal Exchange,Glaive Rush / Ice Shard / Protect / High Horsepower
+TM_BALTIMORE_2027,All_Rounds,102,Meganium-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Meganiumite,Overgrow,Dazzling Gleam / Protect / Solar Beam / Weather Ball
+TM_BALTIMORE_2027,All_Rounds,103,Zoroark-Hisui,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Illusion,Bitter Malice / Icy Wind / Flamethrower / Hyper Voice
+TM_BALTIMORE_2027,All_Rounds,104,Hippowdon,2,0.2%,2,0.2%,1,0.6%,50.0%,0,0.0%,Leftovers,Sand Stream,High Horsepower / Protect / Stone Edge / Yawn
+TM_BALTIMORE_2027,All_Rounds,105,Pidgeot-Mega,2,0.2%,2,0.2%,2,1.3%,100.0%,0,0.0%,Pidgeotite,Keen Eye,Heat Wave / Hurricane / Protect / Tailwind
+TM_BALTIMORE_2027,All_Rounds,106,Kangaskhan,2,0.2%,2,0.2%,1,0.6%,50.0%,0,0.0%,Silk Scarf,Scrappy,Fake Out / Last Resort / Brick Break / Double-Edge
+TM_BALTIMORE_2027,All_Rounds,107,Krookodile,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Chople Berry,Intimidate,Close Combat / High Horsepower / Knock Off / Protect
+TM_BALTIMORE_2027,All_Rounds,108,Steelix-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Steelixite,Sturdy,Curse / Heavy Slam / High Horsepower / Protect
+TM_BALTIMORE_2027,All_Rounds,109,Ninetales,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Charcoal,Drought,Helping Hand / Protect / Weather Ball / Heat Wave
+TM_BALTIMORE_2027,All_Rounds,110,Vileplume,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Chlorophyll,After You / Leaf Storm / Sleep Powder / Sludge Bomb
+TM_BALTIMORE_2027,All_Rounds,111,Bellibolt,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Electromorphosis,Protect / Soak / Thunderbolt / Electroweb
+TM_BALTIMORE_2027,All_Rounds,112,Feraligatr-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Feraligite,Sheer Force,Protect / Double-Edge / Dragon Dance / Liquidation
+TM_BALTIMORE_2027,All_Rounds,113,Abomasnow-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Abomasite,Snow Warning,Blizzard / Earth Power / Energy Ball / Ice Shard
+TM_BALTIMORE_2027,All_Rounds,114,Sableye-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sablenite,Prankster,Psych Up / Recover / Foul Play / Night Shade
+TM_BALTIMORE_2027,All_Rounds,115,Meowstic,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Bright Powder,Prankster,Skill Swap / Yawn / Fake Out / Sunny Day
+TM_BALTIMORE_2027,All_Rounds,116,Jolteon,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Volt Absorb,Charm / Electroweb / Protect / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,117,Malamar-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Malamarite,Contrary,Superpower / Trick Room / Night Slash / Protect
+TM_BALTIMORE_2027,All_Rounds,118,Torterra,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Shell Armor,Headlong Rush / Wide Guard / Wood Hammer / Smack Down
+TM_BALTIMORE_2027,All_Rounds,119,Goodra-Hisui,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Leftovers,Shell Armor,Body Press / Dragon Pulse / Life Dew / Shelter
+TM_BALTIMORE_2027,All_Rounds,120,Maushold-Three,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Friend Guard,Follow Me / Protect / Taunt / Super Fang
+TM_BALTIMORE_2027,All_Rounds,121,Metagross,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Clear Body,Protect / Psychic Fangs / Hammer Arm / Steel Roller
+TM_BALTIMORE_2027,All_Rounds,122,Drampa,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Expert Belt,Cloud Nine,Flamethrower / Protect / Energy Ball / Helping Hand
+TM_BALTIMORE_2027,All_Rounds,123,Heracross-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Heracronite,Moxie,Close Combat / Pin Missile / Rock Blast / Detect
+TM_BALTIMORE_2027,All_Rounds,124,Araquanid,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Never-Melt Ice,Water Bubble,Hydro Pump / Ice Beam / Protect / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,125,Houndoom-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Houndoominite,Flash Fire,Dark Pulse / Heat Wave / Overheat / Protect
+TM_BALTIMORE_2027,All_Rounds,126,Pincurchin,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Eject Button,Electric Surge,Protect / Rising Voltage / Scald / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,127,Ditto,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Imposter,Transform
+TM_BALTIMORE_2027,All_Rounds,128,Clawitzer,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Mega Launcher,Aura Sphere / Dark Pulse / Terrain Pulse / Dragon Pulse
+TM_BALTIMORE_2027,All_Rounds,129,Weavile,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Wide Lens,Pressure,Low Kick / Triple Axel / Fake Out / Knock Off
+TM_BALTIMORE_2027,All_Rounds,130,Mimikyu,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Fairy Feather,Disguise,Play Rough / Shadow Sneak / Trick Room / Phantom Force
+TM_BALTIMORE_2027,All_Rounds,131,Meowscarada,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Protean,Flower Trick / Knock Off / Triple Axel / Brick Break
+TM_BALTIMORE_2027,All_Rounds,132,Lopunny-Mega,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Lopunnite,Limber,Close Combat / Fake Out / Thunder Punch / Triple Axel
+TM_BALTIMORE_2027,All_Rounds,133,Delphox,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,None,Blaze,Heat Wave / Nasty Plot / Protect / Psychic
+TM_BALTIMORE_2027,All_Rounds,134,Azumarill,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Sitrus Berry,Huge Power,Aqua Jet / Belly Drum / Play Rough / Protect
+TM_BALTIMORE_2027,All_Rounds,135,Gliscor,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Hyper Cutter,Dual Wingbeat / High Horsepower / Protect / Tailwind
+TM_BALTIMORE_2027,All_Rounds,136,Tauros-Paldea-Aqua,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,White Herb,Intimidate,Aqua Jet / Close Combat / Protect / Wave Crash
+TM_BALTIMORE_2027,All_Rounds,137,Slowbro-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Slowbronite,Oblivious,Body Press / Expanding Force / Iron Defense / Trick Room
+TM_BALTIMORE_2027,All_Rounds,138,Squawkabilly,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Intimidate,Brave Bird / Final Gambit / Parting Shot / U-turn
+TM_BALTIMORE_2027,All_Rounds,139,Emboar-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Emboarite,Reckless,Bulk Up / Drain Punch / Flare Blitz / Protect
+TM_BALTIMORE_2027,All_Rounds,140,Scolipede,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Expert Belt,Speed Boost,Poison Jab / Protect / Swords Dance / Throat Chop
+TM_BALTIMORE_2027,All_Rounds,141,Excadrill-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Excadrite,Mold Breaker,High Horsepower / Iron Head / Protect / Rock Slide
+TM_BALTIMORE_2027,All_Rounds,142,Skeledirge,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Unaware,Protect / Slack Off / Torch Song / Will-O-Wisp
+TM_BALTIMORE_2027,All_Rounds,143,Garchomp-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Garchompite,Rough Skin,Earthquake / Flamethrower / Protect / Scale Shot
+TM_BALTIMORE_2027,All_Rounds,144,Samurott-Hisui,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Sharpness,Flip Turn / Night Slash / Razor Shell / Sacred Sword
+TM_BALTIMORE_2027,All_Rounds,145,Basculegion-F,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Adaptability,Flip Turn / Ice Beam / Last Respects / Wave Crash
+TM_BALTIMORE_2027,All_Rounds,146,Rotom-Mow,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Electroweb / Leaf Storm / Thunderbolt / Volt Switch
+TM_BALTIMORE_2027,All_Rounds,147,Mr. Rime,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Screen Cleaner,Freeze-Dry / Helping Hand / Hypnosis / Trick Room
+TM_BALTIMORE_2027,All_Rounds,148,Alakazam-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Alakazite,Inner Focus,Expanding Force / Focus Blast / Protect / Substitute
+TM_BALTIMORE_2027,All_Rounds,149,Chesnaught,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Bulletproof,Body Press / Leech Seed / Spiky Shield / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,150,Crabominable-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Crabominite,Hyper Cutter,Close Combat / Ice Hammer / Protect / Thunder Punch
+TM_BALTIMORE_2027,All_Rounds,151,Goodra,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Sap Sipper,Dragon Pulse / Flamethrower / Sludge Wave / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,152,Arcanine,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Rocky Helmet,Intimidate,Extreme Speed / Flare Blitz / Morning Sun / Will-O-Wisp
+TM_BALTIMORE_2027,All_Rounds,153,Raichu-Alola,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Surge Surfer,Expanding Force / Fake Out / Rising Voltage / Thunder
+TM_BALTIMORE_2027,All_Rounds,154,Orthworm,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Earth Eater,Body Press / Heavy Slam / Iron Defense / Protect
+TM_BALTIMORE_2027,All_Rounds,155,Audino,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Mental Herb,Healer,Heal Pulse / Protect / Simple Beam / Trick Room
+TM_BALTIMORE_2027,All_Rounds,156,Gyarados-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Gyaradosite,Intimidate,Bite / Earthquake / Protect / Waterfall
+TM_BALTIMORE_2027,All_Rounds,157,Raichu,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Lightning Rod,Dazzling Gleam / Fake Out / Protect / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,158,Slowbro-Galar,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Quick Claw,Quick Draw,Expanding Force / Ice Beam / Shell Side Arm / Trick Room
+TM_BALTIMORE_2027,All_Rounds,159,Scovillain,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,None,Chlorophyll,Leaf Storm / Overheat / Protect / Rage Powder
+TM_BALTIMORE_2027,All_Rounds,160,Clefable,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Unaware,Follow Me / Helping Hand / Moonblast / Protect
+TM_BALTIMORE_2027,All_Rounds,161,Skarmory-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Skarmorite,Sturdy,Brave Bird / Iron Head / Protect / Rock Tomb
+TM_BALTIMORE_2027,All_Rounds,162,Glaceon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Bright Powder,Snow Cloak,Blizzard / Detect / Freeze-Dry / Helping Hand
+TM_BALTIMORE_2027,All_Rounds,163,Golurk-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Golurkite,No Guard,Headlong Rush / Ice Punch / Poltergeist / Protect
+TM_BALTIMORE_2027,All_Rounds,164,Gallade-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Galladite,Justified,Drain Punch / Protect / Rock Slide / Wide Guard
+TM_BALTIMORE_2027,All_Rounds,165,Eelektross-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Eelektrossite,Levitate,Flamethrower / Grass Knot / Protect / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,166,Spiritomb,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Infiltrator,Dark Pulse / Icy Wind / Protect / Trick Room
+TM_BALTIMORE_2027,All_Rounds,167,Alcremie,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Quick Claw,Sweet Veil,Baby-Doll Eyes / Dazzling Gleam / Decorate / Helping Hand
+TM_BALTIMORE_2027,All_Rounds,168,Dragalge-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Dragalgite,Poison Point,Draco Meteor / Protect / Sludge Bomb / Thunderbolt
+TM_BALTIMORE_2027,All_Rounds,169,Greninja-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Greninjite,Protean,Blizzard / Dark Pulse / Hydro Pump / Protect
+TM_BALTIMORE_2027,All_Rounds,170,Cinderace,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Libero,Pyro Ball / Trailblaze / U-turn / Zen Headbutt
+TM_BALTIMORE_2027,All_Rounds,171,Heracross,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,White Herb,Moxie,Bullet Seed / Close Combat / Pin Missile / Trailblaze
+TM_BALTIMORE_2027,All_Rounds,172,Lucario,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Inner Focus,Aura Sphere / Dark Pulse / Flash Cannon / Protect
+TM_BRISBANE_2027,All_Rounds,1,Rillaboom,170,52.0%,170,52.0%,22,46.8%,12.9%,4,50.0%,Miracle Seed,Grassy Surge,Grassy Glide / Fake Out / Wood Hammer / High Horsepower
+TM_BRISBANE_2027,All_Rounds,2,Sneasler,134,41.0%,134,41.0%,22,46.8%,16.4%,6,75.0%,White Herb,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_BRISBANE_2027,All_Rounds,3,Incineroar,95,29.1%,95,29.1%,16,34.0%,16.8%,3,37.5%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Throat Chop
+TM_BRISBANE_2027,All_Rounds,4,Gholdengo,94,28.7%,94,28.7%,8,17.0%,8.5%,0,0.0%,Life Orb,Good as Gold,Make It Rain / Shadow Ball / Nasty Plot / Protect
+TM_BRISBANE_2027,All_Rounds,5,Salamence-Mega,89,27.2%,89,27.2%,9,19.1%,10.1%,2,25.0%,Salamencite,Intimidate,Protect / Hyper Voice / Draco Meteor / Tailwind
+TM_BRISBANE_2027,All_Rounds,6,Raichu-Mega-Y,86,26.3%,86,26.3%,8,17.0%,9.3%,0,0.0%,Raichunite Y,Lightning Rod,Focus Blast / Zap Cannon / Protect / Fake Out
+TM_BRISBANE_2027,All_Rounds,7,Kingambit,73,22.3%,73,22.3%,20,42.6%,27.4%,4,50.0%,Chople Berry,Defiant,Kowtow Cleave / Sucker Punch / Iron Head / Protect
+TM_BRISBANE_2027,All_Rounds,8,Milotic,64,19.6%,64,19.6%,10,21.3%,15.6%,0,0.0%,Leftovers,Competitive,Ice Beam / Protect / Scald / Coil
+TM_BRISBANE_2027,All_Rounds,9,Arcanine-Hisui,64,19.6%,64,19.6%,7,14.9%,10.9%,0,0.0%,Focus Sash,Rock Head,Flare Blitz / Protect / Extreme Speed / Head Smash
+TM_BRISBANE_2027,All_Rounds,10,Archaludon,55,16.8%,55,16.8%,11,23.4%,20.0%,4,50.0%,Leftovers,Stamina,Electro Shot / Protect / Dragon Pulse / Flash Cannon
+TM_BRISBANE_2027,All_Rounds,11,Staraptor-Mega,49,15.0%,49,15.0%,7,14.9%,14.3%,0,0.0%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_BRISBANE_2027,All_Rounds,12,Indeedee-F,42,12.8%,42,12.8%,4,8.5%,9.5%,1,12.5%,Colbur Berry,Psychic Surge,Follow Me / Trick Room / Helping Hand / Psychic
+TM_BRISBANE_2027,All_Rounds,13,Farigiraf,41,12.5%,41,12.5%,2,4.3%,4.9%,0,0.0%,Sitrus Berry,Armor Tail,Trick Room / Protect / Psychic / Helping Hand
+TM_BRISBANE_2027,All_Rounds,14,Charizard-Mega-Y,40,12.2%,40,12.2%,7,14.9%,17.5%,2,25.0%,Charizardite Y,Blaze,Heat Wave / Protect / Weather Ball / Hurricane
+TM_BRISBANE_2027,All_Rounds,15,Basculegion,40,12.2%,40,12.2%,5,10.6%,12.5%,2,25.0%,Choice Scarf,Adaptability,Last Respects / Wave Crash / Aqua Jet / Protect
+TM_BRISBANE_2027,All_Rounds,16,Golisopod-Mega,40,12.2%,40,12.2%,0,0.0%,0.0%,0,0.0%,Golisopite,Emergency Exit,Leech Life / Iron Head / Protect / Drill Run
+TM_BRISBANE_2027,All_Rounds,17,Pelipper,39,11.9%,39,11.9%,8,17.0%,20.5%,3,37.5%,Focus Sash,Drizzle,Hurricane / Tailwind / Weather Ball / Wide Guard
+TM_BRISBANE_2027,All_Rounds,18,Floette-Mega,38,11.6%,38,11.6%,12,25.5%,31.6%,5,62.5%,Floettite,Flower Veil,Dazzling Gleam / Protect / Calm Mind / Moonblast
+TM_BRISBANE_2027,All_Rounds,19,Tyranitar-Mega,34,10.4%,34,10.4%,1,2.1%,2.9%,0,0.0%,Tyranitarite,Sand Stream,Protect / Rock Slide / Knock Off / Low Kick
+TM_BRISBANE_2027,All_Rounds,20,Indeedee,33,10.1%,33,10.1%,4,8.5%,12.1%,0,0.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Trick / Protect
+TM_BRISBANE_2027,All_Rounds,21,Excadrill,33,10.1%,33,10.1%,2,4.3%,6.1%,0,0.0%,Focus Sash,Sand Rush,Iron Head / Rock Slide / High Horsepower / Protect
+TM_BRISBANE_2027,All_Rounds,22,Sylveon,30,9.2%,30,9.2%,3,6.4%,10.0%,0,0.0%,Fairy Feather,Pixilate,Hyper Voice / Hyper Beam / Quick Attack / Detect
+TM_BRISBANE_2027,All_Rounds,23,Politoed,29,8.9%,29,8.9%,4,8.5%,13.8%,1,12.5%,Sitrus Berry,Drizzle,Weather Ball / Protect / Muddy Water / Ice Beam
+TM_BRISBANE_2027,All_Rounds,24,Gengar-Mega,25,7.6%,25,7.6%,5,10.6%,20.0%,1,12.5%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_BRISBANE_2027,All_Rounds,25,Delphox-Mega,24,7.3%,24,7.3%,9,19.1%,37.5%,0,0.0%,Delphoxite,Blaze,Heat Wave / Protect / Nasty Plot / Psychic
+TM_BRISBANE_2027,All_Rounds,26,Garchomp,23,7.0%,23,7.0%,5,10.6%,21.7%,0,0.0%,Choice Scarf,Rough Skin,Dragon Claw / Rock Slide / Stomping Tantrum / Earthquake
+TM_BRISBANE_2027,All_Rounds,27,Whimsicott,21,6.4%,21,6.4%,3,6.4%,14.3%,0,0.0%,Focus Sash,Prankster,Tailwind / Moonblast / Encore / Protect
+TM_BRISBANE_2027,All_Rounds,28,Grimmsnarl,20,6.1%,20,6.1%,3,6.4%,15.0%,2,25.0%,Light Clay,Prankster,Light Screen / Parting Shot / Reflect / Spirit Break
+TM_BRISBANE_2027,All_Rounds,29,Sinistcha,20,6.1%,20,6.1%,9,19.1%,45.0%,0,0.0%,Colbur Berry,Hospitality,Matcha Gotcha / Trick Room / Rage Powder / Protect
+TM_BRISBANE_2027,All_Rounds,30,Metagross-Mega,20,6.1%,20,6.1%,4,8.5%,20.0%,0,0.0%,Metagrossite,Clear Body,Psychic Fangs / Protect / Iron Head / Steel Roller
+TM_BRISBANE_2027,All_Rounds,31,Volcarona,19,5.8%,19,5.8%,2,4.3%,10.5%,1,12.5%,Grassy Seed,Flame Body,Protect / Quiver Dance / Rage Powder / Heat Wave
+TM_BRISBANE_2027,All_Rounds,32,Froslass-Mega,19,5.8%,19,5.8%,3,6.4%,15.8%,0,0.0%,Froslassite,Cursed Body,Blizzard / Protect / Shadow Ball / Aurora Veil
+TM_BRISBANE_2027,All_Rounds,33,Corviknight,17,5.2%,17,5.2%,1,2.1%,5.9%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Bulk Up / Roost / Power Trip
+TM_BRISBANE_2027,All_Rounds,34,Gardevoir-Mega,17,5.2%,17,5.2%,0,0.0%,0.0%,0,0.0%,Gardevoirite,Trace,Expanding Force / Hyper Voice / Protect / Shadow Ball
+TM_BRISBANE_2027,All_Rounds,35,Ceruledge,15,4.6%,15,4.6%,6,12.8%,40.0%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_BRISBANE_2027,All_Rounds,36,Armarouge,14,4.3%,14,4.3%,2,4.3%,14.3%,1,12.5%,Life Orb,Flash Fire,Expanding Force / Armor Cannon / Trick Room / Protect
+TM_BRISBANE_2027,All_Rounds,37,Swampert-Mega,14,4.3%,14,4.3%,2,4.3%,14.3%,1,12.5%,Swampertite,Torrent,Protect / Earthquake / Wave Crash / Ice Punch
+TM_BRISBANE_2027,All_Rounds,38,Garchomp-Mega-Z,12,3.7%,12,3.7%,3,6.4%,25.0%,2,25.0%,Garchompite Z,Rough Skin,Power Gem / Protect / Earth Power / Draco Meteor
+TM_BRISBANE_2027,All_Rounds,39,Kommo-o,12,3.7%,12,3.7%,2,4.3%,16.7%,0,0.0%,Leftovers,Soundproof,Clanging Scales / Protect / Aura Sphere / Clangorous Soul
+TM_BRISBANE_2027,All_Rounds,40,Torkoal,10,3.1%,10,3.1%,1,2.1%,10.0%,0,0.0%,Charcoal,Drought,Eruption / Protect / Weather Ball / Earth Power
+TM_BRISBANE_2027,All_Rounds,41,Dragapult,9,2.8%,9,2.8%,1,2.1%,11.1%,0,0.0%,Life Orb,Infiltrator,Will-O-Wisp / Draco Meteor / Shadow Ball / Protect
+TM_BRISBANE_2027,All_Rounds,42,Vivillon,9,2.8%,9,2.8%,0,0.0%,0.0%,0,0.0%,Focus Sash,Compound Eyes,Sleep Powder / Hurricane / Protect / Rage Powder
+TM_BRISBANE_2027,All_Rounds,43,Ninetales-Alola,9,2.8%,9,2.8%,0,0.0%,0.0%,0,0.0%,Focus Sash,Snow Warning,Blizzard / Aurora Veil / Protect / Freeze-Dry
+TM_BRISBANE_2027,All_Rounds,44,Hatterene,8,2.4%,8,2.4%,0,0.0%,0.0%,0,0.0%,Life Orb,Magic Bounce,Expanding Force / Protect / Trick Room / Dazzling Gleam
+TM_BRISBANE_2027,All_Rounds,45,Venusaur,7,2.1%,7,2.1%,3,6.4%,42.9%,2,25.0%,Focus Sash,Chlorophyll,Sleep Powder / Leaf Storm / Sludge Bomb / Protect
+TM_BRISBANE_2027,All_Rounds,46,Lucario-Mega-Z,7,2.1%,7,2.1%,3,6.4%,42.9%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Flash Cannon / Detect / Protect
+TM_BRISBANE_2027,All_Rounds,47,Tyranitar,7,2.1%,7,2.1%,0,0.0%,0.0%,0,0.0%,Chople Berry,Sand Stream,Knock Off / Rock Slide / Protect / High Horsepower
+TM_BRISBANE_2027,All_Rounds,48,Primarina,7,2.1%,7,2.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Liquid Voice,Hyper Voice / Moonblast / Protect / Aqua Jet
+TM_BRISBANE_2027,All_Rounds,49,Mawile-Mega,6,1.8%,6,1.8%,1,2.1%,16.7%,0,0.0%,Mawilite,Intimidate,Play Rough / Protect / Sucker Punch / Iron Head
+TM_BRISBANE_2027,All_Rounds,50,Dragonite-Mega,6,1.8%,6,1.8%,0,0.0%,0.0%,0,0.0%,Dragoninite,Multiscale,Dragon Pulse / Protect / Tailwind / Heat Wave
+TM_BRISBANE_2027,All_Rounds,51,Hydreigon,6,1.8%,6,1.8%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Dark Pulse / Draco Meteor / Snarl / Earth Power
+TM_BRISBANE_2027,All_Rounds,52,Pawmot,6,1.8%,6,1.8%,0,0.0%,0.0%,0,0.0%,Focus Sash,Iron Fist,Close Combat / Double Shock / Fake Out / Protect
+TM_BRISBANE_2027,All_Rounds,53,Camerupt-Mega,6,1.8%,6,1.8%,0,0.0%,0.0%,0,0.0%,Cameruptite,Solid Rock,Earth Power / Heat Wave / Protect / Ancient Power
+TM_BRISBANE_2027,All_Rounds,54,Sableye,5,1.5%,5,1.5%,1,2.1%,20.0%,0,0.0%,Roseli Berry,Prankster,Fake Out / Disable / Encore / Rain Dance
+TM_BRISBANE_2027,All_Rounds,55,Baxcalibur-Mega,5,1.5%,5,1.5%,2,4.3%,40.0%,0,0.0%,Baxcalibrite,Thermal Exchange,Glaive Rush / Ice Shard / Protect / Swords Dance
+TM_BRISBANE_2027,All_Rounds,56,Maushold,5,1.5%,5,1.5%,0,0.0%,0.0%,0,0.0%,Chople Berry,Friend Guard,Follow Me / Protect / Super Fang / Feint
+TM_BRISBANE_2027,All_Rounds,57,Kleavor,5,1.5%,5,1.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sharpness,Stone Axe / X-Scissor / Protect / Night Slash
+TM_BRISBANE_2027,All_Rounds,58,Glimmora-Mega,4,1.2%,4,1.2%,2,4.3%,50.0%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_BRISBANE_2027,All_Rounds,59,Meganium-Mega,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Meganiumite,Leaf Guard,Solar Beam / Weather Ball / Dazzling Gleam / Protect
+TM_BRISBANE_2027,All_Rounds,60,Absol-Mega-Z,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Absolite Z,Super Luck,Night Slash / Close Combat / Protect / Psycho Cut
+TM_BRISBANE_2027,All_Rounds,61,Lopunny-Mega,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Lopunnite,Limber,Close Combat / Protect / Triple Axel / Fake Out
+TM_BRISBANE_2027,All_Rounds,62,Talonflame,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Rocky Helmet,Gale Wings,Tailwind / Brave Bird / Flare Blitz / Protect
+TM_BRISBANE_2027,All_Rounds,63,Blastoise-Mega,3,0.9%,3,0.9%,1,2.1%,33.3%,0,0.0%,Blastoisinite,Rain Dish,Protect / Shell Smash / Water Spout / Dark Pulse
+TM_BRISBANE_2027,All_Rounds,64,Scovillain-Mega,3,0.9%,3,0.9%,1,2.1%,33.3%,0,0.0%,Scovillainite,Moody,Rage Powder / Overheat / Protect / Leech Seed
+TM_BRISBANE_2027,All_Rounds,65,Clefable,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Unaware,Follow Me / Moonblast / Protect / Life Dew
+TM_BRISBANE_2027,All_Rounds,66,Blaziken,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Life Orb,Speed Boost,Detect / Close Combat / Rock Slide / Aura Sphere
+TM_BRISBANE_2027,All_Rounds,67,Annihilape,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Defiant,Close Combat / Ice Punch / Shadow Claw / U-turn
+TM_BRISBANE_2027,All_Rounds,68,Zoroark-Hisui,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Focus Sash,Illusion,Icy Wind / Shadow Ball / Flamethrower / Fake Tears
+TM_BRISBANE_2027,All_Rounds,69,Aerodactyl-Mega,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Aerodactylite,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_BRISBANE_2027,All_Rounds,70,Gallade,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,White Herb,Sharpness,Psycho Cut / Sacred Sword / Leaf Blade / Trick Room
+TM_BRISBANE_2027,All_Rounds,71,Rotom-Heat,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Overheat / Volt Switch / Discharge / Thunder Wave
+TM_BRISBANE_2027,All_Rounds,72,Meowscarada,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Miracle Seed,Protean,Flower Trick / Knock Off / Protect / Triple Axel
+TM_BRISBANE_2027,All_Rounds,73,Garchomp-Mega,2,0.6%,2,0.6%,1,2.1%,50.0%,1,12.5%,Garchompite,Rough Skin,Protect / Rock Slide / Scale Shot / Stomping Tantrum
+TM_BRISBANE_2027,All_Rounds,74,Starmie-Mega,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Starminite,Natural Cure,Expanding Force / Ice Beam / Liquidation / Protect
+TM_BRISBANE_2027,All_Rounds,75,Blaziken-Mega,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Flare Blitz / Protect / Thunder Punch
+TM_BRISBANE_2027,All_Rounds,76,Baxcalibur,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Leftovers,Ice Body,Glaive Rush / Ice Shard / Protect / Swords Dance
+TM_BRISBANE_2027,All_Rounds,77,Altaria,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Haban Berry,Cloud Nine,Ice Beam / Protect / Tailwind / Will-O-Wisp
+TM_BRISBANE_2027,All_Rounds,78,Weavile,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Focus Sash,Pressure,Fake Out / Knock Off / Ice Spinner / Protect
+TM_BRISBANE_2027,All_Rounds,79,Aerodactyl,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Focus Sash,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Wide Guard
+TM_BRISBANE_2027,All_Rounds,80,Rotom-Wash,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Levitate,Hydro Pump / Light Screen / Thunderbolt / Will-O-Wisp
+TM_BRISBANE_2027,All_Rounds,81,Pyroar-Mega,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Protect / Scorching Sands / Overheat
+TM_BRISBANE_2027,All_Rounds,82,Pincurchin,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Electric Surge,Protect / Rising Voltage / Sucker Punch / Muddy Water
+TM_BRISBANE_2027,All_Rounds,83,Palafin,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Mystic Water,Zero to Hero,Close Combat / Jet Punch / Protect / Wave Crash
+TM_BRISBANE_2027,All_Rounds,84,Swampert,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Torrent,High Horsepower / Yawn / Flip Turn / Protect
+TM_BRISBANE_2027,All_Rounds,85,Houndoom-Mega,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Houndoominite,Flash Fire,Dark Pulse / Heat Wave / Protect / Nasty Plot
+TM_BRISBANE_2027,All_Rounds,86,Chandelure,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Kasib Berry,Flash Fire,Heat Wave / Protect / Psychic / Trick Room
+TM_BRISBANE_2027,All_Rounds,87,Kangaskhan,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Chople Berry,Scrappy,Fake Out / Facade / Hammer Arm / Protect
+TM_BRISBANE_2027,All_Rounds,88,Araquanid,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Mystic Water,Water Bubble,Liquidation / Wide Guard / Leech Life / Protect
+TM_BRISBANE_2027,All_Rounds,89,Sceptile-Mega,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Sceptilite,Overgrow,Dragon Pulse / Earth Power / Detect / Grass Knot
+TM_BRISBANE_2027,All_Rounds,90,Glimmora,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Protect
+TM_BRISBANE_2027,All_Rounds,91,Decidueye-Hisui,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Rocky Helmet,Scrappy,Leaf Blade / Triple Arrows / Protect / Sucker Punch
+TM_BRISBANE_2027,All_Rounds,92,Typhlosion-Hisui,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Spell Tag,Blaze,Eruption / Shadow Ball / Heat Wave / Protect
+TM_BRISBANE_2027,All_Rounds,93,Tinkaton,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Leftovers,Mold Breaker,Fake Out / Gigaton Hammer / Protect / Feint
+TM_BRISBANE_2027,All_Rounds,94,Maushold-Three,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Chople Berry,Friend Guard,Feint / Follow Me / Protect / Super Fang
+TM_BRISBANE_2027,All_Rounds,95,Espathra,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Focus Sash,Speed Boost,Baton Pass / Calm Mind / Lumina Crash / Protect
+TM_BRISBANE_2027,All_Rounds,96,Lycanroc-Dusk,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Close Combat / Protect / Rock Slide
+TM_BRISBANE_2027,All_Rounds,97,Blastoise,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Leftovers,Rain Dish,Body Press / Fake Out / Flip Turn / Protect
+TM_BRISBANE_2027,All_Rounds,98,Empoleon,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Sitrus Berry,Competitive,Flash Cannon / Ice Beam / Protect / Surf
+TM_BRISBANE_2027,All_Rounds,99,Tsareena,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Wide Lens,Queenly Majesty,Power Whip / Protect / Triple Axel / Zen Headbutt
+TM_BRISBANE_2027,All_Rounds,100,Wyrdeer,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Colbur Berry,Intimidate,Expanding Force / Helping Hand / Skill Swap / Trick Room
+TM_BRISBANE_2027,All_Rounds,101,Infernape,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Focus Sash,Blaze,Coaching / Fake Out / Overheat / Protect
+TM_BRISBANE_2027,All_Rounds,102,Meowstic-F-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_BRISBANE_2027,All_Rounds,103,Gliscor,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Hyper Cutter,High Horsepower / Knock Off / Struggle Bug / U-turn
+TM_BRISBANE_2027,All_Rounds,104,Overqwil,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Intimidate,Aqua Jet / Barb Barrage / Protect / Throat Chop
+TM_BRISBANE_2027,All_Rounds,105,Metagross,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Expert Belt,Clear Body,Hammer Arm / Ice Punch / Iron Head / Protect
+TM_BRISBANE_2027,All_Rounds,106,Steelix-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Steelixite,Sturdy,Curse / Heavy Slam / High Horsepower / Protect
+TM_BRISBANE_2027,All_Rounds,107,Vanilluxe,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Snow Warning,Aurora Veil / Blizzard / Freeze-Dry / Sheer Cold
+TM_BRISBANE_2027,All_Rounds,108,Venusaur-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Venusaurite,Chlorophyll,Giga Drain / Protect / Sleep Powder / Sludge Wave
+TM_BRISBANE_2027,All_Rounds,109,Gyarados,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,King’s Rock,Intimidate,Protect / Taunt / Thunder Wave / Waterfall
+TM_BRISBANE_2027,All_Rounds,110,Runerigus,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Wandering Spirit,Shadow Claw / Skill Swap / Trick Room / Will-O-Wisp
+TM_BRISBANE_2027,All_Rounds,111,Toxapex,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_BRISBANE_2027,All_Rounds,112,Hydrapple,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Regenerator,Earth Power / Energy Ball / Fickle Beam / Protect
+TM_BRISBANE_2027,All_Rounds,113,Crabominable-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Crabominite,Hyper Cutter,Drain Punch / Ice Hammer / Rock Slide / Wide Guard
+TM_BRISBANE_2027,All_Rounds,114,Tauros-Paldea-Aqua,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Intimidate,Aqua Jet / Close Combat / Iron Head / Raging Bull
+TM_BRISBANE_2027,All_Rounds,115,Golisopod,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Emergency Exit,First Impression / Liquidation / Protect / Sucker Punch
+TM_BRISBANE_2027,All_Rounds,116,Forretress,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Sturdy,Helping Hand / Ice Spinner / Iron Head / Reflect
+TM_BRISBANE_2027,All_Rounds,117,Krookodile,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Expert Belt,Intimidate,High Horsepower / Knock Off / Rock Slide / Taunt
+TM_BRISBANE_2027,All_Rounds,118,Heracross,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Coba Berry,Guts,Coaching / Helping Hand / Low Kick / Upper Hand
+TM_BRISBANE_2027,All_Rounds,119,Dragonite,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Multiscale,Dragon Claw / Extreme Speed / Protect / Tailwind
+TM_BRISBANE_2027,All_Rounds,120,Conkeldurr,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Iron Fist,Drain Punch / Mach Punch / Rock Slide / Wide Guard
+TM_BRISBANE_2027,All_Rounds,121,Ditto,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Imposter,Transform
+TM_BRISBANE_2027,All_Rounds,122,Azumarill,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Huge Power,Aqua Jet / Belly Drum / Play Rough / Protect
+TM_BRISBANE_2027,All_Rounds,123,Raichu-Mega-X,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Raichunite X,Lightning Rod,Fake Out / Protect / Upper Hand / Volt Tackle
+TM_BRISBANE_2027,All_Rounds,124,Raichu-Alola,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Surge Surfer,Expanding Force / Fake Out / Grass Knot / Thunder
+TM_BRISBANE_2027,All_Rounds,125,Salamence,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Yache Berry,Intimidate,Draco Meteor / Flamethrower / Protect / Tailwind
+TM_BRISBANE_2027,All_Rounds,126,Cofagrigus,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Mummy,Body Press / Iron Defense / Shadow Ball / Trick Room
+TM_BRISBANE_2027,All_Rounds,127,Basculegion-F,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Adaptability,Flip Turn / Last Respects / Liquidation / Psychic Fangs
+TM_BRISBANE_2027,All_Rounds,128,Gyarados-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Gyaradosite,Intimidate,Crunch / Dragon Dance / Protect / Waterfall
+TM_BRISBANE_2027,All_Rounds,129,Toxtricity,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Punk Rock,Overdrive / Psychic Noise / Sludge Bomb / Volt Switch
+TM_BRISBANE_2027,All_Rounds,130,Floette-Eternal,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Flower Veil,Dazzling Gleam / Light of Ruin / Moonblast / Pollen Puff
+TM_BRISBANE_2027,All_Rounds,131,Beedrill-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Beedrillite,Swarm,Drill Run / Poison Jab / Protect / U-turn
+TM_BRISBANE_2027,All_Rounds,132,Sableye-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Sablenite,Prankster,Confuse Ray / Foul Play / Quash / Thunder Wave
+TM_BRISBANE_2027,All_Rounds,133,Morpeko,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Hunger Switch,Aura Wheel / Fake Out / Knock Off / Protect
+TM_BRISBANE_2027,All_Rounds,134,Emolga,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Bright Powder,Motor Drive,Air Slash / Defog / Electroweb / Energy Ball
+TM_BRISBANE_2027,All_Rounds,135,Mimikyu,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Disguise,Bulk Up / Drain Punch / Shadow Claw / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,1,Rillaboom,626,55.4%,626,55.4%,92,56.4%,14.7%,5,62.5%,Miracle Seed,Grassy Surge,Fake Out / Grassy Glide / Wood Hammer / High Horsepower
+TM_FRANKFURT_2027,All_Rounds,2,Sneasler,419,37.1%,419,37.1%,57,35.0%,13.6%,4,50.0%,White Herb,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_FRANKFURT_2027,All_Rounds,3,Raichu-Mega-Y,335,29.7%,335,29.7%,52,31.9%,15.5%,1,12.5%,Raichunite Y,Lightning Rod,Zap Cannon / Protect / Focus Blast / Fake Out
+TM_FRANKFURT_2027,All_Rounds,4,Gholdengo,327,29.0%,327,29.0%,50,30.7%,15.3%,3,37.5%,Life Orb,Good as Gold,Make It Rain / Shadow Ball / Protect / Nasty Plot
+TM_FRANKFURT_2027,All_Rounds,5,Incineroar,318,28.2%,318,28.2%,57,35.0%,17.9%,7,87.5%,Sitrus Berry,Intimidate,Fake Out / Flare Blitz / Parting Shot / Throat Chop
+TM_FRANKFURT_2027,All_Rounds,6,Salamence-Mega,288,25.5%,288,25.5%,34,20.9%,11.8%,0,0.0%,Salamencite,Intimidate,Protect / Hyper Voice / Draco Meteor / Tailwind
+TM_FRANKFURT_2027,All_Rounds,7,Kingambit,259,22.9%,259,22.9%,41,25.2%,15.8%,1,12.5%,Life Orb,Defiant,Kowtow Cleave / Sucker Punch / Protect / Iron Head
+TM_FRANKFURT_2027,All_Rounds,8,Arcanine-Hisui,233,20.6%,233,20.6%,26,16.0%,11.2%,0,0.0%,Focus Sash,Rock Head,Flare Blitz / Head Smash / Protect / Extreme Speed
+TM_FRANKFURT_2027,All_Rounds,9,Indeedee-F,196,17.4%,196,17.4%,20,12.3%,10.2%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Helping Hand / Psychic / Trick Room
+TM_FRANKFURT_2027,All_Rounds,10,Farigiraf,187,16.6%,187,16.6%,20,12.3%,10.7%,1,12.5%,Sitrus Berry,Armor Tail,Trick Room / Protect / Psychic / Helping Hand
+TM_FRANKFURT_2027,All_Rounds,11,Staraptor-Mega,184,16.3%,184,16.3%,25,15.3%,13.6%,0,0.0%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_FRANKFURT_2027,All_Rounds,12,Milotic,180,15.9%,180,15.9%,18,11.0%,10.0%,0,0.0%,Leftovers,Competitive,Ice Beam / Protect / Muddy Water / Coil
+TM_FRANKFURT_2027,All_Rounds,13,Archaludon,178,15.8%,178,15.8%,29,17.8%,16.3%,0,0.0%,Leftovers,Stamina,Protect / Electro Shot / Dragon Pulse / Flash Cannon
+TM_FRANKFURT_2027,All_Rounds,14,Basculegion,165,14.6%,165,14.6%,24,14.7%,14.5%,1,12.5%,Choice Scarf,Adaptability,Last Respects / Aqua Jet / Wave Crash / Protect
+TM_FRANKFURT_2027,All_Rounds,15,Golisopod-Mega,146,12.9%,146,12.9%,19,11.7%,13.0%,0,0.0%,Golisopite,Emergency Exit,Leech Life / Protect / Iron Head / Drill Run
+TM_FRANKFURT_2027,All_Rounds,16,Sylveon,142,12.6%,142,12.6%,16,9.8%,11.3%,2,25.0%,Fairy Feather,Pixilate,Hyper Voice / Hyper Beam / Quick Attack / Detect
+TM_FRANKFURT_2027,All_Rounds,17,Charizard-Mega-Y,140,12.4%,140,12.4%,26,16.0%,18.6%,2,25.0%,Charizardite Y,Blaze,Heat Wave / Protect / Weather Ball / Solar Beam
+TM_FRANKFURT_2027,All_Rounds,18,Floette-Mega,132,11.7%,132,11.7%,24,14.7%,18.2%,2,25.0%,Floettite,Flower Veil,Protect / Dazzling Gleam / Calm Mind / Moonblast
+TM_FRANKFURT_2027,All_Rounds,19,Pelipper,106,9.4%,106,9.4%,17,10.4%,16.0%,0,0.0%,Focus Sash,Drizzle,Hurricane / Weather Ball / Tailwind / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,20,Garchomp-Mega-Z,102,9.0%,102,9.0%,21,12.9%,20.6%,2,25.0%,Garchompite Z,Rough Skin,Protect / Power Gem / Earth Power / Draco Meteor
+TM_FRANKFURT_2027,All_Rounds,21,Volcarona,101,8.9%,101,8.9%,27,16.6%,26.7%,2,25.0%,Grassy Seed,Flame Body,Protect / Quiver Dance / Struggle Bug / Rage Powder
+TM_FRANKFURT_2027,All_Rounds,22,Politoed,96,8.5%,96,8.5%,13,8.0%,13.5%,1,12.5%,Mystic Water,Drizzle,Protect / Weather Ball / Ice Beam / Muddy Water
+TM_FRANKFURT_2027,All_Rounds,23,Garchomp,92,8.1%,92,8.1%,20,12.3%,21.7%,1,12.5%,Choice Scarf,Rough Skin,Dragon Claw / Stomping Tantrum / Rock Slide / Earthquake
+TM_FRANKFURT_2027,All_Rounds,24,Tyranitar-Mega,90,8.0%,90,8.0%,11,6.7%,12.2%,0,0.0%,Tyranitarite,Sand Stream,Protect / Rock Slide / Knock Off / Low Kick
+TM_FRANKFURT_2027,All_Rounds,25,Excadrill,85,7.5%,85,7.5%,11,6.7%,12.9%,0,0.0%,Focus Sash,Sand Rush,Iron Head / Protect / High Horsepower / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,26,Indeedee,75,6.6%,75,6.6%,11,6.7%,14.7%,1,12.5%,Choice Scarf,Psychic Surge,Expanding Force / Protect / Trick / Mystical Fire
+TM_FRANKFURT_2027,All_Rounds,27,Armarouge,70,6.2%,70,6.2%,10,6.1%,14.3%,0,0.0%,Focus Sash,Flash Fire,Expanding Force / Armor Cannon / Protect / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,28,Gengar-Mega,67,5.9%,67,5.9%,13,8.0%,19.4%,1,12.5%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_FRANKFURT_2027,All_Rounds,29,Froslass-Mega,67,5.9%,67,5.9%,12,7.4%,17.9%,1,12.5%,Froslassite,Cursed Body,Blizzard / Protect / Shadow Ball / Aurora Veil
+TM_FRANKFURT_2027,All_Rounds,30,Grimmsnarl,66,5.8%,66,5.8%,12,7.4%,18.2%,0,0.0%,Light Clay,Prankster,Light Screen / Reflect / Parting Shot / Spirit Break
+TM_FRANKFURT_2027,All_Rounds,31,Gardevoir-Mega,66,5.8%,66,5.8%,5,3.1%,7.6%,0,0.0%,Gardevoirite,Trace,Hyper Voice / Expanding Force / Protect / Trick Room
+TM_FRANKFURT_2027,All_Rounds,32,Whimsicott,58,5.1%,58,5.1%,4,2.5%,6.9%,0,0.0%,Focus Sash,Prankster,Tailwind / Moonblast / Protect / Encore
+TM_FRANKFURT_2027,All_Rounds,33,Sinistcha,54,4.8%,54,4.8%,10,6.1%,18.5%,0,0.0%,Colbur Berry,Hospitality,Matcha Gotcha / Rage Powder / Protect / Trick Room
+TM_FRANKFURT_2027,All_Rounds,34,Kommo-o,52,4.6%,52,4.6%,9,5.5%,17.3%,2,25.0%,Leftovers,Soundproof,Clanging Scales / Protect / Aura Sphere / Clangorous Soul
+TM_FRANKFURT_2027,All_Rounds,35,Delphox-Mega,52,4.6%,52,4.6%,9,5.5%,17.3%,0,0.0%,Delphoxite,Blaze,Protect / Heat Wave / Nasty Plot / Psychic
+TM_FRANKFURT_2027,All_Rounds,36,Metagross-Mega,48,4.3%,48,4.3%,3,1.8%,6.2%,0,0.0%,Metagrossite,Clear Body,Psychic Fangs / Protect / Stomping Tantrum / Body Press
+TM_FRANKFURT_2027,All_Rounds,37,Ceruledge,48,4.3%,48,4.3%,6,3.7%,12.5%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_FRANKFURT_2027,All_Rounds,38,Swampert-Mega,45,4.0%,45,4.0%,5,3.1%,11.1%,0,0.0%,Swampertite,Torrent,Protect / Wave Crash / Ice Punch / Earthquake
+TM_FRANKFURT_2027,All_Rounds,39,Glimmora-Mega,42,3.7%,42,3.7%,11,6.7%,26.2%,1,12.5%,Glimmoranite,Toxic Debris,Sludge Bomb / Power Gem / Earth Power / Spiky Shield
+TM_FRANKFURT_2027,All_Rounds,40,Dragapult,42,3.7%,42,3.7%,9,5.5%,21.4%,0,0.0%,Life Orb,Infiltrator,Protect / Draco Meteor / Shadow Ball / Will-O-Wisp
+TM_FRANKFURT_2027,All_Rounds,41,Corviknight,41,3.6%,41,3.6%,4,2.5%,9.8%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Roost / Bulk Up / Power Trip
+TM_FRANKFURT_2027,All_Rounds,42,Dragonite-Mega,40,3.5%,40,3.5%,9,5.5%,22.5%,2,25.0%,Dragoninite,Inner Focus,Protect / Dragon Pulse / Heat Wave / Tailwind
+TM_FRANKFURT_2027,All_Rounds,43,Primarina,36,3.2%,36,3.2%,4,2.5%,11.1%,0,0.0%,Life Orb,Liquid Voice,Hyper Voice / Protect / Moonblast / Calm Mind
+TM_FRANKFURT_2027,All_Rounds,44,Camerupt-Mega,34,3.0%,34,3.0%,2,1.2%,5.9%,0,0.0%,Cameruptite,Solid Rock,Earth Power / Heat Wave / Protect / Ancient Power
+TM_FRANKFURT_2027,All_Rounds,45,Annihilape,32,2.8%,32,2.8%,7,4.3%,21.9%,0,0.0%,Choice Scarf,Defiant,Close Combat / Ice Punch / Shadow Claw / Phantom Force
+TM_FRANKFURT_2027,All_Rounds,46,Torkoal,31,2.7%,31,2.7%,2,1.2%,6.5%,1,12.5%,Charcoal,Drought,Protect / Eruption / Weather Ball / Earth Power
+TM_FRANKFURT_2027,All_Rounds,47,Venusaur,31,2.7%,31,2.7%,10,6.1%,32.3%,1,12.5%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Sleep Powder / Leaf Storm
+TM_FRANKFURT_2027,All_Rounds,48,Aerodactyl-Mega,27,2.4%,27,2.4%,4,2.5%,14.8%,0,0.0%,Aerodactylite,Unnerve,Rock Slide / Tailwind / Dual Wingbeat / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,49,Lucario-Mega-Z,22,1.9%,22,1.9%,2,1.2%,9.1%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Flash Cannon / Detect / Calm Mind
+TM_FRANKFURT_2027,All_Rounds,50,Blastoise-Mega,21,1.9%,21,1.9%,3,1.8%,14.3%,0,0.0%,Blastoisinite,Rain Dish,Water Spout / Protect / Shell Smash / Dark Pulse
+TM_FRANKFURT_2027,All_Rounds,51,Hatterene,21,1.9%,21,1.9%,2,1.2%,9.5%,0,0.0%,Life Orb,Magic Bounce,Expanding Force / Trick Room / Dazzling Gleam / Protect
+TM_FRANKFURT_2027,All_Rounds,52,Vivillon,19,1.7%,19,1.7%,3,1.8%,15.8%,1,12.5%,Focus Sash,Compound Eyes,Hurricane / Protect / Rage Powder / Sleep Powder
+TM_FRANKFURT_2027,All_Rounds,53,Ninetales-Alola,18,1.6%,18,1.6%,2,1.2%,11.1%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Protect / Aurora Veil
+TM_FRANKFURT_2027,All_Rounds,54,Glimmora,15,1.3%,15,1.3%,3,1.8%,20.0%,0,0.0%,Focus Sash,Toxic Debris,Earth Power / Sludge Bomb / Spiky Shield / Power Gem
+TM_FRANKFURT_2027,All_Rounds,55,Absol-Mega-Z,15,1.3%,15,1.3%,1,0.6%,6.7%,0,0.0%,Absolite Z,Justified,Night Slash / Close Combat / Detect / Shadow Claw
+TM_FRANKFURT_2027,All_Rounds,56,Maushold,15,1.3%,15,1.3%,1,0.6%,6.7%,0,0.0%,Chople Berry,Friend Guard,Follow Me / Protect / Super Fang / Feint
+TM_FRANKFURT_2027,All_Rounds,57,Baxcalibur-Mega,14,1.2%,14,1.2%,1,0.6%,7.1%,0,0.0%,Baxcalibrite,Thermal Exchange,Glaive Rush / Ice Shard / Protect / Swords Dance
+TM_FRANKFURT_2027,All_Rounds,58,Blaziken-Mega,13,1.2%,13,1.2%,1,0.6%,7.7%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Flare Blitz / Rock Slide / Protect
+TM_FRANKFURT_2027,All_Rounds,59,Pyroar-Mega,13,1.2%,13,1.2%,2,1.2%,15.4%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Overheat / Protect / Scorching Sands
+TM_FRANKFURT_2027,All_Rounds,60,Espathra,13,1.2%,13,1.2%,1,0.6%,7.7%,0,0.0%,Grassy Seed,Speed Boost,Protect / Baton Pass / Calm Mind / Lumina Crash
+TM_FRANKFURT_2027,All_Rounds,61,Pawmot,13,1.2%,13,1.2%,1,0.6%,7.7%,0,0.0%,Focus Sash,Iron Fist,Close Combat / Double Shock / Fake Out / Revival Blessing
+TM_FRANKFURT_2027,All_Rounds,62,Sableye,13,1.2%,13,1.2%,1,0.6%,7.7%,0,0.0%,Light Clay,Prankster,Light Screen / Rain Dance / Reflect / Foul Play
+TM_FRANKFURT_2027,All_Rounds,63,Hydreigon,12,1.1%,12,1.1%,1,0.6%,8.3%,0,0.0%,Choice Scarf,Levitate,Dark Pulse / Draco Meteor / Earth Power / Snarl
+TM_FRANKFURT_2027,All_Rounds,64,Typhlosion-Hisui,11,1.0%,11,1.0%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Blaze,Eruption / Heat Wave / Shadow Ball / Overheat
+TM_FRANKFURT_2027,All_Rounds,65,Mawile-Mega,9,0.8%,9,0.8%,1,0.6%,11.1%,0,0.0%,Mawilite,Hyper Cutter,Play Rough / Sucker Punch / Protect / Iron Head
+TM_FRANKFURT_2027,All_Rounds,66,Talonflame,9,0.8%,9,0.8%,1,0.6%,11.1%,0,0.0%,Expert Belt,Gale Wings,Tailwind / Protect / Flare Blitz / Brave Bird
+TM_FRANKFURT_2027,All_Rounds,67,Rotom-Heat,8,0.7%,8,0.7%,1,0.6%,12.5%,0,0.0%,Passho Berry,Levitate,Overheat / Protect / Electroweb / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,68,Scovillain-Mega,8,0.7%,8,0.7%,0,0.0%,0.0%,0,0.0%,Scovillainite,Moody,Protect / Rage Powder / Giga Drain / Overheat
+TM_FRANKFURT_2027,All_Rounds,69,Kleavor,7,0.6%,7,0.6%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Sharpness,X-Scissor / Stone Axe / Night Slash / Protect
+TM_FRANKFURT_2027,All_Rounds,70,Tyranitar,7,0.6%,7,0.6%,0,0.0%,0.0%,0,0.0%,Chople Berry,Sand Stream,Knock Off / Rock Slide / Protect / Low Kick
+TM_FRANKFURT_2027,All_Rounds,71,Lycanroc-Dusk,7,0.6%,7,0.6%,0,0.0%,0.0%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Close Combat / Protect / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,72,Goodra-Hisui,6,0.5%,6,0.5%,1,0.6%,16.7%,0,0.0%,Leftovers,Shell Armor,Protect / Dragon Pulse / Flamethrower / Flash Cannon
+TM_FRANKFURT_2027,All_Rounds,73,Raichu-Mega-X,6,0.5%,6,0.5%,1,0.6%,16.7%,0,0.0%,Raichunite X,Lightning Rod,Fake Out / Protect / Volt Switch / Volt Tackle
+TM_FRANKFURT_2027,All_Rounds,74,Aerodactyl,6,0.5%,6,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_FRANKFURT_2027,All_Rounds,75,Toxapex,5,0.4%,5,0.4%,4,2.5%,80.0%,1,12.5%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,76,Mamoswine,5,0.4%,5,0.4%,1,0.6%,20.0%,0,0.0%,Focus Sash,Oblivious,High Horsepower / Ice Shard / Icicle Crash / Protect
+TM_FRANKFURT_2027,All_Rounds,77,Tsareena,5,0.4%,5,0.4%,1,0.6%,20.0%,0,0.0%,Wide Lens,Queenly Majesty,Protect / Triple Axel / Power Whip / High Jump Kick
+TM_FRANKFURT_2027,All_Rounds,78,Altaria,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Haban Berry,Cloud Nine,Ice Beam / Protect / Will-O-Wisp / Tailwind
+TM_FRANKFURT_2027,All_Rounds,79,Garchomp-Mega,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Garchompite,Rough Skin,Protect / Dragon Claw / Stomping Tantrum / Earthquake
+TM_FRANKFURT_2027,All_Rounds,80,Venusaur-Mega,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Venusaurite,Chlorophyll,Protect / Sludge Bomb / Earth Power / Giga Drain
+TM_FRANKFURT_2027,All_Rounds,81,Meganium-Mega,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Meganiumite,Leaf Guard,Dazzling Gleam / Protect / Weather Ball / Solar Beam
+TM_FRANKFURT_2027,All_Rounds,82,Empoleon,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Leftovers,Competitive,Flash Cannon / Hydro Pump / Protect / Ice Beam
+TM_FRANKFURT_2027,All_Rounds,83,Rotom-Wash,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Leftovers,Levitate,Will-O-Wisp / Protect / Hydro Pump / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,84,Weavile,5,0.4%,5,0.4%,0,0.0%,0.0%,0,0.0%,Focus Sash,Pickpocket,Knock Off / Fake Out / Protect / Ice Spinner
+TM_FRANKFURT_2027,All_Rounds,85,Aegislash,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Focus Sash,Stance Change,King’s Shield / Poltergeist / Shadow Sneak / Sacred Sword
+TM_FRANKFURT_2027,All_Rounds,86,Grapploct,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Life Orb,Technician,Storm Throw / Mach Punch / Detect / Stomping Tantrum
+TM_FRANKFURT_2027,All_Rounds,87,Maushold-Three,4,0.4%,4,0.4%,3,1.8%,75.0%,0,0.0%,Chople Berry,Friend Guard,Feint / Follow Me / Protect / Super Fang
+TM_FRANKFURT_2027,All_Rounds,88,Swampert,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Sitrus Berry,Torrent,Protect / High Horsepower / Wide Guard / Wave Crash
+TM_FRANKFURT_2027,All_Rounds,89,Sirfetch’d,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Focus Sash,Scrappy,Close Combat / Detect / Feint / Meteor Assault
+TM_FRANKFURT_2027,All_Rounds,90,Blaziken,4,0.4%,4,0.4%,1,0.6%,25.0%,0,0.0%,Focus Sash,Speed Boost,Aura Sphere / Coaching / Heat Wave / Protect
+TM_FRANKFURT_2027,All_Rounds,91,Meowstic-F-Mega,3,0.3%,3,0.3%,3,1.8%,100.0%,1,12.5%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,92,Altaria-Mega,3,0.3%,3,0.3%,1,0.6%,33.3%,0,0.0%,Altarianite,Cloud Nine,Draco Meteor / Hyper Voice / Perish Song / Protect
+TM_FRANKFURT_2027,All_Rounds,93,Klefki,3,0.3%,3,0.3%,1,0.6%,33.3%,0,0.0%,Light Clay,Prankster,Dazzling Gleam / Light Screen / Rain Dance / Reflect
+TM_FRANKFURT_2027,All_Rounds,94,Staraptor,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Intimidate,Final Gambit / U-turn / Close Combat / Brave Bird
+TM_FRANKFURT_2027,All_Rounds,95,Arcanine,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Intimidate,Extreme Speed / Flare Blitz / Protect / Howl
+TM_FRANKFURT_2027,All_Rounds,96,Abomasnow-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Abomasite,Snow Warning,Blizzard / Earth Power / Aurora Veil / Leaf Storm
+TM_FRANKFURT_2027,All_Rounds,97,Lopunny-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Lopunnite,Limber,Close Combat / Fake Out / Encore / Triple Axel
+TM_FRANKFURT_2027,All_Rounds,98,Meowscarada,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Protean,Flower Trick / Triple Axel / Knock Off / Protect
+TM_FRANKFURT_2027,All_Rounds,99,Hippowdon,2,0.2%,2,0.2%,1,0.6%,50.0%,0,0.0%,Leftovers,Sand Stream,High Horsepower / Protect / Yawn / Stone Edge
+TM_FRANKFURT_2027,All_Rounds,100,Ninetales,2,0.2%,2,0.2%,1,0.6%,50.0%,0,0.0%,Choice Scarf,Drought,Heat Wave / Solar Beam / Fake Tears / Overheat
+TM_FRANKFURT_2027,All_Rounds,101,Persian-Alola,2,0.2%,2,0.2%,1,0.6%,50.0%,0,0.0%,Choice Scarf,Fur Coat,Charm / Foul Play / Snarl / Switcheroo
+TM_FRANKFURT_2027,All_Rounds,102,Vanilluxe,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Icy Wind / Sheer Cold
+TM_FRANKFURT_2027,All_Rounds,103,Scizor,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Expert Belt,Technician,Bullet Punch / Protect / Iron Head / X-Scissor
+TM_FRANKFURT_2027,All_Rounds,104,Delphox,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Magician,Expanding Force / Heat Wave / Protect / Encore
+TM_FRANKFURT_2027,All_Rounds,105,Dragonite,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Inner Focus,Tailwind / Dragon Claw / Fire Punch / Protect
+TM_FRANKFURT_2027,All_Rounds,106,Aggron-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Aggronite,Sturdy,Body Press / Heavy Slam / Iron Defense / Protect
+TM_FRANKFURT_2027,All_Rounds,107,Alakazam-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Alakazite,Magic Guard,Encore / Expanding Force / Focus Blast / Protect
+TM_FRANKFURT_2027,All_Rounds,108,Chandelure,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Charcoal,Flash Fire,Protect / Shadow Ball / Heat Wave / Trick Room
+TM_FRANKFURT_2027,All_Rounds,109,Tinkaton,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Mold Breaker,Fake Out / Gigaton Hammer / Helping Hand / Protect
+TM_FRANKFURT_2027,All_Rounds,110,Araquanid,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Water Bubble,Liquidation / Protect / Wide Guard / Leech Life
+TM_FRANKFURT_2027,All_Rounds,111,Scrafty-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Scraftinite,Intimidate,Fake Out / Protect / Drain Punch / Throat Chop
+TM_FRANKFURT_2027,All_Rounds,112,Mimikyu,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Spell Tag,Disguise,Protect / Shadow Claw / Shadow Sneak / Wood Hammer
+TM_FRANKFURT_2027,All_Rounds,113,Greninja-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Greninjite,Protean,Gunk Shot / Protect / Rock Slide / Water Shuriken
+TM_FRANKFURT_2027,All_Rounds,114,Ditto,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Imposter,Transform
+TM_FRANKFURT_2027,All_Rounds,115,Toxtricity,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Punk Rock,Overdrive / Boomburst / Protect / Psychic Noise
+TM_FRANKFURT_2027,All_Rounds,116,Excadrill-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Excadrite,Sand Rush,High Horsepower / Iron Head / Protect / Swords Dance
+TM_FRANKFURT_2027,All_Rounds,117,Hawlucha,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Unburden,Acrobatics / Close Combat / Coaching / Encore
+TM_FRANKFURT_2027,All_Rounds,118,Heracross-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Heracronite,Moxie,Close Combat / Pin Missile / Rock Blast / Detect
+TM_FRANKFURT_2027,All_Rounds,119,Gallade,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Iron Ball,Sharpness,Protect / Psycho Cut / Sacred Sword / Trick Room
+TM_FRANKFURT_2027,All_Rounds,120,Baxcalibur,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Thermal Exchange,Icicle Crash / Glaive Rush / Ice Shard / Stomping Tantrum
+TM_FRANKFURT_2027,All_Rounds,121,Gliscor,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Soft Sand,Hyper Cutter,High Horsepower / Protect / Rock Slide / Tailwind
+TM_FRANKFURT_2027,All_Rounds,122,Inteleon,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sniper,Ice Beam / Protect / Snipe Shot / Focus Energy
+TM_FRANKFURT_2027,All_Rounds,123,Runerigus,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Wandering Spirit,Ally Switch / Earthquake / Trick Room / Will-O-Wisp
+TM_FRANKFURT_2027,All_Rounds,124,Ampharos-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Ampharosite,Static,Dragon Pulse / Protect / Focus Blast / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,125,Cofagrigus,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Mental Herb,Mummy,Trick Room / Will-O-Wisp / Destiny Bond / Night Shade
+TM_FRANKFURT_2027,All_Rounds,126,Farfetch’d,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Inner Focus,Brave Bird / Close Combat / Simple Beam / U-turn
+TM_FRANKFURT_2027,All_Rounds,127,Azumarill,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Sitrus Berry,Huge Power,Aqua Jet / Belly Drum / Play Rough / Protect
+TM_FRANKFURT_2027,All_Rounds,128,Kangaskhan-Mega,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Kangaskhanite,Scrappy,Crunch / Double-Edge / Fake Out / Hammer Arm
+TM_FRANKFURT_2027,All_Rounds,129,Tauros-Paldea-Aqua,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Focus Sash,Intimidate,Aqua Jet / Close Combat / Protect / Raging Bull
+TM_FRANKFURT_2027,All_Rounds,130,Overqwil,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Life Orb,Swift Swim,Gunk Shot / Protect / Taunt / Throat Chop
+TM_FRANKFURT_2027,All_Rounds,131,Sceptile-Mega,1,0.1%,1,0.1%,1,0.6%,100.0%,0,0.0%,Sceptilite,Overgrow,Detect / Dragon Pulse / Earth Power / Energy Ball
+TM_FRANKFURT_2027,All_Rounds,132,Drampa,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Cloud Nine,Dragon Pulse / Energy Ball / Flamethrower / Protect
+TM_FRANKFURT_2027,All_Rounds,133,Clefable,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Unaware,Follow Me / Helping Hand / Moonblast / Protect
+TM_FRANKFURT_2027,All_Rounds,134,Rhyperior,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Solid Rock,High Horsepower / Ice Punch / Protect / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,135,Audino-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Audinite,Regenerator,Dazzling Gleam / Life Dew / Rain Dance / Trick Room
+TM_FRANKFURT_2027,All_Rounds,136,Kangaskhan,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Silk Scarf,Scrappy,Fake Out / Last Resort
+TM_FRANKFURT_2027,All_Rounds,137,Chandelure-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chandelurite,Flash Fire,Heat Wave / Protect / Shadow Ball / Trick Room
+TM_FRANKFURT_2027,All_Rounds,138,Musharna,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Mental Herb,Telepathy,Helping Hand / Psychic / Rock Tomb / Trick Room
+TM_FRANKFURT_2027,All_Rounds,139,Palafin,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Zero to Hero,Ice Punch / Jet Punch / Protect / Wave Crash
+TM_FRANKFURT_2027,All_Rounds,140,Gallade-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Galladite,Sharpness,Psycho Cut / Sacred Sword / Trick Room / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,141,Chesnaught,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Quick Claw,Bulletproof,Body Press / Leech Seed / Spiky Shield / Taunt
+TM_FRANKFURT_2027,All_Rounds,142,Jolteon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Volt Absorb,Alluring Voice / Detect / Rising Voltage / Shadow Ball
+TM_FRANKFURT_2027,All_Rounds,143,Bellibolt,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Electromorphosis,Parabolic Charge / Protect / Soak / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,144,Toxtricity-Low-Key,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Punk Rock,Overdrive / Protect / Sludge Bomb / Snarl
+TM_FRANKFURT_2027,All_Rounds,145,Zoroark,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Illusion,Dark Pulse / Encore / Protect / Snarl
+TM_FRANKFURT_2027,All_Rounds,146,Golurk-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Golurkite,Iron Fist,Headlong Rush / Ice Punch / Poltergeist / Protect
+TM_FRANKFURT_2027,All_Rounds,147,Mr. Rime,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Never-Melt Ice,Screen Cleaner,Expanding Force / Fake Out / Freeze-Dry / Trick Room
+TM_FRANKFURT_2027,All_Rounds,148,Charizard-Mega-X,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Charizardite X,Blaze,Breaking Swipe / Dragon Dance / Flare Blitz / Protect
+TM_FRANKFURT_2027,All_Rounds,149,Crabominable-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Crabominite,Hyper Cutter,Drain Punch / Ice Hammer / Rock Slide / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,150,Oranguru,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Iron Ball,Inner Focus,After You / Instruct / Thunderbolt / Trick Room
+TM_FRANKFURT_2027,All_Rounds,151,Metagross,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Expert Belt,Clear Body,Bullet Punch / Protect / Psychic Fangs / Stomping Tantrum
+TM_FRANKFURT_2027,All_Rounds,152,Zoroark-Hisui,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Illusion,Bitter Malice / Hyper Beam / Hyper Voice / Icy Wind
+TM_FRANKFURT_2027,All_Rounds,153,Avalugg-Hisui,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Quick Claw,Sturdy,Body Press / Mirror Coat / Rock Slide / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,154,Crabominable,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Anger Point,Drain Punch / Ice Punch / Mach Punch / Thunder Punch
+TM_FRANKFURT_2027,All_Rounds,155,Beartic,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Wide Lens,Slush Rush,Close Combat / Frost Breath / Icicle Crash / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,156,Pidgeot-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Pidgeotite,Keen Eye,Hurricane / Hyper Beam / Protect / Tailwind
+TM_FRANKFURT_2027,All_Rounds,157,Greninja,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Protean,Dark Pulse / Grass Knot / Ice Beam / Surf
+TM_FRANKFURT_2027,All_Rounds,158,Feraligatr,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Sheer Force,Aqua Jet / Ice Punch / Liquidation / Protect
+TM_FRANKFURT_2027,All_Rounds,159,Steelix-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Steelixite,Sturdy,Earthquake / Ice Fang / Stone Edge / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,160,Alakazam,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Magic Guard,Dazzling Gleam / Expanding Force / Nasty Plot / Protect
+TM_FRANKFURT_2027,All_Rounds,161,Arbok,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Intimidate,Coil / Earthquake / Gunk Shot / Leech Life
+TM_FRANKFURT_2027,All_Rounds,162,Torterra,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,White Herb,Shell Armor,Earthquake / Protect / Rock Slide / Shell Smash
+TM_FRANKFURT_2027,All_Rounds,163,Chimecho-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chimechite,Levitate,Calm Mind / Dazzling Gleam / Heal Pulse / Trick Room
+TM_FRANKFURT_2027,All_Rounds,164,Alcremie,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Aroma Veil,Dazzling Gleam / Decorate / Protect / Psych Up
+TM_FRANKFURT_2027,All_Rounds,165,Skarmory-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Skarmorite,Weak Armor,Brave Bird / Iron Head / Protect / Tailwind
+TM_FRANKFURT_2027,All_Rounds,166,Umbreon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Inner Focus,Detect / Foul Play / Snarl / Yawn
+TM_FRANKFURT_2027,All_Rounds,167,Infernape,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Iron Fist,Drain Punch / Fake Out / Fire Punch / Thunder Punch
+TM_FRANKFURT_2027,All_Rounds,168,Aromatisse,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Aroma Veil,Dazzling Gleam / Moonblast / Thunder / Trick Room
+TM_FRANKFURT_2027,All_Rounds,169,Mudsdale,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Quick Claw,Stamina,Close Combat / Earthquake / High Horsepower / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,170,Dragalge,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Adaptability,Dragon Pulse / Protect / Sludge Bomb / Thunderbolt
+TM_FRANKFURT_2027,All_Rounds,171,Barbaracle-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Barbaracite,Tough Claws,Close Combat / Poison Jab / Protect / Rock Slide
+TM_FRANKFURT_2027,All_Rounds,172,Bastiodon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Sturdy,Body Press / Iron Defense / Protect / Wide Guard
+TM_FRANKFURT_2027,All_Rounds,173,Gengar,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Cursed Body,Focus Blast / Protect / Shadow Ball / Sludge Wave
+TM_FRANKFURT_2027,All_Rounds,174,Conkeldurr,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Iron Fist,Drain Punch / Ice Punch / Mach Punch / Thunder Punch
+TM_LOUISVILLE_2027,All_Rounds,1,Rillaboom,463,45.7%,463,45.7%,59,41.5%,12.7%,3,37.5%,Miracle Seed,Grassy Surge,Grassy Glide / Fake Out / Wood Hammer / High Horsepower
+TM_LOUISVILLE_2027,All_Rounds,2,Incineroar,385,38.0%,385,38.0%,54,38.0%,14.0%,2,25.0%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Darkest Lariat
+TM_LOUISVILLE_2027,All_Rounds,3,Sneasler,364,35.9%,364,35.9%,51,35.9%,14.0%,4,50.0%,White Herb,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_LOUISVILLE_2027,All_Rounds,4,Garchomp-Mega-Z,267,26.4%,267,26.4%,32,22.5%,12.0%,1,12.5%,Garchompite Z,Rough Skin,Protect / Power Gem / Earth Power / Dragon Pulse
+TM_LOUISVILLE_2027,All_Rounds,5,Raichu-Mega-Y,256,25.3%,256,25.3%,37,26.1%,14.5%,0,0.0%,Raichunite Y,Lightning Rod,Zap Cannon / Focus Blast / Protect / Fake Out
+TM_LOUISVILLE_2027,All_Rounds,6,Kingambit,230,22.7%,230,22.7%,42,29.6%,18.3%,2,25.0%,Life Orb,Defiant,Sucker Punch / Kowtow Cleave / Protect / Iron Head
+TM_LOUISVILLE_2027,All_Rounds,7,Gholdengo,214,21.1%,214,21.1%,22,15.5%,10.3%,2,25.0%,Life Orb,Good as Gold,Shadow Ball / Make It Rain / Protect / Nasty Plot
+TM_LOUISVILLE_2027,All_Rounds,8,Archaludon,206,20.3%,206,20.3%,34,23.9%,16.5%,4,50.0%,Leftovers,Stamina,Protect / Electro Shot / Dragon Pulse / Flash Cannon
+TM_LOUISVILLE_2027,All_Rounds,9,Pelipper,186,18.4%,186,18.4%,27,19.0%,14.5%,3,37.5%,Sitrus Berry,Drizzle,Hurricane / Weather Ball / Tailwind / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,10,Charizard-Mega-Y,178,17.6%,178,17.6%,35,24.6%,19.7%,3,37.5%,Charizardite Y,Blaze,Heat Wave / Protect / Weather Ball / Hurricane
+TM_LOUISVILLE_2027,All_Rounds,11,Volcarona,175,17.3%,175,17.3%,23,16.2%,13.1%,0,0.0%,Grassy Seed,Flame Body,Protect / Rage Powder / Struggle Bug / Quiver Dance
+TM_LOUISVILLE_2027,All_Rounds,12,Basculegion,149,14.7%,149,14.7%,34,23.9%,22.8%,2,25.0%,Choice Scarf,Adaptability,Last Respects / Wave Crash / Aqua Jet / Flip Turn
+TM_LOUISVILLE_2027,All_Rounds,13,Farigiraf,146,14.4%,146,14.4%,20,14.1%,13.7%,2,25.0%,Sitrus Berry,Armor Tail,Trick Room / Helping Hand / Psychic / Protect
+TM_LOUISVILLE_2027,All_Rounds,14,Floette-Mega,145,14.3%,145,14.3%,22,15.5%,15.2%,2,25.0%,Floettite,Flower Veil,Protect / Dazzling Gleam / Calm Mind / Moonblast
+TM_LOUISVILLE_2027,All_Rounds,15,Garchomp,138,13.6%,138,13.6%,29,20.4%,21.0%,3,37.5%,Choice Scarf,Rough Skin,Dragon Claw / Stomping Tantrum / Rock Slide / Earthquake
+TM_LOUISVILLE_2027,All_Rounds,16,Indeedee-F,136,13.4%,136,13.4%,17,12.0%,12.5%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Helping Hand / Psychic / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,17,Salamence-Mega,131,12.9%,131,12.9%,17,12.0%,13.0%,2,25.0%,Salamencite,Intimidate,Hyper Voice / Protect / Draco Meteor / Tailwind
+TM_LOUISVILLE_2027,All_Rounds,18,Golisopod-Mega,112,11.1%,112,11.1%,14,9.9%,12.5%,1,12.5%,Golisopite,Emergency Exit,Leech Life / Iron Head / Protect / Sucker Punch
+TM_LOUISVILLE_2027,All_Rounds,19,Venusaur,103,10.2%,103,10.2%,22,15.5%,21.4%,3,37.5%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Sleep Powder / Leaf Storm
+TM_LOUISVILLE_2027,All_Rounds,20,Sylveon,102,10.1%,102,10.1%,15,10.6%,14.7%,1,12.5%,Fairy Feather,Pixilate,Hyper Voice / Detect / Hyper Beam / Quick Attack
+TM_LOUISVILLE_2027,All_Rounds,21,Arcanine-Hisui,102,10.1%,102,10.1%,10,7.0%,9.8%,0,0.0%,Focus Sash,Rock Head,Flare Blitz / Protect / Head Smash / Extreme Speed
+TM_LOUISVILLE_2027,All_Rounds,22,Grimmsnarl,91,9.0%,91,9.0%,9,6.3%,9.9%,2,25.0%,Light Clay,Prankster,Light Screen / Reflect / Parting Shot / Spirit Break
+TM_LOUISVILLE_2027,All_Rounds,23,Staraptor-Mega,90,8.9%,90,8.9%,8,5.6%,8.9%,1,12.5%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_LOUISVILLE_2027,All_Rounds,24,Delphox-Mega,86,8.5%,86,8.5%,14,9.9%,16.3%,0,0.0%,Delphoxite,Blaze,Heat Wave / Protect / Nasty Plot / Psychic
+TM_LOUISVILLE_2027,All_Rounds,25,Milotic,83,8.2%,83,8.2%,7,4.9%,8.4%,0,0.0%,Leftovers,Competitive,Protect / Ice Beam / Scald / Muddy Water
+TM_LOUISVILLE_2027,All_Rounds,26,Sinistcha,81,8.0%,81,8.0%,11,7.7%,13.6%,1,12.5%,Colbur Berry,Hospitality,Matcha Gotcha / Rage Powder / Protect / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,27,Kommo-o,65,6.4%,65,6.4%,14,9.9%,21.5%,0,0.0%,Leftovers,Soundproof,Protect / Clanging Scales / Aura Sphere / Clangorous Soul
+TM_LOUISVILLE_2027,All_Rounds,28,Whimsicott,64,6.3%,64,6.3%,9,6.3%,14.1%,0,0.0%,Focus Sash,Prankster,Tailwind / Moonblast / Encore / Protect
+TM_LOUISVILLE_2027,All_Rounds,29,Primarina,63,6.2%,63,6.2%,10,7.0%,15.9%,0,0.0%,Leftovers,Liquid Voice,Hyper Voice / Moonblast / Protect / Calm Mind
+TM_LOUISVILLE_2027,All_Rounds,30,Tyranitar-Mega,61,6.0%,61,6.0%,3,2.1%,4.9%,0,0.0%,Tyranitarite,Sand Stream,Protect / Rock Slide / Knock Off / Low Kick
+TM_LOUISVILLE_2027,All_Rounds,31,Indeedee,58,5.7%,58,5.7%,5,3.5%,8.6%,0,0.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Protect / Trick
+TM_LOUISVILLE_2027,All_Rounds,32,Gardevoir-Mega,58,5.7%,58,5.7%,9,6.3%,15.5%,0,0.0%,Gardevoirite,Trace,Hyper Voice / Protect / Expanding Force / Calm Mind
+TM_LOUISVILLE_2027,All_Rounds,33,Excadrill,56,5.5%,56,5.5%,3,2.1%,5.4%,0,0.0%,Focus Sash,Sand Rush,High Horsepower / Iron Head / Protect / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,34,Metagross-Mega,55,5.4%,55,5.4%,5,3.5%,9.1%,0,0.0%,Metagrossite,Clear Body,Protect / Psychic Fangs / Stomping Tantrum / Steel Roller
+TM_LOUISVILLE_2027,All_Rounds,35,Politoed,51,5.0%,51,5.0%,9,6.3%,17.6%,1,12.5%,Mystic Water,Drizzle,Protect / Weather Ball / Muddy Water / Ice Beam
+TM_LOUISVILLE_2027,All_Rounds,36,Froslass-Mega,48,4.7%,48,4.7%,10,7.0%,20.8%,0,0.0%,Froslassite,Cursed Body,Blizzard / Protect / Shadow Ball / Aurora Veil
+TM_LOUISVILLE_2027,All_Rounds,37,Dragonite-Mega,47,4.6%,47,4.6%,6,4.2%,12.8%,1,12.5%,Dragoninite,Inner Focus,Dragon Pulse / Protect / Tailwind / Heat Wave
+TM_LOUISVILLE_2027,All_Rounds,38,Gengar-Mega,41,4.0%,41,4.0%,5,3.5%,12.2%,0,0.0%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_LOUISVILLE_2027,All_Rounds,39,Swampert-Mega,39,3.8%,39,3.8%,6,4.2%,15.4%,1,12.5%,Swampertite,Torrent,Protect / Wave Crash / Ice Punch / Earthquake
+TM_LOUISVILLE_2027,All_Rounds,40,Basculegion-F,34,3.4%,34,3.4%,8,5.6%,23.5%,0,0.0%,Focus Sash,Swift Swim,Ice Beam / Shadow Ball / Protect / Muddy Water
+TM_LOUISVILLE_2027,All_Rounds,41,Torkoal,34,3.4%,34,3.4%,7,4.9%,20.6%,0,0.0%,Charcoal,Drought,Eruption / Protect / Weather Ball / Earth Power
+TM_LOUISVILLE_2027,All_Rounds,42,Armarouge,32,3.2%,32,3.2%,5,3.5%,15.6%,0,0.0%,Focus Sash,Flash Fire,Expanding Force / Armor Cannon / Protect / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,43,Corviknight,29,2.9%,29,2.9%,2,1.4%,6.9%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Roost / Bulk Up / Power Trip
+TM_LOUISVILLE_2027,All_Rounds,44,Glimmora-Mega,27,2.7%,27,2.7%,7,4.9%,25.9%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Spiky Shield / Sludge Bomb
+TM_LOUISVILLE_2027,All_Rounds,45,Annihilape,23,2.3%,23,2.3%,5,3.5%,21.7%,0,0.0%,Choice Scarf,Defiant,Close Combat / Drain Punch / Protect / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,46,Ninetales-Alola,23,2.3%,23,2.3%,0,0.0%,0.0%,0,0.0%,Light Clay,Snow Warning,Blizzard / Aurora Veil / Protect / Moonblast
+TM_LOUISVILLE_2027,All_Rounds,47,Aerodactyl-Mega,22,2.2%,22,2.2%,4,2.8%,18.2%,0,0.0%,Aerodactylite,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_LOUISVILLE_2027,All_Rounds,48,Dragapult,22,2.2%,22,2.2%,2,1.4%,9.1%,0,0.0%,Life Orb,Infiltrator,Protect / Draco Meteor / Shadow Ball / Will-O-Wisp
+TM_LOUISVILLE_2027,All_Rounds,49,Toxapex,21,2.1%,21,2.1%,6,4.2%,28.6%,0,0.0%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,50,Pyroar-Mega,18,1.8%,18,1.8%,2,1.4%,11.1%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Protect / Overheat / Scorching Sands
+TM_LOUISVILLE_2027,All_Rounds,51,Ceruledge,18,1.8%,18,1.8%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Shadow Sneak / Protect / Swords Dance
+TM_LOUISVILLE_2027,All_Rounds,52,Glimmora,14,1.4%,14,1.4%,2,1.4%,14.3%,0,0.0%,Focus Sash,Toxic Debris,Earth Power / Power Gem / Spiky Shield / Sludge Bomb
+TM_LOUISVILLE_2027,All_Rounds,53,Talonflame,14,1.4%,14,1.4%,3,2.1%,21.4%,0,0.0%,Sharp Beak,Gale Wings,Tailwind / Protect / Flare Blitz / Brave Bird
+TM_LOUISVILLE_2027,All_Rounds,54,Lucario-Mega-Z,14,1.4%,14,1.4%,0,0.0%,0.0%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Flash Cannon / Detect / Dark Pulse
+TM_LOUISVILLE_2027,All_Rounds,55,Blastoise-Mega,13,1.3%,13,1.3%,3,2.1%,23.1%,0,0.0%,Blastoisinite,Rain Dish,Water Spout / Protect / Shell Smash / Terrain Pulse
+TM_LOUISVILLE_2027,All_Rounds,56,Camerupt-Mega,13,1.3%,13,1.3%,1,0.7%,7.7%,0,0.0%,Cameruptite,Solid Rock,Earth Power / Heat Wave / Ancient Power / Protect
+TM_LOUISVILLE_2027,All_Rounds,57,Tyranitar,13,1.3%,13,1.3%,1,0.7%,7.7%,0,0.0%,Chople Berry,Sand Stream,Knock Off / Rock Slide / Low Kick / Protect
+TM_LOUISVILLE_2027,All_Rounds,58,Pawmot,12,1.2%,12,1.2%,1,0.7%,8.3%,0,0.0%,Focus Sash,Iron Fist,Close Combat / Double Shock / Revival Blessing / Fake Out
+TM_LOUISVILLE_2027,All_Rounds,59,Raichu-Mega-X,11,1.1%,11,1.1%,3,2.1%,27.3%,1,12.5%,Raichunite X,Lightning Rod,Fake Out / Volt Tackle / Protect / Volt Switch
+TM_LOUISVILLE_2027,All_Rounds,60,Aerodactyl,11,1.1%,11,1.1%,1,0.7%,9.1%,0,0.0%,Focus Sash,Unnerve,Rock Slide / Tailwind / Dual Wingbeat / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,61,Lopunny-Mega,11,1.1%,11,1.1%,1,0.7%,9.1%,0,0.0%,Lopunnite,Limber,Fake Out / Triple Axel / Close Combat / Protect
+TM_LOUISVILLE_2027,All_Rounds,62,Blaziken-Mega,10,1.0%,10,1.0%,1,0.7%,10.0%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Flare Blitz / Rock Slide / Detect
+TM_LOUISVILLE_2027,All_Rounds,63,Vivillon,9,0.9%,9,0.9%,2,1.4%,22.2%,0,0.0%,Focus Sash,Compound Eyes,Hurricane / Protect / Sleep Powder / Rage Powder
+TM_LOUISVILLE_2027,All_Rounds,64,Meganium-Mega,8,0.8%,8,0.8%,0,0.0%,0.0%,0,0.0%,Meganiumite,Overgrow,Dazzling Gleam / Protect / Solar Beam / Weather Ball
+TM_LOUISVILLE_2027,All_Rounds,65,Hydreigon,8,0.8%,8,0.8%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Dark Pulse / Draco Meteor / Snarl / Earth Power
+TM_LOUISVILLE_2027,All_Rounds,66,Baxcalibur-Mega,7,0.7%,7,0.7%,1,0.7%,14.3%,0,0.0%,Baxcalibrite,Thermal Exchange,Ice Shard / Protect / Glaive Rush / Swords Dance
+TM_LOUISVILLE_2027,All_Rounds,67,Overqwil,7,0.7%,7,0.7%,2,1.4%,28.6%,0,0.0%,Life Orb,Swift Swim,Throat Chop / Protect / Liquidation / Poison Jab
+TM_LOUISVILLE_2027,All_Rounds,68,Hatterene,7,0.7%,7,0.7%,1,0.7%,14.3%,0,0.0%,Life Orb,Magic Bounce,Dazzling Gleam / Expanding Force / Protect / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,69,Meowstic-F-Mega,7,0.7%,7,0.7%,1,0.7%,14.3%,0,0.0%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_LOUISVILLE_2027,All_Rounds,70,Absol-Mega-Z,7,0.7%,7,0.7%,0,0.0%,0.0%,0,0.0%,Absolite Z,Justified,Night Slash / Detect / Close Combat / Shadow Claw
+TM_LOUISVILLE_2027,All_Rounds,71,Dragonite,7,0.7%,7,0.7%,0,0.0%,0.0%,0,0.0%,Life Orb,Inner Focus,Rock Slide / Stomping Tantrum / Dragon Dance / Scale Shot
+TM_LOUISVILLE_2027,All_Rounds,72,Swampert,6,0.6%,6,0.6%,2,1.4%,33.3%,0,0.0%,Sitrus Berry,Torrent,High Horsepower / Wave Crash / Ice Punch / Protect
+TM_LOUISVILLE_2027,All_Rounds,73,Rotom-Heat,6,0.6%,6,0.6%,1,0.7%,16.7%,0,0.0%,Choice Scarf,Levitate,Overheat / Volt Switch / Thunderbolt / Electroweb
+TM_LOUISVILLE_2027,All_Rounds,74,Maushold,6,0.6%,6,0.6%,1,0.7%,16.7%,0,0.0%,Wide Lens,Friend Guard,Follow Me / Protect / Super Fang / Feint
+TM_LOUISVILLE_2027,All_Rounds,75,Meowscarada,6,0.6%,6,0.6%,1,0.7%,16.7%,0,0.0%,Choice Scarf,Protean,Flower Trick / U-turn / Knock Off / Triple Axel
+TM_LOUISVILLE_2027,All_Rounds,76,Hippowdon,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Leftovers,Sand Stream,High Horsepower / Protect / Yawn / Stone Edge
+TM_LOUISVILLE_2027,All_Rounds,77,Mimikyu,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Rocky Helmet,Disguise,Play Rough / Trick Room / Shadow Sneak / Curse
+TM_LOUISVILLE_2027,All_Rounds,78,Espathra,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Electric Seed,Speed Boost,Lumina Crash / Protect / Baton Pass / Calm Mind
+TM_LOUISVILLE_2027,All_Rounds,79,Typhlosion-Hisui,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Frisk,Eruption / Shadow Ball / Heat Wave / Focus Blast
+TM_LOUISVILLE_2027,All_Rounds,80,Sableye,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Roseli Berry,Prankster,Light Screen / Rain Dance / Reflect / Encore
+TM_LOUISVILLE_2027,All_Rounds,81,Venusaur-Mega,6,0.6%,6,0.6%,0,0.0%,0.0%,0,0.0%,Venusaurite,Chlorophyll,Earth Power / Giga Drain / Protect / Sludge Bomb
+TM_LOUISVILLE_2027,All_Rounds,82,Gliscor,5,0.5%,5,0.5%,1,0.7%,20.0%,0,0.0%,Psychic Seed,Hyper Cutter,High Horsepower / Protect / Tailwind / Acrobatics
+TM_LOUISVILLE_2027,All_Rounds,83,Mawile-Mega,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Mawilite,Hyper Cutter,Play Rough / Protect / Iron Head / Sucker Punch
+TM_LOUISVILLE_2027,All_Rounds,84,Rotom-Wash,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Leftovers,Levitate,Hydro Pump / Thunderbolt / Will-O-Wisp / Protect
+TM_LOUISVILLE_2027,All_Rounds,85,Baxcalibur,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Life Orb,Thermal Exchange,Glaive Rush / Protect / High Horsepower / Ice Shard
+TM_LOUISVILLE_2027,All_Rounds,86,Grapploct,5,0.5%,5,0.5%,0,0.0%,0.0%,0,0.0%,Life Orb,Technician,Mach Punch / Storm Throw / Detect / Stomping Tantrum
+TM_LOUISVILLE_2027,All_Rounds,87,Alcremie,4,0.4%,4,0.4%,1,0.7%,25.0%,0,0.0%,Rocky Helmet,Sweet Veil,Decorate / Dazzling Gleam / Mystical Fire / Protect
+TM_LOUISVILLE_2027,All_Rounds,88,Garchomp-Mega,4,0.4%,4,0.4%,1,0.7%,25.0%,0,0.0%,Garchompite,Rough Skin,Protect / Dragon Pulse / Earth Power / Power Gem
+TM_LOUISVILLE_2027,All_Rounds,89,Scovillain-Mega,4,0.4%,4,0.4%,1,0.7%,25.0%,0,0.0%,Scovillainite,Moody,Protect / Rage Powder / Overheat / Giga Drain
+TM_LOUISVILLE_2027,All_Rounds,90,Kleavor,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sharpness,Stone Axe / X-Scissor / Feint / Protect
+TM_LOUISVILLE_2027,All_Rounds,91,Altaria-Mega,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Altarianite,Cloud Nine,Hyper Voice / Protect / Tailwind / Will-O-Wisp
+TM_LOUISVILLE_2027,All_Rounds,92,Raichu,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Focus Sash,Lightning Rod,Fake Out / Volt Switch / Protect / Nuzzle
+TM_LOUISVILLE_2027,All_Rounds,93,Altaria,4,0.4%,4,0.4%,0,0.0%,0.0%,0,0.0%,Haban Berry,Cloud Nine,Ice Beam / Protect / Tailwind / Will-O-Wisp
+TM_LOUISVILLE_2027,All_Rounds,94,Tsareena,3,0.3%,3,0.3%,1,0.7%,33.3%,0,0.0%,Choice Scarf,Queenly Majesty,Triple Axel / Power Whip / Protect / Aromatic Mist
+TM_LOUISVILLE_2027,All_Rounds,95,Krookodile,3,0.3%,3,0.3%,1,0.7%,33.3%,0,0.0%,Choice Scarf,Intimidate,High Horsepower / Rock Tomb / Knock Off / Crunch
+TM_LOUISVILLE_2027,All_Rounds,96,Clefable,3,0.3%,3,0.3%,1,0.7%,33.3%,0,0.0%,Sitrus Berry,Unaware,Follow Me / Helping Hand / Moonblast / Protect
+TM_LOUISVILLE_2027,All_Rounds,97,Ninetales,3,0.3%,3,0.3%,1,0.7%,33.3%,0,0.0%,Focus Sash,Drought,Protect / Helping Hand / Snarl / Weather Ball
+TM_LOUISVILLE_2027,All_Rounds,98,Lycanroc-Dusk,3,0.3%,3,0.3%,1,0.7%,33.3%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Protect / Rock Slide / Close Combat
+TM_LOUISVILLE_2027,All_Rounds,99,Chesnaught-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Chesnaughtite,Bulletproof,Spiky Shield / Body Press / Wood Hammer / Leech Seed
+TM_LOUISVILLE_2027,All_Rounds,100,Drampa,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Cloud Nine,Earth Power / Flamethrower / Hyper Voice / Protect
+TM_LOUISVILLE_2027,All_Rounds,101,Zoroark-Hisui,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Expert Belt,Illusion,Shadow Ball / Icy Wind / Hyper Beam / Protect
+TM_LOUISVILLE_2027,All_Rounds,102,Steelix-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Steelixite,Sturdy,Heavy Slam / Earthquake / High Horsepower / Protect
+TM_LOUISVILLE_2027,All_Rounds,103,Araquanid,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Water Bubble,Liquidation / Wide Guard / Leech Life / Protect
+TM_LOUISVILLE_2027,All_Rounds,104,Salamence,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Muscle Band,Intimidate,Tailwind / Protect / Draco Meteor / Aerial Ace
+TM_LOUISVILLE_2027,All_Rounds,105,Empoleon,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Shuca Berry,Competitive,Protect / Ice Beam / Surf / Weather Ball
+TM_LOUISVILLE_2027,All_Rounds,106,Tinkaton,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Own Tempo,Gigaton Hammer / Fake Out / Play Rough / Protect
+TM_LOUISVILLE_2027,All_Rounds,107,Greninja-Mega,2,0.2%,2,0.2%,1,0.7%,50.0%,0,0.0%,Greninjite,Protean,Dark Pulse / Ice Beam / Gunk Shot / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,108,Samurott-Hisui,2,0.2%,2,0.2%,1,0.7%,50.0%,0,0.0%,Focus Sash,Sharpness,Aqua Cutter / Detect / Night Slash / Sacred Sword
+TM_LOUISVILLE_2027,All_Rounds,109,Sceptile-Mega,2,0.2%,2,0.2%,1,0.7%,50.0%,0,0.0%,Sceptilite,Overgrow,Detect / Dragon Pulse / Earth Power / Energy Ball
+TM_LOUISVILLE_2027,All_Rounds,110,Kangaskhan-Mega,2,0.2%,2,0.2%,1,0.7%,50.0%,0,0.0%,Kangaskhanite,Scrappy,Double-Edge / Fake Out / Hammer Arm / Rock Tomb
+TM_LOUISVILLE_2027,All_Rounds,111,Aegislash,2,0.2%,2,0.2%,1,0.7%,50.0%,0,0.0%,Leftovers,Stance Change,Flash Cannon / King’s Shield / Shadow Ball / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,112,Vanilluxe,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Icy Wind / Sheer Cold
+TM_LOUISVILLE_2027,All_Rounds,113,Klefki,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Shuca Berry,Prankster,Light Screen / Protect / Rain Dance / Skitter Smack
+TM_LOUISVILLE_2027,All_Rounds,114,Rampardos,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Sheer Force,Fire Punch / Protect / Rock Slide / Thunder Punch
+TM_LOUISVILLE_2027,All_Rounds,115,Slowbro-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Slowbronite,Regenerator,Calm Mind / Expanding Force / Muddy Water / Protect
+TM_LOUISVILLE_2027,All_Rounds,116,Alakazam-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Alakazite,Inner Focus,Expanding Force / Protect / Future Sight / Speed Swap
+TM_LOUISVILLE_2027,All_Rounds,117,Sableye-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sablenite,Prankster,Encore / Light Screen / Throat Chop / Will-O-Wisp
+TM_LOUISVILLE_2027,All_Rounds,118,Pincurchin,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Electric Surge,Protect / Rising Voltage / Scald / Sucker Punch
+TM_LOUISVILLE_2027,All_Rounds,119,Mamoswine,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Oblivious,High Horsepower / Ice Shard / Icicle Crash / Protect
+TM_LOUISVILLE_2027,All_Rounds,120,Charizard-Mega-X,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Charizardite X,Blaze,Dragon Claw / Dragon Dance / Protect / Flare Blitz
+TM_LOUISVILLE_2027,All_Rounds,121,Abomasnow-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Abomasite,Snow Warning,Blizzard / Protect / Earth Power / Grassy Glide
+TM_LOUISVILLE_2027,All_Rounds,122,Starmie-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Starminite,Natural Cure,Protect / Psycho Cut / Ice Spinner / Waterfall
+TM_LOUISVILLE_2027,All_Rounds,123,Bellibolt,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Electromorphosis,Parabolic Charge / Protect / Soak / Thunderbolt
+TM_LOUISVILLE_2027,All_Rounds,124,Arcanine,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Intimidate,Snarl / Extreme Speed / Flare Blitz / Protect
+TM_LOUISVILLE_2027,All_Rounds,125,Houndstone,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Sand Rush,Last Respects / Protect / Ally Switch / Howl
+TM_LOUISVILLE_2027,All_Rounds,126,Snorlax,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Leftovers,Thick Fat,High Horsepower / Curse / Protect / Self-Destruct
+TM_LOUISVILLE_2027,All_Rounds,127,Weavile,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,King’s Rock,Pickpocket,Fake Out / Knock Off / Fling / Ice Spinner
+TM_LOUISVILLE_2027,All_Rounds,128,Malamar,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Contrary,Knock Off / Skill Swap / Superpower / Trick
+TM_LOUISVILLE_2027,All_Rounds,129,Watchog,1,0.1%,1,0.1%,1,0.7%,100.0%,0,0.0%,Chople Berry,Analytic,Detect / Ice Punch / Low Kick / Thunder Wave
+TM_LOUISVILLE_2027,All_Rounds,130,Clefable-Mega,1,0.1%,1,0.1%,1,0.7%,100.0%,0,0.0%,Clefablite,Unaware,Follow Me / Helping Hand / Moonblast / Protect
+TM_LOUISVILLE_2027,All_Rounds,131,Houndoom-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Houndoominite,Flash Fire,Dark Pulse / Heat Wave / Overheat / Protect
+TM_LOUISVILLE_2027,All_Rounds,132,Toxicroak,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Dry Skin,Close Combat / Fake Out / Gunk Shot / Sucker Punch
+TM_LOUISVILLE_2027,All_Rounds,133,Umbreon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Inner Focus,Foul Play / Moonlight / Roar / Snarl
+TM_LOUISVILLE_2027,All_Rounds,134,Chimecho-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chimechite,Levitate,Flash Cannon / Protect / Psychic / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,135,Scrafty-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Scraftinite,Intimidate,Close Combat / Fake Out / Knock Off / Protect
+TM_LOUISVILLE_2027,All_Rounds,136,Dragalge,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Adaptability,Draco Meteor / Protect / Sludge Bomb / Sludge Wave
+TM_LOUISVILLE_2027,All_Rounds,137,Sirfetch’d,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leek,Scrappy,Close Combat / Detect / Leaf Blade / Meteor Assault
+TM_LOUISVILLE_2027,All_Rounds,138,Goodra-Hisui,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Shell Armor,Dragon Pulse / Flamethrower / Flash Cannon / Protect
+TM_LOUISVILLE_2027,All_Rounds,139,Torterra,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Overgrow,Earthquake / Headlong Rush / Wide Guard / Wood Hammer
+TM_LOUISVILLE_2027,All_Rounds,140,Mudsdale,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Rindo Berry,Inner Focus,Heavy Slam / High Horsepower / Protect / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,141,Clawitzer,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Mega Launcher,Dark Pulse / Dragon Pulse / Protect / Water Pulse
+TM_LOUISVILLE_2027,All_Rounds,142,Chandelure-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chandelurite,Flash Fire,Flamethrower / Heat Wave / Protect / Shadow Ball
+TM_LOUISVILLE_2027,All_Rounds,143,Golisopod,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Emergency Exit,Aqua Jet / First Impression / Leech Life / Wide Guard
+TM_LOUISVILLE_2027,All_Rounds,144,Manectric,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Lightning Rod,Overheat / Protect / Rising Voltage / Volt Switch
+TM_LOUISVILLE_2027,All_Rounds,145,Wyrdeer,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Intimidate,Gravity / Hypnosis / Psyshield Bash / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,146,Orthworm,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Earth Eater,Body Press / Heavy Slam / Iron Defense / Shed Tail
+TM_LOUISVILLE_2027,All_Rounds,147,Hawlucha,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Unburden,Brave Bird / Close Combat / Coaching / Detect
+TM_LOUISVILLE_2027,All_Rounds,148,Slurpuff,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Unburden,After You / Dazzling Gleam / Light Screen / Thunderbolt
+TM_LOUISVILLE_2027,All_Rounds,149,Goodra,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Expert Belt,Hydration,Flamethrower / Ice Beam / Protect / Scald
+TM_LOUISVILLE_2027,All_Rounds,150,Gengar,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Taunt
+TM_LOUISVILLE_2027,All_Rounds,151,Excadrill-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Excadrite,Mold Breaker,High Horsepower / Iron Head / Protect / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,152,Skeledirge,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Unaware,Protect / Shadow Ball / Torch Song / Will-O-Wisp
+TM_LOUISVILLE_2027,All_Rounds,153,Feraligatr-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Feraligite,Sheer Force,Double-Edge / Ice Punch / Liquidation / Protect
+TM_LOUISVILLE_2027,All_Rounds,154,Audino,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chople Berry,Healer,Heal Pulse / Protect / Simple Beam / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,155,Cofagrigus,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Mummy,Ally Switch / Body Press / Protect / Shadow Ball
+TM_LOUISVILLE_2027,All_Rounds,156,Kangaskhan,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Scrappy,Fake Out / Last Resort
+TM_LOUISVILLE_2027,All_Rounds,157,Scizor,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Metal Coat,Technician,Bug Bite / Bullet Punch / Protect / Tailwind
+TM_LOUISVILLE_2027,All_Rounds,158,Staraptor,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Intimidate,Close Combat / Dual Wingbeat / Final Gambit / U-turn
+TM_LOUISVILLE_2027,All_Rounds,159,Azumarill,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Mystic Water,Huge Power,Aqua Jet / Liquidation / Play Rough / Protect
+TM_LOUISVILLE_2027,All_Rounds,160,Noivern,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Wide Lens,Telepathy,Draco Meteor / Heat Wave / Tailwind / Taunt
+TM_LOUISVILLE_2027,All_Rounds,161,Greninja,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Torrent,Dark Pulse / Ice Beam / Protect / Water Pulse
+TM_LOUISVILLE_2027,All_Rounds,162,Jolteon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Air Balloon,Volt Absorb,Alluring Voice / Detect / Discharge / Shadow Ball
+TM_LOUISVILLE_2027,All_Rounds,163,Skarmory,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Rocky Helmet,Sturdy,Dual Wingbeat / Iron Head / Protect / Tailwind
+TM_LOUISVILLE_2027,All_Rounds,164,Eelektross-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Eelektrossite,Levitate,Coil / Knock Off / Protect / Supercell Slam
+TM_LOUISVILLE_2027,All_Rounds,165,Beedrill-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Beedrillite,Sniper,Drill Run / Poison Jab / Protect / U-turn
+TM_LOUISVILLE_2027,All_Rounds,166,Floette-Eternal,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Flower Veil,Dazzling Gleam / Light of Ruin / Rain Dance / Tearful Look
+TM_LOUISVILLE_2027,All_Rounds,167,Banette-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Banettite,Insomnia,Disable / Encore / Knock Off / Thunder Wave
+TM_LOUISVILLE_2027,All_Rounds,168,Metagross,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Clear Body,Ice Punch / Iron Head / Psychic Fangs / Rock Slide
+TM_LOUISVILLE_2027,All_Rounds,169,Tauros-Paldea-Combat,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Intimidate,Close Combat / Earthquake / Protect / Raging Bull
+TM_LOUISVILLE_2027,All_Rounds,170,Feraligatr,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Sheer Force,Dragon Dance / Ice Punch / Iron Tail / Liquidation
+TM_LOUISVILLE_2027,All_Rounds,171,Toxtricity,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Technician,Acid Spray / Electroweb / Snarl / Volt Switch
+TM_LOUISVILLE_2027,All_Rounds,172,Malamar-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Malamarite,Contrary,Skill Swap / Superpower / Throat Chop / Zen Headbutt
+TM_LOUISVILLE_2027,All_Rounds,173,Gardevoir,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Trace,Dazzling Gleam / Moonblast / Psyshock / Thunderbolt
+TM_LOUISVILLE_2027,All_Rounds,174,Scolipede-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Scolipite,Speed Boost,Earthquake / Gunk Shot / Leech Life / Swords Dance
+TM_LOUISVILLE_2027,All_Rounds,175,Oranguru,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Mental Herb,Inner Focus,Foul Play / Instruct / Protect / Trick Room
+TM_LOUISVILLE_2027,All_Rounds,176,Slowking-Galar,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Regenerator,Chilly Reception / Ice Beam / Trick Room / Yawn
+TM_LOUISVILLE_2027,All_Rounds,177,Scrafty,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Eject Button,Intimidate,Close Combat / Fake Out / Knock Off / Protect
+TM_LOUISVILLE_2027,All_Rounds,178,Cinderace,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,White Herb,Libero,Gunk Shot / Protect / Pyro Ball / Sucker Punch
+TM_LOUISVILLE_2027,All_Rounds,179,Espeon,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Synchronize,Calm Mind / Expanding Force / Psychic / Psychic Terrain
+TM_NICE_2027,All_Rounds,1,Rillaboom,402,46.6%,402,46.6%,59,47.2%,14.7%,3,37.5%,Miracle Seed,Grassy Surge,Fake Out / Grassy Glide / Wood Hammer / High Horsepower
+TM_NICE_2027,All_Rounds,2,Incineroar,373,43.3%,373,43.3%,69,55.2%,18.5%,3,37.5%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Throat Chop
+TM_NICE_2027,All_Rounds,3,Sneasler,287,33.3%,287,33.3%,46,36.8%,16.0%,5,62.5%,White Herb,Unburden,Close Combat / Protect / Dire Claw / Fake Out
+TM_NICE_2027,All_Rounds,4,Raichu-Mega-Y,236,27.4%,236,27.4%,25,20.0%,10.6%,1,12.5%,Raichunite Y,Lightning Rod,Protect / Focus Blast / Zap Cannon / Fake Out
+TM_NICE_2027,All_Rounds,5,Kingambit,214,24.8%,214,24.8%,40,32.0%,18.7%,2,25.0%,Life Orb,Defiant,Kowtow Cleave / Sucker Punch / Protect / Iron Head
+TM_NICE_2027,All_Rounds,6,Charizard-Mega-Y,213,24.7%,213,24.7%,32,25.6%,15.0%,2,25.0%,Charizardite Y,Blaze,Heat Wave / Protect / Weather Ball / Hurricane
+TM_NICE_2027,All_Rounds,7,Garchomp-Mega-Z,192,22.3%,192,22.3%,17,13.6%,8.9%,1,12.5%,Garchompite Z,Rough Skin,Protect / Power Gem / Earth Power / Dragon Pulse
+TM_NICE_2027,All_Rounds,8,Garchomp,164,19.0%,164,19.0%,35,28.0%,21.3%,2,25.0%,Choice Scarf,Rough Skin,Dragon Claw / Rock Slide / Stomping Tantrum / Earthquake
+TM_NICE_2027,All_Rounds,9,Gholdengo,161,18.7%,161,18.7%,18,14.4%,11.2%,2,25.0%,Life Orb,Good as Gold,Make It Rain / Shadow Ball / Protect / Nasty Plot
+TM_NICE_2027,All_Rounds,10,Archaludon,159,18.4%,159,18.4%,15,12.0%,9.4%,2,25.0%,Leftovers,Stamina,Protect / Electro Shot / Dragon Pulse / Snarl
+TM_NICE_2027,All_Rounds,11,Basculegion,154,17.9%,154,17.9%,23,18.4%,14.9%,2,25.0%,Choice Scarf,Adaptability,Last Respects / Wave Crash / Aqua Jet / Flip Turn
+TM_NICE_2027,All_Rounds,12,Volcarona,154,17.9%,154,17.9%,21,16.8%,13.6%,0,0.0%,Grassy Seed,Flame Body,Protect / Quiver Dance / Struggle Bug / Rage Powder
+TM_NICE_2027,All_Rounds,13,Floette-Mega,146,16.9%,146,16.9%,28,22.4%,19.2%,1,12.5%,Floettite,Flower Veil,Protect / Dazzling Gleam / Calm Mind / Moonblast
+TM_NICE_2027,All_Rounds,14,Pelipper,133,15.4%,133,15.4%,12,9.6%,9.0%,2,25.0%,Sitrus Berry,Drizzle,Hurricane / Weather Ball / Tailwind / Wide Guard
+TM_NICE_2027,All_Rounds,15,Farigiraf,129,15.0%,129,15.0%,15,12.0%,11.6%,1,12.5%,Sitrus Berry,Armor Tail,Trick Room / Psychic / Helping Hand / Protect
+TM_NICE_2027,All_Rounds,16,Venusaur,123,14.3%,123,14.3%,17,13.6%,13.8%,0,0.0%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Sleep Powder / Leaf Storm
+TM_NICE_2027,All_Rounds,17,Sylveon,109,12.6%,109,12.6%,16,12.8%,14.7%,1,12.5%,Fairy Feather,Pixilate,Hyper Voice / Detect / Quick Attack / Hyper Beam
+TM_NICE_2027,All_Rounds,18,Grimmsnarl,95,11.0%,95,11.0%,7,5.6%,7.4%,0,0.0%,Light Clay,Prankster,Light Screen / Reflect / Parting Shot / Spirit Break
+TM_NICE_2027,All_Rounds,19,Arcanine-Hisui,88,10.2%,88,10.2%,9,7.2%,10.2%,0,0.0%,Focus Sash,Rock Head,Flare Blitz / Head Smash / Protect / Extreme Speed
+TM_NICE_2027,All_Rounds,20,Staraptor-Mega,86,10.0%,86,10.0%,13,10.4%,15.1%,1,12.5%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_NICE_2027,All_Rounds,21,Delphox-Mega,85,9.9%,85,9.9%,21,16.8%,24.7%,0,0.0%,Delphoxite,Blaze,Heat Wave / Protect / Nasty Plot / Psychic
+TM_NICE_2027,All_Rounds,22,Sinistcha,82,9.5%,82,9.5%,18,14.4%,22.0%,1,12.5%,Occa Berry,Hospitality,Rage Powder / Matcha Gotcha / Protect / Trick Room
+TM_NICE_2027,All_Rounds,23,Indeedee-F,82,9.5%,82,9.5%,12,9.6%,14.6%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Psychic / Helping Hand / Trick Room
+TM_NICE_2027,All_Rounds,24,Primarina,71,8.2%,71,8.2%,12,9.6%,16.9%,1,12.5%,Leftovers,Liquid Voice,Hyper Voice / Protect / Moonblast / Calm Mind
+TM_NICE_2027,All_Rounds,25,Salamence-Mega,71,8.2%,71,8.2%,8,6.4%,11.3%,0,0.0%,Salamencite,Intimidate,Protect / Hyper Voice / Draco Meteor / Tailwind
+TM_NICE_2027,All_Rounds,26,Kommo-o,69,8.0%,69,8.0%,14,11.2%,20.3%,0,0.0%,Leftovers,Soundproof,Aura Sphere / Clanging Scales / Protect / Clangorous Soul
+TM_NICE_2027,All_Rounds,27,Whimsicott,65,7.5%,65,7.5%,11,8.8%,16.9%,2,25.0%,Focus Sash,Prankster,Moonblast / Tailwind / Protect / Encore
+TM_NICE_2027,All_Rounds,28,Golisopod-Mega,64,7.4%,64,7.4%,6,4.8%,9.4%,2,25.0%,Golisopite,Emergency Exit,Leech Life / Iron Head / Protect / Sucker Punch
+TM_NICE_2027,All_Rounds,29,Milotic,58,6.7%,58,6.7%,7,5.6%,12.1%,1,12.5%,Leftovers,Competitive,Ice Beam / Protect / Scald / Icy Wind
+TM_NICE_2027,All_Rounds,30,Gengar-Mega,54,6.3%,54,6.3%,18,14.4%,33.3%,1,12.5%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_NICE_2027,All_Rounds,31,Tyranitar-Mega,47,5.5%,47,5.5%,6,4.8%,12.8%,1,12.5%,Tyranitarite,Sand Stream,Knock Off / Protect / Rock Slide / Low Kick
+TM_NICE_2027,All_Rounds,32,Dragonite-Mega,46,5.3%,46,5.3%,8,6.4%,17.4%,1,12.5%,Dragoninite,Inner Focus,Protect / Dragon Pulse / Tailwind / Heat Wave
+TM_NICE_2027,All_Rounds,33,Excadrill,44,5.1%,44,5.1%,5,4.0%,11.4%,1,12.5%,Focus Sash,Sand Rush,High Horsepower / Iron Head / Protect / Rock Slide
+TM_NICE_2027,All_Rounds,34,Politoed,44,5.1%,44,5.1%,3,2.4%,6.8%,0,0.0%,Sitrus Berry,Drizzle,Weather Ball / Protect / Ice Beam / Muddy Water
+TM_NICE_2027,All_Rounds,35,Raichu-Mega-X,38,4.4%,38,4.4%,6,4.8%,15.8%,2,25.0%,Raichunite X,Lightning Rod,Fake Out / Volt Tackle / Volt Switch / Feint
+TM_NICE_2027,All_Rounds,36,Gardevoir-Mega,38,4.4%,38,4.4%,5,4.0%,13.2%,0,0.0%,Gardevoirite,Trace,Hyper Voice / Protect / Expanding Force / Calm Mind
+TM_NICE_2027,All_Rounds,37,Froslass-Mega,37,4.3%,37,4.3%,4,3.2%,10.8%,0,0.0%,Froslassite,Cursed Body,Blizzard / Protect / Shadow Ball / Aurora Veil
+TM_NICE_2027,All_Rounds,38,Indeedee,32,3.7%,32,3.7%,3,2.4%,9.4%,0,0.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Trick / Protect
+TM_NICE_2027,All_Rounds,39,Basculegion-F,28,3.2%,28,3.2%,4,3.2%,14.3%,2,25.0%,Focus Sash,Swift Swim,Ice Beam / Muddy Water / Shadow Ball / Protect
+TM_NICE_2027,All_Rounds,40,Swampert-Mega,26,3.0%,26,3.0%,2,1.6%,7.7%,0,0.0%,Swampertite,Torrent,Protect / Wave Crash / Ice Punch / Earthquake
+TM_NICE_2027,All_Rounds,41,Camerupt-Mega,23,2.7%,23,2.7%,4,3.2%,17.4%,1,12.5%,Cameruptite,Solid Rock,Earth Power / Ancient Power / Heat Wave / Protect
+TM_NICE_2027,All_Rounds,42,Torkoal,22,2.6%,22,2.6%,2,1.6%,9.1%,0,0.0%,Charcoal,Drought,Eruption / Protect / Earth Power / Weather Ball
+TM_NICE_2027,All_Rounds,43,Glimmora-Mega,21,2.4%,21,2.4%,4,3.2%,19.0%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Spiky Shield / Sludge Bomb
+TM_NICE_2027,All_Rounds,44,Aerodactyl-Mega,21,2.4%,21,2.4%,5,4.0%,23.8%,0,0.0%,Aerodactylite,Unnerve,Rock Slide / Dual Wingbeat / Tailwind / Protect
+TM_NICE_2027,All_Rounds,45,Vivillon,20,2.3%,20,2.3%,5,4.0%,25.0%,1,12.5%,Focus Sash,Compound Eyes,Rage Powder / Sleep Powder / Protect / Hurricane
+TM_NICE_2027,All_Rounds,46,Dragapult,20,2.3%,20,2.3%,3,2.4%,15.0%,0,0.0%,Life Orb,Infiltrator,Protect / Draco Meteor / Shadow Ball / Will-O-Wisp
+TM_NICE_2027,All_Rounds,47,Armarouge,20,2.3%,20,2.3%,1,0.8%,5.0%,0,0.0%,Life Orb,Flash Fire,Armor Cannon / Expanding Force / Wide Guard / Protect
+TM_NICE_2027,All_Rounds,48,Metagross-Mega,18,2.1%,18,2.1%,1,0.8%,5.6%,0,0.0%,Metagrossite,Clear Body,Psychic Fangs / Protect / Steel Roller / Stomping Tantrum
+TM_NICE_2027,All_Rounds,49,Annihilape,17,2.0%,17,2.0%,1,0.8%,5.9%,0,0.0%,Choice Scarf,Defiant,Close Combat / Phantom Force / Ice Punch / Shadow Claw
+TM_NICE_2027,All_Rounds,50,Toxapex,16,1.9%,16,1.9%,5,4.0%,31.2%,0,0.0%,Leftovers,Regenerator,Infestation / Toxic / Wide Guard / Baneful Bunker
+TM_NICE_2027,All_Rounds,51,Corviknight,15,1.7%,15,1.7%,1,0.8%,6.7%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Roost / Bulk Up / Power Trip
+TM_NICE_2027,All_Rounds,52,Ninetales-Alola,12,1.4%,12,1.4%,3,2.4%,25.0%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Moonblast / Protect
+TM_NICE_2027,All_Rounds,53,Ceruledge,12,1.4%,12,1.4%,1,0.8%,8.3%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_NICE_2027,All_Rounds,54,Blaziken-Mega,12,1.4%,12,1.4%,1,0.8%,8.3%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Flare Blitz / Rock Slide / Protect
+TM_NICE_2027,All_Rounds,55,Hatterene,12,1.4%,12,1.4%,0,0.0%,0.0%,0,0.0%,Life Orb,Magic Bounce,Dazzling Gleam / Expanding Force / Trick Room / Protect
+TM_NICE_2027,All_Rounds,56,Pyroar-Mega,11,1.3%,11,1.3%,2,1.6%,18.2%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Overheat / Protect / Scorching Sands
+TM_NICE_2027,All_Rounds,57,Hydreigon,10,1.2%,10,1.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Draco Meteor / Dark Pulse / Snarl / Earth Power
+TM_NICE_2027,All_Rounds,58,Blastoise-Mega,9,1.0%,9,1.0%,1,0.8%,11.1%,0,0.0%,Blastoisinite,Rain Dish,Dark Pulse / Protect / Shell Smash / Water Spout
+TM_NICE_2027,All_Rounds,59,Lucario-Mega-Z,9,1.0%,9,1.0%,1,0.8%,11.1%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Flash Cannon / Detect / Dark Pulse
+TM_NICE_2027,All_Rounds,60,Glimmora,7,0.8%,7,0.8%,1,0.8%,14.3%,0,0.0%,Focus Sash,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_NICE_2027,All_Rounds,61,Talonflame,7,0.8%,7,0.8%,1,0.8%,14.3%,0,0.0%,Focus Sash,Gale Wings,Tailwind / Flare Blitz / Protect / Brave Bird
+TM_NICE_2027,All_Rounds,62,Mawile-Mega,7,0.8%,7,0.8%,0,0.0%,0.0%,0,0.0%,Mawilite,Hyper Cutter,Play Rough / Protect / Rock Slide / Sucker Punch
+TM_NICE_2027,All_Rounds,63,Espathra,6,0.7%,6,0.7%,2,1.6%,33.3%,0,0.0%,Grassy Seed,Speed Boost,Lumina Crash / Protect / Baton Pass / Calm Mind
+TM_NICE_2027,All_Rounds,64,Maushold,5,0.6%,5,0.6%,2,1.6%,40.0%,0,0.0%,Focus Sash,Friend Guard,Follow Me / Protect / Super Fang / Feint
+TM_NICE_2027,All_Rounds,65,Rhyperior,5,0.6%,5,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Solid Rock,High Horsepower / Ice Punch / Protect / Rock Slide
+TM_NICE_2027,All_Rounds,66,Meowstic-F-Mega,5,0.6%,5,0.6%,0,0.0%,0.0%,0,0.0%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_NICE_2027,All_Rounds,67,Hippowdon,4,0.5%,4,0.5%,2,1.6%,50.0%,0,0.0%,Leftovers,Sand Stream,High Horsepower / Protect / Stone Edge / Yawn
+TM_NICE_2027,All_Rounds,68,Maushold-Three,4,0.5%,4,0.5%,1,0.8%,25.0%,0,0.0%,Chople Berry,Friend Guard,Feint / Follow Me / Protect / Super Fang
+TM_NICE_2027,All_Rounds,69,Altaria-Mega,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Altarianite,Cloud Nine,Draco Meteor / Hyper Voice / Protect / Perish Song
+TM_NICE_2027,All_Rounds,70,Absol-Mega-Z,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Absolite Z,Justified,Close Combat / Night Slash / Shadow Claw / Detect
+TM_NICE_2027,All_Rounds,71,Gallade,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sharpness,Psycho Cut / Sacred Sword / Trick Room / Wide Guard
+TM_NICE_2027,All_Rounds,72,Clefable,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Unaware,Follow Me / Protect / Helping Hand / Moonblast
+TM_NICE_2027,All_Rounds,73,Sableye,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Prankster,Light Screen / Foul Play / Rain Dance / Encore
+TM_NICE_2027,All_Rounds,74,Pawmot,4,0.5%,4,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Iron Fist,Double Shock / Fake Out / Revival Blessing / Close Combat
+TM_NICE_2027,All_Rounds,75,Garchomp-Mega,3,0.3%,3,0.3%,2,1.6%,66.7%,0,0.0%,Garchompite,Rough Skin,Protect / Stomping Tantrum / Rock Slide / Scale Shot
+TM_NICE_2027,All_Rounds,76,Meowscarada,3,0.3%,3,0.3%,1,0.8%,33.3%,0,0.0%,Choice Scarf,Protean,Flower Trick / Triple Axel / U-turn / Knock Off
+TM_NICE_2027,All_Rounds,77,Kangaskhan-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Kangaskhanite,Scrappy,Double-Edge / Fake Out / Hammer Arm / Crunch
+TM_NICE_2027,All_Rounds,78,Zoroark-Hisui,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Illusion,Hyper Voice / Icy Wind / Shadow Ball / Protect
+TM_NICE_2027,All_Rounds,79,Weavile,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Pickpocket,Knock Off / Protect / Triple Axel / Taunt
+TM_NICE_2027,All_Rounds,80,Manectric-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Manectite,Lightning Rod,Overheat / Protect / Snarl / Thunderbolt
+TM_NICE_2027,All_Rounds,81,Goodra-Hisui,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Shell Armor,Dragon Pulse / Flamethrower / Protect / Body Press
+TM_NICE_2027,All_Rounds,82,Sceptile-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Sceptilite,Overgrow,Detect / Dragon Pulse / Earth Power / Energy Ball
+TM_NICE_2027,All_Rounds,83,Baxcalibur-Mega,3,0.3%,3,0.3%,0,0.0%,0.0%,0,0.0%,Baxcalibrite,Thermal Exchange,Glaive Rush / Ice Shard / Protect / Swords Dance
+TM_NICE_2027,All_Rounds,84,Mamoswine,2,0.2%,2,0.2%,1,0.8%,50.0%,0,0.0%,Focus Sash,Oblivious,High Horsepower / Icicle Crash / Ice Shard / Protect
+TM_NICE_2027,All_Rounds,85,Altaria,2,0.2%,2,0.2%,1,0.8%,50.0%,0,0.0%,Haban Berry,Cloud Nine,Protect / Tailwind / Draco Meteor / Perish Song
+TM_NICE_2027,All_Rounds,86,Vanilluxe,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Freeze-Dry / Icy Wind / Sheer Cold
+TM_NICE_2027,All_Rounds,87,Kangaskhan,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Scrappy,Double-Edge / Fake Out / Hammer Arm / Ice Punch
+TM_NICE_2027,All_Rounds,88,Typhlosion-Hisui,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Blaze,Overheat / Shadow Ball / Eruption / Heat Wave
+TM_NICE_2027,All_Rounds,89,Tyranitar,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sand Stream,Knock Off / Low Kick / Protect / Rock Slide
+TM_NICE_2027,All_Rounds,90,Ninetales,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Drought,Fake Tears / Heat Wave / Overheat / Solar Beam
+TM_NICE_2027,All_Rounds,91,Blaziken,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Focus Sash,Speed Boost,Aura Sphere / Coaching / Detect / Heat Wave
+TM_NICE_2027,All_Rounds,92,Empoleon,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Chople Berry,Competitive,Flash Cannon / Roar / Ice Beam / Icy Wind
+TM_NICE_2027,All_Rounds,93,Scovillain-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Scovillainite,Moody,Overheat / Protect / Rage Powder / Giga Drain
+TM_NICE_2027,All_Rounds,94,Samurott-Hisui,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Sharpness,Aqua Cutter / Sacred Sword / Flip Turn / Night Slash
+TM_NICE_2027,All_Rounds,95,Lopunny-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Lopunnite,Limber,Close Combat / Fake Out / Protect / Triple Axel
+TM_NICE_2027,All_Rounds,96,Grapploct,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Life Orb,Technician,Detect / Mach Punch / Storm Throw / Stomping Tantrum
+TM_NICE_2027,All_Rounds,97,Scizor-Mega,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Scizorite,Technician,Bug Bite / Bullet Punch / Protect / Swords Dance
+TM_NICE_2027,All_Rounds,98,Rotom-Heat,2,0.2%,2,0.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Discharge / Overheat / Trick / Volt Switch
+TM_NICE_2027,All_Rounds,99,Gliscor,1,0.1%,1,0.1%,1,0.8%,100.0%,0,0.0%,Psychic Seed,Hyper Cutter,High Horsepower / Protect / Rock Tomb / Tailwind
+TM_NICE_2027,All_Rounds,100,Lycanroc-Dusk,1,0.1%,1,0.1%,1,0.8%,100.0%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Close Combat / Protect / Rock Slide
+TM_NICE_2027,All_Rounds,101,Tinkaton,1,0.1%,1,0.1%,1,0.8%,100.0%,0,0.0%,Eject Button,Mold Breaker,Encore / Fake Out / Gigaton Hammer / Protect
+TM_NICE_2027,All_Rounds,102,Aegislash,1,0.1%,1,0.1%,1,0.8%,100.0%,0,0.0%,Occa Berry,Stance Change,Iron Head / King’s Shield / Poltergeist / Wide Guard
+TM_NICE_2027,All_Rounds,103,Starmie-Mega,1,0.1%,1,0.1%,1,0.8%,100.0%,0,0.0%,Starminite,Natural Cure,Expanding Force / Flip Turn / Liquidation / Protect
+TM_NICE_2027,All_Rounds,104,Dragonite,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Inner Focus,Dragon Claw / Extreme Speed / Protect / Stomping Tantrum
+TM_NICE_2027,All_Rounds,105,Barbaracle-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Barbaracite,Tough Claws,Close Combat / Protect / Rock Slide / Shell Smash
+TM_NICE_2027,All_Rounds,106,Snorlax,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Thick Fat,Double-Edge / High Horsepower / Protect / Yawn
+TM_NICE_2027,All_Rounds,107,Aerodactyl,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Unnerve,Dual Wingbeat / Protect / Rock Slide / Tailwind
+TM_NICE_2027,All_Rounds,108,Mimikyu,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,White Herb,Disguise,Play Rough / Taunt / Trick Room / Will-O-Wisp
+TM_NICE_2027,All_Rounds,109,Charizard-Mega-X,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Charizardite X,Blaze,Dragon Claw / Flare Blitz / Protect / Swords Dance
+TM_NICE_2027,All_Rounds,110,Araquanid,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Mystic Water,Water Bubble,Leech Life / Liquidation / Protect / Wide Guard
+TM_NICE_2027,All_Rounds,111,Chandelure-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Chandelurite,Flash Fire,Heat Wave / Overheat / Protect / Shadow Ball
+TM_NICE_2027,All_Rounds,112,Gyarados-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Gyaradosite,Intimidate,Crunch / Dragon Dance / Protect / Waterfall
+TM_NICE_2027,All_Rounds,113,Tsareena,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,None,Queenly Majesty,High Jump Kick / Protect / Triple Axel / Trop Kick
+TM_NICE_2027,All_Rounds,114,Swampert,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Torrent,Flip Turn / High Horsepower / Protect / Yawn
+TM_NICE_2027,All_Rounds,115,Skeledirge,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Unaware,Burn Up / Earth Power / Protect / Torch Song
+TM_NICE_2027,All_Rounds,116,Overqwil,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Swift Swim,Gunk Shot / Haze / Protect / Throat Chop
+TM_NICE_2027,All_Rounds,117,Gallade-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Galladite,Sharpness,Drain Punch / Protect / Psycho Cut / Sacred Sword
+TM_NICE_2027,All_Rounds,118,Kleavor,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sharpness,Protect / Stone Axe / Tailwind / X-Scissor
+TM_NICE_2027,All_Rounds,119,Slowbro-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Slowbronite,Regenerator,Expanding Force / Ice Beam / Protect / Yawn
+TM_NICE_2027,All_Rounds,120,Baxcalibur,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Life Orb,Thermal Exchange,Glaive Rush / Ice Shard / Icicle Spear / Protect
+TM_NICE_2027,All_Rounds,121,Klefki,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Light Clay,Prankster,Dazzling Gleam / Light Screen / Rain Dance / Reflect
+TM_NICE_2027,All_Rounds,122,Staraptor,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Intimidate,Brave Bird / Close Combat / Final Gambit / U-turn
+TM_NICE_2027,All_Rounds,123,Meganium-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Meganiumite,Overgrow,Dazzling Gleam / Protect / Solar Beam / Weather Ball
+TM_NICE_2027,All_Rounds,124,Houndstone,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Spell Tag,Sand Rush,Ally Switch / Last Respects / Poltergeist / Protect
+TM_NICE_2027,All_Rounds,125,Pincurchin,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Magnet,Electric Surge,Electroweb / Rising Voltage / Scald / Sucker Punch
+TM_NICE_2027,All_Rounds,126,Drampa,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Dragon Fang,Cloud Nine,Dragon Pulse / Flamethrower / Hyper Voice / Protect
+TM_NICE_2027,All_Rounds,127,Rotom-Wash,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Levitate,Hydro Pump / Protect / Thunderbolt / Will-O-Wisp
+TM_NICE_2027,All_Rounds,128,Ampharos-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Ampharosite,Static,Cotton Guard / Dragon Pulse / Protect / Thunderbolt
+TM_NICE_2027,All_Rounds,129,Greninja-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Greninjite,Protean,Dark Pulse / Ice Beam / Protect / Weather Ball
+TM_NICE_2027,All_Rounds,130,Gourgeist,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Insomnia,Poltergeist / Protect / Trick Room / Trick-or-Treat
+TM_NICE_2027,All_Rounds,131,Eelektross-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Eelektrossite,Levitate,Coil / Drain Punch / Protect / Wild Charge
+TM_NICE_2027,All_Rounds,132,Runerigus,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Rindo Berry,Wandering Spirit,Ally Switch / Poltergeist / Trick Room / Will-O-Wisp
+TM_NICE_2027,All_Rounds,133,Heracross-Mega,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Heracronite,Moxie,Bullet Seed / Close Combat / Detect / Rock Blast
+TM_NICE_2027,All_Rounds,134,Charizard,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Charcoal,Solar Power,Ancient Power / Heat Wave / Protect / Weather Ball
+TM_NICE_2027,All_Rounds,135,Castform,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Forecast,Hurricane / Protect / Thunder / Weather Ball
+TM_NICE_2027,All_Rounds,136,Swalot,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Leftovers,Liquid Ooze,Poison Jab / Stockpile / Swallow / Toxic Spikes
+TM_NICE_2027,All_Rounds,137,Liepard,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Prankster,Encore / Fake Out / Snarl / Yawn
+TM_NICE_2027,All_Rounds,138,Vileplume,1,0.1%,1,0.1%,0,0.0%,0.0%,0,0.0%,Focus Sash,Chlorophyll,After You / Leaf Storm / Protect / Sleep Powder
+TM_PUEBLA_2027,All_Rounds,1,Sneasler,140,42.0%,140,42.0%,21,43.8%,15.0%,3,37.5%,White Herb,Unburden,Close Combat / Protect / Dire Claw / Fake Out
+TM_PUEBLA_2027,All_Rounds,2,Rillaboom,140,42.0%,140,42.0%,12,25.0%,8.6%,2,25.0%,Miracle Seed,Grassy Surge,Fake Out / Grassy Glide / Wood Hammer / High Horsepower
+TM_PUEBLA_2027,All_Rounds,3,Incineroar,123,36.9%,123,36.9%,17,35.4%,13.8%,1,12.5%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Darkest Lariat
+TM_PUEBLA_2027,All_Rounds,4,Charizard-Mega-Y,91,27.3%,91,27.3%,19,39.6%,20.9%,5,62.5%,Charizardite Y,Blaze,Heat Wave / Protect / Weather Ball / Ancient Power
+TM_PUEBLA_2027,All_Rounds,5,Archaludon,82,24.6%,82,24.6%,15,31.2%,18.3%,1,12.5%,Leftovers,Stamina,Electro Shot / Protect / Dragon Pulse / Snarl
+TM_PUEBLA_2027,All_Rounds,6,Pelipper,78,23.4%,78,23.4%,16,33.3%,20.5%,1,12.5%,Sitrus Berry,Drizzle,Weather Ball / Hurricane / Wide Guard / Tailwind
+TM_PUEBLA_2027,All_Rounds,7,Kingambit,76,22.8%,76,22.8%,13,27.1%,17.1%,4,50.0%,Chople Berry,Defiant,Kowtow Cleave / Sucker Punch / Iron Head / Protect
+TM_PUEBLA_2027,All_Rounds,8,Garchomp-Mega-Z,75,22.5%,75,22.5%,6,12.5%,8.0%,1,12.5%,Garchompite Z,Rough Skin,Protect / Power Gem / Earth Power / Draco Meteor
+TM_PUEBLA_2027,All_Rounds,9,Raichu-Mega-Y,68,20.4%,68,20.4%,12,25.0%,17.6%,2,25.0%,Raichunite Y,Lightning Rod,Focus Blast / Protect / Zap Cannon / Fake Out
+TM_PUEBLA_2027,All_Rounds,10,Garchomp,67,20.1%,67,20.1%,14,29.2%,20.9%,4,50.0%,Choice Scarf,Rough Skin,Rock Slide / Dragon Claw / Earthquake / Stomping Tantrum
+TM_PUEBLA_2027,All_Rounds,11,Gholdengo,61,18.3%,61,18.3%,7,14.6%,11.5%,2,25.0%,Life Orb,Good as Gold,Make It Rain / Protect / Shadow Ball / Nasty Plot
+TM_PUEBLA_2027,All_Rounds,12,Farigiraf,57,17.1%,57,17.1%,6,12.5%,10.5%,2,25.0%,Sitrus Berry,Armor Tail,Trick Room / Psychic / Helping Hand / Protect
+TM_PUEBLA_2027,All_Rounds,13,Golisopod-Mega,56,16.8%,56,16.8%,10,20.8%,17.9%,0,0.0%,Golisopite,Emergency Exit,Leech Life / Iron Head / Protect / Sucker Punch
+TM_PUEBLA_2027,All_Rounds,14,Sylveon,52,15.6%,52,15.6%,8,16.7%,15.4%,2,25.0%,Fairy Feather,Pixilate,Hyper Voice / Detect / Yawn / Quick Attack
+TM_PUEBLA_2027,All_Rounds,15,Venusaur,45,13.5%,45,13.5%,10,20.8%,22.2%,2,25.0%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Sleep Powder / Leaf Storm
+TM_PUEBLA_2027,All_Rounds,16,Raichu-Mega-X,44,13.2%,44,13.2%,6,12.5%,13.6%,0,0.0%,Raichunite X,Lightning Rod,Volt Switch / Volt Tackle / Fake Out / Feint
+TM_PUEBLA_2027,All_Rounds,17,Basculegion,42,12.6%,42,12.6%,10,20.8%,23.8%,1,12.5%,Choice Scarf,Adaptability,Wave Crash / Last Respects / Aqua Jet / Protect
+TM_PUEBLA_2027,All_Rounds,18,Floette-Mega,40,12.0%,40,12.0%,8,16.7%,20.0%,0,0.0%,Floettite,Flower Veil,Dazzling Gleam / Protect / Calm Mind / Moonblast
+TM_PUEBLA_2027,All_Rounds,19,Primarina,35,10.5%,35,10.5%,6,12.5%,17.1%,2,25.0%,Leftovers,Liquid Voice,Hyper Voice / Protect / Moonblast / Calm Mind
+TM_PUEBLA_2027,All_Rounds,20,Basculegion-F,34,10.2%,34,10.2%,7,14.6%,20.6%,0,0.0%,Focus Sash,Swift Swim,Ice Beam / Muddy Water / Protect / Shadow Ball
+TM_PUEBLA_2027,All_Rounds,21,Salamence-Mega,32,9.6%,32,9.6%,2,4.2%,6.2%,0,0.0%,Salamencite,Intimidate,Hyper Voice / Protect / Flamethrower / Tailwind
+TM_PUEBLA_2027,All_Rounds,22,Whimsicott,30,9.0%,30,9.0%,6,12.5%,20.0%,2,25.0%,Focus Sash,Prankster,Tailwind / Moonblast / Encore / Protect
+TM_PUEBLA_2027,All_Rounds,23,Volcarona,30,9.0%,30,9.0%,2,4.2%,6.7%,0,0.0%,Rocky Helmet,Flame Body,Struggle Bug / Rage Powder / Protect / Tailwind
+TM_PUEBLA_2027,All_Rounds,24,Staraptor-Mega,29,8.7%,29,8.7%,6,12.5%,20.7%,2,25.0%,Staraptite,Intimidate,Brave Bird / Close Combat / Protect / Tailwind
+TM_PUEBLA_2027,All_Rounds,25,Indeedee-F,29,8.7%,29,8.7%,2,4.2%,6.9%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Helping Hand / Trick Room / Psychic
+TM_PUEBLA_2027,All_Rounds,26,Grimmsnarl,28,8.4%,28,8.4%,6,12.5%,21.4%,1,12.5%,Light Clay,Prankster,Light Screen / Parting Shot / Reflect / Spirit Break
+TM_PUEBLA_2027,All_Rounds,27,Sinistcha,26,7.8%,26,7.8%,6,12.5%,23.1%,1,12.5%,Occa Berry,Hospitality,Matcha Gotcha / Rage Powder / Protect / Trick Room
+TM_PUEBLA_2027,All_Rounds,28,Milotic,25,7.5%,25,7.5%,3,6.2%,12.0%,1,12.5%,Leftovers,Competitive,Protect / Ice Beam / Scald / Muddy Water
+TM_PUEBLA_2027,All_Rounds,29,Arcanine-Hisui,23,6.9%,23,6.9%,4,8.3%,17.4%,1,12.5%,Focus Sash,Rock Head,Flare Blitz / Protect / Extreme Speed / Head Smash
+TM_PUEBLA_2027,All_Rounds,30,Dragonite-Mega,22,6.6%,22,6.6%,1,2.1%,4.5%,0,0.0%,Dragoninite,Inner Focus,Protect / Dragon Pulse / Tailwind / Heat Wave
+TM_PUEBLA_2027,All_Rounds,31,Delphox-Mega,21,6.3%,21,6.3%,4,8.3%,19.0%,0,0.0%,Delphoxite,Blaze,Heat Wave / Protect / Nasty Plot / Psychic
+TM_PUEBLA_2027,All_Rounds,32,Tyranitar-Mega,16,4.8%,16,4.8%,2,4.2%,12.5%,1,12.5%,Tyranitarite,Sand Stream,Protect / Rock Slide / Knock Off / Low Kick
+TM_PUEBLA_2027,All_Rounds,33,Excadrill,15,4.5%,15,4.5%,2,4.2%,13.3%,1,12.5%,Focus Sash,Sand Rush,Iron Head / Protect / Rock Slide / High Horsepower
+TM_PUEBLA_2027,All_Rounds,34,Kommo-o,13,3.9%,13,3.9%,0,0.0%,0.0%,0,0.0%,Leftovers,Soundproof,Protect / Aura Sphere / Clanging Scales / Clangorous Soul
+TM_PUEBLA_2027,All_Rounds,35,Torkoal,11,3.3%,11,3.3%,2,4.2%,18.2%,0,0.0%,Charcoal,Drought,Protect / Eruption / Weather Ball / Earth Power
+TM_PUEBLA_2027,All_Rounds,36,Gardevoir-Mega,11,3.3%,11,3.3%,1,2.1%,9.1%,0,0.0%,Gardevoirite,Synchronize,Expanding Force / Hyper Voice / Protect / Trick Room
+TM_PUEBLA_2027,All_Rounds,37,Politoed,11,3.3%,11,3.3%,0,0.0%,0.0%,0,0.0%,Mystic Water,Drizzle,Muddy Water / Weather Ball / Protect / Ice Beam
+TM_PUEBLA_2027,All_Rounds,38,Indeedee,11,3.3%,11,3.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Trick / Protect
+TM_PUEBLA_2027,All_Rounds,39,Froslass-Mega,10,3.0%,10,3.0%,2,4.2%,20.0%,1,12.5%,Froslassite,Cursed Body,Aurora Veil / Blizzard / Protect / Shadow Ball
+TM_PUEBLA_2027,All_Rounds,40,Gengar-Mega,10,3.0%,10,3.0%,0,0.0%,0.0%,0,0.0%,Gengarite,Cursed Body,Protect / Shadow Ball / Sludge Bomb / Perish Song
+TM_PUEBLA_2027,All_Rounds,41,Swampert-Mega,10,3.0%,10,3.0%,0,0.0%,0.0%,0,0.0%,Swampertite,Torrent,Ice Punch / Wave Crash / Protect / Earthquake
+TM_PUEBLA_2027,All_Rounds,42,Metagross-Mega,9,2.7%,9,2.7%,2,4.2%,22.2%,0,0.0%,Metagrossite,Clear Body,Protect / Psychic Fangs / Iron Head / Steel Roller
+TM_PUEBLA_2027,All_Rounds,43,Camerupt-Mega,8,2.4%,8,2.4%,0,0.0%,0.0%,0,0.0%,Cameruptite,Solid Rock,Ancient Power / Protect / Earth Power / Heat Wave
+TM_PUEBLA_2027,All_Rounds,44,Toxapex,7,2.1%,7,2.1%,3,6.2%,42.9%,0,0.0%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_PUEBLA_2027,All_Rounds,45,Sableye,7,2.1%,7,2.1%,0,0.0%,0.0%,0,0.0%,Light Clay,Prankster,Rain Dance / Quash / Foul Play / Sunny Day
+TM_PUEBLA_2027,All_Rounds,46,Annihilape,7,2.1%,7,2.1%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Defiant,Close Combat / Ice Punch / Shadow Claw / U-turn
+TM_PUEBLA_2027,All_Rounds,47,Armarouge,6,1.8%,6,1.8%,0,0.0%,0.0%,0,0.0%,Life Orb,Flash Fire,Expanding Force / Armor Cannon / Wide Guard / Protect
+TM_PUEBLA_2027,All_Rounds,48,Vivillon,4,1.2%,4,1.2%,1,2.1%,25.0%,0,0.0%,Focus Sash,Compound Eyes,Hurricane / Protect / Sleep Powder / Rage Powder
+TM_PUEBLA_2027,All_Rounds,49,Hydreigon,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Draco Meteor / Dark Pulse / Snarl / Flamethrower
+TM_PUEBLA_2027,All_Rounds,50,Meowstic-F-Mega,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_PUEBLA_2027,All_Rounds,51,Corviknight,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Bulk Up / Power Trip / Roost
+TM_PUEBLA_2027,All_Rounds,52,Venusaur-Mega,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Venusaurite,Chlorophyll,Earth Power / Giga Drain / Protect / Sludge Bomb
+TM_PUEBLA_2027,All_Rounds,53,Maushold,4,1.2%,4,1.2%,0,0.0%,0.0%,0,0.0%,Wide Lens,Friend Guard,Follow Me / Protect / Population Bomb / Super Fang
+TM_PUEBLA_2027,All_Rounds,54,Blaziken-Mega,3,0.9%,3,0.9%,1,2.1%,33.3%,1,12.5%,Blazikenite,Speed Boost,Rock Slide / Close Combat / Detect / Flare Blitz
+TM_PUEBLA_2027,All_Rounds,55,Dragapult,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Life Orb,Infiltrator,Protect / Will-O-Wisp / Draco Meteor / Shadow Ball
+TM_PUEBLA_2027,All_Rounds,56,Scovillain-Mega,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Scovillainite,Moody,Protect / Rage Powder / Overheat / Giga Drain
+TM_PUEBLA_2027,All_Rounds,57,Chandelure,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Focus Sash,Flash Fire,Heat Wave / Protect / Shadow Ball / Trick Room
+TM_PUEBLA_2027,All_Rounds,58,Ninetales-Alola,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Never-Melt Ice,Snow Warning,Aurora Veil / Blizzard / Freeze-Dry / Protect
+TM_PUEBLA_2027,All_Rounds,59,Pawmot,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Focus Sash,Iron Fist,Close Combat / Double Shock / Fake Out / Ice Punch
+TM_PUEBLA_2027,All_Rounds,60,Meowscarada,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Protean,Flower Trick / Triple Axel / U-turn / Knock Off
+TM_PUEBLA_2027,All_Rounds,61,Mawile-Mega,3,0.9%,3,0.9%,0,0.0%,0.0%,0,0.0%,Mawilite,Hyper Cutter,Play Rough / Protect / Rock Slide / Sucker Punch
+TM_PUEBLA_2027,All_Rounds,62,Talonflame,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Sharp Beak,Gale Wings,Protect / Tailwind / Dual Wingbeat / Flare Blitz
+TM_PUEBLA_2027,All_Rounds,63,Pikachu,2,0.6%,2,0.6%,1,2.1%,50.0%,0,0.0%,Light Ball,Lightning Rod,Fake Out / Encore / Protect / Volt Tackle
+TM_PUEBLA_2027,All_Rounds,64,Absol-Mega-Z,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Absolite Z,Super Luck,Night Slash / Detect / Psycho Cut / Rock Slide
+TM_PUEBLA_2027,All_Rounds,65,Baxcalibur,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Thermal Exchange,Ice Shard / Protect / Brick Break / Iron Head
+TM_PUEBLA_2027,All_Rounds,66,Pyroar-Mega,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Pyroarite,Unnerve,Heat Wave / Overheat / Protect / Scorching Sands
+TM_PUEBLA_2027,All_Rounds,67,Lycanroc-Dusk,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Focus Sash,Tough Claws,Accelerock / Close Combat / Protect / Rock Slide
+TM_PUEBLA_2027,All_Rounds,68,Tyranitar,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Chople Berry,Sand Stream,Knock Off / Low Kick / Protect / Rock Slide
+TM_PUEBLA_2027,All_Rounds,69,Espathra,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Electric Seed,Speed Boost,Baton Pass / Calm Mind / Lumina Crash / Protect
+TM_PUEBLA_2027,All_Rounds,70,Mamoswine,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Oblivious,High Horsepower / Icicle Crash / Earthquake / Rock Slide
+TM_PUEBLA_2027,All_Rounds,71,Goodra-Hisui,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Quick Claw,Gooey,Draco Meteor / Ice Beam / Ancient Power / Flash Cannon
+TM_PUEBLA_2027,All_Rounds,72,Clawitzer,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Mega Launcher,Aura Sphere / Dark Pulse / Dragon Pulse / Water Pulse
+TM_PUEBLA_2027,All_Rounds,73,Alcremie,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Quick Claw,Aroma Veil,Decorate / Calm Mind / Draining Kiss / Protect
+TM_PUEBLA_2027,All_Rounds,74,Aegislash,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Leftovers,Stance Change,King’s Shield / Shadow Sneak / Iron Head / Poltergeist
+TM_PUEBLA_2027,All_Rounds,75,Hatterene,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Magic Bounce,Dazzling Gleam / Expanding Force / Protect / Trick Room
+TM_PUEBLA_2027,All_Rounds,76,Drampa,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Life Orb,Berserk,Draco Meteor / Protect / Flamethrower / Thunder
+TM_PUEBLA_2027,All_Rounds,77,Altaria,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Haban Berry,Cloud Nine,Protect / Tailwind / Flamethrower / Will-O-Wisp
+TM_PUEBLA_2027,All_Rounds,78,Rotom-Wash,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Leftovers,Levitate,Hydro Pump / Thunderbolt / Will-O-Wisp / Protect
+TM_PUEBLA_2027,All_Rounds,79,Zoroark-Hisui,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Expert Belt,Illusion,Flamethrower / Bitter Malice / Icy Wind / Protect
+TM_PUEBLA_2027,All_Rounds,80,Araquanid,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Leftovers,Water Bubble,Liquidation / Wide Guard / Infestation / Soak
+TM_PUEBLA_2027,All_Rounds,81,Raichu,2,0.6%,2,0.6%,0,0.0%,0.0%,0,0.0%,Focus Sash,Lightning Rod,Fake Out / Encore / Helping Hand / Thunderbolt
+TM_PUEBLA_2027,All_Rounds,82,Aerodactyl-Mega,1,0.3%,1,0.3%,1,2.1%,100.0%,1,12.5%,Aerodactylite,Unnerve,Dual Wingbeat / Protect / Rock Slide / Tailwind
+TM_PUEBLA_2027,All_Rounds,83,Meowstic,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Sitrus Berry,Prankster,Fake Out / Light Screen / Rain Dance / Trick Room
+TM_PUEBLA_2027,All_Rounds,84,Maushold-Three,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Chople Berry,Friend Guard,Feint / Follow Me / Protect / Super Fang
+TM_PUEBLA_2027,All_Rounds,85,Blastoise-Mega,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Blastoisinite,Rain Dish,Dark Pulse / Protect / Shell Smash / Water Spout
+TM_PUEBLA_2027,All_Rounds,86,Glimmora,1,0.3%,1,0.3%,1,2.1%,100.0%,0,0.0%,Focus Sash,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_PUEBLA_2027,All_Rounds,87,Grapploct,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Black Belt,Technician,Detect / Mach Punch / Payback / Storm Throw
+TM_PUEBLA_2027,All_Rounds,88,Typhlosion-Hisui,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Blaze,Eruption / Overheat / Protect / Shadow Ball
+TM_PUEBLA_2027,All_Rounds,89,Manectric-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Manectite,Lightning Rod,Overheat / Protect / Snarl / Thunderbolt
+TM_PUEBLA_2027,All_Rounds,90,Chesnaught,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Electric Seed,Bulletproof,Body Press / Rock Tomb / Spiky Shield / Wood Hammer
+TM_PUEBLA_2027,All_Rounds,91,Glimmora-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_PUEBLA_2027,All_Rounds,92,Greninja-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Greninjite,Protean,Dark Pulse / Extrasensory / Ice Beam / Water Shuriken
+TM_PUEBLA_2027,All_Rounds,93,Starmie-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Starminite,Natural Cure,Expanding Force / Flip Turn / Liquidation / Protect
+TM_PUEBLA_2027,All_Rounds,94,Empoleon,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Competitive,Hydro Pump / Ice Beam / Protect / Yawn
+TM_PUEBLA_2027,All_Rounds,95,Lucario-Mega-Z,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Dark Pulse / Flash Cannon / Protect
+TM_PUEBLA_2027,All_Rounds,96,Bellibolt,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Electromorphosis,Parabolic Charge / Protect / Soak / Thunderbolt
+TM_PUEBLA_2027,All_Rounds,97,Vaporeon,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Water Absorb,Acid Armor / Calm Mind / Ice Beam / Muddy Water
+TM_PUEBLA_2027,All_Rounds,98,Palafin,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Zero to Hero,Flip Turn / Ice Punch / Throat Chop / Wave Crash
+TM_PUEBLA_2027,All_Rounds,99,Altaria-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Altarianite,Cloud Nine,Dazzling Gleam / Draco Meteor / Helping Hand / Protect
+TM_PUEBLA_2027,All_Rounds,100,Ceruledge,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_PUEBLA_2027,All_Rounds,101,Lopunny-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Lopunnite,Limber,Close Combat / Facade / Fake Out / Protect
+TM_PUEBLA_2027,All_Rounds,102,Sandaconda,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Sand Spit,Body Press / Drill Run / Protect / Stone Edge
+TM_PUEBLA_2027,All_Rounds,103,Blastoise,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Torrent,Aura Sphere / Flash Cannon / Hydro Pump / Protect
+TM_PUEBLA_2027,All_Rounds,104,Charizard,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Solar Power,Ancient Power / Heat Wave / Protect / Weather Ball
+TM_PUEBLA_2027,All_Rounds,105,Hydrapple,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Regenerator,Earth Power / Fickle Beam / Giga Drain / Pollen Puff
+TM_PUEBLA_2027,All_Rounds,106,Slowbro-Galar,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Metronome,Regenerator,Expanding Force / Protect / Psychic Terrain / Shell Side Arm
+TM_PUEBLA_2027,All_Rounds,107,Feraligatr-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Feraligite,Sheer Force,Crunch / Ice Punch / Liquidation / Swords Dance
+TM_PUEBLA_2027,All_Rounds,108,Oranguru,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Mental Herb,Inner Focus,Foul Play / Instruct / Protect / Trick Room
+TM_PUEBLA_2027,All_Rounds,109,Beartic,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Swift Swim,Close Combat / Icicle Crash / Liquidation / Protect
+TM_PUEBLA_2027,All_Rounds,110,Serperior,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Miracle Seed,Contrary,Dragon Pulse / Glare / Leaf Storm / Protect
+TM_PUEBLA_2027,All_Rounds,111,Luxray,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Intimidate,Fire Fang / Ice Fang / Psychic Fangs / Wild Charge
+TM_PUEBLA_2027,All_Rounds,112,Metagross,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Clear Body,Bullet Punch / Earthquake / Ice Punch / Zen Headbutt
+TM_PUEBLA_2027,All_Rounds,113,Scizor,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Metal Coat,Technician,Bug Bite / Bullet Punch / Close Combat / Protect
+TM_PUEBLA_2027,All_Rounds,114,Tauros-Paldea-Blaze,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Charcoal,Intimidate,Close Combat / Protect / Raging Bull / Rock Slide
+TM_PUEBLA_2027,All_Rounds,115,Slowbro-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Slowbronite,Regenerator,Fire Blast / Scald / Slack Off / Trick Room
+TM_PUEBLA_2027,All_Rounds,116,Snorlax,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Leftovers,Thick Fat,Crunch / Heavy Slam / High Horsepower / Ice Punch
+TM_PUEBLA_2027,All_Rounds,117,Weavile,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Pickpocket,Fake Out / Taunt / Throat Chop / Triple Axel
+TM_PUEBLA_2027,All_Rounds,118,Scrafty-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Scraftinite,Intimidate,Close Combat / Detect / Fake Out / Knock Off
+TM_PUEBLA_2027,All_Rounds,119,Spiritomb,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Roseli Berry,Infiltrator,Dark Pulse / Destiny Bond / Trick Room / Will-O-Wisp
+TM_PUEBLA_2027,All_Rounds,120,Aggron-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Aggronite,Heavy Metal,Body Press / Heavy Slam / Protect / Steel Roller
+TM_PUEBLA_2027,All_Rounds,121,Absol,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Scope Lens,Super Luck,Close Combat / Feint / Focus Energy / Night Slash
+TM_PUEBLA_2027,All_Rounds,122,Kangaskhan,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Life Orb,Scrappy,Double-Edge / Fake Out / Hammer Arm / Ice Punch
+TM_PUEBLA_2027,All_Rounds,123,Gallade,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Iron Ball,Sharpness,Psycho Cut / Sacred Sword / Trick Room / Wide Guard
+TM_PUEBLA_2027,All_Rounds,124,Pincurchin,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Electric Seed,Electric Surge,Rain Dance / Rising Voltage / Scald / Sucker Punch
+TM_PUEBLA_2027,All_Rounds,125,Lycanroc,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Focus Sash,Sand Rush,Accelerock / Close Combat / Quick Guard / Rock Slide
+TM_PUEBLA_2027,All_Rounds,126,Mimikyu,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,White Herb,Disguise,Play Rough / Shadow Sneak / Swords Dance / Trick Room
+TM_PUEBLA_2027,All_Rounds,127,Eelektross-Mega,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,Eelektrossite,Levitate,Charge / Giga Drain / Protect / Rising Voltage
+TM_PUEBLA_2027,All_Rounds,128,Dragonite,1,0.3%,1,0.3%,0,0.0%,0.0%,0,0.0%,None,Multiscale,Dragon Pulse / Heat Wave / Protect / Tailwind
+TM_RECIFE_2027,All_Rounds,1,Rillaboom,108,48.6%,108,48.6%,12,38.7%,11.1%,4,50.0%,Miracle Seed,Grassy Surge,Fake Out / Grassy Glide / Wood Hammer / High Horsepower
+TM_RECIFE_2027,All_Rounds,2,Incineroar,82,36.9%,82,36.9%,10,32.3%,12.2%,4,50.0%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Throat Chop
+TM_RECIFE_2027,All_Rounds,3,Sneasler,80,36.0%,80,36.0%,17,54.8%,21.2%,4,50.0%,White Herb,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_RECIFE_2027,All_Rounds,4,Raichu-Mega-Y,68,30.6%,68,30.6%,7,22.6%,10.3%,1,12.5%,Raichunite Y,Lightning Rod,Focus Blast / Protect / Zap Cannon / Fake Out
+TM_RECIFE_2027,All_Rounds,5,Gholdengo,61,27.5%,61,27.5%,4,12.9%,6.6%,1,12.5%,Life Orb,Good as Gold,Shadow Ball / Make It Rain / Protect / Nasty Plot
+TM_RECIFE_2027,All_Rounds,6,Garchomp-Mega-Z,54,24.3%,54,24.3%,10,32.3%,18.5%,3,37.5%,Garchompite Z,Rough Skin,Protect / Power Gem / Earth Power / Dragon Pulse
+TM_RECIFE_2027,All_Rounds,7,Kingambit,44,19.8%,44,19.8%,8,25.8%,18.2%,2,25.0%,Life Orb,Defiant,Kowtow Cleave / Sucker Punch / Iron Head / Protect
+TM_RECIFE_2027,All_Rounds,8,Archaludon,42,18.9%,42,18.9%,7,22.6%,16.7%,2,25.0%,Leftovers,Stamina,Protect / Electro Shot / Dragon Pulse / Flash Cannon
+TM_RECIFE_2027,All_Rounds,9,Charizard-Mega-Y,40,18.0%,40,18.0%,8,25.8%,20.0%,2,25.0%,Charizardite Y,Blaze,Protect / Heat Wave / Weather Ball / Hurricane
+TM_RECIFE_2027,All_Rounds,10,Arcanine-Hisui,38,17.1%,38,17.1%,4,12.9%,10.5%,1,12.5%,Focus Sash,Rock Head,Flare Blitz / Protect / Head Smash / Extreme Speed
+TM_RECIFE_2027,All_Rounds,11,Salamence-Mega,36,16.2%,36,16.2%,6,19.4%,16.7%,2,25.0%,Salamencite,Intimidate,Hyper Voice / Protect / Draco Meteor / Tailwind
+TM_RECIFE_2027,All_Rounds,12,Indeedee-F,35,15.8%,35,15.8%,4,12.9%,11.4%,0,0.0%,Rocky Helmet,Psychic Surge,Follow Me / Psychic / Helping Hand / Trick Room
+TM_RECIFE_2027,All_Rounds,13,Staraptor-Mega,33,14.9%,33,14.9%,2,6.5%,6.1%,0,0.0%,Staraptite,Intimidate,Close Combat / Protect / Brave Bird / Tailwind
+TM_RECIFE_2027,All_Rounds,14,Pelipper,32,14.4%,32,14.4%,5,16.1%,15.6%,1,12.5%,Sitrus Berry,Drizzle,Hurricane / Tailwind / Weather Ball / Wide Guard
+TM_RECIFE_2027,All_Rounds,15,Sylveon,30,13.5%,30,13.5%,4,12.9%,13.3%,2,25.0%,Fairy Feather,Pixilate,Hyper Voice / Hyper Beam / Detect / Quick Attack
+TM_RECIFE_2027,All_Rounds,16,Farigiraf,30,13.5%,30,13.5%,3,9.7%,10.0%,2,25.0%,Sitrus Berry,Armor Tail,Trick Room / Helping Hand / Protect / Psychic
+TM_RECIFE_2027,All_Rounds,17,Volcarona,26,11.7%,26,11.7%,5,16.1%,19.2%,2,25.0%,Rocky Helmet,Flame Body,Rage Powder / Struggle Bug / Overheat / Tailwind
+TM_RECIFE_2027,All_Rounds,18,Basculegion,24,10.8%,24,10.8%,6,19.4%,25.0%,2,25.0%,Choice Scarf,Adaptability,Last Respects / Aqua Jet / Wave Crash / Flip Turn
+TM_RECIFE_2027,All_Rounds,19,Grimmsnarl,23,10.4%,23,10.4%,5,16.1%,21.7%,1,12.5%,Light Clay,Prankster,Light Screen / Reflect / Parting Shot / Spirit Break
+TM_RECIFE_2027,All_Rounds,20,Venusaur,22,9.9%,22,9.9%,6,19.4%,27.3%,2,25.0%,Focus Sash,Chlorophyll,Sludge Bomb / Protect / Leaf Storm / Sleep Powder
+TM_RECIFE_2027,All_Rounds,21,Milotic,22,9.9%,22,9.9%,0,0.0%,0.0%,0,0.0%,Leftovers,Competitive,Protect / Scald / Ice Beam / Coil
+TM_RECIFE_2027,All_Rounds,22,Floette-Mega,20,9.0%,20,9.0%,7,22.6%,35.0%,2,25.0%,Floettite,Flower Veil,Dazzling Gleam / Protect / Calm Mind / Moonblast
+TM_RECIFE_2027,All_Rounds,23,Golisopod-Mega,19,8.6%,19,8.6%,1,3.2%,5.3%,1,12.5%,Golisopite,Emergency Exit,Leech Life / Protect / Iron Head / Drill Run
+TM_RECIFE_2027,All_Rounds,24,Tyranitar-Mega,19,8.6%,19,8.6%,3,9.7%,15.8%,0,0.0%,Tyranitarite,Sand Stream,Knock Off / Protect / Rock Slide / Low Kick
+TM_RECIFE_2027,All_Rounds,25,Garchomp,18,8.1%,18,8.1%,6,19.4%,33.3%,1,12.5%,Life Orb,Rough Skin,Dragon Claw / Stomping Tantrum / Protect / Earthquake
+TM_RECIFE_2027,All_Rounds,26,Excadrill,18,8.1%,18,8.1%,3,9.7%,16.7%,0,0.0%,Focus Sash,Sand Rush,High Horsepower / Iron Head / Protect / Rock Slide
+TM_RECIFE_2027,All_Rounds,27,Gardevoir-Mega,16,7.2%,16,7.2%,2,6.5%,12.5%,0,0.0%,Gardevoirite,Trace,Hyper Voice / Protect / Expanding Force / Trick Room
+TM_RECIFE_2027,All_Rounds,28,Sinistcha,16,7.2%,16,7.2%,2,6.5%,12.5%,0,0.0%,Colbur Berry,Hospitality,Matcha Gotcha / Rage Powder / Protect / Trick Room
+TM_RECIFE_2027,All_Rounds,29,Primarina,16,7.2%,16,7.2%,1,3.2%,6.2%,0,0.0%,Leftovers,Liquid Voice,Hyper Voice / Protect / Moonblast / Calm Mind
+TM_RECIFE_2027,All_Rounds,30,Torkoal,15,6.8%,15,6.8%,1,3.2%,6.7%,1,12.5%,Charcoal,Drought,Eruption / Protect / Earth Power / Weather Ball
+TM_RECIFE_2027,All_Rounds,31,Delphox-Mega,15,6.8%,15,6.8%,4,12.9%,26.7%,1,12.5%,Delphoxite,Blaze,Heat Wave / Nasty Plot / Protect / Psychic
+TM_RECIFE_2027,All_Rounds,32,Indeedee,15,6.8%,15,6.8%,1,3.2%,6.7%,0,0.0%,Choice Scarf,Psychic Surge,Expanding Force / Mystical Fire / Protect / Trick
+TM_RECIFE_2027,All_Rounds,33,Armarouge,14,6.3%,14,6.3%,2,6.5%,14.3%,0,0.0%,Life Orb,Flash Fire,Expanding Force / Armor Cannon / Protect / Wide Guard
+TM_RECIFE_2027,All_Rounds,34,Kommo-o,14,6.3%,14,6.3%,3,9.7%,21.4%,0,0.0%,Leftovers,Soundproof,Protect / Aura Sphere / Clanging Scales / Clangorous Soul
+TM_RECIFE_2027,All_Rounds,35,Politoed,10,4.5%,10,4.5%,1,3.2%,10.0%,1,12.5%,Sitrus Berry,Drizzle,Protect / Weather Ball / Perish Song / Muddy Water
+TM_RECIFE_2027,All_Rounds,36,Dragapult,10,4.5%,10,4.5%,1,3.2%,10.0%,0,0.0%,Life Orb,Clear Body,Protect / Shadow Ball / Will-O-Wisp / Draco Meteor
+TM_RECIFE_2027,All_Rounds,37,Gengar-Mega,10,4.5%,10,4.5%,0,0.0%,0.0%,0,0.0%,Gengarite,Cursed Body,Protect / Shadow Ball / Perish Song / Sludge Bomb
+TM_RECIFE_2027,All_Rounds,38,Froslass-Mega,8,3.6%,8,3.6%,0,0.0%,0.0%,0,0.0%,Froslassite,Cursed Body,Blizzard / Shadow Ball / Protect / Aurora Veil
+TM_RECIFE_2027,All_Rounds,39,Swampert-Mega,7,3.2%,7,3.2%,1,3.2%,14.3%,1,12.5%,Swampertite,Torrent,Protect / Wave Crash / Ice Punch / Earthquake
+TM_RECIFE_2027,All_Rounds,40,Whimsicott,7,3.2%,7,3.2%,1,3.2%,14.3%,0,0.0%,Focus Sash,Prankster,Moonblast / Tailwind / Protect / Encore
+TM_RECIFE_2027,All_Rounds,41,Corviknight,7,3.2%,7,3.2%,1,3.2%,14.3%,0,0.0%,Psychic Seed,Mirror Armor,Brave Bird / Bulk Up / Power Trip / Roost
+TM_RECIFE_2027,All_Rounds,42,Dragonite-Mega,6,2.7%,6,2.7%,2,6.5%,33.3%,1,12.5%,Dragoninite,Multiscale,Heat Wave / Protect / Dragon Pulse / Tailwind
+TM_RECIFE_2027,All_Rounds,43,Metagross-Mega,6,2.7%,6,2.7%,0,0.0%,0.0%,0,0.0%,Metagrossite,Clear Body,Protect / Psychic Fangs / Body Press / Psych Up
+TM_RECIFE_2027,All_Rounds,44,Ceruledge,6,2.7%,6,2.7%,0,0.0%,0.0%,0,0.0%,Grassy Seed,Flash Fire,Bitter Blade / Protect / Shadow Sneak / Swords Dance
+TM_RECIFE_2027,All_Rounds,45,Talonflame,5,2.3%,5,2.3%,3,9.7%,60.0%,0,0.0%,Expert Belt,Gale Wings,Protect / Tailwind / Brave Bird / Flare Blitz
+TM_RECIFE_2027,All_Rounds,46,Annihilape,5,2.3%,5,2.3%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Defiant,Close Combat / Ice Punch / Shadow Claw / Rage Fist
+TM_RECIFE_2027,All_Rounds,47,Lucario-Mega-Z,5,2.3%,5,2.3%,0,0.0%,0.0%,0,0.0%,Lucarionite Z,Inner Focus,Aura Sphere / Detect / Flash Cannon / Dark Pulse
+TM_RECIFE_2027,All_Rounds,48,Aerodactyl-Mega,4,1.8%,4,1.8%,1,3.2%,25.0%,0,0.0%,Aerodactylite,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_RECIFE_2027,All_Rounds,49,Vivillon,4,1.8%,4,1.8%,1,3.2%,25.0%,0,0.0%,Focus Sash,Compound Eyes,Protect / Rage Powder / Sleep Powder / Hurricane
+TM_RECIFE_2027,All_Rounds,50,Aerodactyl,4,1.8%,4,1.8%,0,0.0%,0.0%,0,0.0%,Focus Sash,Unnerve,Dual Wingbeat / Rock Slide / Tailwind / Protect
+TM_RECIFE_2027,All_Rounds,51,Ninetales-Alola,3,1.4%,3,1.4%,1,3.2%,33.3%,0,0.0%,Choice Scarf,Snow Warning,Blizzard / Encore / Freeze-Dry / Protect
+TM_RECIFE_2027,All_Rounds,52,Glimmora,3,1.4%,3,1.4%,1,3.2%,33.3%,0,0.0%,Focus Sash,Toxic Debris,Earth Power / Power Gem / Spiky Shield / Sludge Bomb
+TM_RECIFE_2027,All_Rounds,53,Glimmora-Mega,3,1.4%,3,1.4%,1,3.2%,33.3%,0,0.0%,Glimmoranite,Toxic Debris,Earth Power / Power Gem / Sludge Bomb / Spiky Shield
+TM_RECIFE_2027,All_Rounds,54,Meowstic-F-Mega,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Meowsticite,Competitive,Expanding Force / Fake Out / Protect / Thunderbolt
+TM_RECIFE_2027,All_Rounds,55,Camerupt-Mega,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Cameruptite,Solid Rock,Earth Power / Protect / Ancient Power / Eruption
+TM_RECIFE_2027,All_Rounds,56,Espathra,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Electric Seed,Speed Boost,Calm Mind / Protect / Baton Pass / Lumina Crash
+TM_RECIFE_2027,All_Rounds,57,Blaziken-Mega,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Blazikenite,Speed Boost,Close Combat / Detect / Flare Blitz / Rock Slide
+TM_RECIFE_2027,All_Rounds,58,Typhlosion-Hisui,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Blaze,Eruption / Heat Wave / Shadow Ball / Overheat
+TM_RECIFE_2027,All_Rounds,59,Hatterene,3,1.4%,3,1.4%,0,0.0%,0.0%,0,0.0%,Life Orb,Magic Bounce,Dazzling Gleam / Expanding Force / Trick Room / Protect
+TM_RECIFE_2027,All_Rounds,60,Toxapex,2,0.9%,2,0.9%,1,3.2%,50.0%,1,12.5%,Leftovers,Regenerator,Baneful Bunker / Infestation / Toxic / Wide Guard
+TM_RECIFE_2027,All_Rounds,61,Raichu-Mega-X,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Raichunite X,Lightning Rod,Fake Out / Light Screen / Reflect / Volt Switch
+TM_RECIFE_2027,All_Rounds,62,Blastoise-Mega,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Blastoisinite,Rain Dish,Dark Pulse / Protect / Shell Smash / Water Spout
+TM_RECIFE_2027,All_Rounds,63,Hydreigon,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Dark Pulse / Draco Meteor / Flamethrower / Snarl
+TM_RECIFE_2027,All_Rounds,64,Altaria,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Haban Berry,Cloud Nine,Protect / Will-O-Wisp / Helping Hand / Perish Song
+TM_RECIFE_2027,All_Rounds,65,Manectric-Mega,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Manectite,Lightning Rod,Snarl / Protect / Rain Dance / Thunder
+TM_RECIFE_2027,All_Rounds,66,Mimikyu,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Bright Powder,Disguise,Phantom Force / Play Rough / Shadow Sneak / Light Screen
+TM_RECIFE_2027,All_Rounds,67,Jolteon,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Life Orb,Volt Absorb,Shadow Ball / Thunderbolt / Detect / Fake Tears
+TM_RECIFE_2027,All_Rounds,68,Gallade,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,White Herb,Sharpness,Psycho Cut / Sacred Sword / Wide Guard / Trick Room
+TM_RECIFE_2027,All_Rounds,69,Hawlucha,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,White Herb,Unburden,Detect / High Jump Kick / Iron Head / Rock Slide
+TM_RECIFE_2027,All_Rounds,70,Heracross-Mega,2,0.9%,2,0.9%,0,0.0%,0.0%,0,0.0%,Heracronite,Moxie,Detect / Rock Blast / Close Combat / Pin Missile
+TM_RECIFE_2027,All_Rounds,71,Klefki,1,0.5%,1,0.5%,1,3.2%,100.0%,0,0.0%,Light Clay,Prankster,Dazzling Gleam / Light Screen / Rain Dance / Reflect
+TM_RECIFE_2027,All_Rounds,72,Tyranitar,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Air Balloon,Sand Stream,Brick Break / Knock Off / Protect / Rock Slide
+TM_RECIFE_2027,All_Rounds,73,Chesnaught,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Life Orb,Bulletproof,Close Combat / Knock Off / Spiky Shield / Wide Guard
+TM_RECIFE_2027,All_Rounds,74,Maushold,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Chople Berry,Friend Guard,Feint / Follow Me / Protect / Super Fang
+TM_RECIFE_2027,All_Rounds,75,Aggron-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Aggronite,Sturdy,Body Press / Heavy Slam / Iron Defense / Protect
+TM_RECIFE_2027,All_Rounds,76,Drampa-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Drampanite,Cloud Nine,Calm Mind / Dragon Pulse / Hyper Voice / Protect
+TM_RECIFE_2027,All_Rounds,77,Salazzle,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Corrosion,Fake Out / Overheat / Sludge Wave / Toxic
+TM_RECIFE_2027,All_Rounds,78,Sableye,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Light Clay,Prankster,Fake Out / Light Screen / Reflect / Skill Swap
+TM_RECIFE_2027,All_Rounds,79,Goodra-Hisui,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Chople Berry,Shell Armor,Body Press / Life Dew / Shelter / Thunderbolt
+TM_RECIFE_2027,All_Rounds,80,Toxtricity,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Punk Rock,Overdrive / Psychic Noise / Sludge Bomb / Snarl
+TM_RECIFE_2027,All_Rounds,81,Ditto,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Imposter,Transform
+TM_RECIFE_2027,All_Rounds,82,Clawitzer,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Life Orb,Mega Launcher,Aura Sphere / Dark Pulse / Protect / Water Pulse
+TM_RECIFE_2027,All_Rounds,83,Scovillain-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Scovillainite,Moody,Flamethrower / Giga Drain / Protect / Rage Powder
+TM_RECIFE_2027,All_Rounds,84,Zoroark-Hisui,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Illusion,Dark Pulse / Extrasensory / Icy Wind / Shadow Ball
+TM_RECIFE_2027,All_Rounds,85,Scrafty-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Scraftinite,Intimidate,Drain Punch / Fake Out / Poison Jab / Throat Chop
+TM_RECIFE_2027,All_Rounds,86,Slowbro-Galar,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Quick Claw,Quick Draw,Expanding Force / Fire Blast / Focus Blast / Shell Side Arm
+TM_RECIFE_2027,All_Rounds,87,Kangaskhan-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Kangaskhanite,Scrappy,Double-Edge / Drain Punch / Fake Out / Sucker Punch
+TM_RECIFE_2027,All_Rounds,88,Absol-Mega-Z,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Absolite Z,Justified,Close Combat / Night Slash / Protect / Shadow Claw
+TM_RECIFE_2027,All_Rounds,89,Tyrantrum,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Strong Jaw,High Horsepower / Ice Fang / Psychic Fangs / Rock Slide
+TM_RECIFE_2027,All_Rounds,90,Hippowdon,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Sitrus Berry,Sand Stream,High Horsepower / Protect / Rock Tomb / Slack Off
+TM_RECIFE_2027,All_Rounds,91,Rotom-Heat,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Choice Scarf,Levitate,Electroweb / Overheat / Volt Switch / Will-O-Wisp
+TM_RECIFE_2027,All_Rounds,92,Pawmot,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Iron Fist,Close Combat / Double Shock / Fake Out / Ice Punch
+TM_RECIFE_2027,All_Rounds,93,Sirfetch’d,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Leek,Scrappy,Detect / Leaf Blade / Meteor Assault / Night Slash
+TM_RECIFE_2027,All_Rounds,94,Lycanroc-Dusk,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Hard Stone,Tough Claws,Accelerock / Protect / Rock Slide / Taunt
+TM_RECIFE_2027,All_Rounds,95,Pinsir-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Pinsirite,Hyper Cutter,Body Slam / Feint / Protect / Storm Throw
+TM_RECIFE_2027,All_Rounds,96,Alakazam-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Alakazite,Magic Guard,Dazzling Gleam / Expanding Force / Protect / Shadow Ball
+TM_RECIFE_2027,All_Rounds,97,Tinkaton,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Shuca Berry,Mold Breaker,Fake Out / Gigaton Hammer / Play Rough / Protect
+TM_RECIFE_2027,All_Rounds,98,Ampharos-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Ampharosite,Static,Cotton Guard / Dragon Pulse / Protect / Thunderbolt
+TM_RECIFE_2027,All_Rounds,99,Abomasnow-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Abomasite,Snow Warning,Blizzard / Giga Drain / Protect / Weather Ball
+TM_RECIFE_2027,All_Rounds,100,Mawile-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Mawilite,Intimidate,Iron Head / Play Rough / Protect / Sucker Punch
+TM_RECIFE_2027,All_Rounds,101,Garchomp-Mega,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Garchompite,Sand Veil,Earthquake / Facade / Iron Head / Liquidation
+TM_RECIFE_2027,All_Rounds,102,Charizard,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Focus Band,Blaze,Blast Burn / Flamethrower / Outrage / Weather Ball
+TM_RECIFE_2027,All_Rounds,103,Orthworm,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Quick Claw,Earth Eater,Heavy Slam / Iron Defense / Rock Blast / Stealth Rock
+TM_RECIFE_2027,All_Rounds,104,Samurott-Hisui,1,0.5%,1,0.5%,0,0.0%,0.0%,0,0.0%,Focus Sash,Torrent,Ceaseless Edge / Lash Out / Rain Dance / Razor Shell

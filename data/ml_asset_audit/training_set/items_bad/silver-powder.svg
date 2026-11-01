@@ -1,0 +1,13 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Silk Pouch Body -->
+  <path d="M30,36 C34,28 66,28 70,36 C76,54 78,82 50,86 C22,82 24,54 30,36 Z" fill="#e2e8f0" stroke="#94a3b8" stroke-width="2.5"/>
+  <!-- Tied Cord Ribbon -->
+  <path d="M32,36 C42,40 58,40 68,36" stroke="#475569" stroke-width="3" fill="none"/>
+  <circle cx="50" cy="38" r="4" fill="#38bdf8"/>
+  <!-- Shimmering Wing Scales Dust -->
+  <polygon points="50,48 52,54 58,56 52,58 50,64 48,58 42,56 48,54" fill="#ffffff" stroke="#94a3b8" stroke-width="1"/>
+  <circle cx="36" cy="62" r="2.5" fill="#ffffff"/>
+  <circle cx="64" cy="66" r="2.5" fill="#ffffff"/>
+  <circle cx="56" cy="74" r="2" fill="#38bdf8"/>
+  <circle cx="42" cy="74" r="2" fill="#38bdf8"/>
+</svg>

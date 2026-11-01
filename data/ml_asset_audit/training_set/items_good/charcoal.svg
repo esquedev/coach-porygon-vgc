@@ -1,0 +1,20 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="emberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="40%" stop-color="#f97316"/>
+      <stop offset="80%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+  </defs>
+  <!-- Charcoal Briquette Body -->
+  <polygon points="24,34 46,18 78,22 86,52 74,82 42,86 16,68 18,44" fill="#18181b" stroke="#3f3f46" stroke-width="2.5"/>
+  <!-- Glowing Heat Fractures / Embers -->
+  <path d="M44,22 L40,46 L62,54 L54,82" stroke="url(#emberGlow)" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M40,46 L20,52" stroke="#f97316" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <path d="M62,54 L82,48" stroke="#f97316" stroke-width="3" fill="none" stroke-linecap="round"/>
+  <circle cx="40" cy="46" r="4" fill="#fef08a"/>
+  <circle cx="62" cy="54" r="3.5" fill="#fef08a"/>
+  <!-- Specular Carbon Edge -->
+  <polygon points="26,36 46,22 74,25 68,36 44,32" fill="#3f3f46" fill-opacity="0.6"/>
+</svg>

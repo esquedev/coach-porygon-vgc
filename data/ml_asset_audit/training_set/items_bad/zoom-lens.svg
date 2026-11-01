@@ -1,0 +1,13 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Multi-Element Telephoto Barrel -->
+  <rect x="24" y="24" width="52" height="52" rx="6" fill="#1e293b" stroke="#475569" stroke-width="2.5"/>
+  <!-- Grip Rings -->
+  <line x1="28" y1="36" x2="72" y2="36" stroke="#64748b" stroke-width="3"/>
+  <line x1="28" y1="44" x2="72" y2="44" stroke="#64748b" stroke-width="3"/>
+  <!-- Front Element Ring with Green Multicoating -->
+  <circle cx="50" cy="62" r="18" fill="#065f46" stroke="#10b981" stroke-width="2"/>
+  <!-- Internal Aperture Core -->
+  <circle cx="50" cy="62" r="8" fill="#022c22"/>
+  <!-- Specular Crescent Glint -->
+  <path d="M40,56 A12,12 0 0,1 58,54" stroke="#34d399" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+</svg>

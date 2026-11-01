@@ -1,0 +1,6 @@
+Tournament_ID,Phase,Rank,Species,Raw_Count,Usage_Pct,Day1_Count,Day1_Usage_Pct,Day2_Count,Day2_Usage_Pct,Conversion_Rate_Pct,Top_Cut_Count,Top_Cut_Usage_Pct,Most_Common_Item,Most_Common_Ability,Most_Common_Moves
+TM_BALTIMORE_2027,All_Rounds,1,Rillaboom,591,54.8%,591,54.8%,85,54.5%,14.4%,5,62.5%,Miracle Seed,Grassy Surge,Grassy Glide / Fake Out / Wood Hammer / High Horsepower
+TM_BALTIMORE_2027,All_Rounds,2,Sneasler,505,46.8%,505,46.8%,61,39.1%,12.1%,4,50.0%,Grassy Seed,Unburden,Close Combat / Dire Claw / Protect / Fake Out
+TM_BALTIMORE_2027,All_Rounds,3,Salamence-Mega,402,37.3%,402,37.3%,49,31.4%,12.2%,2,25.0%,Salamencite,Intimidate,Protect / Hyper Voice / Tailwind / Draco Meteor
+TM_BALTIMORE_2027,All_Rounds,4,Gholdengo,335,31.0%,335,31.0%,60,38.5%,17.9%,2,25.0%,Life Orb,Good as Gold,Make It Rain / Shadow Ball / Protect / Nasty Plot
+TM_BALTIMORE_2027,All_Rounds,5,Incineroar,317,29.4%,317,29.4%,51,32.7%,16.1%,2,25.0%,Sitrus Berry,Intimidate,Fake Out / Parting Shot / Flare Blitz / Throat Chop

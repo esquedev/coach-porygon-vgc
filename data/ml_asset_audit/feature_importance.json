@@ -1,0 +1,67 @@
+[
+  {
+    "feature": "procedural_penalty",
+    "importance": 0.5736,
+    "description": "Combined structural penalty for template markers (creepy eyes, generic torso, berry, mega stone)"
+  },
+  {
+    "feature": "primary_color_dist",
+    "importance": 0.2168,
+    "description": "Euclidean color distance between SVG dominant color and Showdown official sprite"
+  },
+  {
+    "feature": "vector_complexity",
+    "importance": 0.0908,
+    "description": "Sum of geometric polygons and custom bezier curves (drawing-style agnostic)"
+  },
+  {
+    "feature": "distinct_colors",
+    "importance": 0.0614,
+    "description": "Number of unique hex color codes used across all vector elements"
+  },
+  {
+    "feature": "total_elements",
+    "importance": 0.0569,
+    "description": "Sum of paths, polygons, circles, rectangles, and ellipses"
+  },
+  {
+    "feature": "is_item",
+    "importance": 0.0002,
+    "description": "Category indicator (1 for items, 0 for Pok\u00e9mon sprites)"
+  },
+  {
+    "feature": "unmatched_primary",
+    "importance": 0.0001,
+    "description": "Binary flag indicating if Showdown primary color has no close match (>85 distance)"
+  },
+  {
+    "feature": "has_creepy_eye",
+    "importance": 0.0001,
+    "description": "Exact binary detection of procedural template blank triangle eyes"
+  },
+  {
+    "feature": "has_text_fallback",
+    "importance": 0.0,
+    "description": "Binary detection of fallback 3-letter abbreviation text elements (MIR, WHI)"
+  },
+  {
+    "feature": "has_generic_torso",
+    "importance": 0.0,
+    "description": "Exact binary detection of procedural template mannequin torso bezier curve"
+  },
+  {
+    "feature": "has_generic_berry",
+    "importance": 0.0,
+    "description": "Exact binary detection of cloned procedural berry silhouette"
+  },
+  {
+    "feature": "has_generic_mega",
+    "importance": 0.0,
+    "description": "Detection of generic radial gradient and default DNA glyph for mega stones"
+  },
+  {
+    "feature": "is_primitive_blob",
+    "importance": 0.0,
+    "description": "Detection of ultra-simplistic sprites consisting exclusively of circles/ellipses without paths"
+  }
+]

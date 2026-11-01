@@ -1,0 +1,52 @@
+#!/bin/sh
+# ==============================================================================
+# Coach Porygon VGC — Git Pre-Push Hook
+# Automatically executes the 5-phase CI/CD verification runner before any push.
+# Rejects the push if any phase fails or if the AI Health Audit is missing/consumed.
+# ==============================================================================
+
+echo ""
+echo "=============================================================================="
+echo " [GIT PRE-PUSH] Running 5-Phase CI/CD Pipeline before push (--pre-push)..."
+echo "=============================================================================="
+echo ""
+
+# Find repository root
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Execute runner with --pre-push flag to enforce AI Health Stress audit verification
+if [ -f "./run_tests.cmd" ] && [ -n "$COMSPEC" ]; then
+    ./run_tests.cmd --pre-push
+elif [ -f "./run_tests.sh" ]; then
+    ./run_tests.sh --pre-push
+else
+    ./run_tests.cmd --pre-push
+fi
+TEST_EXIT_CODE=$?
+
+# If run_tests failed, block the push!
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo ""
+    echo "=============================================================================="
+    echo " [GIT PRE-PUSH: REJECTED]"
+    echo " git push was BLOCKED because the 5-phase CI/CD pipeline failed (exit code: $TEST_EXIT_CODE)."
+    echo ""
+    echo " Common causes & remediations:"
+    echo " 1. Unit or lint tests failed -> Review failures above and fix code."
+    echo " 2. Phase 3 AI Health Audit was consumed or missing -> Run the developer skill:"
+    echo "    python evals/evaluate_release_health.py --generate"
+    echo "=============================================================================="
+    echo ""
+    exit 1
+fi
+
+echo ""
+echo "=============================================================================="
+echo " [GIT PRE-PUSH: APPROVED] All 5 pipeline phases passed."
+echo " [GIT PRE-PUSH: GC] Performing final Git object repacking and garbage collection..."
+git gc --auto --quiet 2>/dev/null || true
+echo " [GIT PRE-PUSH: READY] Repository optimized. Pushing to remote..."
+echo "=============================================================================="
+echo ""
+exit 0

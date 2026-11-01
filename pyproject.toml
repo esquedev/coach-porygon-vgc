@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coach-porygon-vgc"
+version = "1.0.0"
+description = "Autonomous coaching, scouting, and deterministic turn micro-simulator for the Pokémon Champions (Regulation M-C) competitive ecosystem."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Coach Porygon Team" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment :: Turn Based Strategy",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+dependencies = [
+    "flask>=3.0.0",
+    "werkzeug>=3.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/unkil/coach-porygon-vgc"
+Documentation = "https://github.com/unkil/coach-porygon-vgc#readme"
+Repository = "https://github.com/unkil/coach-porygon-vgc.git"
+Issues = "https://github.com/unkil/coach-porygon-vgc/issues"
+
+[project.scripts]
+coach-porygon = "engine.ui_server:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "flake8>=6.1.0",
+    "pycodestyle>=2.11.0",
+    "pyhocon>=0.3.59",
+    "flask>=3.0.0",
+    "Pillow>=9.5.0",
+    "scipy>=1.10.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
+    "tomli>=1.1.0; python_version < '3.11'"
+]
+ml = [
+    "torch>=2.0.0",
+    "scipy>=1.10.0",
+    "scikit-learn>=1.3.0",
+    "joblib>=1.3.0",
+    "numpy>=1.24.0",
+    "Pillow>=9.5.0"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["engine*", "evals*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.csv", "*.json", "*.svg", "*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short -o cache_dir=.temp/pytest_cache"
+cache_dir = ".temp/pytest_cache"
