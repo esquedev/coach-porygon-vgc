@@ -52,7 +52,7 @@ This document establishes the mandatory software engineering standards, reposito
 * **PEP 484 Type Annotations:**
   * Public interfaces, mathematical calculations, and pipeline functions must declare explicit type hints.
 * **Flake8 Compliance:**
-  * The codebase enforces clean formatting with zero flake8 warnings or errors across `engine/`, `evals/`, `scouts/`, and `tests/`.
+  * The codebase enforces clean formatting with zero flake8 warnings or errors across `engine/`, `evals/`, and `tests/`.
 
 ---
 

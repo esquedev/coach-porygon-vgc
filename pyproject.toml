@@ -51,7 +51,7 @@ ml = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["engine*", "scouts*", "evals*"]
+include = ["engine*", "evals*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.csv", "*.json", "*.svg", "*.html"]

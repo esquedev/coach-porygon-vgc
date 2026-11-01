@@ -14,11 +14,11 @@ Deliver deterministic 66-SP roster engineering with zero conversational padding.
 1. **Legacy Purge Guardrail**:
    - Zero tolerance for Gen 1–9 legacy mechanics. Never mention `Effort Values`, `EVs`, `Individual Values`, `IVs`, or `Hyper Training` in coaching prose.
 2. **Item Legality & Item Clause Verification**:
-   - Every proposed or equipped hold item must be verified against `data/Regulation_MC_Items.csv` (via `python scouts/pokedex_resolver.py --item "<ItemName>"`).
+   - Every proposed or equipped hold item must be verified against `data/Regulation_MC_Items.csv` (via `data/Regulation_MC_Items.csv` or `engine/validate_roster.py`).
    - If an item does not exist in `Regulation_MC_Items.csv`, it is not legal in Regulation M-C. Never propose unverified hold items.
    - Enforce Item Clause across all 6 slots (no duplicate items across the team).
 3. **Species Typing & STAB Grounding**:
-   - Retrieve exact official types directly from `data/MC_Available_Pokemon.csv` or `python scouts/pokedex_resolver.py --species "<Species>"`.
+   - Retrieve exact official types directly from `data/MC_Available_Pokemon.csv` or `engine/validate_roster.py`.
    - Never assume or invent secondary typings (e.g., `Mega Raichu X` is mono-`Electric`).
    - A damaging move receives Same Type Attack Bonus (STAB, 1.5x) *only* if its type matches the Pokémon's verified typing.
    - Damaging moves of non-matching types must be explicitly labeled as "Non-STAB Coverage (1.0x)".

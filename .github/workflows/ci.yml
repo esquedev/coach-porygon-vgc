@@ -36,7 +36,7 @@ jobs:
           # Stop build if there are Python syntax errors or undefined names
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           # Enforce PEP 8 style rules on core engine and evals
-          flake8 engine/ evals/ scouts/ tests/ --count --max-line-length=120 --extend-ignore=E121,E201,E202,E203,E225,E226,E231,E241,E302,E303,E305,E402,E501,E701,E731,E741,F401,F541,F841,W503,W504 --statistics
+          flake8 engine/ evals/ tests/ --count --max-line-length=120 --extend-ignore=E121,E201,E202,E203,E225,E226,E231,E241,E302,E303,E305,E402,E501,E701,E731,E741,F401,F541,F841,W503,W504 --statistics
 
       - name: Initialize Public Schema Templates
         run: |

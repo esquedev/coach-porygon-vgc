@@ -12,7 +12,7 @@ Deliver a standalone, pre-match Bo3 game plan formatted for rapid memorization b
 ## Execution Workflow
 
 1. **Roster & Archetype Resolution**:
-   - Cross-reference the user's active prototype (`data/Teams.csv`) and the opponent's 6-Pokémon sheet against `data/Scouted_Teams.csv` using `python scouts/munchstats_scraper.py --lookup ...`.
+   - Cross-reference the user's active prototype (`data/Teams.csv`) and the opponent's 6-Pokémon sheet against `data/Scouted_Teams.csv` via `python -m engine.munchstats_db --query ...` or `data/Scouted_Teams.csv`.
    - Compute exact Level 50 speed stats via [`engine/sp_calculator.py`](../../../engine/sp_calculator.py).
 2. **Mandatory 5-Part Dossier**:
    1. **Speed Tier Hierarchy:** Complete sorted ranking of all 12 Pokémon across both rosters by effective speed (including instantaneous post-Mega speed tiers and Tailwind/Weather modifiers).

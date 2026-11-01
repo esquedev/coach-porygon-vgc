@@ -179,7 +179,6 @@ def verify_referenced_paths():
                 md_file.parent / p_clean,
                 REPO_ROOT / "data" / p_clean,
                 REPO_ROOT / "engine" / p_clean,
-                REPO_ROOT / "scouts" / p_clean,
                 REPO_ROOT / ".agents" / "rules" / p_clean
             ]
             example_candidates = [

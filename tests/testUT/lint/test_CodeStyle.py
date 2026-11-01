@@ -20,7 +20,7 @@ class TestCodeStyle(unittest.TestCase):
 
     def setUp(self):
         """Discover all project Python source files excluding virtualenvs and temporary scratch files."""
-        self.dirs = ["engine", "scouts", "evals", "tests"]
+        self.dirs = ["engine", "evals", "tests"]
         self.py_files = []
         for d in self.dirs:
             p_dir = REPO_ROOT / d

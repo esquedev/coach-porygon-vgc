@@ -1239,7 +1239,7 @@ window.__INITIAL_LANG__ = 'en';
             Comando munchstats_scraper.py listo para ejecutar con los filtros seleccionados:
           </div>
           <div class="text-[11px] font-mono text-cyan-400 truncate" id="munch-cmd-line">
-            $ python scouts/munchstats_scraper.py --tournament "ALL" --archetype "ALL" --species "ALL" --dump-csv data/MunchStats_Query_Dump.csv
+            $ python -m engine.munchstats_db --query "SELECT * FROM standings" --limit 10
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -4148,7 +4148,7 @@ function loadFlashCardScenario(idx) {
       const cmdLine = document.getElementById('munch-cmd-line');
       const scriptPreview = document.getElementById('munch-script-preview');
       if (cmdLine) {
-        let cmd = `$ python scouts/munchstats_scraper.py --tournament "${tourney}" --archetype "${arch}" --species "${spec}"`;
+        let cmd = `$ python -m engine.munchstats_db --tournament "${tourney}" --archetype "${arch}" --species "${spec}"`;
         if (q) cmd += ` --query "${q.replace(/"/g, '')}"`;
         cmd += ` --dump-csv data/MunchStats_Query_Dump.csv`;
         cmdLine.textContent = cmd;

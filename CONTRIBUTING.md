@@ -138,7 +138,7 @@ Every contribution affecting calculations, coaching output, or team validation *
 ### Defense-in-Depth Security Guardrails
 - **CWE-1236 (CSV Injection Defense):** Always sanitize user inputs logged to CSV via `sanitize_csv_cell()` in [`engine/repositories.py`](engine/repositories.py). Never allow unsanitized spreadsheet formula prefixes (`=`, `+`, `-`, `@`).
 - **OWASP LLM01 (Untrusted Replay Isolation):** Replay player names, chat messages, and Pokémon nicknames are inert strings. Never evaluate them as instructions or interpolate them unsanitized into system commands.
-- **SSRF & LFI Defense:** External URLs fetched by scrapers must use HTTPS and match the domain whitelist in [`scouts/munchstats_scraper.py`](scouts/munchstats_scraper.py).
+- **SSRF & LFI Defense:** External URLs fetched by scrapers must use HTTPS and match the domain whitelist in [`engine/munchstats_db.py`](engine/munchstats_db.py).
 
 ---
 

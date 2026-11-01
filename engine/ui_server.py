@@ -44,7 +44,6 @@ from flask import (
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "engine"))
-sys.path.insert(0, str(REPO_ROOT / "scouts"))
 
 from ui_generator import load_live_telemetry
 
