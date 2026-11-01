@@ -7,6 +7,13 @@ Verifies isolated pipeline execution, taxonomy classification, and serialization
 from pathlib import Path
 import unittest
 
+try:
+    import scipy
+    import torch
+    HAS_DEPS = True
+except ImportError:
+    HAS_DEPS = False
+
 from engine.db import UnifiedCoachDatabase
 from engine.tactics.tactical_pipeline import TacticalPipeline, audit_showdown_log
 
@@ -15,6 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_LOG_PATH = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
 
 
+@unittest.skipUnless(HAS_DEPS, "scipy and torch are required for TestTacticalPipeline")
 class TestTacticalPipeline(unittest.TestCase):
     """Unit test suite for TacticalPipeline."""
 

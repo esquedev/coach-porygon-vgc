@@ -223,8 +223,101 @@ def verify_taxonomy_codes():
     return len(CANONICAL_ERROR_CODES) + len(CANONICAL_COGNITIVE_DRIVERS)
 
 
+def verify_declared_dependencies():
+    """
+    AST-based static validation of external Python package imports across engine/ and tests/.
+    Ensures that every third-party package imported is explicitly declared in requirements.txt,
+    requirements-dev.txt, or pyproject.toml.
+    """
+    import ast
+
+    declared = set()
+    req_files = [
+        REPO_ROOT / "requirements.txt",
+        REPO_ROOT / "requirements-dev.txt",
+        REPO_ROOT / "pyproject.toml"
+    ]
+
+    for rf in req_files:
+        if rf.exists():
+            for line in rf.read_text(encoding="utf-8").splitlines():
+                clean = line.strip().split("#")[0].strip().strip('"').strip("'")
+                if not clean or clean.startswith("[") or ("=" in clean and not any(op in clean for op in [">=", "<=", "==", "~="])):
+                    continue
+                pkg_match = re.match(r"^([a-zA-Z0-9_\-]+)", clean)
+                if pkg_match:
+                    pkg_name = pkg_match.group(1).lower().replace("-", "_")
+                    declared.add(pkg_name)
+
+    import_map = {
+        "pillow": "pil",
+        "scikit_learn": "sklearn",
+        "pyyaml": "yaml",
+        "pytest_cov": "pytest",
+    }
+    for dist, mod in import_map.items():
+        if dist in declared:
+            declared.add(mod)
+
+    stdlib = set(getattr(sys, "stdlib_module_names", set()))
+    stdlib.update({
+        "abc", "argparse", "ast", "asyncio", "base64", "collections", "contextlib",
+        "copy", "csv", "ctypes", "dataclasses", "datetime", "decimal", "difflib",
+        "enum", "fileinput", "fnmatch", "fractions", "functools", "glob", "gzip",
+        "hashlib", "heapq", "hmac", "html", "http", "importlib", "inspect", "io",
+        "itertools", "json", "logging", "math", "mimetypes", "multiprocessing",
+        "operator", "os", "pathlib", "pickle", "platform", "pprint", "queue",
+        "random", "re", "secrets", "shutil", "signal", "socket", "sqlite3",
+        "ssl", "stat", "string", "struct", "subprocess", "sys", "tempfile",
+        "threading", "time", "timeit", "traceback", "types", "typing",
+        "unicodedata", "unittest", "urllib", "uuid", "warnings", "weakref", "xml", "zipfile"
+    })
+    internal_modules = {"engine", "evals", "tests", "main", "munchstats_scraper"}
+    for p in (REPO_ROOT / "engine").rglob("*.py"):
+        internal_modules.add(p.stem.lower().replace("-", "_"))
+    for p in (REPO_ROOT / "evals").rglob("*.py"):
+        internal_modules.add(p.stem.lower().replace("-", "_"))
+    for p in (REPO_ROOT / "tests").rglob("*.py"):
+        internal_modules.add(p.stem.lower().replace("-", "_"))
+
+    undeclared = []
+    scanned_imports = 0
+
+    scan_dirs = [REPO_ROOT / "engine", REPO_ROOT / "tests", REPO_ROOT / "evals"]
+    for sdir in scan_dirs:
+        for py_file in sdir.rglob("*.py"):
+            try:
+                tree = ast.parse(py_file.read_text(encoding="utf-8"), filename=str(py_file))
+            except Exception:
+                continue
+
+            for node in ast.walk(tree):
+                module_names = []
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        module_names.append(alias.name.split(".")[0])
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level == 0 and node.module:
+                        module_names.append(node.module.split(".")[0])
+
+                for mod in module_names:
+                    mod_lower = mod.lower().replace("-", "_")
+                    scanned_imports += 1
+                    if mod_lower in stdlib or mod_lower in internal_modules:
+                        continue
+                    if mod_lower not in declared:
+                        undeclared.append((str(py_file.relative_to(REPO_ROOT)), mod))
+
+    if undeclared:
+        for fpath, mod in undeclared:
+            print(f"  [UNDECLARED DEPENDENCY] File: {fpath} imports '{mod}', but '{mod}' is not declared in requirements.txt or pyproject.toml.")
+        raise AssertionError(f"Found {len(undeclared)} undeclared third-party dependencies.")
+
+    return scanned_imports
+
+
 def run_all_checks():
-    """Run 4 deterministic static checks: schema, file paths, blacklist, taxonomy."""
+    """Run 5 deterministic static checks: schema, file paths, blacklist, taxonomy, dependencies."""
     print("=" * 60)
     print("COACH PORYGON VGC — DETERMINISTIC STATIC EVALUATION RUNNER")
     print("=" * 60)
@@ -240,6 +333,9 @@ def run_all_checks():
 
     tax_count = verify_taxonomy_codes()
     print(f"  ✓ Mistake Taxonomy: {tax_count} tactical codes and cognitive drivers verified.")
+
+    dep_count = verify_declared_dependencies()
+    print(f"  ✓ Declared Dependencies: {dep_count} imports validated against requirements manifests.")
 
     print("=" * 60)
     print("STATUS: [PASS - ALL PROMPT HEALTH CHECKS GREEN]")

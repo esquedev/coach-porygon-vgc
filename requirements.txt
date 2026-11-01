@@ -5,3 +5,5 @@
 requests>=2.28.0   # Optional: Live tournament HTML/JSON fetching outside sandbox
 numpy>=1.24.0      # Optional: Accelerated multi-branch damage distribution matrices
 flask>=3.0.0       # Web frontend backend, dynamic asset serving & API router
+scipy>=1.10.0      # Optional/Tactics: Game-Theoretic Nash LP solver
+torch>=2.0.0       # Optional/Tactics: Neural Value Network for Win-Equity evaluation

@@ -47,6 +47,12 @@ In Developer Mode, the agent has **full repository write access** to maintain, t
    - **Liskov Substitution Principle (L):** Maintain strict `PEP 484` type contracts. Battle entities, field condition classes, and diagnostic loggers must be interchangeable without breaking caller invariants.
    - **Interface Segregation Principle (I):** Favor granular, single-purpose functions and targeted Flask API endpoints over monolithic classes or bloated multi-action handlers.
    - **Dependency Inversion Principle (D):** High-level game analysis and coaching flowcharts must depend on high-level battle engine abstractions (`turn_simulator.py`), not on volatile external scraping structures or unvalidated raw replay strings.
+7. **Mandatory Third-Party Dependency Manifest Synchronization:**
+   Whenever working with, evaluating, or introducing any non-native (third-party) Python library (e.g., `scipy`, `torch`, `requests`, `numpy`, `flask`), the dependency MUST be immediately declared with compatible version bounds across **both requirements manifests** and package metadata:
+   - [`requirements.txt`](../../requirements.txt) (runtime dependencies)
+   - [`requirements-dev.txt`](../../requirements-dev.txt) (development and test runners)
+   - [`pyproject.toml`](../../pyproject.toml) (under `dependencies` or `[project.optional-dependencies]`)
+   Furthermore, any component with non-native scientific or ML dependencies must provide graceful degradation imports (`try ... except ImportError`) and corresponding test skips (`@unittest.skipUnless(HAS_..., ...)`) so that pytest collection never crashes in clean-room CI environments. Static parity is enforced deterministically by `evals/run_static_checks.py` via AST inspection in Phase 3.
 
 ## 3. Active Developer Skills
 Developers possess access to the **complete superset of skills** (both Trainer coaching skills and Developer engineering skills):

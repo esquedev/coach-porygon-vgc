@@ -85,3 +85,15 @@ This document establishes the mandatory software engineering standards, reposito
   * Monolithic multi-class test catch-alls (e.g. bundling disparate domain components into a single file) are strictly prohibited.
   * Negative adversarial tests must be co-located or mapped directly to their target unit (e.g., `test_Negative<TargetClass>.py` or as dedicated negative test methods within `Test<TargetClass>`).
 
+
+
+---
+
+## 7. Mandatory Third-Party Dependency Parity
+
+* **Dual-Manifest & TOML Synchronization:** Any non-native Python library introduced or evaluated across `engine/`, `evals/`, or `tests/` MUST be immediately declared with compatible version bounds in:
+  * `requirements.txt` (runtime production dependencies)
+  * `requirements-dev.txt` (development, linting, and testing dependencies)
+  * `pyproject.toml` (under `dependencies` or `[project.optional-dependencies]`)
+* **Graceful Degradation & Test Collection Shielding:** Modules utilizing optional machine learning, linear programming, or scientific packages (`torch`, `scipy`) must implement graceful degradation imports (`try ... except ImportError`) and corresponding test skip decorators (`@unittest.skipUnless(HAS_..., ...)` or `pytest.importorskip`) so that test discovery and collection never fails in minimal or clean-room CI environments.
+* **Automated Static Audit:** Phase 3 of the CI runner (`evals/run_static_checks.py`) strictly verifies AST imports against declared manifests on every test run.

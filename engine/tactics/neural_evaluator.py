@@ -11,8 +11,17 @@ differentials.
 
 from typing import Any, Dict, List, Optional, Union
 import numpy as np
-import torch
-import torch.nn as nn
+
+try:
+    import torch
+    import torch.nn as nn
+    HAS_TORCH = True
+    _BaseModule = nn.Module
+except ImportError:
+    torch = None
+    nn = None
+    HAS_TORCH = False
+    _BaseModule = object
 
 from engine.tactics.action_pruner import ActionPruner, PrunedActionLine
 from engine.tactics.showdown_parser import TurnSnapshot
@@ -21,7 +30,7 @@ from engine.tactics.showdown_parser import TurnSnapshot
 STATE_VECTOR_DIM = 36
 
 
-class RegulationMcValueNet(nn.Module):
+class RegulationMcValueNet(_BaseModule):
     """
     PyTorch Value Network for Regulation M-C board equity evaluation.
 
@@ -30,13 +39,16 @@ class RegulationMcValueNet(nn.Module):
     Output range: [-1.0, +1.0] representing P1 positional Win-Equity over P2.
     """
 
-    def __init__(self, device: Optional[Union[str, torch.device]] = None) -> None:
+    def __init__(self, device: Optional[Union[str, Any]] = None) -> None:
         """
         Initialize the neural network layers and calibrate weights with VP heuristics.
 
         Args:
             device: Optional explicit torch device ('cuda:0' or 'cpu'). Auto-detects CUDA by default.
         """
+        if not HAS_TORCH:
+            raise ImportError("PyTorch is required for RegulationMcValueNet. Please install torch>=2.0.0.")
+
         super().__init__()
         if device is None:
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

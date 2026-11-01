@@ -9,7 +9,13 @@ from pathlib import Path
 import time
 import unittest
 import numpy as np
-import torch
+
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    torch = None
+    HAS_TORCH = False
 
 from engine.tactics.action_pruner import ActionPruner
 from engine.tactics.neural_evaluator import (
@@ -24,6 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_LOG_PATH = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
 
 
+@unittest.skipUnless(HAS_TORCH, "PyTorch is required for TestNeuralEvaluator")
 class TestNeuralEvaluator(unittest.TestCase):
     """Unit test suite for RegulationMcValueNet and NeuralEvaluator."""
 

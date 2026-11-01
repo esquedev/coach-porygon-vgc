@@ -12,6 +12,13 @@ from pathlib import Path
 import tempfile
 import unittest
 
+try:
+    import scipy
+    import torch
+    HAS_DEPS = True
+except ImportError:
+    HAS_DEPS = False
+
 from engine.db import UnifiedCoachDatabase
 from engine.tactics.tactical_pipeline import audit_showdown_log
 import main as cli_main
@@ -21,6 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 SAMPLE_LOG_PATH = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
 
 
+@unittest.skipUnless(HAS_DEPS, "scipy and torch are required for TestTacticalPipelineEndToEnd")
 class TestTacticalPipelineEndToEnd(unittest.TestCase):
     """End-to-end acceptance test suite for the Game-Theoretic VGC AGI pipeline."""
 

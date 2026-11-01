@@ -8,6 +8,12 @@ translation invariance under constant shifts, and Delta Equity loss calculation.
 import unittest
 import numpy as np
 
+try:
+    import scipy
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+
 from engine.tactics.nash_solver import (
     NashSolver,
     compute_equity_loss,
@@ -15,6 +21,7 @@ from engine.tactics.nash_solver import (
 )
 
 
+@unittest.skipUnless(HAS_SCIPY, "scipy is required for TestNashSolver")
 class TestNashSolver(unittest.TestCase):
     """Unit test suite for NashSolver."""
 

@@ -7,6 +7,7 @@ Coach Porygon VGC — Unit Tests for Prompt Health & Adversarial Suite (evals/ru
 import unittest
 
 from evals.run_static_checks import (
+    verify_declared_dependencies,
     verify_referenced_paths,
     verify_species_blacklist,
     verify_stress_cases_schema,
@@ -36,6 +37,11 @@ class TestPromptHealthEvals(unittest.TestCase):
         """Test for taxonomy codes and drivers."""
         count = verify_taxonomy_codes()
         self.assertGreaterEqual(count, 14)
+
+    def test_declared_dependencies_ast_parity(self):
+        """Verify that all external third-party imports are declared in requirements files."""
+        count = verify_declared_dependencies()
+        self.assertGreater(count, 0)
 
 
 if __name__ == "__main__":

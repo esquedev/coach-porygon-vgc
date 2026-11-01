@@ -92,8 +92,12 @@ echo -e "${C_GREEN}  [OK] Asset inventory verified.${C_RESET}"
 echo ""
 
 # --- PHASE 5: Test Suite Execution ---
-echo -e "${C_CYAN}[PHASE 5/5]${C_RESET} ${C_WHITE}Executing Full Test Suite...${C_RESET}"
-$PY tests/run_all_tests.py
+echo -e "${C_CYAN}[PHASE 5/5]${C_RESET} ${C_WHITE}Executing Full Test Suite (pytest with coverage parity)...${C_RESET}"
+if $PY -m pytest --version >/dev/null 2>&1; then
+    $PY -m pytest tests/ --cov=engine --cov-report=term-missing
+else
+    $PY tests/run_all_tests.py
+fi
 
 echo ""
 echo -e "${C_GREEN}==============================================================================${C_RESET}"

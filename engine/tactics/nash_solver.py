@@ -10,7 +10,13 @@ and quantifies Player 1 Equity Loss (Delta Equity).
 
 from dataclasses import dataclass
 import numpy as np
-from scipy.optimize import linprog
+
+try:
+    from scipy.optimize import linprog
+    HAS_SCIPY = True
+except ImportError:
+    linprog = None
+    HAS_SCIPY = False
 
 
 @dataclass
@@ -43,6 +49,9 @@ class NashSolver:
         Raises:
             ValueError: If payoff_matrix is not a non-empty 2D numeric array.
         """
+        if not HAS_SCIPY or linprog is None:
+            raise ImportError("scipy is required for NashSolver. Please install scipy>=1.10.0.")
+
         mat = np.asarray(payoff_matrix, dtype=np.float64)
         if mat.ndim != 2 or mat.shape[0] == 0 or mat.shape[1] == 0:
             raise ValueError("payoff_matrix must be a non-empty 2D numpy array.")

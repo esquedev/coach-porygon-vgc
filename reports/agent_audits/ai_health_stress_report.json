@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-01T09:00:33.809708+00:00",
+  "timestamp": "2026-11-01T09:26:53.054879+00:00",
   "input_file_evaluated": "reports\\agent_audits\\stress_eval_input.json",
   "audit_consumed": false,
   "audit_status": "FRESH_READY_FOR_PRE_PUSH",
@@ -323,5 +323,5 @@
     }
   ],
   "static_checks_passed": true,
-  "execution_duration_seconds": 0.16
+  "execution_duration_seconds": 0.453
 }

@@ -113,8 +113,13 @@ echo %C_GREEN%  [OK] Asset inventory verified.%C_RESET%
 echo.
 
 REM --- PHASE 5: Full Test Suite Execution ---
-echo %C_CYAN%[PHASE 5/5]%C_RESET% %C_WHITE%Executing Full Test Suite...%C_RESET%
-call "%PY%" tests/run_all_tests.py
+echo %C_CYAN%[PHASE 5/5]%C_RESET% %C_WHITE%Executing Full Test Suite (pytest with coverage parity)...%C_RESET%
+call "%PY%" -m pytest --version >nul 2>&1
+if not errorlevel 1 (
+    call "%PY%" -m pytest tests/ --cov=engine --cov-report=term-missing
+) else (
+    call "%PY%" tests/run_all_tests.py
+)
 if errorlevel 1 (
     echo %C_RED%  [FAIL] Phase 5: Test suite failed.%C_RESET%
     exit /b 1
