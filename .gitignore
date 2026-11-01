@@ -15,6 +15,7 @@ dist/
 .mypy_cache/
 .ruff_cache/
 .coverage
+.coverage*
 htmlcov/
 .venv/
 venv/
@@ -77,6 +78,7 @@ data/MunchStats_Standings.csv
 data/MunchStats_Top_Teams.csv
 data/MunchStats_Pokemon_Sets.csv
 data/munchstats_standings/
+data/munchstats/output/
 data/compendium/Proto*.md
 reports/*.pdf
 reports/*.html

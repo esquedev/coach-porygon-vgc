@@ -49,9 +49,9 @@ echo -e "Using Python: $($PY --version)"
 echo ""
 
 # --- PHASE 0: Workspace Sanitization & Scratch Cleanup ---
-echo -e "${C_CYAN}[PHASE 0/5]${C_RESET} ${C_WHITE}Sanitizing Workspace & Scratch Directory...${C_RESET}"
-$PY engine/clean_workspace.py --scratch-only
-echo -e "${C_GREEN}  [OK] Workspace sanitized (scratch directory purged).${C_RESET}"
+echo -e "${C_CYAN}[PHASE 0/5]${C_RESET} ${C_WHITE}Sanitizing Workspace & Garbage Collection...${C_RESET}"
+$PY engine/clean_workspace.py
+echo -e "${C_GREEN}  [OK] Workspace sanitized (scratch, caches, and test residue purged).${C_RESET}"
 echo ""
 
 # --- PHASE 1: Initialize Public Schema Templates ---
@@ -99,3 +99,7 @@ echo ""
 echo -e "${C_GREEN}==============================================================================${C_RESET}"
 echo -e "${C_GREEN}  [PASS] ALL 5 CI/CD PIPELINE PHASES PASSED LOCALLY WITH ZERO ERRORS${C_RESET}"
 echo -e "${C_GREEN}==============================================================================${C_RESET}"
+echo ""
+echo -e "${C_CYAN}[POST-RUN GC]${C_RESET} ${C_WHITE}Executing final workspace sanitization and Git pack optimization...${C_RESET}"
+$PY engine/clean_workspace.py --git-gc
+echo -e "${C_GREEN}  [OK] Workspace and Git repository optimized for push.${C_RESET}"

@@ -43,7 +43,10 @@ fi
 
 echo ""
 echo "=============================================================================="
-echo " [GIT PRE-PUSH: APPROVED] All 5 pipeline phases passed. Pushing to remote..."
+echo " [GIT PRE-PUSH: APPROVED] All 5 pipeline phases passed."
+echo " [GIT PRE-PUSH: GC] Performing final Git object repacking and garbage collection..."
+git gc --auto --quiet 2>/dev/null || true
+echo " [GIT PRE-PUSH: READY] Repository optimized. Pushing to remote..."
 echo "=============================================================================="
 echo ""
 exit 0
