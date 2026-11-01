@@ -33,6 +33,7 @@ Issues = "https://github.com/esquedev/coach-porygon-vgc/issues"
 
 [project.scripts]
 coach-porygon = "engine.ui_server:main"
+verify-png = "engine.verify_png_inventory:main"
 
 [project.optional-dependencies]
 gpu = [

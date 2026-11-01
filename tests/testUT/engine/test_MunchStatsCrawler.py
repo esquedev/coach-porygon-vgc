@@ -61,7 +61,7 @@ class TestMunchStatsCrawler(unittest.TestCase):
         sand_team = ["Tyranitar", "Excadrill", "Salamence", "Indeedee", "Corviknight", "Sneasler"]
         self.assertEqual(determine_archetype_label(sand_team), "Sand Rush Physical Offense")
 
-        tr_team = ["Farigiraf", "Ursaluna", "Torkoal", "Armarouge", "Indeedee-F", "Kingambit"]
+        tr_team = ["Farigiraf", "Rhyperior", "Torkoal", "Armarouge", "Indeedee-F", "Kingambit"]
         self.assertEqual(determine_archetype_label(tr_team), "Sun Trick Room Offense")
 
         balance_team = ["Kingambit", "Gholdengo", "Incineroar", "Rillaboom", "Primarina", "Dragonite"]

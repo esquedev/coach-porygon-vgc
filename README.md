@@ -1,8 +1,8 @@
 <div align="center">
 
-# ⚡ Coach Porygon VGC
-### Autonomous Esports Coaching, Scouting & Deterministic Turn-Simulation Runtime
-**Designed for the Pokémon Champions (Regulation M-C) Competitive Ecosystem**
+# ⚡ BeRightVGC: Coach Porygon Runtime
+### Autonomous Esports Intelligence, Scouting & Deterministic Turn-Simulation Runtime
+**Engineered by [esquedev](https://github.com/esquedev) for Pokémon Champions (Regulation M-C)**
 
 <p align="center">
   <img src="assets/icons/pokeball.svg" width="36" height="36" alt="Pokeball" />
@@ -13,17 +13,17 @@
 </p>
 
 [![CI / CD Pipeline](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml/badge.svg)](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml)
-[![CodeQL Analysis](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/codeql.yml/badge.svg)](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/codeql.yml)
+[![Tests: 247 Passed](https://img.shields.io/badge/Tests-247%20Passed%20(100%25)-10b981.svg)](tests/)
 [![Python 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
 [![Format](https://img.shields.io/badge/VGC-Regulation%20M--C%20(2027)-e11d48.svg)](data/MC_Available_Pokemon.csv)
-[![Vector Assets](https://img.shields.io/badge/PNGs-916%20Curated%20Assets%20(SHA--256)-06b6d4.svg)](assets/png_manifest.json)
-[![Zero Runtime Dependencies](https://img.shields.io/badge/Dependencies-Zero%20(Standard%20Library)-10b981.svg)](pyproject.toml)
+[![Curated Assets](https://img.shields.io/badge/Assets-916%20Curated%20PNGs%20(SHA--256)-06b6d4.svg)](assets/png_manifest.json)
+[![Zero Core Dependencies](https://img.shields.io/badge/Core%20Engine-Standard%20Library%20(Zero%20Dep)-10b981.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b.svg)](LICENSE)
 [![Legal & Fair Use](https://img.shields.io/badge/Legal-Nominative%20Fair%20Use-purple.svg)](LEGAL.md)
 
 <p align="center">
   <b>100% Dependency-Free Core Engine</b> • <b>Official VGC Fixed-Point Damage Simulator</b> • <b>OWASP LLM01 Hardened</b><br/>
-  <b>Bilingual Cyberpunk Command Center (EN / ES)</b> • <b>Showdown EV ↔ 66-SP Bijective Converter</b>
+  <b>Bilingual Cyberpunk Command Center (EN / ES)</b> • <b>Showdown EV ↔ 66-SP Bijective Converter</b> • <b>GPU HiGHS Nash Matrices</b>
 </p>
 
 ---
@@ -31,26 +31,54 @@
 </div>
 
 > [!NOTE]
-> **Independent Community Tool & Nominative Fair Use Notice:**  
-> Coach Porygon VGC is an independent, non-commercial open-source esports research platform and is **not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, or The Pokémon Company**. All Pokémon names, creature likenesses, and battle mechanics are referenced strictly under the legal doctrine of [Nominative Fair Use](LEGAL.md).
+> **Brand & Nominative Fair Use Notice:**  
+> **BeRightVGC** (telemetry handle: `brightvgc`) is an esports intelligence suite created by **esquedev**. Its core execution engine, **Coach Porygon VGC**, is an independent, non-commercial open-source research platform and is **not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, or The Pokémon Company**. All Pokémon names, likenesses, and battle mechanics are referenced strictly under the legal doctrine of [Nominative Fair Use](LEGAL.md).
 
 ---
 
-## 🌟 The Hook: Why Coach Porygon VGC?
+## 🌟 The Hook: Why BeRightVGC / Coach Porygon?
 
-Most AI tools for competitive gaming suffer from two fatal flaws: **LLM mental math hallucinations** (inventing illegal damage rolls, guessing stat spreads, miscalculating weather multipliers) and **tactical drift** (forgetting format-specific rules like instantaneous Mega Evolution speed scaling or Psychic Terrain priority mechanics).
+Most AI tools for competitive gaming suffer from two fatal vulnerabilities:
+1. **Mental Math Hallucinations:** Generative LLMs invent illegal damage rolls, hallucinate impossible stat spreads, and miscalculate weather/terrain damage multipliers.
+2. **Tactical Drift & Format Leaks:** General models frequently forget format rules (such as instantaneous Mega Evolution speed scaling or Psychic Terrain airborne exemptions) and suggest banned staples (`Urshifu`, `Flutter Mane`, `Amoonguss`).
 
-**Coach Porygon VGC bridges this gap.** Instead of asking a generative language model to calculate damage in its head, Coach Porygon provides a **deterministic micro-simulation runtime built on Python standard library**, backed by:
+**BeRightVGC bridges this gap with mathematical finality.** Instead of asking a generative model to compute damage in its head, BeRightVGC positions a **deterministic micro-simulation runtime built on Python standard library and GPU-accelerated payoff matrices**, delivering:
 - 🎯 **Official VGC Micro-Simulator (`engine/turn_simulator.py`):** Fixed-point damage formula accuracy, dynamic speed recalculation, terrain/weather interactions, and branching minimax rolls.
 - 📐 **66-Stat-Point (SP) Budget Calculator (`engine/sp_calculator.py`):** Mathematical validation with sequential floor rounding at Level 50, featuring seamless **1:1 bijective conversion with Pokémon Showdown EVs**.
-- 🛡️ **OWASP LLM01 Prompt Injection Defense & Species Blacklist:** Permanent ban on non-format staples (`Flutter Mane`, `Urshifu`, `Ursaluna`, `Ogerpon`) and complete isolation of untrusted replay text.
-- 🖥️ **Bilingual Cyberpunk Command Center HUD (`assets/command_center.html`):** Standalone 2 MB reactive single-page dashboard loaded with **539 vector SVGs**, live cognitive health tracking, tilt-o-meter, and 45-second interactive board sparring.
+- 🎲 **Von Neumann Nash Equilibrium Solver (`engine/tactics/`):** Simultaneous $5 \times 5$ action matrices, pure/mixed minimax strategies via HiGHS linear programming, and counterfactual equity loss ($\Delta V^*$) calculations.
+- 🛡️ **OWASP LLM01 Hardening & Anti-Hallucination Scanner:** Permanent quarantine on non-format species and complete isolation of untrusted replay strings.
+- 🖥️ **Bilingual Cyberpunk Command Center HUD (`assets/command_center.html`):** Standalone reactive dashboard with **916 curated SHA-256 assets**, live cognitive health tracking, tilt barometers, and 45-second interactive board sparring.
+
+---
+
+## 🏛️ Brand Architecture: esquedev × BeRightVGC × Coach Porygon
+
+To maintain clear separation between organization, product line, and runtime code:
+
+```
+                            THE BERIGHTVGC ECOSYSTEM
+                                       │
+        ┌──────────────────────────────┴──────────────────────────────┐
+        ▼                                                             ▼
+ [STUDIO & ENGINEERING]                                    [PRODUCT & PLATFORM]
+       esquedev                                                 BeRightVGC
+ Lead architecture, AI system                              Competitive intelligence,
+ design, and core research.                                scouting, and analytics suite
+                                                           (Telemetry: brightvgc).
+        │                                                             │
+        └──────────────────────────────┬──────────────────────────────┘
+                                       ▼
+                         [DETERMINISTIC RUNTIME ENGINE]
+                               coach-porygon-vgc
+                    Official Level 50 turn simulator, 66-SP
+                  calculator, GPU payoff matrices & CI/CD pipeline.
+```
 
 ---
 
 ## ⚡ Quickstart (Clone & Run in 10 Seconds)
 
-Coach Porygon VGC has **zero third-party dependencies** at runtime. You only need a standard Python 3.10+ installation.
+The core engine requires **zero third-party dependencies** at runtime. You only need standard Python 3.10+.
 
 ```bash
 # 1. Clone the repository
@@ -64,64 +92,7 @@ python engine/ui_server.py
 Open your browser at **[`http://localhost:8000/assets/command_center.html`](http://localhost:8000/assets/command_center.html)** (or access `/es` for Spanish, `/en` for English).
 
 > [!TIP]
-> On Windows systems, you can also double-click `start_command_center.cmd` to boot the web server instantly in loopback mode!
-
----
-
-## 🚀 Get the Best Out of This Repo With Your Setup
-
-Coach Porygon VGC is built to adapt to your preferred AI agent, IDE, or development pipeline:
-
-````carousel
-```markdown
-### 🌌 Setup 1: With Google Antigravity (Tier 1 Experience)
-Antigravity provides the most immersive experience with Coach Porygon:
-1. **Interactive Brain Artifacts:** View the Command Center directly within your chat session pane as an interactive HTML artifact with zero displacement animations.
-2. **Slash Commands:**
-   - Type `/plan` before complex teambuilding tasks to generate step-by-step 66-SP optimization roadmaps.
-   - Type `/goal` for overnight meta-crawling or mass tournament parsing.
-   - Type `/boost` for deep, multi-perspective masterclass replay breakdowns.
-3. **Reactive Wakeup:** Subagents spawn autonomously in background tasks, notifying you automatically without polling loops.
-```
-<!-- slide -->
-```bash
-### ⚡ Setup 2: With Claude Code (Anthropic CLI)
-If you operate from terminal with Claude Code:
-1. **Context Loading:** Pass `.agents/rules/` into your session context:
-   `claude --context .agents/rules/engine_rules.md`
-2. **Terminal Verification:** Run the colorized ANSI test suite directly:
-   `python tests/run_all_tests.py`
-3. **Replay Breakdown Pipeline:** Pipe Showdown battle logs into Mode 1:
-   `python engine/telemetry.py --mode personal --payload '{"replay": "..."}'`
-```
-<!-- slide -->
-```markdown
-### 🧠 Setup 3: With ChatGPT / Gemini Gems / Custom GPTs (Headless)
-No local terminal? Turn any web LLM into an official Regulation M-C referee:
-1. **System Prompt Grounding:** Copy the contents of `.agents/rules/engine_rules.md` and `.agents/rules/mistake_taxonomy.md` directly into your Custom GPT or Gemini Gem instructions.
-2. **Zero Hallucination:** Prompt the LLM with your Showdown paste; it will strictly enforce the 66-SP cap and format item legality rules.
-3. **Interactive Flashcards:** Paste scenarios from `data/Flashcard_Scenarios.csv` to drill turn execution directly in web chat.
-```
-<!-- slide -->
-```python
-### 💻 Setup 4: With GitHub Copilot / Cursor IDE
-If you are developing or extending the codebase:
-1. **Type-Safe Autocompletion:** Copilot utilizes the typed DTOs and abstract repositories in `engine/repositories.py`.
-2. **Test-Driven Development (TDD):** Execute individual test modules rapidly with `python -m unittest tests/backend/test_sp_calculator.py`.
-3. **PEP 8 Linting on Save:** The codebase strictly enforces PEP 8 and PEP 257 docstrings via `tests/lint/test_code_style.py`.
-```
-<!-- slide -->
-```python
-### 🌐 Setup 5: For Larger Ecosystems & REST API Integrations
-Embed Coach Porygon as a deterministic microservice in larger software systems:
-1. **Twitch / YouTube Tournament Streaming Overlays:**
-   Poll `http://127.0.0.1:8000/api/telemetry` via an OBS Browser Source widget to render live win equity curves and speed tiers.
-2. **Discord Coaching Bot Bridge:**
-   Send POST requests to `/api/munchstats/crawl` with user queries to ingest tournament standings and post rich OTS infographics.
-3. **Antigravity Sidecar Service:**
-   Run `engine/ui_server.py` as a daemonized sidecar process communicating over JSON REST endpoints with CORS restricted strictly to localhost.
-```
-````
+> On Windows systems, you can double-click `start_command_center.cmd` to boot the web server instantly in loopback mode!
 
 ---
 
@@ -144,10 +115,10 @@ graph LR
 | **Mode 1** | **Asynchronous Replay Breakdown** | `turn_simulator.py` + `telemetry.py` | *"Audit my replay vs Ash: Identify Turn 3 VP inflection point."* |
 | **Mode 2** | **66-SP Deterministic Roster Engineering** | `sp_calculator.py` + `validate_roster.py` | *"Optimize 66-SP spread for Mega Charizard Y to survive Timid Specs Draco Meteor."* |
 | **Mode 3** | **Interactive Board Sparring & Reflex Flashcards** | `scenarios_data.py` + `speed_duels_data.py` | *"Start a 45-Second flashcard scenario with unrevealed option evaluations."* |
-| **Mode 4** | **Open Team Sheet (OTS) Swiss Flowcharting** | `munchstats_scraper.py` | *"Opponent OTS: Garchomp, Incineroar, Rillaboom, Primarina, Chandelure, Archaludon."* |
+| **Mode 4** | **Open Team Sheet (OTS) Swiss Flowcharting** | `munchstats_threat_engine.py` | *"Opponent OTS: Garchomp, Incineroar, Rillaboom, Primarina, Chandelure, Archaludon."* |
 | **Mode 5** | **Cognitive Leak Eradication & Sports Psych** | `mistake_taxonomy.md` | *"Review my last 10 losses: Am I leaking VP due to Greed or Autopilot?"* |
-| **Mode 6** | **MunchStats Tournament Meta Ingestion** | `munchstats_scraper.py` + `/api/munchstats` | *"Crawl and cluster 2027 Nice Regional Masters top cut."* |
-| **Mode 7** | **Release Health Auditor & Prompt Stress Evaluator** | `evals/run_static_checks.py` | `python evals/run_static_checks.py` *(26 adversarial tests)* |
+| **Mode 6** | **MunchStats Tournament Meta Ingestion** | `munchstats_meta` + `/api/munchstats` | *"Crawl and cluster 2027 Nice Regional Masters top cut."* |
+| **Mode 7** | **Release Health Auditor & Prompt Stress Evaluator** | `evals/evaluate_release_health.py` | `python evals/evaluate_release_health.py --verify` *(35 adversarial cases)* |
 
 ---
 
@@ -178,8 +149,25 @@ In Pokémon Champions Regulation M-C, trainers allocate **Stat Points (SP)** rat
 
 </div>
 
-> [!NOTE]
-> `engine/sp_calculator.py`, `engine/validate_roster.py`, and `engine/register_team.py` automatically detect and parse both SP format (`32 SpA / 32 Spe / 2 HP`) and standard Showdown EV export format (`252 SpA / 252 Spe / 12 HP`).
+---
+
+## 📊 Publication-Grade Reporting Suite (`report-generator`)
+
+BeRightVGC provides an autonomous visual publication engine for esports analytics, featuring 5 canonical report types:
+1. **Tactical Replay Audit:** Simultaneous payoff matrix, turning point identification, and equity delta ($\Delta V^*$).
+2. **Metagame & Swiss Intelligence:** Archetype clustering, Swiss attrition curves, and Day 1 $\to$ Day 2 conversion rates.
+3. **Telemetry & Playstyle Diagnostics:** Longitudinal error clustering (`POS`, `TGT`, `MEC`, `SPD`) and cognitive driver analysis.
+4. **Coach QA & Decision Audit:** Verifiable ground-truth benchmark comparing coaching recommendations with official damage calculations.
+5. **Swiss Opponent Scouting & Caster Aid:** Level 50 speed ladders, matchup threat matrices, and broadcast cheat sheets.
+
+Export seamlessly to self-contained HTML or print-ready PDF:
+```bash
+# Export tactical audit with Midnight Cyber preset
+python main.py --demo --format html --theme midnight --output-dir reports/
+
+# Export print-ready executive dossier to PDF
+python main.py --demo --format pdf --theme editorial --output-dir reports/
+```
 
 ---
 
@@ -191,49 +179,37 @@ Security Architecture Overview:
 ├── Cross-Origin Policy  : CORS restricted to localhost & local file:// null origins (SEC-02)
 ├── Document Root Guard  : HTTP 403 Forbidden on /.git, /.github, and trainer_profile.json (SEC-03)
 ├── SSRF & LFI Shield    : Strict HTTPS domain whitelist for tournament scrapers (SEC-04)
-├── Vector Asset Audit   : Zero active scripts (<script>) across 539 SVGs (SEC-05)
+├── Asset Integrity      : 916 curated PNG assets tracked with SHA-256 hashes (SEC-05)
 ├── Resource Protection  : 5 MB payload cap preventing memory exhaustion DoS (SEC-06)
 ├── CSV Concurrency      : Thread-safe reentrant file locks preventing race conditions (SEC-07)
+├── Anti-Hallucination   : Automated repo-wide scanner enforcing Regulation M-C species lock (SEC-08)
 └── Static Analysis      : Automated GitHub CodeQL SAST scanning on Python & JS/TS
 ```
 
 ---
 
-## 🧪 Testing & Verification Suite
+## 🧪 Testing & Verification Suite (247 Automated Tests)
 
-Our test suite guarantees 100% deterministic reliability across all subsystems without requiring external network access:
+Our test suite guarantees 100% deterministic reliability across all subsystems without external network calls:
 
 ```bash
 # Run the complete test suite with colorized visual ANSI output:
 .\run_tests.cmd          # On Windows Command Prompt / PowerShell
-python tests/run_all_tests.py  # On macOS / Linux
+./run_tests.sh           # On macOS / Linux
 ```
 
 ```text
 ==============================================================================
-  COACH PORYGON VGC — REGULATION M-C VERIFICATION & TEST RUNNER
+  BERIGHTVGC / COACH PORYGON VGC — LOCAL CI/CD PIPELINE (FULL 5-PHASE RUNNER)
 ==============================================================================
-Total Species Audited:    363 (Missing: 0)
-Total Items Audited:      85 (Missing: 0)
-Total Mega Stones Audited:81 (Missing: 0)
-Total SVGs Verified:      539 files on disk.
-Well-formed XML Checks:   539 / 539 Valid XML.
-Raster Bitmap Check:      0 Embedded Bitmaps (Target: 0).
-Active Scripting Check:   0 Injected Scripts (Target: 0).
-SHA-256 Digest Audit:     539 / 539 Cryptographic Hashes.
-Manifest Generated:       assets\png_manifest.json
-==============================================================================
-  [PASS] 35 Unit & Acceptance Tests (Repositories, Telemetry, SP Math, Roster)
-  [PASS]  4 Packaging & Release Artifact Tests (pyproject.toml, HTML Footprint)
-  [PASS]  7 Security Hardening Tests (CORS, 403 Path Shield, SSRF, DoS, Locking)
-------------------------------------------------------------------------------
-TEST SUITE EXECUTION SUMMARY:
-  Total Executed: 46 tests
-  Passed:         46 [OK]
-  Failed:         0
-  Execution Time: 1.96s
-==============================================================================
-✔ ALL SYSTEMS NOMINAL — 100% OF TESTS PASSED SUCCESSFULLY!
+[PHASE 0/5] Sanitizing Workspace and Garbage Collection... [OK]
+[PHASE 1/5] Initializing Schema Templates... [OK]
+[PHASE 2/5] Linting and Syntax Compilation (0 violations)... [OK]
+[PHASE 3/5] Verifying AI Health Stress Audit (35 cases)... [OK]
+[PHASE 4/5] Auditing Curated Assets (916 SHA-256 digests)... [OK]
+[PHASE 5/5] Executing Full Test Suite (pytest with coverage parity)...
+============================ 247 passed in 13.53s =============================
+[PASS] ALL 5 CI/CD PIPELINE PHASES PASSED LOCALLY WITH ZERO ERRORS
 ```
 
 ---
@@ -248,12 +224,12 @@ We welcome competitive players, prompt engineers, UI designers, and systems deve
 
 Pokémon character names, species designs, battle mechanics, items, and trademarks are the intellectual property of **The Pokémon Company**, **Nintendo**, **Creatures Inc.**, and **Game Freak**.
 
-- **Non-Commercial Esports Research:** Coach Porygon VGC is an open-source, non-commercial analytical coaching and simulation framework created under Fair Use principles for competitive study and sports science research.
-- **Original Vector Interpretations:** All 539 SVG vector crests are original geometric illustrations created specifically for this open-source project. No proprietary binary game code or ROM assets are redistributed.
-- **Nominative Fair Use & Player Privacy:** For complete details on our nominative fair use defense, player opt-out / anonymization protocol, and commercialization limitations, please review **[`LEGAL.md`](LEGAL.md)**.
+- **Non-Commercial Esports Research:** BeRightVGC is an open-source, non-commercial analytical coaching and simulation framework created under Fair Use principles for competitive study and sports science research.
+- **Original Curated Assets:** All creature sprites and icons are curated strictly for non-commercial identification under nominative fair use. No proprietary binary game code or ROM assets are redistributed.
+- **Nominative Fair Use & Player Privacy:** For complete details on our legal defense, player opt-out / anonymization protocol, and commercialization limitations, please review **[`LEGAL.md`](LEGAL.md)**.
 
 ---
 
 <div align="center">
-  <sub>Built with mathematical rigor for competitive VGC Champions worldwide.</sub>
+  <sub>Built with mathematical rigor by <b>esquedev</b> for competitive VGC Champions worldwide.</sub>
 </div>

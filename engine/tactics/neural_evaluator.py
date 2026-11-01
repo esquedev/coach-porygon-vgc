@@ -262,16 +262,16 @@ class NeuralEvaluator:
         p2_lines: List[PrunedActionLine],
     ) -> np.ndarray:
         """
-        Simulate all 5x5 = 25 joint action pairs using ClientReplaySimulator and
-        evaluate the resulting 25 board states in a single GPU micro-batch.
+        Simulate all N x M joint action pairs using ClientReplaySimulator and
+        evaluate the resulting board states in a single GPU micro-batch.
 
         Args:
             snapshot: Pre-turn board snapshot at the turning point.
-            p1_lines: Top-5 pruned action lines for Player 1.
-            p2_lines: Top-5 pruned action lines for Player 2.
+            p1_lines: Candidate action lines for Player 1 (length N).
+            p2_lines: Candidate action lines for Player 2 (length M).
 
         Returns:
-            5x5 numpy float64 payoff matrix with entries in [-1.0, +1.0].
+            N x M numpy float64 payoff matrix with entries in [-1.0, +1.0].
         """
         n_p1 = len(p1_lines)
         n_p2 = len(p2_lines)

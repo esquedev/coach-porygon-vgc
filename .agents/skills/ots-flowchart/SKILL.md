@@ -9,10 +9,23 @@ description: >-
 
 Deliver a standalone, pre-match Bo3 game plan formatted for rapid memorization before mobile devices are stored away. Eliminate conversational padding.
 
+---
+
+## 0. Governance, Role Alignment & Validation Matrix
+- **Owner Role:** Metagame & Scouting Analyst (`Role: Analyst`)
+- **Domain Layer:** Domain Core (Speed Tiers & Matchup Matrices) & Infrastructure (Scouted DB)
+- **Permissions:** Read `data/Teams.csv`, `data/Scouted_Teams.csv`; execute `engine/sp_calculator.py` and `engine/db.py`; write (append) to `data/Scouted_Teams.csv`. Codebase is locked.
+- **Minimum Viable Context (MVC):** Opponent 6-mon sheet, user `Txx` team, speed tier computation, forced lead heuristics. Exclude: Replay turn-by-turn logs, UI CSS design tokens, backend Flask endpoints.
+- **Deterministic Validation Criteria:**
+  - Mandatory 5-part dossier structure (Speed Hierarchy, Opposing Forced Leads, Game 1 Blueprint, Game 2/3 Adaptation, Trap Tech Audit).
+  - Exact Level 50 speed stats computed via `engine/sp_calculator.py`.
+
+---
+
 ## Execution Workflow
 
 1. **Roster & Archetype Resolution**:
-   - Cross-reference the user's active prototype (`data/Teams.csv`) and the opponent's 6-Pokémon sheet against `data/Scouted_Teams.csv` via `python -m engine.munchstats_db --query ...` or `data/Scouted_Teams.csv`.
+   - Cross-reference the user's active prototype (`data/Teams.csv`) and the opponent's 6-Pokémon sheet against `data/Scouted_Teams.csv` via `python -m engine.db --query ...` or `data/Scouted_Teams.csv`.
    - Compute exact Level 50 speed stats via [`engine/sp_calculator.py`](../../../engine/sp_calculator.py).
 2. **Mandatory 5-Part Dossier**:
    1. **Speed Tier Hierarchy:** Complete sorted ranking of all 12 Pokémon across both rosters by effective speed (including instantaneous post-Mega speed tiers and Tailwind/Weather modifiers).

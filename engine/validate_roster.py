@@ -15,7 +15,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ITEMS_CSV_PATH = REPO_ROOT / "data" / "Regulation_MC_Items.csv"
@@ -25,6 +25,14 @@ CACHE_PATH = REPO_ROOT / "data" / "pokedex_cache.json"
 sys.path.insert(0, str(REPO_ROOT / "engine"))
 from sp_calculator import validate_and_calculate_sp, STAT_ORDER, ev_to_sp, MAX_SINGLE_STAT_SP
 from turn_simulator import MOVE_DB
+
+REGULATION_MC_SPECIES_BLACKLIST: Tuple[str, ...] = (
+    "Ursaluna", "Bloodmoon", "Flutter Mane", "Chi-Yu", "Chien-Pao", "Ting-Lu",
+    "Iron Bundle", "Iron Hands", "Iron Leaves", "Iron Boulder", "Iron Crown",
+    "Roaring Moon", "Scream Tail", "Brute Bonnet", "Sandy Shocks", "Slither Wing",
+    "Ogerpon", "Urshifu", "Amoonguss", "Gastrodon", "Landorus", "Tornadus",
+    "Thundurus", "Enamorus", "Heatran", "Cresselia"
+)
 
 
 def to_id(text: str) -> str:
@@ -291,44 +299,77 @@ def get_pokemon_types(species_name: str, registry: Dict[str, Dict]) -> List[str]
 
 
 def classify_move(move_name: str, species_types: List[str], ability: str = "") -> Dict:
-    """Classify move as STAB, Coverage, or Status based on user typing."""
+    """Classify move as STAB, Coverage, or Status based on user typing, dual-typing, and type-changing abilities."""
     clean_move = move_name.strip()
     mid = to_id(clean_move)
     move_info = COMMON_MOVE_DATA.get(clean_move) or MOVE_LOOKUP_BY_ID.get(mid) or {"type": "Unknown", "cat": "Unknown", "power": 0}
     m_type = move_info["type"]
     m_cat = move_info["cat"]
+    flags = move_info.get("flags", [])
     is_legal_move = (clean_move in COMMON_MOVE_DATA) or (mid in MOVE_LOOKUP_BY_ID)
 
     ab_low = ability.lower()
+    type_converted = False
+    original_type = m_type
+
     if m_type == "Normal" and m_cat != "Status":
         if ab_low == "pixilate":
             m_type = "Fairy"
+            type_converted = True
         elif ab_low == "aerilate":
             m_type = "Flying"
+            type_converted = True
         elif ab_low == "refrigerate":
             m_type = "Ice"
+            type_converted = True
+        elif ab_low == "galvanize":
+            m_type = "Electric"
+            type_converted = True
         elif ab_low == "dragonize":
             m_type = "Dragon"
+            type_converted = True
+    elif ab_low == "liquid voice" and "sound" in flags and m_cat != "Status":
+        m_type = "Water"
+        type_converted = True
 
     is_stab = (m_type in species_types) and (m_cat != "Status")
 
     if m_cat == "Status":
         classification = "Status"
     elif is_stab:
-        stab_mult = "2.0x Adaptability" if ab_low == "adaptability" else "1.5x"
-        classification = f"STAB ({stab_mult})"
+        stab_mult_str = "2.0x Adaptability" if ab_low == "adaptability" else "1.5x"
+        if len(species_types) >= 2:
+            if m_type == species_types[0]:
+                stab_pos = f"Primary STAB ({m_type})"
+            elif m_type == species_types[1]:
+                stab_pos = f"Secondary STAB ({m_type})"
+            else:
+                stab_pos = f"STAB ({m_type})"
+        else:
+            stab_pos = f"STAB ({m_type})"
+
+        if type_converted:
+            classification = f"Converted {stab_pos} (1.2x BP + {stab_mult_str})"
+        else:
+            classification = f"{stab_pos} ({stab_mult_str})"
     else:
-        classification = "Non-STAB Coverage (1.0x)"
+        if type_converted:
+            classification = f"Converted Non-STAB Coverage ({m_type} 1.2x BP)"
+        else:
+            classification = "Non-STAB Coverage (1.0x)"
 
     return {
         "move": clean_move,
         "id": mid,
         "type": m_type,
+        "original_type": original_type,
+        "type_converted": type_converted,
         "cat": m_cat,
         "power": move_info.get("power", 0),
         "is_stab": is_stab,
         "is_legal_move": is_legal_move,
         "classification": classification,
+        "species_types": list(species_types),
     }
 
 
@@ -468,6 +509,67 @@ def validate_roster(paste_text: str) -> Dict:
         "warnings": warnings,
         "slots": slots_report,
         "pokemon_count": len(parsed_pokemon),
+    }
+
+
+def validate_board_slots(
+    p1_slots: List[Dict[str, Any]],
+    p2_slots: List[Dict[str, Any]],
+    legal_items: Optional[Set[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Validate active and bench board slots for Regulation M-C legality:
+    - Zero blacklisted species (Anti-Hallucination Guardrail 6).
+    - All held items strictly present in Regulation_MC_Items.csv.
+    - Strict Item Clause per team (no duplicate items on either side).
+    - At most 1 Mega Stone per side.
+    - HP percentages within [0.0, 1.0].
+    """
+    if legal_items is None:
+        legal_items = load_legal_items()
+
+    errors: List[str] = []
+
+    # 1. Species Blacklist check
+    for side_name, slots in [("P1", p1_slots), ("P2", p2_slots)]:
+        for idx, slot in enumerate(slots, 1):
+            name = slot.get("species") or slot.get("name") or ""
+            for banned in REGULATION_MC_SPECIES_BLACKLIST:
+                if banned.lower() in name.lower():
+                    errors.append(
+                        f"{side_name} Slot {idx} ({name}): Blacklisted species '{banned}' is illegal in Regulation M-C."
+                    )
+
+    # 2. Items check & Item Clause
+    for side_name, slots in [("P1", p1_slots), ("P2", p2_slots)]:
+        side_items: List[str] = []
+        mega_count = 0
+        for idx, slot in enumerate(slots, 1):
+            item = (slot.get("item") or "").strip()
+            if item and item.lower() not in ("none", "no item", "sin objeto"):
+                clean_item = item.replace("’", "'").strip().lower()
+                if clean_item not in legal_items:
+                    errors.append(f"{side_name} Slot {idx}: Item '{item}' is illegal in Regulation M-C.")
+                if clean_item.endswith("ite") or "megastone" in clean_item or clean_item in ("red orb", "blue orb"):
+                    mega_count += 1
+                side_items.append(clean_item)
+        if len(side_items) != len(set(side_items)):
+            errors.append(f"{side_name} violates Item Clause (duplicate items: {side_items}).")
+        if mega_count > 1:
+            errors.append(f"{side_name} exceeds Mega Stone limit (maximum 1 Mega Stone allowed).")
+
+    # 3. HP check
+    for side_name, slots in [("P1", p1_slots), ("P2", p2_slots)]:
+        for idx, slot in enumerate(slots, 1):
+            hp = slot.get("hp", slot.get("hp_pct", 1.0))
+            if isinstance(hp, (int, float)):
+                hp_val = hp / 100.0 if hp > 1.0 else hp
+                if hp_val < 0.0 or hp_val > 1.0:
+                    errors.append(f"{side_name} Slot {idx}: Invalid HP value {hp}.")
+
+    return {
+        "is_valid": len(errors) == 0,
+        "errors": errors,
     }
 
 

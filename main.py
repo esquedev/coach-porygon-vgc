@@ -60,8 +60,9 @@ def format_telemetry_report(result: TacticalAuditResult) -> str:
         lines.append(f"      * {reason}")
 
     lines.append("-" * 82)
-    lines.append("  [2] SIMULTANEOUS 5x5 PAYOFF MATRIX (Simulador Oficial VGC + GPU ValueNet):")
-    header = "      P1 \\ P2      | " + " | ".join(f"  L{j}  " for j in range(5))
+    lines.append("  [2] SIMULTANEOUS PAYOFF MATRIX (Simulador Oficial VGC + GPU ValueNet):")
+    num_cols = len(result.payoff_matrix[0]) if result.payoff_matrix else 0
+    header = "      P1 \\ P2      | " + " | ".join(f"  L{j}  " for j in range(num_cols))
     lines.append(header)
     lines.append("      " + "-" * (len(header) - 6))
     for i, row in enumerate(result.payoff_matrix):
@@ -119,6 +120,7 @@ def _export_audit_output(
     result: TacticalAuditResult,
     fmt: str,
     output_dir: Optional[str],
+    theme: str = "midnight",
 ) -> None:
     """
     Export audit result to JSON, HTML, or PDF when requested via CLI flags.
@@ -140,7 +142,7 @@ def _export_audit_output(
         else:
             print(json_text)
     elif fmt in ("html", "pdf"):
-        html_doc = render_tactical_audit_html(payload)
+        html_doc = render_tactical_audit_html(payload, theme=theme)
         out_dir = Path(output_dir) if output_dir else (REPO_ROOT / "reports")
         out_dir.mkdir(parents=True, exist_ok=True)
         html_path = out_dir / f"{result.audit_id}.html"
@@ -151,7 +153,7 @@ def _export_audit_output(
             try:
                 from engine.pdf_exporter import export_html_to_pdf
                 pdf_path = out_dir / f"{result.audit_id}.pdf"
-                export_html_to_pdf(str(html_path), str(pdf_path))
+                export_html_to_pdf(str(html_path), str(pdf_path), theme=theme)
                 print(f"[EXPORT] PDF tactical report saved to: {pdf_path}")
             except Exception as exc:
                 print(f"[WARN] PDF export fallback (HTML generated at {html_path}): {exc}")
@@ -235,6 +237,20 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=8000,
         help="Port for serve-ui mode (default: 8000).",
     )
+    parser.add_argument(
+        "--theme",
+        type=str,
+        choices=["midnight", "editorial", "caster", "compact"],
+        default="midnight",
+        help="Visual report theme preset (midnight|editorial|caster|compact).",
+    )
+    parser.add_argument(
+        "--report-type",
+        type=str,
+        choices=["tactical", "meta", "telemetry", "qa", "caster"],
+        default="tactical",
+        help="Report domain family (tactical|meta|telemetry|qa|caster).",
+    )
     args = parser.parse_args(raw_args)
 
     device_pref = None if args.device == "auto" else args.device
@@ -268,7 +284,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
 
     out_fmt = "html" if args.mode == "report" and args.format == "text" else args.format
-    _export_audit_output(result, fmt=out_fmt, output_dir=args.output_dir)
+    _export_audit_output(result, fmt=out_fmt, output_dir=args.output_dir, theme=args.theme)
     db.close()
     return 0
 

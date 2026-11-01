@@ -1,0 +1,44 @@
+#!/bin/sh
+# ==============================================================================
+# BeRightVGC / Coach Porygon VGC — Git Pre-Commit Hook
+# Automatically executes:
+# 1. HTML Artifact Purger (evals/purge_html_artifacts.py)
+# 2. Repo-wide Anti-Hallucination Scanner (evals/scan_repo_hallucinations.py)
+# ==============================================================================
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+# Discover python interpreter
+if [ -f "./.venv/Scripts/python.exe" ]; then
+    PY="./.venv/Scripts/python.exe"
+elif [ -f "./.venv/bin/python" ]; then
+    PY="./.venv/bin/python"
+else
+    PY="python"
+fi
+
+echo ""
+echo "=============================================================================="
+echo " [GIT PRE-COMMIT] Running Pre-Commit Guardrails..."
+echo "=============================================================================="
+
+# 1. Purge volatile HTML artifacts before commit
+"$PY" evals/purge_html_artifacts.py
+if [ $? -ne 0 ]; then
+    echo " [GIT PRE-COMMIT: REJECTED] Failed to purge HTML artifacts."
+    exit 1
+fi
+
+# 2. Scan repository for format species hallucinations
+"$PY" evals/scan_repo_hallucinations.py
+SCAN_CODE=$?
+if [ $SCAN_CODE -ne 0 ]; then
+    echo " [GIT PRE-COMMIT: REJECTED] Format species hallucinations detected! Commit blocked."
+    exit 1
+fi
+
+echo " [GIT PRE-COMMIT: APPROVED] Guardrails passed cleanly."
+echo "=============================================================================="
+echo ""
+exit 0

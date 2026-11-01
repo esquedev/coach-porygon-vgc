@@ -204,10 +204,11 @@ class TacticalPipeline:
         observed_idx: int,
         optimal_idx: int,
         equity_loss: float,
+        observed_line_risk: str = "Deterministic_Safe",
     ) -> Tuple[str, str]:
         """
         Map board events and Nash deviation to canonical mistake_taxonomy.md error codes
-        and cognitive trap drivers.
+        and cognitive trap drivers, evaluating high-risk/high-reward tournament reads.
         """
         if snapshot.protect_absorptions > 0:
             return "TGT-01", "Tunnel_Vision"
@@ -216,11 +217,18 @@ class TacticalPipeline:
         if snapshot.mega_evolutions and observed_idx != optimal_idx:
             return "SPD-01", "Format_Divergence"
         if snapshot.terrain.lower() == "psychic":
+            has_airborne = any("Flying" in getattr(s, "types", []) for s in snapshot.p1_slots)
+            if has_airborne and equity_loss > 0.10:
+                return "MEC-02", "Format_Divergence"
             return "MEC-01", "Format_Divergence"
         if observed_idx == 4 and equity_loss > 0.15:
             return "POS-01", "Autopilot"
         if equity_loss <= 0.05:
+            if observed_line_risk == "High_Risk_High_Reward":
+                return "TGT-01", "Tilt"
             return "TGT-01", "Tunnel_Vision"
+        if observed_line_risk == "High_Risk_High_Reward":
+            return "POS-02", "Greed"
         return "POS-02", "Greed"
 
     def solve_turn(
@@ -230,7 +238,7 @@ class TacticalPipeline:
         prev_v_star: float = 0.0,
     ) -> TurnEvaluation:
         """
-        Solve a single TurnSnapshot: encode tensor, compute GPU 5x5 payoff matrix,
+        Solve a single TurnSnapshot: encode tensor, compute GPU payoff matrix,
         quantify 16-roll uncertainty, solve Nash equilibrium, and classify tactical shift.
 
         Args:
@@ -253,8 +261,9 @@ class TacticalPipeline:
         eq_loss = compute_equity_loss(
             payoff_mat, observed_idx, nash_sol.p2_probs, nash_sol.game_value
         )
+        observed_risk = getattr(p1_lines[observed_idx], "risk_classification", "Deterministic_Safe")
         mistake_code, cognitive_driver = self._classify_mistake_taxonomy(
-            snapshot, observed_idx, optimal_idx, eq_loss
+            snapshot, observed_idx, optimal_idx, eq_loss, observed_line_risk=observed_risk
         )
 
         # Quantify 16-roll x Crit x Accuracy uncertainty on the dominant matchup
@@ -452,7 +461,7 @@ def audit_showdown_log(
         analyze_all_turns: Whether to evaluate all turns in the battle (default True).
 
     Returns:
-        TacticalAuditResult containing all-turns trajectory, Turning Point, 5x5 Nash solution,
+        TacticalAuditResult containing all-turns trajectory, Turning Point, Nash solution,
         UncertaintyProfile, and diagnostics.
     """
     pipeline = TacticalPipeline(db=db)

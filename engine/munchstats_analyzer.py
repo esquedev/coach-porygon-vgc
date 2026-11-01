@@ -732,7 +732,7 @@ def infer_team_archetype(species_list: List[str]) -> str:
     is_rain = any(k in lower_set for k in ["pelipper", "politoed", "basculegion", "archaludon", "raichu-mega-x"])
     is_sun = any(k in lower_set for k in ["torkoal", "charizard-mega-y", "venusaur", "walking wake"])
     is_sand = any(k in lower_set for k in ["tyranitar", "tyranitar-mega", "excadrill", "hippowdon"])
-    is_trick_room = any(k in lower_set for k in ["farigiraf", "ursaluna", "armarouge", "indeedee-f", "dusclops"])
+    is_trick_room = any(k in lower_set for k in ["farigiraf", "rhyperior", "armarouge", "indeedee-f", "dusclops", "torkoal"])
     is_psyspam = any(k in lower_set for k in ["indeedee", "indeedee-f"]) and any(
         k in lower_set for k in ["armarouge", "alakazam", "gardevoir"]
     )
