@@ -12,7 +12,7 @@ calculate_level_50_stats) to produce states compatible with ClientReplaySimulato
 from dataclasses import dataclass, field
 import hashlib
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from engine.turn_simulator import (
     BASE_STATS_DB,
@@ -225,18 +225,37 @@ class ShowdownParser:
             Dictionary mapping trainer names to OpenTeamSheet objects.
         """
         ots_map: Dict[str, OpenTeamSheet] = {}
-        ots_blocks = re.findall(
-            r"Open team sheet for (.+?)\n(.*?)(?=(?:Open team sheet for |Battle started |Turn 1|\|turn\||$))",
-            raw_log,
-            re.DOTALL,
-        )
-        for trainer_raw, block in ots_blocks:
-            trainer = trainer_raw.strip()
-            lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
+        blocks: List[Tuple[str, List[str]]] = []
+        current_trainer: Optional[str] = None
+        current_lines: List[str] = []
+
+        stop_prefixes = ("Battle started ", "Turn 1", "|turn|", "|t:|")
+
+        for line in raw_log.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("Open team sheet for "):
+                if current_trainer and current_lines:
+                    blocks.append((current_trainer, current_lines))
+                current_trainer = stripped[len("Open team sheet for "):].strip()
+                current_lines = []
+            elif any(stripped.startswith(p) for p in stop_prefixes):
+                if current_trainer and current_lines:
+                    blocks.append((current_trainer, current_lines))
+                    current_trainer = None
+                    current_lines = []
+            elif current_trainer is not None:
+                current_lines.append(stripped)
+
+        if current_trainer and current_lines:
+            blocks.append((current_trainer, current_lines))
+
+        for trainer, lines in blocks:
             pokemon_list: List[OTSMember] = []
             cur_mon: Optional[OTSMember] = None
 
             for l in lines:
+                if not l:
+                    continue
                 if l.startswith("- "):
                     if cur_mon:
                         cur_mon.moves.append(l[2:].strip())
@@ -265,10 +284,18 @@ class ShowdownParser:
                         mon_part = parts[0].strip()
                         item = parts[1].strip()
                     gender = ""
-                    m_gen = re.search(r"\s*\(([MF])\)$", mon_part)
-                    if m_gen:
-                        gender = m_gen.group(1)
-                        mon_part = mon_part[: m_gen.start()].strip()
+                    if mon_part.endswith(" (M)"):
+                        gender = "M"
+                        mon_part = mon_part[:-4].rstrip()
+                    elif mon_part.endswith(" (F)"):
+                        gender = "F"
+                        mon_part = mon_part[:-4].rstrip()
+                    elif mon_part.endswith("(M)"):
+                        gender = "M"
+                        mon_part = mon_part[:-3].rstrip()
+                    elif mon_part.endswith("(F)"):
+                        gender = "F"
+                        mon_part = mon_part[:-3].rstrip()
                     species = self._canonical_species(mon_part)
                     cur_mon = OTSMember(
                         species=species,
@@ -422,7 +449,7 @@ class ShowdownParser:
         is_bo3 = False
         bo3_game_number: Optional[int] = None
         bo3_url = ""
-        bo3_match = re.search(r"Game (\d+) of \[a best-of-3\]\((.*?)\)", raw_log)
+        bo3_match = re.search(r"Game (\d{1,2}) of \[a best-of-3\]\(([^)\r\n]+)\)", raw_log)
         if bo3_match:
             is_bo3 = True
             bo3_game_number = int(bo3_match.group(1))
@@ -434,28 +461,25 @@ class ShowdownParser:
         is_ots = len(ots_map) > 0
 
         for idx, line in enumerate(lines):
-            battle_match = re.match(r"^Battle started between (.+) and (.+)!$", line)
-            if battle_match:
-                p1_name = battle_match.group(1).strip()
-                p2_name = battle_match.group(2).strip()
-            team_inline = re.match(r"^(.+)'s team:\s*(.+)$", line)
-            if team_inline:
-                owner = team_inline.group(1).strip()
-                roster = [self._canonical_species(s) for s in team_inline.group(2).split("/") if s.strip()]
-                if owner == p1_name or not p1_team:
-                    p1_team = roster
-                else:
-                    p2_team = roster
-            elif line.endswith("'s team:") and idx + 1 < len(lines):
-                owner = line.replace("'s team:", "").strip()
-                roster = [self._canonical_species(s) for s in lines[idx + 1].split("/") if s.strip()]
-                if owner == p1_name or not p1_team:
-                    p1_team = roster
-                else:
-                    p2_team = roster
-            win_match = re.match(r"^(.+) won the battle!$", line)
-            if win_match:
-                winner = win_match.group(1).strip()
+            if line.startswith("Battle started between ") and line.endswith("!"):
+                names_part = line[len("Battle started between "):-1]
+                if " and " in names_part:
+                    parts = names_part.split(" and ", 1)
+                    p1_name = parts[0].strip()
+                    p2_name = parts[1].strip()
+            elif "'s team:" in line:
+                owner, rest = line.split("'s team:", 1)
+                owner = owner.strip()
+                roster = [self._canonical_species(s) for s in rest.split("/") if s.strip()]
+                if not roster and idx + 1 < len(lines):
+                    roster = [self._canonical_species(s) for s in lines[idx + 1].split("/") if s.strip()]
+                if roster:
+                    if owner == p1_name or not p1_team:
+                        p1_team = roster
+                    else:
+                        p2_team = roster
+            elif line.endswith(" won the battle!"):
+                winner = line[:-len(" won the battle!")].strip()
 
         p1_ots: Optional[OpenTeamSheet] = ots_map.get(p1_name)
         p2_ots: Optional[OpenTeamSheet] = ots_map.get(p2_name)
@@ -479,17 +503,16 @@ class ShowdownParser:
                 mon = self._canonical_species(line.replace("Go! ", "").rstrip("!"))
                 if mon not in p1_revealed:
                     p1_revealed.append(mon)
-            else:
-                sent_match = re.match(r"^(.+) sent out (.+)!$", line)
-                if sent_match:
-                    trainer = sent_match.group(1).strip()
-                    mon = self._canonical_species(sent_match.group(2))
-                    if trainer == p1_name:
-                        if mon not in p1_revealed:
-                            p1_revealed.append(mon)
-                    else:
-                        if mon not in p2_revealed:
-                            p2_revealed.append(mon)
+            elif " sent out " in line and line.endswith("!"):
+                prefix, mon_raw = line[:-1].split(" sent out ", 1)
+                trainer = prefix.strip()
+                mon = self._canonical_species(mon_raw.strip())
+                if trainer == p1_name:
+                    if mon not in p1_revealed:
+                        p1_revealed.append(mon)
+                else:
+                    if mon not in p2_revealed:
+                        p2_revealed.append(mon)
 
         p1_brought = list(p1_revealed)
         for sp in p1_team:
@@ -878,7 +901,7 @@ class ShowdownParser:
         is_bo3 = False
         bo3_game_number: Optional[int] = None
         bo3_url = ""
-        bo3_match = re.search(r"Game (\d+) of \[a best-of-3\]\((.*?)\)", raw_log)
+        bo3_match = re.search(r"Game (\d{1,2}) of \[a best-of-3\]\(([^)\r\n]+)\)", raw_log)
         if bo3_match:
             is_bo3 = True
             bo3_game_number = int(bo3_match.group(1))

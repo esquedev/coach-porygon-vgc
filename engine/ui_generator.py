@@ -15,6 +15,7 @@ Generates:
 
 import argparse
 import csv
+import html
 import json
 import re
 from collections import Counter
@@ -340,17 +341,17 @@ def render_tactical_audit_html(audit_dict: Dict) -> str:
     Returns:
         Self-contained HTML document string with @media print CSS styling.
     """
-    audit_id = audit_dict.get("audit_id", "AUD-MC-001")
-    p1 = audit_dict.get("p1_name", "Trainer P1")
-    p2 = audit_dict.get("p2_name", "Opponent P2")
-    winner = audit_dict.get("winner", p1)
+    audit_id = html.escape(str(audit_dict.get("audit_id", "AUD-MC-001")))
+    p1 = html.escape(str(audit_dict.get("p1_name", "Trainer P1")))
+    p2 = html.escape(str(audit_dict.get("p2_name", "Opponent P2")))
+    winner = html.escape(str(audit_dict.get("winner", p1)))
     tp_turn = audit_dict.get("turn", 1)
     total_turns = audit_dict.get("total_turns", 1)
     game_val = float(audit_dict.get("game_value", 0.0))
     eq_loss = float(audit_dict.get("equity_loss", 0.0))
-    m_code = audit_dict.get("mistake_code", "TGT-01")
-    driver = audit_dict.get("cognitive_driver", "Tunnel_Vision")
-    device = str(audit_dict.get("device_used", "cpu")).upper()
+    m_code = html.escape(str(audit_dict.get("mistake_code", "TGT-01")))
+    driver = html.escape(str(audit_dict.get("cognitive_driver", "Tunnel_Vision")))
+    device = html.escape(str(audit_dict.get("device_used", "cpu")).upper())
     latency = float(audit_dict.get("execution_time_ms", 0.0))
 
     unc = audit_dict.get("uncertainty_profile", {})
@@ -370,7 +371,7 @@ def render_tactical_audit_html(audit_dict: Dict) -> str:
 
     matrix_rows_html = []
     for i, row in enumerate(matrix):
-        lbl = p1_labels[i] if i < len(p1_labels) else f"L{i}"
+        lbl = html.escape(str(p1_labels[i] if i < len(p1_labels) else f"L{i}"))
         prob_pct = (p1_probs[i] * 100.0) if i < len(p1_probs) else 0.0
         cells = []
         for val in row:
@@ -398,9 +399,9 @@ def render_tactical_audit_html(audit_dict: Dict) -> str:
         t_imp = float(t_obj.get("impact_score", 0.0))
         t_v = float(t_obj.get("game_value", 0.0))
         t_dv = float(t_obj.get("delta_v_star", 0.0))
-        t_shift = t_obj.get("shift_classification", "Standard_Trade")
-        t_obs = t_obj.get("observed_action", "")
-        t_opt = t_obj.get("optimal_nash_action", "")
+        t_shift = html.escape(str(t_obj.get("shift_classification", "Standard_Trade")))
+        t_obs = html.escape(str(t_obj.get("observed_action", "")))
+        t_opt = html.escape(str(t_obj.get("optimal_nash_action", "")))
         is_tp = "★ TURNING POINT" if t_num == tp_turn else ""
         turns_rows_html.append(
             f"<tr>"

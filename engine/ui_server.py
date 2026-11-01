@@ -757,11 +757,12 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         turn_eval = pipeline.solve_turn(target_snap, total_turns=len(parsed.turns))
         return jsonify(turn_eval.to_dict())
 
-    @app.route("/api/report/<path:audit_id>", methods=["GET"])
+    @app.route("/api/report/<string:audit_id>", methods=["GET"])
     def api_report(audit_id: str):
         """Renders a print-ready HTML tactical audit report for a stored or demo audit ID."""
-        from ui_generator import render_tactical_audit_html
-        clean_id = re.sub(r"[^a-zA-Z0-9_\-]", "", audit_id)
+        import html
+        from engine.ui_generator import render_tactical_audit_html
+        clean_id = html.escape(re.sub(r"[^a-zA-Z0-9_\-]", "", audit_id))
         audit_dict = None
         data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
         for entry in data.get("tactical_audits", []):
