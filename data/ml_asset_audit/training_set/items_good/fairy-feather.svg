@@ -1,0 +1,18 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="featherGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdf2f8"/>
+      <stop offset="50%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#db2777"/>
+    </linearGradient>
+  </defs>
+  <!-- Feather Vane Contour -->
+  <path d="M22,86 C26,62 38,34 76,14 C68,34 72,52 64,66 C56,76 38,84 22,86 Z" fill="url(#featherGrad)" stroke="#be185d" stroke-width="2"/>
+  <!-- Central Quill Shaft -->
+  <path d="M18,90 Q44,54 76,14" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- Fairy Glow Sparkles -->
+  <circle cx="68" cy="24" r="3" fill="#ffffff"/>
+  <circle cx="56" cy="42" r="2.5" fill="#fdf2f8"/>
+  <circle cx="42" cy="62" r="2" fill="#ffffff"/>
+  <circle cx="78" cy="46" r="3.5" fill="#f472b6" fill-opacity="0.75"/>
+</svg>

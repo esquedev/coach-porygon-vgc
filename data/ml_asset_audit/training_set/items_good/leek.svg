@@ -1,0 +1,12 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Diagonal Long Scallion Stalk -->
+  <path d="M22,86 L74,18 L84,24 L30,92 Z" fill="#f8fafc" stroke="#16a34a" stroke-width="2"/>
+  <!-- Green Leaf Sheaths -->
+  <path d="M44,56 L74,18 L84,24 L52,64 Z" fill="#22c55e"/>
+  <!-- Spreading Green Leaves at top -->
+  <path d="M74,18 L86,8 L84,24 Z" fill="#15803d"/>
+  <path d="M84,24 L94,18 L78,32 Z" fill="#16a34a"/>
+  <!-- Root Hairs at bottom -->
+  <line x1="22" y1="88" x2="14" y2="92" stroke="#d97706" stroke-width="2" stroke-linecap="round"/>
+  <line x1="26" y1="92" x2="20" y2="96" stroke="#d97706" stroke-width="2" stroke-linecap="round"/>
+</svg>
