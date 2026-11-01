@@ -44556,7 +44556,7 @@
         ],
         "moves": [
           "Fake Out / Parting Shot / Flare Blitz / Throat Chop",
-          "Fake Out / Parting Shot / Flare Blitz / Darkest Lariat"
+          "Fake Out / Flare Blitz / Parting Shot / Throat Chop"
         ]
       },
       {
@@ -44594,8 +44594,8 @@
           "Blaze"
         ],
         "moves": [
-          "Heat Wave / Protect / Weather Ball / Hurricane",
-          "Heat Wave / Protect / Weather Ball / Solar Beam"
+          "Protect / Heat Wave / Weather Ball / Solar Beam",
+          "Protect / Heat Wave / Weather Ball / Hurricane"
         ]
       },
       {
@@ -44613,7 +44613,7 @@
           "Stamina"
         ],
         "moves": [
-          "Electro Shot / Protect / Dragon Pulse / Flash Cannon",
+          "Protect / Electro Shot / Dragon Pulse / Flash Cannon",
           "Protect / Electro Shot / Dragon Pulse / Snarl"
         ]
       },
@@ -44652,7 +44652,7 @@
         ],
         "moves": [
           "Make It Rain / Shadow Ball / Protect / Nasty Plot",
-          "Make It Rain / Protect / Shadow Ball / Nasty Plot"
+          "Make It Rain / Shadow Ball / Nasty Plot / Protect"
         ]
       },
       {
@@ -44671,8 +44671,8 @@
           "Rough Skin"
         ],
         "moves": [
-          "Dragon Claw / Stomping Tantrum / Rock Slide / Earthquake",
-          "Dragon Claw / Rock Slide / Stomping Tantrum / Earthquake"
+          "Dragon Claw / Stomping Tantrum / Earthquake / Protect",
+          "Dragon Claw / Stomping Tantrum / Rock Slide / Earthquake"
         ]
       },
       {
@@ -44690,8 +44690,8 @@
           "Adaptability"
         ],
         "moves": [
-          "Wave Crash / Last Respects / Aqua Jet / Protect",
-          "Last Respects / Wave Crash / Aqua Jet / Flip Turn"
+          "Last Respects / Wave Crash / Aqua Jet / Flip Turn",
+          "Last Respects / Wave Crash / Aqua Jet / Protect"
         ]
       },
       {
@@ -44709,8 +44709,8 @@
           "Rough Skin"
         ],
         "moves": [
-          "Protect / Power Gem / Earth Power / Dragon Pulse",
-          "Protect / Power Gem / Flamethrower / Draco Meteor"
+          "Power Gem / Protect / Earth Power / Draco Meteor",
+          "Protect / Power Gem / Earth Power / Draco Meteor"
         ]
       },
       {
@@ -44730,7 +44730,7 @@
         ],
         "moves": [
           "Hurricane / Weather Ball / Tailwind / Wide Guard",
-          "Weather Ball / Hurricane / Wide Guard / Tailwind"
+          "Hurricane / Tailwind / Weather Ball / Wide Guard"
         ]
       },
       {
@@ -44748,8 +44748,8 @@
           "Chlorophyll"
         ],
         "moves": [
-          "Sleep Powder / Leaf Storm / Sludge Bomb / Protect",
-          "Sludge Bomb / Protect / Sleep Powder / Leaf Storm"
+          "Sludge Bomb / Protect / Sleep Powder / Leaf Storm",
+          "Sleep Powder / Leaf Storm / Sludge Bomb / Protect"
         ]
       },
       {
@@ -44767,8 +44767,8 @@
           "Armor Tail"
         ],
         "moves": [
-          "Trick Room / Protect / Thunderbolt / Psychic",
-          "Trick Room / Helping Hand / Psychic / Protect"
+          "Trick Room / Helping Hand / Psychic / Protect",
+          "Trick Room / Helping Hand / Protect / Psychic"
         ]
       },
       {
@@ -44786,8 +44786,8 @@
           "Pixilate"
         ],
         "moves": [
-          "Hyper Voice / Hyper Beam / Quick Attack / Detect",
-          "Hyper Voice / Detect / Hyper Beam / Quick Attack"
+          "Hyper Voice / Detect / Quick Attack / Hyper Beam",
+          "Hyper Voice / Hyper Beam / Detect / Quick Attack"
         ]
       },
       {
@@ -44805,8 +44805,8 @@
           "Lightning Rod"
         ],
         "moves": [
-          "Focus Blast / Protect / Zap Cannon / Fake Out",
-          "Zap Cannon / Protect / Focus Blast / Fake Out"
+          "Zap Cannon / Protect / Focus Blast / Fake Out",
+          "Protect / Focus Blast / Zap Cannon / Fake Out"
         ]
       },
       {
@@ -44824,7 +44824,7 @@
           "Intimidate"
         ],
         "moves": [
-          "Protect / Hyper Voice / Draco Meteor / Tailwind",
+          "Hyper Voice / Protect / Flamethrower / Tailwind",
           "Hyper Voice / Protect / Draco Meteor / Tailwind"
         ]
       },
@@ -44844,7 +44844,7 @@
         ],
         "moves": [
           "Light Screen / Parting Shot / Reflect / Spirit Break",
-          "Parting Shot / Reflect / Light Screen / Spirit Break"
+          "Light Screen / Reflect / Parting Shot / Spirit Break"
         ]
       },
       {
@@ -44875,15 +44875,15 @@
         "top_cut_pct": 10.7,
         "usage_pct": 1.0,
         "items": [
-          "Sitrus Berry",
-          "Mystic Water"
+          "Mystic Water",
+          "Sitrus Berry"
         ],
         "abilities": [
           "Drizzle"
         ],
         "moves": [
-          "Protect / Weather Ball / Perish Song / Encore",
-          "Protect / Weather Ball / Perish Song / Muddy Water"
+          "Protect / Weather Ball / Muddy Water / Ice Beam",
+          "Muddy Water / Weather Ball / Protect / Ice Beam"
         ]
       },
       {
@@ -44901,8 +44901,8 @@
           "Rock Head"
         ],
         "moves": [
-          "Flare Blitz / Head Smash / Protect / Extreme Speed",
-          "Flare Blitz / Protect / Head Smash / Extreme Speed"
+          "Flare Blitz / Protect / Head Smash / Extreme Speed",
+          "Flare Blitz / Protect / Extreme Speed / Head Smash"
         ]
       },
       {
@@ -44940,8 +44940,8 @@
           "Emergency Exit"
         ],
         "moves": [
-          "Leech Life / Iron Head / Protect / Drill Run",
-          "Leech Life / Iron Head / Protect / Sucker Punch"
+          "Leech Life / Protect / Iron Head / Drill Run",
+          "Leech Life / Iron Head / Protect / Swords Dance"
         ]
       },
       {
@@ -44960,8 +44960,8 @@
           "Multiscale"
         ],
         "moves": [
-          "Dragon Pulse / Protect / Tailwind / Heat Wave",
-          "Protect / Dragon Pulse / Heat Wave / Tailwind"
+          "Protect / Dragon Pulse / Heat Wave / Tailwind",
+          "Heat Wave / Protect / Dragon Pulse / Tailwind"
         ]
       },
       {
@@ -44979,8 +44979,8 @@
           "Competitive"
         ],
         "moves": [
-          "Protect / Ice Beam / Scald / Muddy Water",
-          "Ice Beam / Protect / Muddy Water / Coil"
+          "Ice Beam / Protect / Scald / Coil",
+          "Protect / Scald / Ice Beam / Coil"
         ]
       }
     ],
