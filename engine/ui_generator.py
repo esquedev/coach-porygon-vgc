@@ -328,6 +328,223 @@ def load_live_telemetry(data_dir: Optional[Path] = None) -> Dict:
     }
 
 
+def render_tactical_audit_html(audit_dict: Dict) -> str:
+    """
+    Generate a publication-grade, print-ready Single-File HTML Tactical Dossier
+    for a Game-Theoretic Replay Audit (including 5x5 Payoff Matrix Heatmap,
+    16-Roll Uncertainty & Luck Quantiles, and All-Turns V* Trajectory Timeline).
+
+    Args:
+        audit_dict: Serialized dictionary from TacticalAuditResult.to_dict().
+
+    Returns:
+        Self-contained HTML document string with @media print CSS styling.
+    """
+    audit_id = audit_dict.get("audit_id", "AUD-MC-001")
+    p1 = audit_dict.get("p1_name", "Trainer P1")
+    p2 = audit_dict.get("p2_name", "Opponent P2")
+    winner = audit_dict.get("winner", p1)
+    tp_turn = audit_dict.get("turn", 1)
+    total_turns = audit_dict.get("total_turns", 1)
+    game_val = float(audit_dict.get("game_value", 0.0))
+    eq_loss = float(audit_dict.get("equity_loss", 0.0))
+    m_code = audit_dict.get("mistake_code", "TGT-01")
+    driver = audit_dict.get("cognitive_driver", "Tunnel_Vision")
+    device = str(audit_dict.get("device_used", "cpu")).upper()
+    latency = float(audit_dict.get("execution_time_ms", 0.0))
+
+    unc = audit_dict.get("uncertainty_profile", {})
+    p10 = float(unc.get("p10", -0.10))
+    p50 = float(unc.get("p50", game_val))
+    p90 = float(unc.get("p90", 0.35))
+    p95 = float(unc.get("p95", 0.45))
+    ko_pct = float(unc.get("ko_probability", 0.5)) * 100.0
+    surv_pct = float(unc.get("survival_probability", 0.8)) * 100.0
+    luck_delta = float(unc.get("luck_delta", 0.0))
+    risk_val = float(unc.get("risk_adjusted_value", game_val))
+
+    matrix = audit_dict.get("payoff_matrix", [])
+    p1_labels = audit_dict.get("p1_action_labels", [f"Line L{i}" for i in range(5)])
+    p1_probs = audit_dict.get("p1_nash_probs", [0.2] * 5)
+    all_turns = audit_dict.get("all_turns_analysis", [])
+
+    matrix_rows_html = []
+    for i, row in enumerate(matrix):
+        lbl = p1_labels[i] if i < len(p1_labels) else f"L{i}"
+        prob_pct = (p1_probs[i] * 100.0) if i < len(p1_probs) else 0.0
+        cells = []
+        for val in row:
+            v = float(val)
+            bg = (
+                "rgba(16, 185, 129, 0.22)"
+                if v >= 0.15
+                else ("rgba(244, 63, 94, 0.22)" if v <= -0.15 else "rgba(56, 189, 248, 0.12)")
+            )
+            color = "#34d399" if v >= 0.15 else ("#fb7185" if v <= -0.15 else "#e2e8f0")
+            cells.append(
+                f'<td style="background:{bg};color:{color};font-family:monospace;font-weight:700;text-align:center;padding:8px;border:1px solid #1e293b;">{v:+.3f}</td>'
+            )
+        matrix_rows_html.append(
+            f"<tr>"
+            f'<td style="padding:8px;border:1px solid #1e293b;font-weight:700;color:#38bdf8;">[L{i}] {lbl}</td>'
+            f'<td style="padding:8px;border:1px solid #1e293b;font-family:monospace;text-align:center;color:#fde047;">{prob_pct:5.1f}%</td>'
+            + "".join(cells)
+            + "</tr>"
+        )
+
+    turns_rows_html = []
+    for t_obj in all_turns:
+        t_num = t_obj.get("turn_number", 1)
+        t_imp = float(t_obj.get("impact_score", 0.0))
+        t_v = float(t_obj.get("game_value", 0.0))
+        t_dv = float(t_obj.get("delta_v_star", 0.0))
+        t_shift = t_obj.get("shift_classification", "Standard_Trade")
+        t_obs = t_obj.get("observed_action", "")
+        t_opt = t_obj.get("optimal_nash_action", "")
+        is_tp = "★ TURNING POINT" if t_num == tp_turn else ""
+        turns_rows_html.append(
+            f"<tr>"
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-weight:700;">Turn {t_num} <span style="color:#ec4899;font-size:11px;">{is_tp}</span></td>'
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-family:monospace;">{t_imp:.1f} pts</td>'
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-family:monospace;color:#38bdf8;">{t_v:+.3f} ({t_dv:+.3f})</td>'
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-weight:700;">{t_shift}</td>'
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-size:12px;">{t_obs}</td>'
+            f'<td style="padding:6px 10px;border:1px solid #1e293b;font-size:12px;color:#34d399;">{t_opt}</td>'
+            f"</tr>"
+        )
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Porygon VGC — Tactical Audit Report {audit_id}</title>
+  <style>
+    :root {{
+      --bg: #090d16;
+      --card: #111827;
+      --border: #1e293b;
+      --cyan: #38bdf8;
+      --pink: #ec4899;
+      --emerald: #10b981;
+      --text: #f8fafc;
+    }}
+    body {{
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }}
+    .container {{ max-width: 1120px; margin: 0 auto; }}
+    .header {{
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2px solid var(--cyan); padding-bottom: 16px; margin-bottom: 24px;
+    }}
+    .kpi-grid {{
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;
+    }}
+    .card {{
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 20px;
+    }}
+    .kpi-label {{ font-size: 11px; text-transform: uppercase; color: #94a3b8; letter-spacing: 0.08em; }}
+    .kpi-val {{ font-size: 22px; font-weight: 800; color: var(--cyan); margin-top: 4px; font-family: monospace; }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+    th {{ background: #0f172a; color: #94a3b8; padding: 8px; border: 1px solid var(--border); text-align: left; }}
+    @media print {{
+      body {{ background: #ffffff; color: #0f172a; padding: 0; }}
+      .card {{ background: #f8fafc; border: 1px solid #cbd5e1; break-inside: avoid; }}
+      .kpi-val {{ color: #0284c7; }}
+      th {{ background: #e2e8f0; color: #0f172a; }}
+    }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1 style="margin:0;font-size:24px;color:var(--cyan);">⚡ COACH PORYGON VGC — DOSSIER TÁCTICO DETERMINISTA (REGULACIÓN M-C)</h1>
+        <p style="margin:4px 0 0;color:#94a3b8;font-size:13px;">Audit ID: <b>{audit_id}</b> | Matchup: <b>{p1}</b> vs. <b>{p2}</b> (Winner: {winner})</p>
+      </div>
+      <div style="text-align:right;font-family:monospace;font-size:12px;color:#94a3b8;">
+        <div>Device: <b>{device}</b></div>
+        <div>Latency: <b>{latency:.2f} ms</b></div>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="card">
+        <div class="kpi-label">Turning Point</div>
+        <div class="kpi-val">Turn {tp_turn} / {total_turns}</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Nash Game Value (V*)</div>
+        <div class="kpi-val">{game_val:+.4f}</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Equity Loss & Leak</div>
+        <div class="kpi-val" style="color:#fb7185;">{eq_loss:.4f} ({m_code})</div>
+      </div>
+      <div class="card">
+        <div class="kpi-label">Cognitive Driver</div>
+        <div class="kpi-val" style="color:#fde047;">{driver}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:16px;color:var(--cyan);">[1] MATRIZ DE PAYOFF 5x5 EN GPU & EQUILIBRIO DE NASH (Simulador Oficial VGC)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Estrategia P1 (Entrenador)</th>
+            <th style="text-align:center;">Nash p*</th>
+            <th style="text-align:center;">P2 L0</th>
+            <th style="text-align:center;">P2 L1</th>
+            <th style="text-align:center;">P2 L2</th>
+            <th style="text-align:center;">P2 L3</th>
+            <th style="text-align:center;">P2 L4</th>
+          </tr>
+        </thead>
+        <tbody>
+          {"".join(matrix_rows_html)}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:16px;color:var(--cyan);">[2] PERFIL DE INCERTIDUMBRE Y DISTRIBUCIÓN DE 16 ROLLS × CRÍTICO × ACCURACY</h2>
+      <div class="kpi-grid" style="margin-bottom:0;">
+        <div><div class="kpi-label">Cuantiles (p10 / p50 / p90 / p95)</div><div style="font-family:monospace;font-weight:700;margin-top:4px;">{p10:+.3f} / {p50:+.3f} / {p90:+.3f} / {p95:+.3f}</div></div>
+        <div><div class="kpi-label">Probabilidad Exacta de KO / Supervivencia</div><div style="font-family:monospace;font-weight:700;margin-top:4px;color:#34d399;">KO: {ko_pct:.1f}% | Surv: {surv_pct:.1f}%</div></div>
+        <div><div class="kpi-label">Luck Delta (Real - Esperado)</div><div style="font-family:monospace;font-weight:700;margin-top:4px;color:#38bdf8;">{luck_delta:+.4f}</div></div>
+        <div><div class="kpi-label">Valor Ajustado al Riesgo (CVaR)</div><div style="font-family:monospace;font-weight:700;margin-top:4px;color:#fde047;">{risk_val:+.4f}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="margin-top:0;font-size:16px;color:var(--cyan);">[3] CRONOLOGÍA COMPLETA TURNO A TURNO (DERIVADA DE V* Y CLASIFICACIÓN)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Turno</th>
+            <th>Impacto</th>
+            <th>Valor V* (&Delta;V*)</th>
+            <th>Clasificación</th>
+            <th>Jugada Observada</th>
+            <th>Óptimo Nash</th>
+          </tr>
+        </thead>
+        <tbody>
+          {"".join(turns_rows_html)}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>"""
+
+
 def main():
     """CLI entry point for Command Center generation."""
     parser = argparse.ArgumentParser(description="Coach Porygon VGC Visual Asset & UI Generator")

@@ -1,0 +1,543 @@
+{
+  "tournament_id": "NC002-zBMwK69ABS7RRV",
+  "url": "https://www.munchstats.com/tournaments/NC002-zBMwK69ABS7RRV/all/",
+  "crawled_at": "2026-11-01T11:29:21.334762+00:00",
+  "tournament_name": "2027 Nice Pokémon VGC Regional Championships",
+  "total_players": 862,
+  "stages": [
+    {
+      "label": "Day 1",
+      "rows": [
+        {
+          "count": 402,
+          "delta": null,
+          "name": "Rillaboom",
+          "sprite": [
+            67,
+            8
+          ],
+          "usage_pct": 46.64
+        },
+        {
+          "count": 373,
+          "delta": null,
+          "name": "Incineroar",
+          "sprite": [
+            60,
+            7
+          ],
+          "usage_pct": 43.27
+        },
+        {
+          "count": 287,
+          "delta": null,
+          "name": "Sneasler",
+          "sprite": [
+            75,
+            3
+          ],
+          "usage_pct": 33.29
+        },
+        {
+          "count": 236,
+          "delta": null,
+          "name": "Raichu-Mega-Y",
+          "sprite": [
+            119,
+            3
+          ],
+          "usage_pct": 27.38
+        },
+        {
+          "count": 214,
+          "delta": null,
+          "name": "Kingambit",
+          "sprite": [
+            81,
+            11
+          ],
+          "usage_pct": 24.83
+        },
+        {
+          "count": 213,
+          "delta": null,
+          "name": "Charizard-Mega-Y",
+          "sprite": [
+            110,
+            2
+          ],
+          "usage_pct": 24.71
+        },
+        {
+          "count": 192,
+          "delta": null,
+          "name": "Garchomp-Mega-Z",
+          "sprite": [
+            119,
+            7
+          ],
+          "usage_pct": 22.27
+        },
+        {
+          "count": 164,
+          "delta": null,
+          "name": "Garchomp",
+          "sprite": [
+            37,
+            1
+          ],
+          "usage_pct": 19.03
+        },
+        {
+          "count": 161,
+          "delta": null,
+          "name": "Gholdengo",
+          "sprite": [
+            83,
+            4
+          ],
+          "usage_pct": 18.68
+        },
+        {
+          "count": 159,
+          "delta": null,
+          "name": "Archaludon",
+          "sprite": [
+            84,
+            10
+          ],
+          "usage_pct": 18.45
+        }
+      ],
+      "total_teams": 862
+    },
+    {
+      "label": "Day 2",
+      "rows": [
+        {
+          "count": 69,
+          "delta": 11.93,
+          "name": "Incineroar",
+          "sprite": [
+            60,
+            7
+          ],
+          "usage_pct": 55.2
+        },
+        {
+          "count": 59,
+          "delta": 0.5600000000000023,
+          "name": "Rillaboom",
+          "sprite": [
+            67,
+            8
+          ],
+          "usage_pct": 47.2
+        },
+        {
+          "count": 46,
+          "delta": 3.509999999999998,
+          "name": "Sneasler",
+          "sprite": [
+            75,
+            3
+          ],
+          "usage_pct": 36.8
+        },
+        {
+          "count": 40,
+          "delta": 7.170000000000002,
+          "name": "Kingambit",
+          "sprite": [
+            81,
+            11
+          ],
+          "usage_pct": 32.0
+        },
+        {
+          "count": 35,
+          "delta": 8.969999999999999,
+          "name": "Garchomp",
+          "sprite": [
+            37,
+            1
+          ],
+          "usage_pct": 28.0
+        },
+        {
+          "count": 32,
+          "delta": 0.8900000000000006,
+          "name": "Charizard-Mega-Y",
+          "sprite": [
+            110,
+            2
+          ],
+          "usage_pct": 25.6
+        },
+        {
+          "count": 28,
+          "delta": 5.459999999999997,
+          "name": "Floette-Mega",
+          "sprite": [
+            118,
+            6
+          ],
+          "usage_pct": 22.4
+        },
+        {
+          "count": 25,
+          "delta": -7.379999999999999,
+          "name": "Raichu-Mega-Y",
+          "sprite": [
+            119,
+            3
+          ],
+          "usage_pct": 20.0
+        },
+        {
+          "count": 23,
+          "delta": 0.5299999999999976,
+          "name": "Basculegion",
+          "sprite": [
+            75,
+            2
+          ],
+          "usage_pct": 18.4
+        },
+        {
+          "count": 21,
+          "delta": -1.0700000000000003,
+          "name": "Volcarona",
+          "sprite": [
+            53,
+            1
+          ],
+          "usage_pct": 16.8
+        }
+      ],
+      "total_teams": 125
+    },
+    {
+      "label": "Top 8",
+      "rows": [
+        {
+          "count": 5,
+          "delta": 25.700000000000003,
+          "name": "Sneasler",
+          "sprite": [
+            75,
+            3
+          ],
+          "usage_pct": 62.5
+        },
+        {
+          "count": 3,
+          "delta": -9.700000000000003,
+          "name": "Rillaboom",
+          "sprite": [
+            67,
+            8
+          ],
+          "usage_pct": 37.5
+        },
+        {
+          "count": 3,
+          "delta": -17.700000000000003,
+          "name": "Incineroar",
+          "sprite": [
+            60,
+            7
+          ],
+          "usage_pct": 37.5
+        },
+        {
+          "count": 2,
+          "delta": 20.2,
+          "name": "Raichu-Mega-X",
+          "sprite": [
+            119,
+            2
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": 20.2,
+          "name": "Golisopod-Mega",
+          "sprite": [
+            120,
+            2
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": 13.0,
+          "name": "Archaludon",
+          "sprite": [
+            84,
+            10
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": 15.4,
+          "name": "Pelipper",
+          "sprite": [
+            23,
+            3
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": 21.8,
+          "name": "Basculegion-F",
+          "sprite": [
+            104,
+            6
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": 10.6,
+          "name": "Gholdengo",
+          "sprite": [
+            83,
+            4
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "count": 2,
+          "delta": -0.6000000000000014,
+          "name": "Charizard-Mega-Y",
+          "sprite": [
+            110,
+            2
+          ],
+          "usage_pct": 25.0
+        }
+      ],
+      "total_teams": 8
+    }
+  ],
+  "movers": [
+    {
+      "drops": [
+        {
+          "delta": -8.67,
+          "name": "Garchomp-Mega-Z",
+          "prev_pct": 22.27,
+          "sprite": [
+            119,
+            7
+          ],
+          "usage_pct": 13.6
+        },
+        {
+          "delta": -7.379999999999999,
+          "name": "Raichu-Mega-Y",
+          "prev_pct": 27.38,
+          "sprite": [
+            119,
+            3
+          ],
+          "usage_pct": 20.0
+        },
+        {
+          "delta": -6.449999999999999,
+          "name": "Archaludon",
+          "prev_pct": 18.45,
+          "sprite": [
+            84,
+            10
+          ],
+          "usage_pct": 12.0
+        },
+        {
+          "delta": -5.83,
+          "name": "Pelipper",
+          "prev_pct": 15.43,
+          "sprite": [
+            23,
+            3
+          ],
+          "usage_pct": 9.6
+        },
+        {
+          "delta": -5.42,
+          "name": "Grimmsnarl",
+          "prev_pct": 11.02,
+          "sprite": [
+            71,
+            9
+          ],
+          "usage_pct": 5.6
+        }
+      ],
+      "gains": [
+        {
+          "delta": 11.93,
+          "name": "Incineroar",
+          "prev_pct": 43.27,
+          "sprite": [
+            60,
+            7
+          ],
+          "usage_pct": 55.2
+        },
+        {
+          "delta": 8.969999999999999,
+          "name": "Garchomp",
+          "prev_pct": 19.03,
+          "sprite": [
+            37,
+            1
+          ],
+          "usage_pct": 28.0
+        },
+        {
+          "delta": 8.14,
+          "name": "Gengar-Mega",
+          "prev_pct": 6.26,
+          "sprite": [
+            110,
+            8
+          ],
+          "usage_pct": 14.4
+        },
+        {
+          "delta": 7.170000000000002,
+          "name": "Kingambit",
+          "prev_pct": 24.83,
+          "sprite": [
+            81,
+            11
+          ],
+          "usage_pct": 32.0
+        },
+        {
+          "delta": 6.940000000000001,
+          "name": "Delphox-Mega",
+          "prev_pct": 9.86,
+          "sprite": [
+            118,
+            3
+          ],
+          "usage_pct": 16.8
+        }
+      ],
+      "label": "Day 1 → Day 2"
+    },
+    {
+      "drops": [
+        {
+          "delta": -17.700000000000003,
+          "name": "Incineroar",
+          "prev_pct": 55.2,
+          "sprite": [
+            60,
+            7
+          ],
+          "usage_pct": 37.5
+        },
+        {
+          "delta": -16.8,
+          "name": "Volcarona",
+          "prev_pct": 16.8,
+          "sprite": [
+            53,
+            1
+          ],
+          "usage_pct": 0
+        },
+        {
+          "delta": -16.8,
+          "name": "Delphox-Mega",
+          "prev_pct": 16.8,
+          "sprite": [
+            118,
+            3
+          ],
+          "usage_pct": 0
+        },
+        {
+          "delta": -13.6,
+          "name": "Venusaur",
+          "prev_pct": 13.6,
+          "sprite": [
+            0,
+            3
+          ],
+          "usage_pct": 0
+        },
+        {
+          "delta": -11.2,
+          "name": "Kommo-o",
+          "prev_pct": 11.2,
+          "sprite": [
+            65,
+            4
+          ],
+          "usage_pct": 0
+        }
+      ],
+      "gains": [
+        {
+          "delta": 25.700000000000003,
+          "name": "Sneasler",
+          "prev_pct": 36.8,
+          "sprite": [
+            75,
+            3
+          ],
+          "usage_pct": 62.5
+        },
+        {
+          "delta": 21.8,
+          "name": "Basculegion-F",
+          "prev_pct": 3.2,
+          "sprite": [
+            104,
+            6
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "delta": 20.2,
+          "name": "Raichu-Mega-X",
+          "prev_pct": 4.8,
+          "sprite": [
+            119,
+            2
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "delta": 20.2,
+          "name": "Golisopod-Mega",
+          "prev_pct": 4.8,
+          "sprite": [
+            120,
+            2
+          ],
+          "usage_pct": 25.0
+        },
+        {
+          "delta": 16.2,
+          "name": "Whimsicott",
+          "prev_pct": 8.8,
+          "sprite": [
+            45,
+            7
+          ],
+          "usage_pct": 25.0
+        }
+      ],
+      "label": "Day 2 → Top 8"
+    }
+  ]
+}

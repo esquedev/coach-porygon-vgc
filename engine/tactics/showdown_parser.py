@@ -22,6 +22,62 @@ from engine.turn_simulator import (
 
 
 @dataclass
+class OTSMember:
+    """Represents a single Pokemon entry from an Open Team Sheet."""
+
+    species: str
+    item: str = ""
+    ability: str = ""
+    nature: str = "Hardy"
+    level: int = 50
+    tera_type: str = ""
+    gender: str = ""
+    moves: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert OTSMember to dictionary representation."""
+        return {
+            "species": self.species,
+            "item": self.item,
+            "ability": self.ability,
+            "nature": self.nature,
+            "level": self.level,
+            "tera_type": self.tera_type,
+            "gender": self.gender,
+            "moves": list(self.moves),
+        }
+
+
+@dataclass
+class OpenTeamSheet:
+    """Represents a player's complete 6-Pokemon Open Team Sheet."""
+
+    trainer_name: str
+    pokemon: List[OTSMember] = field(default_factory=list)
+
+    @property
+    def pokemon_map(self) -> Dict[str, OTSMember]:
+        """Return a mapping of species name to OTSMember."""
+        return {p.species: p for p in self.pokemon}
+
+    def get_member(self, species: str) -> Optional[OTSMember]:
+        """Look up OTSMember by exact or base species name."""
+        if species in self.pokemon_map:
+            return self.pokemon_map[species]
+        base = species.replace("-Mega-Y", "").replace("-Mega-X", "").replace("-Mega", "")
+        if base.startswith("Mega "):
+            base = base[5:].strip()
+        return self.pokemon_map.get(base)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert OpenTeamSheet to dictionary representation."""
+        return {
+            "trainer_name": self.trainer_name,
+            "pokemon": [p.to_dict() for p in self.pokemon],
+        }
+
+
+@dataclass
 class SlotState:
     """Represents the exact state of a single active Pokemon slot."""
 
@@ -74,6 +130,8 @@ class TurnSnapshot:
     p2_slots: List[SlotState] = field(default_factory=list)
     p1_bench_alive: int = 2
     p2_bench_alive: int = 2
+    p1_bench_species: List[str] = field(default_factory=list)
+    p2_bench_species: List[str] = field(default_factory=list)
     p1_mega_used: bool = False
     p2_mega_used: bool = False
     weather: str = "Clear"
@@ -88,6 +146,9 @@ class TurnSnapshot:
     terrain_changed: bool = False
     redirection_active: bool = False
     protect_absorptions: int = 0
+    is_ots: bool = False
+    p1_ots: Optional[OpenTeamSheet] = None
+    p2_ots: Optional[OpenTeamSheet] = None
 
 
 @dataclass
@@ -101,6 +162,12 @@ class BattleHistory:
     p2_team: List[str] = field(default_factory=list)
     winner: str = ""
     turns: List[TurnSnapshot] = field(default_factory=list)
+    is_bo3: bool = False
+    bo3_game_number: Optional[int] = None
+    bo3_url: str = ""
+    is_ots: bool = False
+    p1_ots: Optional[OpenTeamSheet] = None
+    p2_ots: Optional[OpenTeamSheet] = None
 
 
 class ShowdownParser:
@@ -134,6 +201,85 @@ class ShowdownParser:
         if "|turn|" in raw_log:
             return self._parse_pipe_protocol(raw_log, match_id)
         return self._parse_text_protocol(raw_log, match_id)
+
+    def parse_log(self, raw_log: str) -> BattleHistory:
+        """
+        Alias for parse(raw_log) returning the structured BattleHistory.
+
+        Args:
+            raw_log: Raw plain-text or pipe-delimited Showdown battle log.
+
+        Returns:
+            BattleHistory containing metadata and ordered TurnSnapshots.
+        """
+        return self.parse(raw_log)
+
+    def parse_open_team_sheets(self, raw_log: str) -> Dict[str, OpenTeamSheet]:
+        """
+        Extract Open Team Sheet (OTS) blocks from human-readable or pipe Showdown logs.
+
+        Args:
+            raw_log: Raw Showdown battle log text.
+
+        Returns:
+            Dictionary mapping trainer names to OpenTeamSheet objects.
+        """
+        ots_map: Dict[str, OpenTeamSheet] = {}
+        ots_blocks = re.findall(
+            r"Open team sheet for (.+?)\n(.*?)(?=(?:Open team sheet for |Battle started |Turn 1|\|turn\||$))",
+            raw_log,
+            re.DOTALL,
+        )
+        for trainer_raw, block in ots_blocks:
+            trainer = trainer_raw.strip()
+            lines = [l.strip() for l in block.strip().splitlines() if l.strip()]
+            pokemon_list: List[OTSMember] = []
+            cur_mon: Optional[OTSMember] = None
+
+            for l in lines:
+                if l.startswith("- "):
+                    if cur_mon:
+                        cur_mon.moves.append(l[2:].strip())
+                elif l.startswith("Ability:"):
+                    if cur_mon:
+                        cur_mon.ability = l.split(":", 1)[1].strip()
+                elif l.endswith(" Nature"):
+                    if cur_mon:
+                        cur_mon.nature = l.replace(" Nature", "").strip()
+                elif l.startswith("Level:"):
+                    if cur_mon:
+                        try:
+                            cur_mon.level = int(l.split(":", 1)[1].strip())
+                        except ValueError:
+                            cur_mon.level = 50
+                elif l.startswith("Tera Type:"):
+                    if cur_mon:
+                        cur_mon.tera_type = l.split(":", 1)[1].strip()
+                elif l.startswith("EVs:"):
+                    pass
+                else:
+                    item = ""
+                    mon_part = l
+                    if "@" in l:
+                        parts = l.split("@", 1)
+                        mon_part = parts[0].strip()
+                        item = parts[1].strip()
+                    gender = ""
+                    m_gen = re.search(r"\s*\(([MF])\)$", mon_part)
+                    if m_gen:
+                        gender = m_gen.group(1)
+                        mon_part = mon_part[: m_gen.start()].strip()
+                    species = self._canonical_species(mon_part)
+                    cur_mon = OTSMember(
+                        species=species,
+                        item=item,
+                        gender=gender,
+                    )
+                    pokemon_list.append(cur_mon)
+
+            ots_map[trainer] = OpenTeamSheet(trainer_name=trainer, pokemon=pokemon_list)
+
+        return ots_map
 
     def _canonical_species(self, raw_name: str) -> str:
         """Normalize species strings by stripping nicknames and parentheses."""
@@ -194,22 +340,42 @@ class ShowdownParser:
 
         slots_dict: Dict[str, Any] = {}
         for side_prefix, slot_list in (("p1", snapshot.p1_slots), ("p2", snapshot.p2_slots)):
+            ots = snapshot.p1_ots if side_prefix == "p1" else snapshot.p2_ots
             for idx, s in enumerate(slot_list[:2]):
                 slot_id = f"{side_prefix}{'a' if idx == 0 else 'b'}"
                 sim_species = self._resolve_mega_species(s.species) if s.is_mega else s.species
+                ots_member = ots.get_member(s.species) if ots else None
+                nature = ots_member.nature if ots_member and ots_member.nature else "Hardy"
+
                 max_hp, stats = calculate_level_50_stats(
-                    sim_species, {"atk": 16, "spa": 16, "spe": 16, "hp": 18}, "Hardy"
+                    sim_species, {"atk": 16, "spa": 16, "spe": 16, "hp": 18}, nature
                 )
                 db_entry = BASE_STATS_DB.get(sim_species, {})
                 types = list(db_entry.get("types", ["Normal"]))
                 default_ab = db_entry.get("abilities", {}).get("0", "Pressure")
+
+                ability = s.ability
+                if not ability:
+                    if s.is_mega:
+                        ability = db_entry.get("abilities", {}).get("0", default_ab)
+                    elif ots_member and ots_member.ability:
+                        ability = ots_member.ability
+                    else:
+                        ability = default_ab
+
+                item = s.item
+                if not item and ots_member and ots_member.item:
+                    item = ots_member.item
+
                 slots_dict[slot_id] = {
                     "slot_id": slot_id,
                     "species": sim_species,
                     "name": s.species,
                     "types": types,
-                    "ability": s.ability or default_ab,
-                    "item": s.item,
+                    "ability": ability,
+                    "item": item,
+                    "nature": nature,
+                    "moves": list(ots_member.moves) if ots_member else [],
                     "status": None if s.status == "None" else s.status,
                     "current_hp_pct": round(s.hp_pct * 100.0, 1),
                     "max_hp": max_hp,
@@ -226,8 +392,20 @@ class ShowdownParser:
                 "terrain_turns": snapshot.terrain_turns,
                 "trick_room_turns": 0,
             },
-            "p1": {"player": "p1", "tailwind_turns": 0, "reflect_turns": 0},
-            "p2": {"player": "p2", "tailwind_turns": 0, "reflect_turns": 0},
+            "p1": {
+                "player": "p1",
+                "tailwind_turns": 0,
+                "reflect_turns": 0,
+                "bench_alive": snapshot.p1_bench_alive,
+                "bench_species": list(snapshot.p1_bench_species),
+            },
+            "p2": {
+                "player": "p2",
+                "tailwind_turns": 0,
+                "reflect_turns": 0,
+                "bench_alive": snapshot.p2_bench_alive,
+                "bench_species": list(snapshot.p2_bench_species),
+            },
             "slots": slots_dict,
         }
 
@@ -241,14 +419,36 @@ class ShowdownParser:
         p2_team: List[str] = []
         winner = ""
 
+        is_bo3 = False
+        bo3_game_number: Optional[int] = None
+        bo3_url = ""
+        bo3_match = re.search(r"Game (\d+) of \[a best-of-3\]\((.*?)\)", raw_log)
+        if bo3_match:
+            is_bo3 = True
+            bo3_game_number = int(bo3_match.group(1))
+            bo3_url = bo3_match.group(2).strip()
+        elif "Bo3" in raw_log or "best-of-3" in raw_log:
+            is_bo3 = True
+
+        ots_map = self.parse_open_team_sheets(raw_log)
+        is_ots = len(ots_map) > 0
+
         for idx, line in enumerate(lines):
             battle_match = re.match(r"^Battle started between (.+) and (.+)!$", line)
             if battle_match:
                 p1_name = battle_match.group(1).strip()
                 p2_name = battle_match.group(2).strip()
-            if line.endswith("'s team:") and idx + 1 < len(lines):
+            team_inline = re.match(r"^(.+)'s team:\s*(.+)$", line)
+            if team_inline:
+                owner = team_inline.group(1).strip()
+                roster = [self._canonical_species(s) for s in team_inline.group(2).split("/") if s.strip()]
+                if owner == p1_name or not p1_team:
+                    p1_team = roster
+                else:
+                    p2_team = roster
+            elif line.endswith("'s team:") and idx + 1 < len(lines):
                 owner = line.replace("'s team:", "").strip()
-                roster = [s.strip() for s in lines[idx + 1].split("/") if s.strip()]
+                roster = [self._canonical_species(s) for s in lines[idx + 1].split("/") if s.strip()]
                 if owner == p1_name or not p1_team:
                     p1_team = roster
                 else:
@@ -256,6 +456,54 @@ class ShowdownParser:
             win_match = re.match(r"^(.+) won the battle!$", line)
             if win_match:
                 winner = win_match.group(1).strip()
+
+        p1_ots: Optional[OpenTeamSheet] = ots_map.get(p1_name)
+        p2_ots: Optional[OpenTeamSheet] = ots_map.get(p2_name)
+        keys = list(ots_map.keys())
+        if not p1_ots and keys:
+            p1_key = next((k for k in keys if k.lower() == p1_name.lower()), None)
+            p1_ots = ots_map[p1_key] if p1_key else (ots_map[keys[0]] if len(keys) >= 1 else None)
+        if not p2_ots and len(keys) >= 2:
+            p2_key = next((k for k in keys if k.lower() == p2_name.lower()), None)
+            p2_ots = ots_map[p2_key] if p2_key else ots_map[keys[1]]
+
+        if not p1_team and p1_ots:
+            p1_team = [p.species for p in p1_ots.pokemon]
+        if not p2_team and p2_ots:
+            p2_team = [p.species for p in p2_ots.pokemon]
+
+        p1_revealed: List[str] = []
+        p2_revealed: List[str] = []
+        for line in lines:
+            if line.startswith("Go! "):
+                mon = self._canonical_species(line.replace("Go! ", "").rstrip("!"))
+                if mon not in p1_revealed:
+                    p1_revealed.append(mon)
+            else:
+                sent_match = re.match(r"^(.+) sent out (.+)!$", line)
+                if sent_match:
+                    trainer = sent_match.group(1).strip()
+                    mon = self._canonical_species(sent_match.group(2))
+                    if trainer == p1_name:
+                        if mon not in p1_revealed:
+                            p1_revealed.append(mon)
+                    else:
+                        if mon not in p2_revealed:
+                            p2_revealed.append(mon)
+
+        p1_brought = list(p1_revealed)
+        for sp in p1_team:
+            if len(p1_brought) >= 4:
+                break
+            if sp not in p1_brought:
+                p1_brought.append(sp)
+
+        p2_brought = list(p2_revealed)
+        for sp in p2_team:
+            if len(p2_brought) >= 4:
+                break
+            if sp not in p2_brought:
+                p2_brought.append(sp)
 
         p1_active: List[SlotState] = []
         p2_active: List[SlotState] = []
@@ -283,16 +531,28 @@ class ShowdownParser:
             hp_map = p1_hp_map if side == "p1" else p2_hp_map
             mega_map = p1_mega_map if side == "p1" else p2_mega_map
             active_list = p1_active if side == "p1" else p2_active
+            ots = p1_ots if side == "p1" else p2_ots
+            ots_member = ots.get_member(canon) if ots else None
 
             if canon not in hp_map:
                 hp_map[canon] = 1.0
             is_m = mega_map.get(canon, False)
+            ability = ots_member.ability if ots_member else ""
+            item = ots_member.item if ots_member else ""
+            if is_m:
+                mega_sp = self._resolve_mega_species(canon)
+                mega_ab = BASE_STATS_DB.get(mega_sp, {}).get("abilities", {}).get("0")
+                if mega_ab:
+                    ability = mega_ab
+
             slot_obj = SlotState(
                 species=canon,
                 hp_pct=hp_map[canon],
                 is_mega=is_m,
                 fainted=(hp_map[canon] <= 0.0),
                 speed_tier=self._lookup_speed(canon, is_m),
+                item=item,
+                ability=ability,
             )
             existing_idx = next(
                 (i for i, s in enumerate(active_list) if s.species == canon), None
@@ -320,6 +580,11 @@ class ShowdownParser:
                         p2_active,
                         p1_fainted_set,
                         p2_fainted_set,
+                        p1_brought,
+                        p2_brought,
+                        is_ots,
+                        p1_ots,
+                        p2_ots,
                     )
                     turns.append(current_turn)
 
@@ -333,18 +598,28 @@ class ShowdownParser:
                     if terrain_turns == 0:
                         terrain = "None"
 
+                p1_act_sp = {s.species for s in p1_active if not s.fainted}
+                p2_act_sp = {s.species for s in p2_active if not s.fainted}
+                p1_bench = [sp for sp in p1_brought if sp not in p1_act_sp and sp not in p1_fainted_set]
+                p2_bench = [sp for sp in p2_brought if sp not in p2_act_sp and sp not in p2_fainted_set]
+
                 current_turn = TurnSnapshot(
                     turn_number=t_num,
                     p1_slots=[s.clone() for s in p1_active],
                     p2_slots=[s.clone() for s in p2_active],
-                    p1_bench_alive=max(0, 4 - len(p1_fainted_set) - len(p1_active)),
-                    p2_bench_alive=max(0, 4 - len(p2_fainted_set) - len(p2_active)),
+                    p1_bench_alive=len(p1_bench) if p1_brought else max(0, 4 - len(p1_fainted_set) - len(p1_active)),
+                    p2_bench_alive=len(p2_bench) if p2_brought else max(0, 4 - len(p2_fainted_set) - len(p2_active)),
+                    p1_bench_species=p1_bench,
+                    p2_bench_species=p2_bench,
                     p1_mega_used=p1_mega_used,
                     p2_mega_used=p2_mega_used,
                     weather=weather,
                     weather_turns=weather_turns,
                     terrain=terrain,
                     terrain_turns=terrain_turns,
+                    is_ots=is_ots,
+                    p1_ots=p1_ots,
+                    p2_ots=p2_ots,
                 )
                 last_action = None
                 continue
@@ -378,6 +653,8 @@ class ShowdownParser:
             if mega_match:
                 is_opp = bool(mega_match.group(1))
                 base_mon = self._canonical_species(mega_match.group(2))
+                mega_sp = self._resolve_mega_species(base_mon)
+                mega_ab = BASE_STATS_DB.get(mega_sp, {}).get("abilities", {}).get("0", "")
                 if is_opp:
                     p2_mega_used = True
                     p2_mega_map[base_mon] = True
@@ -385,6 +662,8 @@ class ShowdownParser:
                         if s.species == base_mon:
                             s.is_mega = True
                             s.speed_tier = self._lookup_speed(base_mon, True)
+                            if mega_ab:
+                                s.ability = mega_ab
                     if current_turn is not None:
                         current_turn.p2_mega_used = True
                         current_turn.mega_evolutions.append(f"p2:{base_mon}")
@@ -395,6 +674,8 @@ class ShowdownParser:
                         if s.species == base_mon:
                             s.is_mega = True
                             s.speed_tier = self._lookup_speed(base_mon, True)
+                            if mega_ab:
+                                s.ability = mega_ab
                     if current_turn is not None:
                         current_turn.p1_mega_used = True
                         current_turn.mega_evolutions.append(f"p1:{base_mon}")
@@ -491,7 +772,16 @@ class ShowdownParser:
 
         if current_turn is not None:
             self._finalize_turn_snapshot(
-                current_turn, p1_active, p2_active, p1_fainted_set, p2_fainted_set
+                current_turn,
+                p1_active,
+                p2_active,
+                p1_fainted_set,
+                p2_fainted_set,
+                p1_brought,
+                p2_brought,
+                is_ots,
+                p1_ots,
+                p2_ots,
             )
             turns.append(current_turn)
 
@@ -506,6 +796,12 @@ class ShowdownParser:
             p2_team=p2_team,
             winner=winner or p1_name,
             turns=turns,
+            is_bo3=is_bo3,
+            bo3_game_number=bo3_game_number,
+            bo3_url=bo3_url,
+            is_ots=is_ots,
+            p1_ots=p1_ots,
+            p2_ots=p2_ots,
         )
 
     def _finalize_turn_snapshot(
@@ -515,8 +811,13 @@ class ShowdownParser:
         p2_active: List[SlotState],
         p1_fainted: set,
         p2_fainted: set,
+        p1_brought: Optional[List[str]] = None,
+        p2_brought: Optional[List[str]] = None,
+        is_ots: bool = False,
+        p1_ots: Optional[OpenTeamSheet] = None,
+        p2_ots: Optional[OpenTeamSheet] = None,
     ) -> None:
-        """Update alive bench counts while preserving pre-replacement turn decision slots."""
+        """Update alive bench counts and exact bench species while preserving pre-replacement turn decision slots."""
         if not snapshot.p1_slots:
             snapshot.p1_slots = [s.clone() for s in p1_active]
         if not snapshot.p2_slots:
@@ -525,22 +826,69 @@ class ShowdownParser:
             if f"p1:{s.species}" in snapshot.mega_evolutions:
                 s.is_mega = True
                 s.speed_tier = self._lookup_speed(s.species, True)
+                mega_sp = self._resolve_mega_species(s.species)
+                mega_ab = BASE_STATS_DB.get(mega_sp, {}).get("abilities", {}).get("0")
+                if mega_ab:
+                    s.ability = mega_ab
         for s in snapshot.p2_slots:
             if f"p2:{s.species}" in snapshot.mega_evolutions:
                 s.is_mega = True
                 s.speed_tier = self._lookup_speed(s.species, True)
-        p1_alive_total = max(0, 4 - len(p1_fainted))
-        p2_alive_total = max(0, 4 - len(p2_fainted))
-        p1_active_alive = sum(1 for s in p1_active if not s.fainted)
-        p2_active_alive = sum(1 for s in p2_active if not s.fainted)
-        snapshot.p1_bench_alive = max(0, p1_alive_total - p1_active_alive)
-        snapshot.p2_bench_alive = max(0, p2_alive_total - p2_active_alive)
+                mega_sp = self._resolve_mega_species(s.species)
+                mega_ab = BASE_STATS_DB.get(mega_sp, {}).get("abilities", {}).get("0")
+                if mega_ab:
+                    s.ability = mega_ab
+
+        if not snapshot.p1_bench_species:
+            if p1_brought is not None:
+                p1_active_species = {s.species for s in snapshot.p1_slots if not s.fainted}
+                snapshot.p1_bench_species = [
+                    sp for sp in p1_brought
+                    if sp not in p1_active_species and sp not in p1_fainted
+                ]
+                snapshot.p1_bench_alive = len(snapshot.p1_bench_species)
+            else:
+                p1_alive_total = max(0, 4 - len(p1_fainted))
+                p1_active_alive = len({s.species for s in p1_active if not s.fainted})
+                snapshot.p1_bench_alive = max(0, p1_alive_total - p1_active_alive)
+
+        if not snapshot.p2_bench_species:
+            if p2_brought is not None:
+                p2_active_species = {s.species for s in snapshot.p2_slots if not s.fainted}
+                snapshot.p2_bench_species = [
+                    sp for sp in p2_brought
+                    if sp not in p2_active_species and sp not in p2_fainted
+                ]
+                snapshot.p2_bench_alive = len(snapshot.p2_bench_species)
+            else:
+                p2_alive_total = max(0, 4 - len(p2_fainted))
+                p2_active_alive = len({s.species for s in p2_active if not s.fainted})
+                snapshot.p2_bench_alive = max(0, p2_alive_total - p2_active_alive)
+
+        snapshot.is_ots = is_ots
+        snapshot.p1_ots = p1_ots
+        snapshot.p2_ots = p2_ots
 
     def _parse_pipe_protocol(self, raw_log: str, match_id: str) -> BattleHistory:
         """Parse pipe-delimited Showdown protocol stream (|turn|, |switch|, |move|, etc.)."""
         p1_name = "aws_secret"
         p2_name = "Opponent"
         winner = ""
+
+        is_bo3 = False
+        bo3_game_number: Optional[int] = None
+        bo3_url = ""
+        bo3_match = re.search(r"Game (\d+) of \[a best-of-3\]\((.*?)\)", raw_log)
+        if bo3_match:
+            is_bo3 = True
+            bo3_game_number = int(bo3_match.group(1))
+            bo3_url = bo3_match.group(2).strip()
+        elif "Bo3" in raw_log or "best-of-3" in raw_log:
+            is_bo3 = True
+
+        ots_map = self.parse_open_team_sheets(raw_log)
+        is_ots = len(ots_map) > 0
+
         p1_slots: Dict[str, SlotState] = {}
         p2_slots: Dict[str, SlotState] = {}
         turns: List[TurnSnapshot] = []
@@ -672,10 +1020,26 @@ class ShowdownParser:
             current_turn.p2_slots = [s.clone() for s in p2_slots.values()]
             turns.append(current_turn)
 
+        p1_ots = ots_map.get(p1_name)
+        p2_ots = ots_map.get(p2_name)
+        keys = list(ots_map.keys())
+        if not p1_ots and keys:
+            p1_key = next((k for k in keys if k.lower() == p1_name.lower()), None)
+            p1_ots = ots_map[p1_key] if p1_key else (ots_map[keys[0]] if len(keys) >= 1 else None)
+        if not p2_ots and len(keys) >= 2:
+            p2_key = next((k for k in keys if k.lower() == p2_name.lower()), None)
+            p2_ots = ots_map[p2_key] if p2_key else ots_map[keys[1]]
+
         return BattleHistory(
             match_id=match_id,
             p1_name=p1_name,
             p2_name=p2_name,
             winner=winner or p1_name,
             turns=turns,
+            is_bo3=is_bo3,
+            bo3_game_number=bo3_game_number,
+            bo3_url=bo3_url,
+            is_ots=is_ots,
+            p1_ots=p1_ots,
+            p2_ots=p2_ots,
         )

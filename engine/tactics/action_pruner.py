@@ -9,13 +9,19 @@ Generates exact choice dictionaries for ClientReplaySimulator.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from engine.tactics.showdown_parser import ShowdownParser, SlotState, TurnSnapshot
+from engine.tactics.showdown_parser import (
+    OpenTeamSheet,
+    ShowdownParser,
+    SlotState,
+    TurnSnapshot,
+)
 from engine.turn_simulator import (
     BASE_STATS_DB,
     ClientReplaySimulator,
     MOVE_DB,
+    PROTECT_MOVES,
     TYPE_CHART,
     evaluate_move_synergy,
 )
@@ -113,8 +119,131 @@ class ActionPruner:
         """Initialize the ActionPruner with a ShowdownParser helper for simulator state conversion."""
         self._parser = ShowdownParser()
 
-    def _get_move_kit(self, species: str) -> Dict[str, str]:
-        """Resolve canonical move kit for a species using turn_simulator.MOVE_DB."""
+    def _get_move_kit(
+        self, species: str, ots: Optional[OpenTeamSheet] = None
+    ) -> Dict[str, str]:
+        """
+        Resolve canonical or OTS move kit for a species using turn_simulator.MOVE_DB.
+
+        Args:
+            species: Canonical species name.
+            ots: Optional OpenTeamSheet for exact move extraction.
+
+        Returns:
+            Dictionary with keys 'single', 'spread', 'support', and 'protect'.
+        """
+        ots_member = ots.get_member(species) if ots else None
+        if ots_member and ots_member.moves:
+            moves = ots_member.moves
+            prot_candidates = [
+                m
+                for m in moves
+                if m in PROTECT_MOVES
+                or m
+                in (
+                    "Protect",
+                    "Detect",
+                    "Quick Guard",
+                    "Wide Guard",
+                    "Spiky Shield",
+                    "Baneful Bunker",
+                    "Silk Trap",
+                )
+            ]
+            prot_move = prot_candidates[0] if prot_candidates else "Protect"
+
+            known_spread = {
+                "Heat Wave",
+                "Hyper Voice",
+                "Explosion",
+                "Earthquake",
+                "Dazzling Gleam",
+                "Rock Slide",
+                "Muddy Water",
+                "Snarl",
+                "Make It Rain",
+                "Electroweb",
+                "Blizzard",
+                "Discharge",
+                "Icy Wind",
+                "Diamond Storm",
+                "Bleakwind Storm",
+                "Wildbolt Storm",
+                "Sandsear Storm",
+                "Springtide Storm",
+                "Expanding Force",
+            }
+            spread_candidates = [
+                m
+                for m in moves
+                if m in known_spread
+                or MOVE_DB.get(m, {}).get("target") in ("allAdjacentFoes", "allAdjacent")
+            ]
+            spread_move = spread_candidates[0] if spread_candidates else ""
+
+            known_support = {
+                "Tailwind",
+                "Trick Room",
+                "Fake Out",
+                "Rage Powder",
+                "Follow Me",
+                "Parting Shot",
+                "Spore",
+                "Hypnosis",
+                "Calm Mind",
+                "Nasty Plot",
+                "Swords Dance",
+                "Eerie Impulse",
+                "Helping Hand",
+                "Dragon Cheer",
+                "Screech",
+                "Volt Switch",
+                "U-turn",
+                "Reflect",
+                "Light Screen",
+                "Thunder Wave",
+                "Will-O-Wisp",
+                "Yawn",
+                "Taunt",
+                "Encore",
+                "Coil",
+            }
+            support_candidates = [
+                m
+                for m in moves
+                if m in known_support
+                or (MOVE_DB.get(m, {}).get("cat") == "Status" and m != prot_move)
+            ]
+            support_move = support_candidates[0] if support_candidates else prot_move
+
+            single_candidates = [
+                m
+                for m in moves
+                if m != prot_move
+                and m != spread_move
+                and MOVE_DB.get(m, {}).get("cat") in ("Physical", "Special")
+            ]
+            if single_candidates:
+                single_move = single_candidates[0]
+            else:
+                attacks = [
+                    m
+                    for m in moves
+                    if m != prot_move
+                    and MOVE_DB.get(m, {}).get("cat") in ("Physical", "Special")
+                ]
+                single_move = attacks[0] if attacks else moves[0]
+
+            if not spread_move:
+                spread_move = single_move
+
+            return {
+                "single": single_move,
+                "spread": spread_move,
+                "support": support_move,
+                "protect": prot_move,
+            }
+
         if species in CANONICAL_SPECIES_MOVES:
             return CANONICAL_SPECIES_MOVES[species]
         return {
@@ -170,8 +299,11 @@ class ActionPruner:
             opp_slots[1] if len(opp_slots) > 1 else SlotState(species="Floette-Eternal")
         )
 
-        kit_a = self._get_move_kit(slot_a.species)
-        kit_b = self._get_move_kit(slot_b.species)
+        my_ots = snapshot.p1_ots if side == "p1" else snapshot.p2_ots
+        opp_ots = snapshot.p2_ots if side == "p1" else snapshot.p1_ots
+
+        kit_a = self._get_move_kit(slot_a.species, ots=my_ots)
+        kit_b = self._get_move_kit(slot_b.species, ots=my_ots)
 
         slot_a_id = f"{side}a"
         slot_b_id = f"{side}b"
@@ -218,14 +350,37 @@ class ActionPruner:
         )
 
         # 2. Spread / Area Move (Un-redirectable)
+        known_spread_names = {
+            "Heat Wave",
+            "Hyper Voice",
+            "Explosion",
+            "Earthquake",
+            "Dazzling Gleam",
+            "Rock Slide",
+            "Muddy Water",
+            "Snarl",
+            "Make It Rain",
+            "Electroweb",
+            "Blizzard",
+            "Discharge",
+            "Icy Wind",
+            "Diamond Storm",
+            "Bleakwind Storm",
+            "Wildbolt Storm",
+            "Sandsear Storm",
+            "Springtide Storm",
+            "Expanding Force",
+        }
         spread_a = (
             kit_a["spread"]
-            if kit_a["spread"] in ("Heat Wave", "Dazzling Gleam", "Earthquake", "Snarl")
+            if kit_a["spread"] in known_spread_names
+            or MOVE_DB.get(kit_a["spread"], {}).get("target") in ("allAdjacentFoes", "allAdjacent")
             else kit_a["single"]
         )
         spread_b = (
             kit_b["spread"]
-            if kit_b["spread"] in ("Heat Wave", "Dazzling Gleam", "Earthquake", "Snarl")
+            if kit_b["spread"] in known_spread_names
+            or MOVE_DB.get(kit_b["spread"], {}).get("target") in ("allAdjacentFoes", "allAdjacent")
             else kit_b["single"]
         )
         if spread_a == kit_a["single"] and spread_b == kit_b["single"]:
@@ -258,7 +413,8 @@ class ActionPruner:
         )
 
         # 4. Strategic Pivot / Switch
-        bench_pivot = "Milotic" if side == "p1" else "Incineroar"
+        my_bench = snapshot.p1_bench_species if side == "p1" else snapshot.p2_bench_species
+        bench_pivot = my_bench[0] if my_bench else ("Milotic" if side == "p1" else "Incineroar")
         line_4 = PrunedActionLine(
             index=4,
             category="Strategic Pivot / Switch",
@@ -273,6 +429,62 @@ class ActionPruner:
         )
 
         return [line_0, line_1, line_2, line_3, line_4]
+
+    def prune_dominated_actions(
+        self,
+        payoff_matrix: Any,
+        p1_lines: List[PrunedActionLine],
+        p2_lines: List[PrunedActionLine],
+        eps: float = 1e-6,
+    ) -> Tuple[Any, List[PrunedActionLine], List[PrunedActionLine]]:
+        """
+        Eliminate strictly dominated row/column actions from a payoff matrix to maximize
+        tactical density on GPU (ensuring N <= 36, M <= 36).
+
+        Args:
+            payoff_matrix: 2D array of shape (N, M) representing P1 payoffs.
+            p1_lines: Candidate action lines for Player 1.
+            p2_lines: Candidate action lines for Player 2.
+            eps: Strict dominance margin epsilon.
+
+        Returns:
+            Tuple of (filtered_payoff_matrix, surviving_p1_lines, surviving_p2_lines).
+        """
+        import numpy as np
+
+        mat = np.asarray(payoff_matrix, dtype=np.float64)
+        n_rows, m_cols = mat.shape
+
+        # Identify non-dominated P1 rows (keep at least 2 rows)
+        keep_rows: List[int] = []
+        for i in range(n_rows):
+            dominated = False
+            for k in range(n_rows):
+                if i != k and np.all(mat[k, :] >= mat[i, :] + eps):
+                    dominated = True
+                    break
+            if not dominated:
+                keep_rows.append(i)
+        if not keep_rows:
+            keep_rows = list(range(n_rows))
+
+        # Identify non-dominated P2 columns (P2 minimizes P1 payoff)
+        keep_cols: List[int] = []
+        for j in range(m_cols):
+            dominated = False
+            for l_idx in range(m_cols):
+                if j != l_idx and np.all(mat[:, l_idx] <= mat[:, j] - eps):
+                    dominated = True
+                    break
+            if not dominated:
+                keep_cols.append(j)
+        if not keep_cols:
+            keep_cols = list(range(m_cols))
+
+        filtered_mat = mat[np.ix_(keep_rows, keep_cols)]
+        surv_p1 = [p1_lines[i] for i in keep_rows]
+        surv_p2 = [p2_lines[j] for j in keep_cols]
+        return filtered_mat, surv_p1, surv_p2
 
     def simulate_joint_outcome(
         self,

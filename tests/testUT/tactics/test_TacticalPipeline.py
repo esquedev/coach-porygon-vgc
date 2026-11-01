@@ -60,6 +60,10 @@ class TestTacticalPipeline(unittest.TestCase):
         self.assertEqual(payload["turn"], 3)
         self.assertEqual(payload["p1_name"], "aws_secret")
         self.assertEqual(payload["p2_name"], "DarKgoD16")
+        self.assertIn("uncertainty_profile", payload)
+        self.assertIn("all_turns_analysis", payload)
+        self.assertGreaterEqual(len(payload["all_turns_analysis"]), 3)
+        self.assertEqual(len(payload["v_star_trajectory"]), len(payload["all_turns_analysis"]))
 
 
 if __name__ == "__main__":

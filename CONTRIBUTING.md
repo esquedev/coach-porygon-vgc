@@ -64,7 +64,7 @@ We have structured the codebase so contributors can make immediate, high-value i
 
 ### 1. Clone & Set Up Development Dependencies
 ```bash
-git clone https://github.com/unkil/coach-porygon-vgc.git
+git clone https://github.com/esquedev/coach-porygon-vgc.git
 cd coach-porygon-vgc
 
 # Optional: Create and activate virtual environment
@@ -177,9 +177,9 @@ When adding or modifying vector sprites, items, or mega stones:
 
 ## 📬 8. Community, Contact & Player Opt-Out
 
-- **Lead Architect & Maintainer:** Esquedev (@unkil)
-- **Repository Issues & Discussions:** [GitHub Issues](https://github.com/unkil/coach-porygon-vgc/issues)
+- **Lead Architect & Maintainer:** Esquedev (@esquedev)
+- **Repository Issues & Discussions:** [GitHub Issues](https://github.com/esquedev/coach-porygon-vgc/issues)
 - **Competitive Regulation Standard:** Pokémon Champions Regulation M-C (2027)
-- **Player Privacy & Opt-Out Policy:** If you are a competitive player wishing to anonymize your tournament handle in our scouted dataset, contact the maintainer via a GitHub Issue with the tag `[Privacy/Opt-Out]` or via the contact email listed on the lead developer's [GitHub profile (@unkil)](https://github.com/unkil). See [`LEGAL.md`](LEGAL.md) for full policy.
+- **Player Privacy & Opt-Out Policy:** If you are a competitive player wishing to anonymize your tournament handle in our scouted dataset, contact the maintainer via a GitHub Issue with the tag `[Privacy/Opt-Out]` or via the contact email listed on the lead developer's [GitHub profile (@esquedev)](https://github.com/esquedev). See [`LEGAL.md`](LEGAL.md) for full policy.
 
 Thank you for contributing to the future of deterministic VGC esports analytics! ⚡

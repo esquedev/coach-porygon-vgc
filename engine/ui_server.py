@@ -16,6 +16,11 @@ Serves the bilingual (EN / ES) Command Center and exposes live endpoints:
 - POST /api/sync                   : Re-reads CSVs and updates live_telemetry.json
 - POST /api/telemetry/ingest       : Thread-safe match telemetry ingestion (5 MB DoS cap)
 - POST /api/scouted/ingest         : Ingests verified scouted OTS teams
+- GET  /api/status                 : System & GPU/CUDA hardware status
+- POST /api/audit                  : Game-Theoretic All-Turns & Turning Point replay audit
+- POST /api/gpu-matrix             : 5x5 Payoff Matrix, Nash equilibrium & Uncertainty profile
+- GET  /api/report/<audit_id>      : Print-ready HTML tactical report for an audit ID
+- POST /api/benchmark              : PyTorch GPU/CPU throughput & latency benchmark
 """
 
 import argparse
@@ -687,6 +692,106 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         fresh = load_live_telemetry()
         (ASSETS_DIR / "live_telemetry.json").write_text(json.dumps(fresh, indent=2), encoding="utf-8")
         return jsonify({"status": "INGESTED", "team_id": new_id, "telemetry": fresh})
+
+    @app.route("/api/status", methods=["GET"])
+    def api_status():
+        """Returns GPU/CUDA availability, device info, and live system telemetry status."""
+        cuda_available = False
+        device_name = "cpu"
+        try:
+            import torch
+            cuda_available = bool(torch.cuda.is_available())
+            if cuda_available:
+                device_name = f"cuda:0 ({torch.cuda.get_device_name(0)})"
+        except Exception:
+            pass
+        data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
+        return jsonify({
+            "status": "ONLINE",
+            "version": "1.0.0",
+            "cuda_available": cuda_available,
+            "device": device_name,
+            "total_matches": data.get("total_matches", 0),
+            "teams_count": data.get("teams_count", 0),
+        })
+
+    @app.route("/api/audit", methods=["POST"])
+    def api_audit():
+        """Executes a full Game-Theoretic tactical audit (All-Turns + Turning Point + Uncertainty)."""
+        body = request.get_json(silent=True) or {}
+        raw_log = body.get("log", "") or body.get("raw_log", "")
+        persist = bool(body.get("persist", False))
+        device_pref = body.get("device", None)
+        if not raw_log:
+            demo_path = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
+            raw_log = demo_path.read_text(encoding="utf-8") if demo_path.exists() else ""
+        from engine.tactics.tactical_pipeline import TacticalPipeline
+        pipeline = TacticalPipeline(device=device_pref)
+        result = pipeline.run_audit(raw_log, auto_persist=persist)
+        return jsonify(result.to_dict())
+
+    @app.route("/api/gpu-matrix", methods=["POST"])
+    def api_gpu_matrix():
+        """Evaluates the 5x5 GPU payoff matrix, Nash equilibrium, and UncertaintyProfile for a turn."""
+        body = request.get_json(silent=True) or {}
+        raw_log = body.get("log", "") or body.get("raw_log", "")
+        turn_num = body.get("turn", None)
+        device_pref = body.get("device", None)
+        if not raw_log:
+            demo_path = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
+            raw_log = demo_path.read_text(encoding="utf-8") if demo_path.exists() else ""
+        from engine.tactics.tactical_pipeline import TacticalPipeline
+        pipeline = TacticalPipeline(device=device_pref)
+        parsed = pipeline.parser.parse_log(raw_log)
+        target_snap = parsed.turns[0] if parsed.turns else None
+        if turn_num is not None:
+            for snap in parsed.turns:
+                if snap.turn_number == int(turn_num):
+                    target_snap = snap
+                    break
+        elif parsed.turns:
+            tp = pipeline.detector.detect(parsed)
+            target_snap = tp.snapshot
+        if target_snap is None:
+            return jsonify({"error": "No valid turns found in battle log"}), 400
+        turn_eval = pipeline.solve_turn(target_snap, total_turns=len(parsed.turns))
+        return jsonify(turn_eval.to_dict())
+
+    @app.route("/api/report/<path:audit_id>", methods=["GET"])
+    def api_report(audit_id: str):
+        """Renders a print-ready HTML tactical audit report for a stored or demo audit ID."""
+        from ui_generator import render_tactical_audit_html
+        clean_id = re.sub(r"[^a-zA-Z0-9_\-]", "", audit_id)
+        audit_dict = None
+        data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
+        for entry in data.get("tactical_audits", []):
+            if str(entry.get("audit_id", "")) == clean_id:
+                audit_dict = entry
+                break
+        if audit_dict is None:
+            demo_path = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
+            raw_log = demo_path.read_text(encoding="utf-8") if demo_path.exists() else ""
+            from engine.tactics.tactical_pipeline import TacticalPipeline
+            pipeline = TacticalPipeline()
+            res = pipeline.run_audit(raw_log, auto_persist=False)
+            audit_dict = res.to_dict()
+            if clean_id:
+                audit_dict["audit_id"] = clean_id
+        html_doc = render_tactical_audit_html(audit_dict)
+        return Response(html_doc, mimetype="text/html; charset=utf-8")
+
+    @app.route("/api/benchmark", methods=["GET", "POST"])
+    def api_benchmark():
+        """Runs the vectorized PyTorch GPU/CPU payoff matrix benchmark and returns telemetry."""
+        body = request.get_json(silent=True) or {}
+        batch_size = int(body.get("batch_size", 32))
+        device_pref = body.get("device", None)
+        demo_path = REPO_ROOT / "tests" / "data" / "sample_showdown_mc_log.txt"
+        raw_log = body.get("log") or (demo_path.read_text(encoding="utf-8") if demo_path.exists() else "")
+        from engine.tactics.tactical_pipeline import TacticalPipeline
+        pipeline = TacticalPipeline(device=device_pref)
+        metrics = pipeline.run_benchmark(raw_log=raw_log, batch_size=batch_size)
+        return jsonify(metrics)
 
     return app
 

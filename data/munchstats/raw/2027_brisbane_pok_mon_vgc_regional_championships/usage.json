@@ -1,0 +1,8227 @@
+{
+  "all": {
+    "abilities_list": [
+      [
+        "Grassy Surge",
+        "100.0",
+        "On switch-in, this Pokemon summons Grassy Terrain."
+      ]
+    ],
+    "base_stats": [
+      100,
+      125,
+      90,
+      60,
+      70,
+      85
+    ],
+    "current_pokemon": [
+      "Rillaboom",
+      51.99,
+      1,
+      [
+        67,
+        8
+      ]
+    ],
+    "day_filter": "all",
+    "day_options": [
+      "all",
+      "day2",
+      "top16",
+      "top8"
+    ],
+    "items_list": [
+      [
+        "Miracle Seed",
+        "69.4",
+        "Holder's Grass-type attacks have 1.2Ã power.",
+        [
+          18,
+          4
+        ]
+      ],
+      [
+        "Sitrus Berry",
+        "12.4",
+        "Restores 1/4 max HP when at 1/2 max HP or less. Single use.",
+        [
+          28,
+          0
+        ]
+      ],
+      [
+        "Eject Button",
+        "5.9",
+        "If holder survives a hit, it immediately switches out to a chosen ally. Single use.",
+        [
+          7,
+          6
+        ]
+      ],
+      [
+        "Occa Berry",
+        "4.1",
+        "Halves damage taken from a supereffective Fire-type attack. Single use.",
+        [
+          19,
+          7
+        ]
+      ],
+      [
+        "Life Orb",
+        "2.4",
+        "Holder's attacks do 1.3Ã damage, and it loses 1/10 its max HP after the attack.",
+        [
+          15,
+          9
+        ]
+      ],
+      [
+        "Expert Belt",
+        "1.8",
+        "Holder's attacks that are super effective against the target do 1.2Ã damage.",
+        [
+          8,
+          4
+        ]
+      ],
+      [
+        "Leftovers",
+        "1.2",
+        "At the end of every turn, holder restores 1/16 of its max HP.",
+        [
+          15,
+          2
+        ]
+      ],
+      [
+        "Grassy Seed",
+        "1.2",
+        "If the terrain is Grassy Terrain, raises holder's Defense by 1 stage. Single use.",
+        [
+          41,
+          11
+        ]
+      ],
+      [
+        "Kebia Berry",
+        "0.6",
+        "Halves damage taken from a supereffective Poison-type attack. Single use.",
+        [
+          14,
+          10
+        ]
+      ],
+      [
+        "Coba Berry",
+        "0.6",
+        "Halves damage taken from a supereffective Flying-type attack. Single use.",
+        [
+          4,
+          12
+        ]
+      ],
+      [
+        "White Herb",
+        "0.6",
+        "Restores all lowered stat stages to 0 when one is less than 0. Single use.",
+        [
+          33,
+          7
+        ]
+      ]
+    ],
+    "moves_list": [
+      [
+        "Grassy Glide",
+        "98.2",
+        "Grass (Physical)\nBase Power: 55\nAccuracy: 100\nPriority: 0\nIf the current terrain is Grassy Terrain and the user is grounded, this move has its priority increased by 1."
+      ],
+      [
+        "Fake Out",
+        "97.6",
+        "Normal (Physical)\nBase Power: 40\nAccuracy: 100\nPriority: 3\nHas a 100% chance to make the target flinch. Fails unless it is the user's first turn on the field."
+      ],
+      [
+        "Wood Hammer",
+        "88.2",
+        "Grass (Physical)\nBase Power: 120\nAccuracy: 100\nPriority: 0\nIf the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP."
+      ],
+      [
+        "High Horsepower",
+        "64.1",
+        "Ground (Physical)\nBase Power: 95\nAccuracy: 95\nPriority: 0\nNo additional effect."
+      ],
+      [
+        "U-turn",
+        "32.4",
+        "Bug (Physical)\nBase Power: 70\nAccuracy: 100\nPriority: 0\nIf this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by a selected party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button or through the effect of the Emergency Exit or Wimp Out Abilities."
+      ],
+      [
+        "Protect",
+        "11.8",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 4\nThe user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Baneful Bunker, Burning Bulwark, Detect, Endure, King's Shield, Max Guard, Obstruct, Protect, Quick Guard, Silk Trap, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn."
+      ],
+      [
+        "Stomping Tantrum",
+        "1.8",
+        "Ground (Physical)\nBase Power: 75\nAccuracy: 100\nPriority: 0\nPower doubles if the user's last move on the previous turn, including moves called by other moves or those used through Instruct, Magic Coat, Snatch, or the Dancer or Magic Bounce Abilities, failed to do any of its normal effects, not including damage from an unsuccessful High Jump Kick, Jump Kick, or Mind Blown, or if the user was prevented from moving by any effect other than recharging or Sky Drop. A move that was blocked by Baneful Bunker, Detect, King's Shield, Protect, Spiky Shield, Crafty Shield, Mat Block, Quick Guard, or Wide Guard will not double this move's power, nor will Bounce or Fly ending early due to the effect of Gravity, Smack Down, or Thousand Arrows."
+      ],
+      [
+        "Superpower",
+        "1.2",
+        "Fighting (Physical)\nBase Power: 120\nAccuracy: 100\nPriority: 0\nLowers the user's Attack and Defense by 1 stage."
+      ],
+      [
+        "Taunt",
+        "1.2",
+        "Dark (Status)\nBase Power: N/A\nAccuracy: 100\nPriority: 0\nPrevents the target from using non-damaging moves for its next three turns. Pokemon with the Oblivious Ability or protected by the Aroma Veil Ability are immune."
+      ],
+      [
+        "Knock Off",
+        "1.2",
+        "Dark (Physical)\nBase Power: 65\nAccuracy: 100\nPriority: 0\nThis move's power is multiplied by 1.5 if the target is holding an item, and the target loses its held item if the user has not fainted. A target with the Sticky Hold Ability does not lose its held item if it has not fainted. This move does not increase in power or remove the target's item if it is a Blue Orb, Red Orb, Adamant Crystal, Lustrous Globe, Griseous Core, Plate, Drive, Memory, Rusted Sword, Rusted Shield, Booster Energy, or Mask held by a Kyogre, Groudon, Dialga, Palkia, Giratina, Arceus, Genesect, Silvally, Zacian, Zamazenta, Paradox Pokemon, or Ogerpon, respectively, or if the user is one of those species and the target is holding the respective item. In this case, Paradox Pokemon include every species with the Protosynthesis and Quark Drive Abilities, except Gouging Fire, Raging Bolt, Iron Boulder, and Iron Crown. Items lost to this move cannot be regained with Recycle or the Harvest Ability."
+      ],
+      [
+        "Drain Punch",
+        "1.2",
+        "Fighting (Physical)\nBase Power: 75\nAccuracy: 100\nPriority: 0\nThe user recovers 1/2 the HP lost by the target, rounded half up. If Big Root is held by the user, the HP recovered is 1.3× normal, rounded half down."
+      ],
+      [
+        "Drum Beating",
+        "0.6",
+        "Grass (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nHas a 100% chance to lower the target's Speed by 1 stage."
+      ],
+      [
+        "Grassy Terrain",
+        "0.6",
+        "Grass (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 0\nFor 5 turns, the terrain becomes Grassy Terrain. During the effect, the power of Grass-type attacks used by grounded Pokemon is multiplied by 1.3, the power of Bulldoze, Earthquake, and Magnitude used against grounded Pokemon is multiplied by 0.5, and grounded Pokemon have 1/16 of their maximum HP, rounded down, restored at the end of each turn, including the last turn. Camouflage transforms the user into a Grass type, Nature Power becomes Energy Ball, and Secret Power has a 30% chance to cause sleep. Fails if the current terrain is Grassy Terrain."
+      ]
+    ],
+    "natures_list": [
+      [
+        "Adamant",
+        "88.8",
+        "+Atk / -SpA"
+      ],
+      [
+        "Careful",
+        "4.7",
+        "+SpD / -SpA"
+      ],
+      [
+        "Brave",
+        "3.5",
+        "+Atk / -Spe"
+      ],
+      [
+        "Sassy",
+        "2.4",
+        "+SpD / -Spe"
+      ],
+      [
+        "Jolly",
+        "0.6",
+        "+Spe / -SpA"
+      ]
+    ],
+    "overview": {
+      "movers": [
+        {
+          "drops": [
+            {
+              "delta": -12.23,
+              "name": "Golisopod-Mega",
+              "prev_pct": 12.23,
+              "sprite": [
+                120,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -11.73,
+              "name": "Gholdengo",
+              "prev_pct": 28.75,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -9.280000000000001,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 26.3,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -8.28,
+              "name": "Farigiraf",
+              "prev_pct": 12.54,
+              "sprite": [
+                81,
+                9
+              ],
+              "usage_pct": 4.26
+            },
+            {
+              "delta": -8.27,
+              "name": "Tyranitar-Mega",
+              "prev_pct": 10.4,
+              "sprite": [
+                111,
+                8
+              ],
+              "usage_pct": 2.13
+            }
+          ],
+          "gains": [
+            {
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "prev_pct": 22.32,
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "prev_pct": 11.62,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "prev_pct": 6.12,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "prev_pct": 7.34,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 8.18,
+              "name": "Ceruledge",
+              "prev_pct": 4.59,
+              "sprite": [
+                78,
+                1
+              ],
+              "usage_pct": 12.77
+            }
+          ],
+          "label": "Day 1 → Day 2"
+        },
+        {
+          "drops": [
+            {
+              "delta": -21.28,
+              "name": "Milotic",
+              "prev_pct": 21.28,
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Sinistcha",
+              "prev_pct": 19.15,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Delphox-Mega",
+              "prev_pct": 19.15,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 17.02,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Gholdengo",
+              "prev_pct": 17.02,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 0
+            }
+          ],
+          "gains": [
+            {
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "prev_pct": 25.53,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "prev_pct": 46.81,
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "delta": 26.6,
+              "name": "Archaludon",
+              "prev_pct": 23.4,
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "delta": 20.48,
+              "name": "Pelipper",
+              "prev_pct": 17.02,
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "delta": 18.62,
+              "name": "Venusaur",
+              "prev_pct": 6.38,
+              "sprite": [
+                0,
+                3
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "label": "Day 2 → Top 8"
+        }
+      ],
+      "stages": [
+        {
+          "label": "Day 1",
+          "rows": [
+            {
+              "count": 170,
+              "delta": null,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 51.99
+            },
+            {
+              "count": 134,
+              "delta": null,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 40.98
+            },
+            {
+              "count": 95,
+              "delta": null,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 29.05
+            },
+            {
+              "count": 94,
+              "delta": null,
+              "name": "Gholdengo",
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 28.75
+            },
+            {
+              "count": 89,
+              "delta": null,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 27.22
+            },
+            {
+              "count": 86,
+              "delta": null,
+              "name": "Raichu-Mega-Y",
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 26.3
+            },
+            {
+              "count": 73,
+              "delta": null,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 22.32
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Arcanine-Hisui",
+              "sprite": [
+                103,
+                3
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 55,
+              "delta": null,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 16.82
+            }
+          ],
+          "total_teams": 327
+        },
+        {
+          "label": "Day 2",
+          "rows": [
+            {
+              "count": 22,
+              "delta": -5.18,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 22,
+              "delta": 5.830000000000005,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 20,
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "count": 16,
+              "delta": 4.989999999999998,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 34.04
+            },
+            {
+              "count": 12,
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "count": 11,
+              "delta": 6.579999999999998,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 23.4
+            },
+            {
+              "count": 10,
+              "delta": 1.7100000000000009,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 21.28
+            },
+            {
+              "count": 9,
+              "delta": -8.07,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            }
+          ],
+          "total_teams": 47
+        },
+        {
+          "label": "Top 8",
+          "rows": [
+            {
+              "count": 6,
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "count": 5,
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "count": 4,
+              "delta": 26.6,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 7.450000000000003,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 3.1899999999999977,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 3,
+              "delta": 20.48,
+              "name": "Pelipper",
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 3,
+              "delta": 3.460000000000001,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Grimmsnarl",
+              "sprite": [
+                71,
+                9
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 10.11,
+              "name": "Charizard-Mega-Y",
+              "sprite": [
+                110,
+                2
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Garchomp-Mega-Z",
+              "sprite": [
+                119,
+                7
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "total_teams": 8
+        }
+      ]
+    },
+    "pokemon_names": [
+      [
+        "Rillaboom",
+        "52.0",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Sneasler",
+        "41.0",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Incineroar",
+        "29.1",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Gholdengo",
+        "28.8",
+        [
+          83,
+          4
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "27.2",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Raichu-Mega-Y",
+        "26.3",
+        [
+          119,
+          3
+        ]
+      ],
+      [
+        "Kingambit",
+        "22.3",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Milotic",
+        "19.6",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "19.6",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Archaludon",
+        "16.8",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Staraptor-Mega",
+        "15.0",
+        [
+          119,
+          6
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "12.8",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Farigiraf",
+        "12.5",
+        [
+          81,
+          9
+        ]
+      ],
+      [
+        "Charizard-Mega-Y",
+        "12.2",
+        [
+          110,
+          2
+        ]
+      ],
+      [
+        "Basculegion",
+        "12.2",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Golisopod-Mega",
+        "12.2",
+        [
+          120,
+          2
+        ]
+      ],
+      [
+        "Pelipper",
+        "11.9",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "11.6",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Tyranitar-Mega",
+        "10.4",
+        [
+          111,
+          8
+        ]
+      ],
+      [
+        "Indeedee",
+        "10.1",
+        [
+          73,
+          0
+        ]
+      ],
+      [
+        "Excadrill",
+        "10.1",
+        [
+          44,
+          2
+        ]
+      ],
+      [
+        "Sylveon",
+        "9.2",
+        [
+          58,
+          4
+        ]
+      ],
+      [
+        "Politoed",
+        "8.9",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "7.7",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "7.3",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Garchomp",
+        "7.0",
+        [
+          37,
+          1
+        ]
+      ],
+      [
+        "Whimsicott",
+        "6.4",
+        [
+          45,
+          7
+        ]
+      ],
+      [
+        "Grimmsnarl",
+        "6.1",
+        [
+          71,
+          9
+        ]
+      ],
+      [
+        "Sinistcha",
+        "6.1",
+        [
+          84,
+          5
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "6.1",
+        [
+          113,
+          1
+        ]
+      ],
+      [
+        "Volcarona",
+        "5.8",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Froslass-Mega",
+        "5.8",
+        [
+          117,
+          7
+        ]
+      ],
+      [
+        "Corviknight",
+        "5.2",
+        [
+          68,
+          7
+        ]
+      ],
+      [
+        "Gardevoir-Mega",
+        "5.2",
+        [
+          112,
+          0
+        ]
+      ],
+      [
+        "Ceruledge",
+        "4.6",
+        [
+          78,
+          1
+        ]
+      ],
+      [
+        "Armarouge",
+        "4.3",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Swampert-Mega",
+        "4.3",
+        [
+          111,
+          11
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "3.7",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Kommo-o",
+        "3.7",
+        [
+          65,
+          4
+        ]
+      ],
+      [
+        "Torkoal",
+        "3.1",
+        [
+          27,
+          0
+        ]
+      ],
+      [
+        "Dragapult",
+        "2.8",
+        [
+          73,
+          11
+        ]
+      ],
+      [
+        "Vivillon",
+        "2.8",
+        [
+          55,
+          6
+        ]
+      ],
+      [
+        "Ninetales-Alola",
+        "2.8",
+        [
+          96,
+          5
+        ]
+      ],
+      [
+        "Hatterene",
+        "2.5",
+        [
+          71,
+          6
+        ]
+      ],
+      [
+        "Venusaur",
+        "2.1",
+        [
+          0,
+          3
+        ]
+      ],
+      [
+        "Lucario-Mega-Z",
+        "2.1",
+        [
+          119,
+          8
+        ]
+      ],
+      [
+        "Tyranitar",
+        "2.1",
+        [
+          20,
+          8
+        ]
+      ],
+      [
+        "Primarina",
+        "2.1",
+        [
+          60,
+          10
+        ]
+      ],
+      [
+        "Mawile-Mega",
+        "1.8",
+        [
+          112,
+          2
+        ]
+      ],
+      [
+        "Dragonite-Mega",
+        "1.8",
+        [
+          117,
+          3
+        ]
+      ],
+      [
+        "Hydreigon",
+        "1.8",
+        [
+          52,
+          11
+        ]
+      ],
+      [
+        "Pawmot",
+        "1.8",
+        [
+          76,
+          11
+        ]
+      ],
+      [
+        "Camerupt-Mega",
+        "1.8",
+        [
+          112,
+          7
+        ]
+      ],
+      [
+        "Sableye",
+        "1.5",
+        [
+          25,
+          2
+        ]
+      ],
+      [
+        "Baxcalibur-Mega",
+        "1.5",
+        [
+          120,
+          11
+        ]
+      ],
+      [
+        "Maushold",
+        "1.5",
+        [
+          77,
+          1
+        ]
+      ],
+      [
+        "Kleavor",
+        "1.5",
+        [
+          75,
+          0
+        ]
+      ],
+      [
+        "Glimmora-Mega",
+        "1.2",
+        [
+          120,
+          7
+        ]
+      ],
+      [
+        "Meganium-Mega",
+        "1.2",
+        [
+          117,
+          4
+        ]
+      ],
+      [
+        "Absol-Mega-Z",
+        "1.2",
+        [
+          119,
+          5
+        ]
+      ],
+      [
+        "Lopunny-Mega",
+        "1.2",
+        [
+          113,
+          7
+        ]
+      ],
+      [
+        "Talonflame",
+        "1.2",
+        [
+          55,
+          3
+        ]
+      ],
+      [
+        "Blastoise-Mega",
+        "0.9",
+        [
+          110,
+          3
+        ]
+      ],
+      [
+        "Scovillain-Mega",
+        "0.9",
+        [
+          120,
+          6
+        ]
+      ],
+      [
+        "Clefable",
+        "0.9",
+        [
+          3,
+          0
+        ]
+      ],
+      [
+        "Blaziken",
+        "0.9",
+        [
+          21,
+          5
+        ]
+      ],
+      [
+        "Annihilape",
+        "0.9",
+        [
+          81,
+          7
+        ]
+      ],
+      [
+        "Zoroark-Hisui",
+        "0.9",
+        [
+          104,
+          0
+        ]
+      ],
+      [
+        "Aerodactyl-Mega",
+        "0.9",
+        [
+          111,
+          0
+        ]
+      ],
+      [
+        "Gallade",
+        "0.9",
+        [
+          39,
+          7
+        ]
+      ],
+      [
+        "Rotom-Heat",
+        "0.9",
+        [
+          90,
+          2
+        ]
+      ],
+      [
+        "Meowscarada",
+        "0.9",
+        [
+          75,
+          8
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "0.6",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Starmie-Mega",
+        "0.6",
+        [
+          117,
+          2
+        ]
+      ],
+      [
+        "Blaziken-Mega",
+        "0.6",
+        [
+          111,
+          10
+        ]
+      ],
+      [
+        "Baxcalibur",
+        "0.6",
+        [
+          83,
+          2
+        ]
+      ],
+      [
+        "Altaria",
+        "0.6",
+        [
+          27,
+          10
+        ]
+      ],
+      [
+        "Weavile",
+        "0.6",
+        [
+          38,
+          5
+        ]
+      ],
+      [
+        "Aerodactyl",
+        "0.6",
+        [
+          11,
+          10
+        ]
+      ],
+      [
+        "Rotom-Wash",
+        "0.6",
+        [
+          90,
+          4
+        ]
+      ],
+      [
+        "Pyroar-Mega",
+        "0.6",
+        [
+          118,
+          5
+        ]
+      ],
+      [
+        "Pincurchin",
+        "0.6",
+        [
+          72,
+          7
+        ]
+      ],
+      [
+        "Palafin",
+        "0.6",
+        [
+          80,
+          4
+        ]
+      ],
+      [
+        "Swampert",
+        "0.6",
+        [
+          21,
+          8
+        ]
+      ],
+      [
+        "Houndoom-Mega",
+        "0.6",
+        [
+          111,
+          7
+        ]
+      ],
+      [
+        "Chandelure",
+        "0.6",
+        [
+          50,
+          9
+        ]
+      ],
+      [
+        "Kangaskhan",
+        "0.6",
+        [
+          9,
+          7
+        ]
+      ],
+      [
+        "Araquanid",
+        "0.6",
+        [
+          62,
+          8
+        ]
+      ],
+      [
+        "Sceptile-Mega",
+        "0.6",
+        [
+          111,
+          9
+        ]
+      ],
+      [
+        "Glimmora",
+        "0.6",
+        [
+          80,
+          10
+        ]
+      ],
+      [
+        "Decidueye-Hisui",
+        "0.6",
+        [
+          104,
+          5
+        ]
+      ],
+      [
+        "Typhlosion-Hisui",
+        "0.6",
+        [
+          103,
+          6
+        ]
+      ],
+      [
+        "Tinkaton",
+        "0.6",
+        [
+          79,
+          11
+        ]
+      ],
+      [
+        "Maushold-Three",
+        "0.3",
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        "Espathra",
+        "0.3",
+        [
+          79,
+          8
+        ]
+      ],
+      [
+        "Lycanroc-Dusk",
+        "0.3",
+        [
+          99,
+          4
+        ]
+      ],
+      [
+        "Blastoise",
+        "0.3",
+        [
+          0,
+          9
+        ]
+      ],
+      [
+        "Empoleon",
+        "0.3",
+        [
+          32,
+          11
+        ]
+      ],
+      [
+        "Tsareena",
+        "0.3",
+        [
+          63,
+          7
+        ]
+      ],
+      [
+        "Wyrdeer",
+        "0.3",
+        [
+          74,
+          11
+        ]
+      ],
+      [
+        "Infernape",
+        "0.3",
+        [
+          32,
+          8
+        ]
+      ],
+      [
+        "Meowstic-F-Mega",
+        "0.3",
+        [
+          120,
+          0
+        ]
+      ],
+      [
+        "Gliscor",
+        "0.3",
+        [
+          39,
+          4
+        ]
+      ],
+      [
+        "Overqwil",
+        "0.3",
+        [
+          75,
+          4
+        ]
+      ],
+      [
+        "Metagross",
+        "0.3",
+        [
+          31,
+          4
+        ]
+      ],
+      [
+        "Steelix-Mega",
+        "0.3",
+        [
+          111,
+          4
+        ]
+      ],
+      [
+        "Vanilluxe",
+        "0.3",
+        [
+          48,
+          8
+        ]
+      ],
+      [
+        "Venusaur-Mega",
+        "0.3",
+        [
+          110,
+          0
+        ]
+      ],
+      [
+        "Gyarados",
+        "0.3",
+        [
+          10,
+          10
+        ]
+      ],
+      [
+        "Runerigus",
+        "0.3",
+        [
+          72,
+          3
+        ]
+      ],
+      [
+        "Toxapex",
+        "0.3",
+        [
+          62,
+          4
+        ]
+      ],
+      [
+        "Hydrapple",
+        "0.3",
+        [
+          84,
+          11
+        ]
+      ],
+      [
+        "Crabominable-Mega",
+        "0.3",
+        [
+          120,
+          1
+        ]
+      ],
+      [
+        "Tauros-Paldea-Aqua",
+        "0.3",
+        [
+          104,
+          10
+        ]
+      ],
+      [
+        "Golisopod",
+        "0.3",
+        [
+          64,
+          0
+        ]
+      ],
+      [
+        "Forretress",
+        "0.3",
+        [
+          17,
+          1
+        ]
+      ],
+      [
+        "Krookodile",
+        "0.3",
+        [
+          46,
+          1
+        ]
+      ],
+      [
+        "Heracross",
+        "0.3",
+        [
+          17,
+          10
+        ]
+      ],
+      [
+        "Dragonite",
+        "0.3",
+        [
+          12,
+          5
+        ]
+      ],
+      [
+        "Conkeldurr",
+        "0.3",
+        [
+          44,
+          6
+        ]
+      ],
+      [
+        "Ditto",
+        "0.3",
+        [
+          11,
+          0
+        ]
+      ],
+      [
+        "Azumarill",
+        "0.3",
+        [
+          15,
+          4
+        ]
+      ],
+      [
+        "Raichu-Mega-X",
+        "0.3",
+        [
+          119,
+          2
+        ]
+      ],
+      [
+        "Raichu-Alola",
+        "0.3",
+        [
+          96,
+          1
+        ]
+      ],
+      [
+        "Salamence",
+        "0.3",
+        [
+          31,
+          1
+        ]
+      ],
+      [
+        "Cofagrigus",
+        "0.3",
+        [
+          46,
+          11
+        ]
+      ],
+      [
+        "Basculegion-F",
+        "0.3",
+        [
+          104,
+          6
+        ]
+      ],
+      [
+        "Gyarados-Mega",
+        "0.3",
+        [
+          110,
+          11
+        ]
+      ],
+      [
+        "Toxtricity",
+        "0.3",
+        [
+          70,
+          9
+        ]
+      ],
+      [
+        "Floette-Eternal",
+        "0.3",
+        [
+          94,
+          2
+        ]
+      ],
+      [
+        "Beedrill-Mega",
+        "0.3",
+        [
+          110,
+          4
+        ]
+      ],
+      [
+        "Sableye-Mega",
+        "0.3",
+        [
+          112,
+          1
+        ]
+      ],
+      [
+        "Morpeko",
+        "0.3",
+        [
+          73,
+          1
+        ]
+      ],
+      [
+        "Emolga",
+        "0.3",
+        [
+          48,
+          11
+        ]
+      ],
+      [
+        "Mimikyu",
+        "0.3",
+        [
+          64,
+          10
+        ]
+      ]
+    ],
+    "pokemon_types": [
+      "Grass"
+    ],
+    "selected_pokemon": "Rillaboom",
+    "selected_tournament": {
+      "date": "2026-09-26",
+      "day2_count": 47,
+      "day2_source": "pairings",
+      "format": "gen9championsvgc2026regmc",
+      "id": "BR002-IU5yO1W76UpdyA",
+      "location": "",
+      "name": "2027 Brisbane Pokémon VGC Regional Championships",
+      "scraped_at": "2026-09-28T18:13:53.217098Z",
+      "teams_scraped": 327,
+      "total_players": 327,
+      "type": "Regional"
+    },
+    "teammates_list": [
+      [
+        "Gholdengo",
+        "45.3",
+        [
+          83,
+          4
+        ]
+      ],
+      [
+        "Raichu-Mega-Y",
+        "44.1",
+        [
+          119,
+          3
+        ]
+      ],
+      [
+        "Sneasler",
+        "39.4",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "31.8",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "31.8",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Incineroar",
+        "31.2",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Milotic",
+        "25.9",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Kingambit",
+        "22.4",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Staraptor-Mega",
+        "21.8",
+        [
+          119,
+          6
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "12.9",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Basculegion",
+        "12.9",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Sylveon",
+        "12.9",
+        [
+          58,
+          4
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "12.4",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Archaludon",
+        "11.8",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Ceruledge",
+        "8.8",
+        [
+          78,
+          1
+        ]
+      ],
+      [
+        "Froslass-Mega",
+        "8.8",
+        [
+          117,
+          7
+        ]
+      ],
+      [
+        "Volcarona",
+        "8.2",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Pelipper",
+        "8.2",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Politoed",
+        "7.6",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Farigiraf",
+        "7.1",
+        [
+          81,
+          9
+        ]
+      ],
+      [
+        "Golisopod-Mega",
+        "7.1",
+        [
+          120,
+          2
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "5.3",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Excadrill",
+        "5.3",
+        [
+          44,
+          2
+        ]
+      ],
+      [
+        "Tyranitar-Mega",
+        "4.7",
+        [
+          111,
+          8
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "4.1",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Lucario-Mega-Z",
+        "4.1",
+        [
+          119,
+          8
+        ]
+      ],
+      [
+        "Kommo-o",
+        "4.1",
+        [
+          65,
+          4
+        ]
+      ],
+      [
+        "Vivillon",
+        "4.1",
+        [
+          55,
+          6
+        ]
+      ],
+      [
+        "Garchomp",
+        "2.9",
+        [
+          37,
+          1
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "2.9",
+        [
+          113,
+          1
+        ]
+      ],
+      [
+        "Baxcalibur-Mega",
+        "2.4",
+        [
+          120,
+          11
+        ]
+      ],
+      [
+        "Dragapult",
+        "2.4",
+        [
+          73,
+          11
+        ]
+      ],
+      [
+        "Charizard-Mega-Y",
+        "2.4",
+        [
+          110,
+          2
+        ]
+      ],
+      [
+        "Hydreigon",
+        "2.4",
+        [
+          52,
+          11
+        ]
+      ],
+      [
+        "Swampert-Mega",
+        "2.4",
+        [
+          111,
+          11
+        ]
+      ],
+      [
+        "Absol-Mega-Z",
+        "2.4",
+        [
+          119,
+          5
+        ]
+      ],
+      [
+        "Ninetales-Alola",
+        "2.4",
+        [
+          96,
+          5
+        ]
+      ],
+      [
+        "Primarina",
+        "1.8",
+        [
+          60,
+          10
+        ]
+      ],
+      [
+        "Mawile-Mega",
+        "1.8",
+        [
+          112,
+          2
+        ]
+      ],
+      [
+        "Grimmsnarl",
+        "1.8",
+        [
+          71,
+          9
+        ]
+      ],
+      [
+        "Whimsicott",
+        "1.8",
+        [
+          45,
+          7
+        ]
+      ],
+      [
+        "Blaziken-Mega",
+        "1.2",
+        [
+          111,
+          10
+        ]
+      ],
+      [
+        "Clefable",
+        "1.2",
+        [
+          3,
+          0
+        ]
+      ],
+      [
+        "Blaziken",
+        "1.2",
+        [
+          21,
+          5
+        ]
+      ],
+      [
+        "Torkoal",
+        "1.2",
+        [
+          27,
+          0
+        ]
+      ],
+      [
+        "Dragonite-Mega",
+        "1.2",
+        [
+          117,
+          3
+        ]
+      ],
+      [
+        "Maushold",
+        "1.2",
+        [
+          77,
+          1
+        ]
+      ],
+      [
+        "Sableye",
+        "1.2",
+        [
+          25,
+          2
+        ]
+      ],
+      [
+        "Talonflame",
+        "1.2",
+        [
+          55,
+          3
+        ]
+      ],
+      [
+        "Kangaskhan",
+        "1.2",
+        [
+          9,
+          7
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "0.6",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Lycanroc-Dusk",
+        "0.6",
+        [
+          99,
+          4
+        ]
+      ],
+      [
+        "Baxcalibur",
+        "0.6",
+        [
+          83,
+          2
+        ]
+      ],
+      [
+        "Blastoise",
+        "0.6",
+        [
+          0,
+          9
+        ]
+      ],
+      [
+        "Weavile",
+        "0.6",
+        [
+          38,
+          5
+        ]
+      ],
+      [
+        "Infernape",
+        "0.6",
+        [
+          32,
+          8
+        ]
+      ],
+      [
+        "Glimmora-Mega",
+        "0.6",
+        [
+          120,
+          7
+        ]
+      ],
+      [
+        "Indeedee",
+        "0.6",
+        [
+          73,
+          0
+        ]
+      ],
+      [
+        "Aerodactyl-Mega",
+        "0.6",
+        [
+          111,
+          0
+        ]
+      ],
+      [
+        "Runerigus",
+        "0.6",
+        [
+          72,
+          3
+        ]
+      ],
+      [
+        "Annihilape",
+        "0.6",
+        [
+          81,
+          7
+        ]
+      ],
+      [
+        "Swampert",
+        "0.6",
+        [
+          21,
+          8
+        ]
+      ],
+      [
+        "Tauros-Paldea-Aqua",
+        "0.6",
+        [
+          104,
+          10
+        ]
+      ],
+      [
+        "Golisopod",
+        "0.6",
+        [
+          64,
+          0
+        ]
+      ],
+      [
+        "Chandelure",
+        "0.6",
+        [
+          50,
+          9
+        ]
+      ],
+      [
+        "Houndoom-Mega",
+        "0.6",
+        [
+          111,
+          7
+        ]
+      ],
+      [
+        "Corviknight",
+        "0.6",
+        [
+          68,
+          7
+        ]
+      ],
+      [
+        "Ditto",
+        "0.6",
+        [
+          11,
+          0
+        ]
+      ],
+      [
+        "Glimmora",
+        "0.6",
+        [
+          80,
+          10
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "0.6",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Basculegion-F",
+        "0.6",
+        [
+          104,
+          6
+        ]
+      ],
+      [
+        "Gardevoir-Mega",
+        "0.6",
+        [
+          112,
+          0
+        ]
+      ],
+      [
+        "Toxtricity",
+        "0.6",
+        [
+          70,
+          9
+        ]
+      ],
+      [
+        "Palafin",
+        "0.6",
+        [
+          80,
+          4
+        ]
+      ],
+      [
+        "Sinistcha",
+        "0.6",
+        [
+          84,
+          5
+        ]
+      ],
+      [
+        "Floette-Eternal",
+        "0.6",
+        [
+          94,
+          2
+        ]
+      ],
+      [
+        "Tyranitar",
+        "0.6",
+        [
+          20,
+          8
+        ]
+      ]
+    ],
+    "tera_types_list": [],
+    "total_teams": 327,
+    "tournaments": [
+      {
+        "date": "2026-10-24",
+        "day2_count": 48,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "PB002-r871Zfmc4WQbIO",
+        "location": "",
+        "name": "2027 Puebla Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:30:51.012154Z",
+        "teams_scraped": 333,
+        "total_players": 333,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-17",
+        "day2_count": 125,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "NC002-zBMwK69ABS7RRV",
+        "location": "",
+        "name": "2027 Nice Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:20:05.109271Z",
+        "teams_scraped": 862,
+        "total_players": 862,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-09",
+        "day2_count": 142,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "LO002-drfp6esCSpyU3s",
+        "location": "",
+        "name": "2027 Louisville Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T07:12:18.695654Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-03",
+        "day2_count": 31,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "RE002-wN97aUf4Psz0ZJ",
+        "location": "",
+        "name": "2027 Recife Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T06:43:23.080512Z",
+        "teams_scraped": 222,
+        "total_players": 222,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 163,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "FR002-fiunEHp9wx4mh4",
+        "location": "",
+        "name": "2027 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:50:05.083409Z",
+        "teams_scraped": 1129,
+        "total_players": 1129,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 47,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BR002-IU5yO1W76UpdyA",
+        "location": "",
+        "name": "2027 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:13:53.217098Z",
+        "teams_scraped": 327,
+        "total_players": 327,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-18",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BA002-JL3KVbvivVKNAc",
+        "location": "",
+        "name": "2027 Baltimore Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-21T21:03:01.587714Z",
+        "teams_scraped": 1079,
+        "total_players": 1079,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-08-28",
+        "day2_count": 56,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmb",
+        "id": "WCS02wAQpCIaqFmXxER4",
+        "location": "",
+        "name": "2026 Pokémon VGC World Championship",
+        "scraped_at": "2026-08-31T05:47:54.026858Z",
+        "teams_scraped": 395,
+        "total_players": 395,
+        "type": "Worlds"
+      },
+      {
+        "date": "2026-06-12",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "NA02wgUPFDXKmQmqILwS",
+        "location": "",
+        "name": "2026 North America Pokémon VGC International Championships",
+        "scraped_at": "2026-06-14T23:44:17.929025Z",
+        "teams_scraped": 1094,
+        "total_players": 1094,
+        "type": "International"
+      },
+      {
+        "date": "2026-06-06",
+        "day2_count": 135,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "TU02wKzv4cT2BBiI9dEg",
+        "location": "",
+        "name": "2026 Turin Pokémon VGC Special Championships",
+        "scraped_at": "2026-06-07T19:49:57.524626Z",
+        "teams_scraped": 941,
+        "total_players": 941,
+        "type": "Special"
+      },
+      {
+        "date": "2026-05-31",
+        "day2_count": 145,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "IN02wbUMQOt2eNv12cgC",
+        "location": "Indianapolis, IN",
+        "name": "2026 Indianapolis Pokémon VGC Regional Championships",
+        "scraped_at": "2026-06-01T04:22:59.107916Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-23",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "MB02w71HQZzTvTOYLtXb",
+        "location": "2026 Melbourne Pokémon Regional Championships",
+        "name": "2026 Melbourne Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:12:09.372589Z",
+        "teams_scraped": 290,
+        "topcut_cutoff_standing": 8,
+        "total_players": 290,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "UT02wFHDCjnKgZ9Gscu7",
+        "location": "2026 Utrecht Pokémon Regional Championships",
+        "name": "2026 Utrecht Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:30:45.786612Z",
+        "teams_scraped": 415,
+        "topcut_cutoff_standing": 8,
+        "total_players": 415,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 32,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CA02wLAJ2mRyQI5kryVw",
+        "location": "2026 Campinas Pokémon Regional Championships",
+        "name": "2026 Campinas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:18:43.056074Z",
+        "teams_scraped": 220,
+        "topcut_cutoff_standing": 8,
+        "total_players": 221,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-08",
+        "day2_cutoff_standing": 49,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "LS02w5lpCOiMwPPo7QWD",
+        "location": "2026 Los Angeles Pokémon Regional Championships",
+        "name": "2026 Los Angeles Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:46:16.084982Z",
+        "teams_scraped": 538,
+        "topcut_cutoff_standing": 8,
+        "total_players": 538,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-25",
+        "day2_cutoff_standing": 51,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "PR02wayEt6qQBnpFi6cp",
+        "location": "2026 Prague Pokémon Regional Championships",
+        "name": "2026 Prague Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:02:19.350183Z",
+        "teams_scraped": 558,
+        "topcut_cutoff_standing": 8,
+        "total_players": 558,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-04",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "QT02wgHCgGOEh4NP4jLE",
+        "location": "2026 Querétaro Pokémon Regional Championships",
+        "name": "2026 Querétaro Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:10:21.321391Z",
+        "teams_scraped": 269,
+        "topcut_cutoff_standing": 8,
+        "total_players": 269,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-03",
+        "day2_cutoff_standing": 61,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "OR02wF0GhaiorROTkFlu",
+        "location": "2026 Orlando Pokémon Regional Championships",
+        "name": "2026 Orlando Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:29:39.093719Z",
+        "teams_scraped": 675,
+        "topcut_cutoff_standing": 8,
+        "total_players": 675,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-28",
+        "day2_cutoff_standing": 54,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SV02wtoHf5SDBUM0ntB2",
+        "location": "2026 Seville Pokémon Special Championships",
+        "name": "2026 Seville Pokémon VGC Special Championships",
+        "scraped_at": "2026-05-30T08:46:39.146570Z",
+        "teams_scraped": 592,
+        "topcut_cutoff_standing": 8,
+        "total_players": 592,
+        "type": "Special"
+      },
+      {
+        "date": "2026-03-20",
+        "day2_cutoff_standing": 57,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "HO02w2PgpC7mWHP8zYRI",
+        "location": "2026 Houston Pokémon Regional Championships",
+        "name": "2026 Houston Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:04:35.994552Z",
+        "teams_scraped": 625,
+        "topcut_cutoff_standing": 8,
+        "total_players": 625,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-14",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CU02wOcwtjVNH6QdhfNE",
+        "location": "2026 Curitiba Pokémon Regional Championships",
+        "name": "2026 Curitiba Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:10:04.654905Z",
+        "teams_scraped": 179,
+        "topcut_cutoff_standing": 8,
+        "total_players": 179,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-27",
+        "day2_cutoff_standing": 74,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SE027LIri9yqbewCPonE",
+        "location": "2026 Seattle Pokémon Regional Championships",
+        "name": "2026 Seattle Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:33:28.882684Z",
+        "teams_scraped": 821,
+        "topcut_cutoff_standing": 8,
+        "total_players": 821,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-13",
+        "day2_cutoff_standing": 131,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "EU02mADIyxk2QHCU8dqx",
+        "location": "2026 Europe Pokémon International Championships",
+        "name": "2026 Europe Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T10:14:44.525227Z",
+        "teams_scraped": 1455,
+        "topcut_cutoff_standing": 8,
+        "total_players": 1455,
+        "type": "International"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SY02sMDp6JmCcnCynSLn",
+        "location": "2026 Sydney Pokémon Regional Championships",
+        "name": "2026 Sydney Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:29:18.788173Z",
+        "teams_scraped": 277,
+        "topcut_cutoff_standing": 8,
+        "total_players": 277,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ST02KJ5wqNl34q3KGE8N",
+        "location": "2026 Santiago Pokémon Regional Championships",
+        "name": "2026 Santiago Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:21:08.191905Z",
+        "teams_scraped": 214,
+        "topcut_cutoff_standing": 8,
+        "total_players": 214,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "BH02mBOy0UgfISzHnNdU",
+        "location": "2026 Birmingham Pokémon Regional Championships",
+        "name": "2026 Birmingham Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:48:57.503985Z",
+        "teams_scraped": 688,
+        "topcut_cutoff_standing": 8,
+        "total_players": 688,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 34,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ME02w00ChbJUX07ROH4K",
+        "location": "2026 Mérida Pokémon Regional Championships",
+        "name": "2026 Mérida Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:55:53.834494Z",
+        "teams_scraped": 234,
+        "topcut_cutoff_standing": 8,
+        "total_players": 234,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-16",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "TO027Rvi7XmbN1f355Nc",
+        "location": "2026 Toronto Pokémon Regional Championships",
+        "name": "2026 Toronto Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:17:11.584868Z",
+        "teams_scraped": 745,
+        "topcut_cutoff_standing": 8,
+        "total_players": 745,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-29",
+        "day2_cutoff_standing": 60,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "SG02gVKM38QMVGTcAiZN",
+        "location": "2026 Stuttgart Pokémon Regional Championships",
+        "name": "2026 Stuttgart Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:36:02.576187Z",
+        "teams_scraped": 661,
+        "topcut_cutoff_standing": 8,
+        "total_players": 661,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-21",
+        "day2_cutoff_standing": 47,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LA0226md2zDgZtmvexIY",
+        "location": "2026 Latin America Pokémon International Championships",
+        "name": "2026 Latin America Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T11:50:55.092664Z",
+        "teams_scraped": 517,
+        "topcut_cutoff_standing": 8,
+        "total_players": 517,
+        "type": "International"
+      },
+      {
+        "date": "2025-11-14",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LV02kSgge3zYTKAwlomv",
+        "location": "2026 Las Vegas Pokémon Regional Championships",
+        "name": "2026 Las Vegas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:11:41.659509Z",
+        "teams_scraped": 705,
+        "topcut_cutoff_standing": 8,
+        "total_players": 705,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "GD02yFCaTDuKwnIR9IKd",
+        "location": "2026 Gdańsk Pokémon Regional Championships",
+        "name": "2026 Gdańsk Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:30:01.617671Z",
+        "teams_scraped": 417,
+        "topcut_cutoff_standing": 8,
+        "total_players": 417,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BR02nX95OUm3tbvzmSPv",
+        "location": "2026 Brisbane Pokémon Regional Championships",
+        "name": "2026 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:17:58.800287Z",
+        "teams_scraped": 210,
+        "topcut_cutoff_standing": 8,
+        "total_players": 210,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-25",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LL02aDtPZHuHLDewaIqy",
+        "location": "2026 Lille Pokémon Regional Championships",
+        "name": "2026 Lille Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:49:28.070644Z",
+        "teams_scraped": 679,
+        "topcut_cutoff_standing": 8,
+        "total_players": 679,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-11",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BE02wX9mUPbgJsSba2pR",
+        "location": "2026 Belo Horizonte Pokémon Regional Championships",
+        "name": "2026 Belo Horizonte Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:55:02.048784Z",
+        "teams_scraped": 185,
+        "topcut_cutoff_standing": 8,
+        "total_players": 185,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-10",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MK02mx9kmM49UZ5g4JxH",
+        "location": "2026 Milwaukee Pokémon Regional Championships",
+        "name": "2026 Milwaukee Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:15:16.400494Z",
+        "teams_scraped": 708,
+        "topcut_cutoff_standing": 8,
+        "total_players": 708,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-19",
+        "day2_cutoff_standing": 68,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "PT02mMVCgJGPQcHccDoy",
+        "location": "2026 Pittsburgh Pokémon Regional Championships",
+        "name": "2026 Pittsburgh Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:37:10.485327Z",
+        "teams_scraped": 746,
+        "topcut_cutoff_standing": 8,
+        "total_players": 746,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "FR02mk9EZ28MWiUNIsTN",
+        "location": "2026 Frankfurt Pokémon Regional Championships",
+        "name": "2026 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:58:50.449245Z",
+        "teams_scraped": 742,
+        "topcut_cutoff_standing": 8,
+        "total_players": 742,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MT02mEWqwYNpTSVPcblx",
+        "location": "2026 Monterrey Pokémon Regional Championships",
+        "name": "2026 Monterrey Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T14:07:26.180309Z",
+        "teams_scraped": 281,
+        "topcut_cutoff_standing": 8,
+        "total_players": 281,
+        "type": "Regional"
+      }
+    ],
+    "win_rate": "50.5"
+  },
+  "day2": {
+    "abilities_list": [
+      [
+        "Grassy Surge",
+        "100.0",
+        "On switch-in, this Pokemon summons Grassy Terrain."
+      ]
+    ],
+    "base_stats": [
+      100,
+      125,
+      90,
+      60,
+      70,
+      85
+    ],
+    "current_pokemon": [
+      "Rillaboom",
+      46.81,
+      1,
+      [
+        67,
+        8
+      ]
+    ],
+    "day_filter": "day2",
+    "day_options": [
+      "all",
+      "day2",
+      "top16",
+      "top8"
+    ],
+    "items_list": [
+      [
+        "Miracle Seed",
+        "86.4",
+        "Holder's Grass-type attacks have 1.2Ã power.",
+        [
+          18,
+          4
+        ]
+      ],
+      [
+        "Occa Berry",
+        "9.1",
+        "Halves damage taken from a supereffective Fire-type attack. Single use.",
+        [
+          19,
+          7
+        ]
+      ],
+      [
+        "Eject Button",
+        "4.5",
+        "If holder survives a hit, it immediately switches out to a chosen ally. Single use.",
+        [
+          7,
+          6
+        ]
+      ]
+    ],
+    "moves_list": [
+      [
+        "Grassy Glide",
+        "100.0",
+        "Grass (Physical)\nBase Power: 55\nAccuracy: 100\nPriority: 0\nIf the current terrain is Grassy Terrain and the user is grounded, this move has its priority increased by 1."
+      ],
+      [
+        "Fake Out",
+        "100.0",
+        "Normal (Physical)\nBase Power: 40\nAccuracy: 100\nPriority: 3\nHas a 100% chance to make the target flinch. Fails unless it is the user's first turn on the field."
+      ],
+      [
+        "Wood Hammer",
+        "95.5",
+        "Grass (Physical)\nBase Power: 120\nAccuracy: 100\nPriority: 0\nIf the target lost HP, the user takes recoil damage equal to 33% the HP lost by the target, rounded half up, but not less than 1 HP."
+      ],
+      [
+        "High Horsepower",
+        "63.6",
+        "Ground (Physical)\nBase Power: 95\nAccuracy: 95\nPriority: 0\nNo additional effect."
+      ],
+      [
+        "U-turn",
+        "31.8",
+        "Bug (Physical)\nBase Power: 70\nAccuracy: 100\nPriority: 0\nIf this move is successful and the user has not fainted, the user switches out even if it is trapped and is replaced immediately by a selected party member. The user does not switch out if there are no unfainted party members, or if the target switched out using an Eject Button or through the effect of the Emergency Exit or Wimp Out Abilities."
+      ],
+      [
+        "Protect",
+        "9.1",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 4\nThe user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Baneful Bunker, Burning Bulwark, Detect, Endure, King's Shield, Max Guard, Obstruct, Protect, Quick Guard, Silk Trap, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn."
+      ]
+    ],
+    "natures_list": [
+      [
+        "Adamant",
+        "95.5",
+        "+Atk / -SpA"
+      ],
+      [
+        "Sassy",
+        "4.5",
+        "+SpD / -Spe"
+      ]
+    ],
+    "overview": {
+      "movers": [
+        {
+          "drops": [
+            {
+              "delta": -12.23,
+              "name": "Golisopod-Mega",
+              "prev_pct": 12.23,
+              "sprite": [
+                120,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -11.73,
+              "name": "Gholdengo",
+              "prev_pct": 28.75,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -9.280000000000001,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 26.3,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -8.28,
+              "name": "Farigiraf",
+              "prev_pct": 12.54,
+              "sprite": [
+                81,
+                9
+              ],
+              "usage_pct": 4.26
+            },
+            {
+              "delta": -8.27,
+              "name": "Tyranitar-Mega",
+              "prev_pct": 10.4,
+              "sprite": [
+                111,
+                8
+              ],
+              "usage_pct": 2.13
+            }
+          ],
+          "gains": [
+            {
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "prev_pct": 22.32,
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "prev_pct": 11.62,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "prev_pct": 6.12,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "prev_pct": 7.34,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 8.18,
+              "name": "Ceruledge",
+              "prev_pct": 4.59,
+              "sprite": [
+                78,
+                1
+              ],
+              "usage_pct": 12.77
+            }
+          ],
+          "label": "Day 1 → Day 2"
+        },
+        {
+          "drops": [
+            {
+              "delta": -21.28,
+              "name": "Milotic",
+              "prev_pct": 21.28,
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Sinistcha",
+              "prev_pct": 19.15,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Delphox-Mega",
+              "prev_pct": 19.15,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 17.02,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Gholdengo",
+              "prev_pct": 17.02,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 0
+            }
+          ],
+          "gains": [
+            {
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "prev_pct": 25.53,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "prev_pct": 46.81,
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "delta": 26.6,
+              "name": "Archaludon",
+              "prev_pct": 23.4,
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "delta": 20.48,
+              "name": "Pelipper",
+              "prev_pct": 17.02,
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "delta": 18.62,
+              "name": "Venusaur",
+              "prev_pct": 6.38,
+              "sprite": [
+                0,
+                3
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "label": "Day 2 → Top 8"
+        }
+      ],
+      "stages": [
+        {
+          "label": "Day 1",
+          "rows": [
+            {
+              "count": 170,
+              "delta": null,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 51.99
+            },
+            {
+              "count": 134,
+              "delta": null,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 40.98
+            },
+            {
+              "count": 95,
+              "delta": null,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 29.05
+            },
+            {
+              "count": 94,
+              "delta": null,
+              "name": "Gholdengo",
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 28.75
+            },
+            {
+              "count": 89,
+              "delta": null,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 27.22
+            },
+            {
+              "count": 86,
+              "delta": null,
+              "name": "Raichu-Mega-Y",
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 26.3
+            },
+            {
+              "count": 73,
+              "delta": null,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 22.32
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Arcanine-Hisui",
+              "sprite": [
+                103,
+                3
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 55,
+              "delta": null,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 16.82
+            }
+          ],
+          "total_teams": 327
+        },
+        {
+          "label": "Day 2",
+          "rows": [
+            {
+              "count": 22,
+              "delta": -5.18,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 22,
+              "delta": 5.830000000000005,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 20,
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "count": 16,
+              "delta": 4.989999999999998,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 34.04
+            },
+            {
+              "count": 12,
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "count": 11,
+              "delta": 6.579999999999998,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 23.4
+            },
+            {
+              "count": 10,
+              "delta": 1.7100000000000009,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 21.28
+            },
+            {
+              "count": 9,
+              "delta": -8.07,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            }
+          ],
+          "total_teams": 47
+        },
+        {
+          "label": "Top 8",
+          "rows": [
+            {
+              "count": 6,
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "count": 5,
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "count": 4,
+              "delta": 26.6,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 7.450000000000003,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 3.1899999999999977,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 3,
+              "delta": 20.48,
+              "name": "Pelipper",
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 3,
+              "delta": 3.460000000000001,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Grimmsnarl",
+              "sprite": [
+                71,
+                9
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 10.11,
+              "name": "Charizard-Mega-Y",
+              "sprite": [
+                110,
+                2
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Garchomp-Mega-Z",
+              "sprite": [
+                119,
+                7
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "total_teams": 8
+        }
+      ]
+    },
+    "pokemon_names": [
+      [
+        "Rillaboom",
+        "46.8",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Sneasler",
+        "46.8",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Kingambit",
+        "42.5",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Incineroar",
+        "34.0",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "25.5",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Archaludon",
+        "23.4",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Milotic",
+        "21.3",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "19.1",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Sinistcha",
+        "19.1",
+        [
+          84,
+          5
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "19.1",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Pelipper",
+        "17.0",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Gholdengo",
+        "17.0",
+        [
+          83,
+          4
+        ]
+      ],
+      [
+        "Raichu-Mega-Y",
+        "17.0",
+        [
+          119,
+          3
+        ]
+      ],
+      [
+        "Charizard-Mega-Y",
+        "14.9",
+        [
+          110,
+          2
+        ]
+      ],
+      [
+        "Staraptor-Mega",
+        "14.9",
+        [
+          119,
+          6
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "14.9",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Ceruledge",
+        "12.8",
+        [
+          78,
+          1
+        ]
+      ],
+      [
+        "Basculegion",
+        "10.6",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "10.6",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Garchomp",
+        "10.6",
+        [
+          37,
+          1
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "8.5",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Politoed",
+        "8.5",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Indeedee",
+        "8.5",
+        [
+          73,
+          0
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "8.5",
+        [
+          113,
+          1
+        ]
+      ],
+      [
+        "Grimmsnarl",
+        "6.4",
+        [
+          71,
+          9
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "6.4",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Venusaur",
+        "6.4",
+        [
+          0,
+          3
+        ]
+      ],
+      [
+        "Whimsicott",
+        "6.4",
+        [
+          45,
+          7
+        ]
+      ],
+      [
+        "Sylveon",
+        "6.4",
+        [
+          58,
+          4
+        ]
+      ],
+      [
+        "Lucario-Mega-Z",
+        "6.4",
+        [
+          119,
+          8
+        ]
+      ],
+      [
+        "Froslass-Mega",
+        "6.4",
+        [
+          117,
+          7
+        ]
+      ],
+      [
+        "Armarouge",
+        "4.3",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Volcarona",
+        "4.3",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Swampert-Mega",
+        "4.3",
+        [
+          111,
+          11
+        ]
+      ],
+      [
+        "Excadrill",
+        "4.3",
+        [
+          44,
+          2
+        ]
+      ],
+      [
+        "Glimmora-Mega",
+        "4.3",
+        [
+          120,
+          7
+        ]
+      ],
+      [
+        "Kommo-o",
+        "4.3",
+        [
+          65,
+          4
+        ]
+      ],
+      [
+        "Farigiraf",
+        "4.3",
+        [
+          81,
+          9
+        ]
+      ],
+      [
+        "Baxcalibur-Mega",
+        "4.3",
+        [
+          120,
+          11
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "2.1",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Mawile-Mega",
+        "2.1",
+        [
+          112,
+          2
+        ]
+      ],
+      [
+        "Sableye",
+        "2.1",
+        [
+          25,
+          2
+        ]
+      ],
+      [
+        "Tyranitar-Mega",
+        "2.1",
+        [
+          111,
+          8
+        ]
+      ],
+      [
+        "Corviknight",
+        "2.1",
+        [
+          68,
+          7
+        ]
+      ],
+      [
+        "Torkoal",
+        "2.1",
+        [
+          27,
+          0
+        ]
+      ],
+      [
+        "Maushold-Three",
+        "2.1",
+        [
+          0,
+          0
+        ]
+      ],
+      [
+        "Blastoise-Mega",
+        "2.1",
+        [
+          110,
+          3
+        ]
+      ],
+      [
+        "Starmie-Mega",
+        "2.1",
+        [
+          117,
+          2
+        ]
+      ],
+      [
+        "Scovillain-Mega",
+        "2.1",
+        [
+          120,
+          6
+        ]
+      ],
+      [
+        "Espathra",
+        "2.1",
+        [
+          79,
+          8
+        ]
+      ],
+      [
+        "Lycanroc-Dusk",
+        "2.1",
+        [
+          99,
+          4
+        ]
+      ],
+      [
+        "Blaziken-Mega",
+        "2.1",
+        [
+          111,
+          10
+        ]
+      ],
+      [
+        "Baxcalibur",
+        "2.1",
+        [
+          83,
+          2
+        ]
+      ],
+      [
+        "Dragapult",
+        "2.1",
+        [
+          73,
+          11
+        ]
+      ],
+      [
+        "Altaria",
+        "2.1",
+        [
+          27,
+          10
+        ]
+      ],
+      [
+        "Blastoise",
+        "2.1",
+        [
+          0,
+          9
+        ]
+      ],
+      [
+        "Weavile",
+        "2.1",
+        [
+          38,
+          5
+        ]
+      ],
+      [
+        "Empoleon",
+        "2.1",
+        [
+          32,
+          11
+        ]
+      ],
+      [
+        "Tsareena",
+        "2.1",
+        [
+          63,
+          7
+        ]
+      ],
+      [
+        "Wyrdeer",
+        "2.1",
+        [
+          74,
+          11
+        ]
+      ],
+      [
+        "Aerodactyl",
+        "2.1",
+        [
+          11,
+          10
+        ]
+      ],
+      [
+        "Infernape",
+        "2.1",
+        [
+          32,
+          8
+        ]
+      ]
+    ],
+    "pokemon_types": [
+      "Grass"
+    ],
+    "selected_pokemon": "Rillaboom",
+    "selected_tournament": {
+      "date": "2026-09-26",
+      "day2_count": 47,
+      "day2_source": "pairings",
+      "format": "gen9championsvgc2026regmc",
+      "id": "BR002-IU5yO1W76UpdyA",
+      "location": "",
+      "name": "2027 Brisbane Pokémon VGC Regional Championships",
+      "scraped_at": "2026-09-28T18:13:53.217098Z",
+      "teams_scraped": 327,
+      "total_players": 327,
+      "type": "Regional"
+    },
+    "teammates_list": [
+      [
+        "Kingambit",
+        "45.5",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Sneasler",
+        "36.4",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Gholdengo",
+        "36.4",
+        [
+          83,
+          4
+        ]
+      ],
+      [
+        "Raichu-Mega-Y",
+        "36.4",
+        [
+          119,
+          3
+        ]
+      ],
+      [
+        "Milotic",
+        "31.8",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Incineroar",
+        "27.3",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Staraptor-Mega",
+        "27.3",
+        [
+          119,
+          6
+        ]
+      ],
+      [
+        "Ceruledge",
+        "27.3",
+        [
+          78,
+          1
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "18.2",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "18.2",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "18.2",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "18.2",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Basculegion",
+        "13.6",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Archaludon",
+        "13.6",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Lucario-Mega-Z",
+        "13.6",
+        [
+          119,
+          8
+        ]
+      ],
+      [
+        "Froslass-Mega",
+        "13.6",
+        [
+          117,
+          7
+        ]
+      ],
+      [
+        "Volcarona",
+        "9.1",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Politoed",
+        "9.1",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Garchomp",
+        "9.1",
+        [
+          37,
+          1
+        ]
+      ],
+      [
+        "Pelipper",
+        "9.1",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Baxcalibur-Mega",
+        "9.1",
+        [
+          120,
+          11
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "4.5",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "4.5",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "4.5",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "4.5",
+        [
+          113,
+          1
+        ]
+      ],
+      [
+        "Lycanroc-Dusk",
+        "4.5",
+        [
+          99,
+          4
+        ]
+      ],
+      [
+        "Blaziken-Mega",
+        "4.5",
+        [
+          111,
+          10
+        ]
+      ],
+      [
+        "Baxcalibur",
+        "4.5",
+        [
+          83,
+          2
+        ]
+      ],
+      [
+        "Sylveon",
+        "4.5",
+        [
+          58,
+          4
+        ]
+      ],
+      [
+        "Blastoise",
+        "4.5",
+        [
+          0,
+          9
+        ]
+      ],
+      [
+        "Weavile",
+        "4.5",
+        [
+          38,
+          5
+        ]
+      ],
+      [
+        "Infernape",
+        "4.5",
+        [
+          32,
+          8
+        ]
+      ],
+      [
+        "Kommo-o",
+        "4.5",
+        [
+          65,
+          4
+        ]
+      ],
+      [
+        "Excadrill",
+        "4.5",
+        [
+          44,
+          2
+        ]
+      ]
+    ],
+    "tera_types_list": [],
+    "total_teams": 47,
+    "tournaments": [
+      {
+        "date": "2026-10-24",
+        "day2_count": 48,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "PB002-r871Zfmc4WQbIO",
+        "location": "",
+        "name": "2027 Puebla Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:30:51.012154Z",
+        "teams_scraped": 333,
+        "total_players": 333,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-17",
+        "day2_count": 125,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "NC002-zBMwK69ABS7RRV",
+        "location": "",
+        "name": "2027 Nice Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:20:05.109271Z",
+        "teams_scraped": 862,
+        "total_players": 862,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-09",
+        "day2_count": 142,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "LO002-drfp6esCSpyU3s",
+        "location": "",
+        "name": "2027 Louisville Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T07:12:18.695654Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-03",
+        "day2_count": 31,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "RE002-wN97aUf4Psz0ZJ",
+        "location": "",
+        "name": "2027 Recife Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T06:43:23.080512Z",
+        "teams_scraped": 222,
+        "total_players": 222,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 163,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "FR002-fiunEHp9wx4mh4",
+        "location": "",
+        "name": "2027 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:50:05.083409Z",
+        "teams_scraped": 1129,
+        "total_players": 1129,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 47,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BR002-IU5yO1W76UpdyA",
+        "location": "",
+        "name": "2027 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:13:53.217098Z",
+        "teams_scraped": 327,
+        "total_players": 327,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-18",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BA002-JL3KVbvivVKNAc",
+        "location": "",
+        "name": "2027 Baltimore Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-21T21:03:01.587714Z",
+        "teams_scraped": 1079,
+        "total_players": 1079,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-08-28",
+        "day2_count": 56,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmb",
+        "id": "WCS02wAQpCIaqFmXxER4",
+        "location": "",
+        "name": "2026 Pokémon VGC World Championship",
+        "scraped_at": "2026-08-31T05:47:54.026858Z",
+        "teams_scraped": 395,
+        "total_players": 395,
+        "type": "Worlds"
+      },
+      {
+        "date": "2026-06-12",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "NA02wgUPFDXKmQmqILwS",
+        "location": "",
+        "name": "2026 North America Pokémon VGC International Championships",
+        "scraped_at": "2026-06-14T23:44:17.929025Z",
+        "teams_scraped": 1094,
+        "total_players": 1094,
+        "type": "International"
+      },
+      {
+        "date": "2026-06-06",
+        "day2_count": 135,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "TU02wKzv4cT2BBiI9dEg",
+        "location": "",
+        "name": "2026 Turin Pokémon VGC Special Championships",
+        "scraped_at": "2026-06-07T19:49:57.524626Z",
+        "teams_scraped": 941,
+        "total_players": 941,
+        "type": "Special"
+      },
+      {
+        "date": "2026-05-31",
+        "day2_count": 145,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "IN02wbUMQOt2eNv12cgC",
+        "location": "Indianapolis, IN",
+        "name": "2026 Indianapolis Pokémon VGC Regional Championships",
+        "scraped_at": "2026-06-01T04:22:59.107916Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-23",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "MB02w71HQZzTvTOYLtXb",
+        "location": "2026 Melbourne Pokémon Regional Championships",
+        "name": "2026 Melbourne Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:12:09.372589Z",
+        "teams_scraped": 290,
+        "topcut_cutoff_standing": 8,
+        "total_players": 290,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "UT02wFHDCjnKgZ9Gscu7",
+        "location": "2026 Utrecht Pokémon Regional Championships",
+        "name": "2026 Utrecht Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:30:45.786612Z",
+        "teams_scraped": 415,
+        "topcut_cutoff_standing": 8,
+        "total_players": 415,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 32,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CA02wLAJ2mRyQI5kryVw",
+        "location": "2026 Campinas Pokémon Regional Championships",
+        "name": "2026 Campinas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:18:43.056074Z",
+        "teams_scraped": 220,
+        "topcut_cutoff_standing": 8,
+        "total_players": 221,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-08",
+        "day2_cutoff_standing": 49,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "LS02w5lpCOiMwPPo7QWD",
+        "location": "2026 Los Angeles Pokémon Regional Championships",
+        "name": "2026 Los Angeles Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:46:16.084982Z",
+        "teams_scraped": 538,
+        "topcut_cutoff_standing": 8,
+        "total_players": 538,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-25",
+        "day2_cutoff_standing": 51,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "PR02wayEt6qQBnpFi6cp",
+        "location": "2026 Prague Pokémon Regional Championships",
+        "name": "2026 Prague Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:02:19.350183Z",
+        "teams_scraped": 558,
+        "topcut_cutoff_standing": 8,
+        "total_players": 558,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-04",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "QT02wgHCgGOEh4NP4jLE",
+        "location": "2026 Querétaro Pokémon Regional Championships",
+        "name": "2026 Querétaro Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:10:21.321391Z",
+        "teams_scraped": 269,
+        "topcut_cutoff_standing": 8,
+        "total_players": 269,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-03",
+        "day2_cutoff_standing": 61,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "OR02wF0GhaiorROTkFlu",
+        "location": "2026 Orlando Pokémon Regional Championships",
+        "name": "2026 Orlando Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:29:39.093719Z",
+        "teams_scraped": 675,
+        "topcut_cutoff_standing": 8,
+        "total_players": 675,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-28",
+        "day2_cutoff_standing": 54,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SV02wtoHf5SDBUM0ntB2",
+        "location": "2026 Seville Pokémon Special Championships",
+        "name": "2026 Seville Pokémon VGC Special Championships",
+        "scraped_at": "2026-05-30T08:46:39.146570Z",
+        "teams_scraped": 592,
+        "topcut_cutoff_standing": 8,
+        "total_players": 592,
+        "type": "Special"
+      },
+      {
+        "date": "2026-03-20",
+        "day2_cutoff_standing": 57,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "HO02w2PgpC7mWHP8zYRI",
+        "location": "2026 Houston Pokémon Regional Championships",
+        "name": "2026 Houston Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:04:35.994552Z",
+        "teams_scraped": 625,
+        "topcut_cutoff_standing": 8,
+        "total_players": 625,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-14",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CU02wOcwtjVNH6QdhfNE",
+        "location": "2026 Curitiba Pokémon Regional Championships",
+        "name": "2026 Curitiba Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:10:04.654905Z",
+        "teams_scraped": 179,
+        "topcut_cutoff_standing": 8,
+        "total_players": 179,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-27",
+        "day2_cutoff_standing": 74,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SE027LIri9yqbewCPonE",
+        "location": "2026 Seattle Pokémon Regional Championships",
+        "name": "2026 Seattle Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:33:28.882684Z",
+        "teams_scraped": 821,
+        "topcut_cutoff_standing": 8,
+        "total_players": 821,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-13",
+        "day2_cutoff_standing": 131,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "EU02mADIyxk2QHCU8dqx",
+        "location": "2026 Europe Pokémon International Championships",
+        "name": "2026 Europe Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T10:14:44.525227Z",
+        "teams_scraped": 1455,
+        "topcut_cutoff_standing": 8,
+        "total_players": 1455,
+        "type": "International"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SY02sMDp6JmCcnCynSLn",
+        "location": "2026 Sydney Pokémon Regional Championships",
+        "name": "2026 Sydney Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:29:18.788173Z",
+        "teams_scraped": 277,
+        "topcut_cutoff_standing": 8,
+        "total_players": 277,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ST02KJ5wqNl34q3KGE8N",
+        "location": "2026 Santiago Pokémon Regional Championships",
+        "name": "2026 Santiago Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:21:08.191905Z",
+        "teams_scraped": 214,
+        "topcut_cutoff_standing": 8,
+        "total_players": 214,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "BH02mBOy0UgfISzHnNdU",
+        "location": "2026 Birmingham Pokémon Regional Championships",
+        "name": "2026 Birmingham Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:48:57.503985Z",
+        "teams_scraped": 688,
+        "topcut_cutoff_standing": 8,
+        "total_players": 688,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 34,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ME02w00ChbJUX07ROH4K",
+        "location": "2026 Mérida Pokémon Regional Championships",
+        "name": "2026 Mérida Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:55:53.834494Z",
+        "teams_scraped": 234,
+        "topcut_cutoff_standing": 8,
+        "total_players": 234,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-16",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "TO027Rvi7XmbN1f355Nc",
+        "location": "2026 Toronto Pokémon Regional Championships",
+        "name": "2026 Toronto Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:17:11.584868Z",
+        "teams_scraped": 745,
+        "topcut_cutoff_standing": 8,
+        "total_players": 745,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-29",
+        "day2_cutoff_standing": 60,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "SG02gVKM38QMVGTcAiZN",
+        "location": "2026 Stuttgart Pokémon Regional Championships",
+        "name": "2026 Stuttgart Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:36:02.576187Z",
+        "teams_scraped": 661,
+        "topcut_cutoff_standing": 8,
+        "total_players": 661,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-21",
+        "day2_cutoff_standing": 47,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LA0226md2zDgZtmvexIY",
+        "location": "2026 Latin America Pokémon International Championships",
+        "name": "2026 Latin America Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T11:50:55.092664Z",
+        "teams_scraped": 517,
+        "topcut_cutoff_standing": 8,
+        "total_players": 517,
+        "type": "International"
+      },
+      {
+        "date": "2025-11-14",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LV02kSgge3zYTKAwlomv",
+        "location": "2026 Las Vegas Pokémon Regional Championships",
+        "name": "2026 Las Vegas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:11:41.659509Z",
+        "teams_scraped": 705,
+        "topcut_cutoff_standing": 8,
+        "total_players": 705,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "GD02yFCaTDuKwnIR9IKd",
+        "location": "2026 Gdańsk Pokémon Regional Championships",
+        "name": "2026 Gdańsk Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:30:01.617671Z",
+        "teams_scraped": 417,
+        "topcut_cutoff_standing": 8,
+        "total_players": 417,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BR02nX95OUm3tbvzmSPv",
+        "location": "2026 Brisbane Pokémon Regional Championships",
+        "name": "2026 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:17:58.800287Z",
+        "teams_scraped": 210,
+        "topcut_cutoff_standing": 8,
+        "total_players": 210,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-25",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LL02aDtPZHuHLDewaIqy",
+        "location": "2026 Lille Pokémon Regional Championships",
+        "name": "2026 Lille Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:49:28.070644Z",
+        "teams_scraped": 679,
+        "topcut_cutoff_standing": 8,
+        "total_players": 679,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-11",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BE02wX9mUPbgJsSba2pR",
+        "location": "2026 Belo Horizonte Pokémon Regional Championships",
+        "name": "2026 Belo Horizonte Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:55:02.048784Z",
+        "teams_scraped": 185,
+        "topcut_cutoff_standing": 8,
+        "total_players": 185,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-10",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MK02mx9kmM49UZ5g4JxH",
+        "location": "2026 Milwaukee Pokémon Regional Championships",
+        "name": "2026 Milwaukee Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:15:16.400494Z",
+        "teams_scraped": 708,
+        "topcut_cutoff_standing": 8,
+        "total_players": 708,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-19",
+        "day2_cutoff_standing": 68,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "PT02mMVCgJGPQcHccDoy",
+        "location": "2026 Pittsburgh Pokémon Regional Championships",
+        "name": "2026 Pittsburgh Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:37:10.485327Z",
+        "teams_scraped": 746,
+        "topcut_cutoff_standing": 8,
+        "total_players": 746,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "FR02mk9EZ28MWiUNIsTN",
+        "location": "2026 Frankfurt Pokémon Regional Championships",
+        "name": "2026 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:58:50.449245Z",
+        "teams_scraped": 742,
+        "topcut_cutoff_standing": 8,
+        "total_players": 742,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MT02mEWqwYNpTSVPcblx",
+        "location": "2026 Monterrey Pokémon Regional Championships",
+        "name": "2026 Monterrey Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T14:07:26.180309Z",
+        "teams_scraped": 281,
+        "topcut_cutoff_standing": 8,
+        "total_players": 281,
+        "type": "Regional"
+      }
+    ],
+    "win_rate": "68.7"
+  },
+  "top16": {
+    "abilities_list": [
+      [
+        "Unburden",
+        "66.7",
+        "If this Pokemon loses its held item for any reason, its Speed is doubled as long as it remains active, has this Ability, and is not holding an item."
+      ],
+      [
+        "Poison Touch",
+        "33.3",
+        "This Pokemon's contact moves have a 30% chance of poisoning. This effect comes after a move's inherent secondary effect chance."
+      ]
+    ],
+    "base_stats": [
+      80,
+      130,
+      60,
+      40,
+      80,
+      120
+    ],
+    "current_pokemon": [
+      "Sneasler",
+      56.25,
+      1,
+      [
+        75,
+        3
+      ]
+    ],
+    "day_filter": "top16",
+    "day_options": [
+      "all",
+      "day2",
+      "top16",
+      "top8"
+    ],
+    "items_list": [
+      [
+        "White Herb",
+        "44.4",
+        "Restores all lowered stat stages to 0 when one is less than 0. Single use.",
+        [
+          33,
+          7
+        ]
+      ],
+      [
+        "Focus Sash",
+        "33.3",
+        "If holder's HP is full, will survive an attack that would KO it with 1 HP. Single use.",
+        [
+          9,
+          7
+        ]
+      ],
+      [
+        "Grassy Seed",
+        "11.1",
+        "If the terrain is Grassy Terrain, raises holder's Defense by 1 stage. Single use.",
+        [
+          41,
+          11
+        ]
+      ],
+      [
+        "Psychic Seed",
+        "11.1",
+        "If the terrain is Psychic Terrain, raises holder's Sp. Def by 1 stage. Single use.",
+        [
+          41,
+          9
+        ]
+      ]
+    ],
+    "moves_list": [
+      [
+        "Close Combat",
+        "100.0",
+        "Fighting (Physical)\nBase Power: 120\nAccuracy: 100\nPriority: 0\nLowers the user's Defense and Special Defense by 1 stage."
+      ],
+      [
+        "Protect",
+        "77.8",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 4\nThe user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Baneful Bunker, Burning Bulwark, Detect, Endure, King's Shield, Max Guard, Obstruct, Protect, Quick Guard, Silk Trap, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn."
+      ],
+      [
+        "Dire Claw",
+        "77.8",
+        "Poison (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nHas a 50% chance to cause the target to either fall asleep, become poisoned, or become paralyzed."
+      ],
+      [
+        "Fake Out",
+        "44.4",
+        "Normal (Physical)\nBase Power: 40\nAccuracy: 100\nPriority: 3\nHas a 100% chance to make the target flinch. Fails unless it is the user's first turn on the field."
+      ],
+      [
+        "Rock Slide",
+        "33.3",
+        "Rock (Physical)\nBase Power: 75\nAccuracy: 90\nPriority: 0\nHas a 30% chance to make the target flinch."
+      ],
+      [
+        "Coaching",
+        "22.2",
+        "Fighting (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 0\nRaises the target's Attack and Defense by 1 stage. Fails if there is no ally adjacent to the user."
+      ],
+      [
+        "Swords Dance",
+        "11.1",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 0\nRaises the user's Attack by 2 stages."
+      ],
+      [
+        "Throat Chop",
+        "11.1",
+        "Dark (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nFor 2 turns, the target cannot use sound-based moves."
+      ],
+      [
+        "Poison Jab",
+        "11.1",
+        "Poison (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nHas a 30% chance to poison the target."
+      ],
+      [
+        "Quick Guard",
+        "11.1",
+        "Fighting (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 3\nThe user and its party members are protected from attacks with original or altered priority greater than 0 made by other Pokemon, including allies, during this turn. This move modifies the same 1/X chance of being successful used by other protection moves, where X starts at 1 and triples each time this move is successfully used, but does not use the chance to check for failure. X resets to 1 if this move fails, if the user's last move used is not Baneful Bunker, Burning Bulwark, Detect, Endure, King's Shield, Max Guard, Obstruct, Protect, Quick Guard, Silk Trap, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn or if this move is already in effect for the user's side."
+      ]
+    ],
+    "natures_list": [
+      [
+        "Adamant",
+        "66.7",
+        "+Atk / -SpA"
+      ],
+      [
+        "Jolly",
+        "33.3",
+        "+Spe / -SpA"
+      ]
+    ],
+    "overview": {
+      "movers": [
+        {
+          "drops": [
+            {
+              "delta": -12.23,
+              "name": "Golisopod-Mega",
+              "prev_pct": 12.23,
+              "sprite": [
+                120,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -11.73,
+              "name": "Gholdengo",
+              "prev_pct": 28.75,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -9.280000000000001,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 26.3,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -8.28,
+              "name": "Farigiraf",
+              "prev_pct": 12.54,
+              "sprite": [
+                81,
+                9
+              ],
+              "usage_pct": 4.26
+            },
+            {
+              "delta": -8.27,
+              "name": "Tyranitar-Mega",
+              "prev_pct": 10.4,
+              "sprite": [
+                111,
+                8
+              ],
+              "usage_pct": 2.13
+            }
+          ],
+          "gains": [
+            {
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "prev_pct": 22.32,
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "prev_pct": 11.62,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "prev_pct": 6.12,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "prev_pct": 7.34,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 8.18,
+              "name": "Ceruledge",
+              "prev_pct": 4.59,
+              "sprite": [
+                78,
+                1
+              ],
+              "usage_pct": 12.77
+            }
+          ],
+          "label": "Day 1 → Day 2"
+        },
+        {
+          "drops": [
+            {
+              "delta": -21.28,
+              "name": "Milotic",
+              "prev_pct": 21.28,
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Sinistcha",
+              "prev_pct": 19.15,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Delphox-Mega",
+              "prev_pct": 19.15,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 17.02,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Gholdengo",
+              "prev_pct": 17.02,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 0
+            }
+          ],
+          "gains": [
+            {
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "prev_pct": 25.53,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "prev_pct": 46.81,
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "delta": 26.6,
+              "name": "Archaludon",
+              "prev_pct": 23.4,
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "delta": 20.48,
+              "name": "Pelipper",
+              "prev_pct": 17.02,
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "delta": 18.62,
+              "name": "Venusaur",
+              "prev_pct": 6.38,
+              "sprite": [
+                0,
+                3
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "label": "Day 2 → Top 8"
+        }
+      ],
+      "stages": [
+        {
+          "label": "Day 1",
+          "rows": [
+            {
+              "count": 170,
+              "delta": null,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 51.99
+            },
+            {
+              "count": 134,
+              "delta": null,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 40.98
+            },
+            {
+              "count": 95,
+              "delta": null,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 29.05
+            },
+            {
+              "count": 94,
+              "delta": null,
+              "name": "Gholdengo",
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 28.75
+            },
+            {
+              "count": 89,
+              "delta": null,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 27.22
+            },
+            {
+              "count": 86,
+              "delta": null,
+              "name": "Raichu-Mega-Y",
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 26.3
+            },
+            {
+              "count": 73,
+              "delta": null,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 22.32
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Arcanine-Hisui",
+              "sprite": [
+                103,
+                3
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 55,
+              "delta": null,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 16.82
+            }
+          ],
+          "total_teams": 327
+        },
+        {
+          "label": "Day 2",
+          "rows": [
+            {
+              "count": 22,
+              "delta": -5.18,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 22,
+              "delta": 5.830000000000005,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 20,
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "count": 16,
+              "delta": 4.989999999999998,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 34.04
+            },
+            {
+              "count": 12,
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "count": 11,
+              "delta": 6.579999999999998,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 23.4
+            },
+            {
+              "count": 10,
+              "delta": 1.7100000000000009,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 21.28
+            },
+            {
+              "count": 9,
+              "delta": -8.07,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            }
+          ],
+          "total_teams": 47
+        },
+        {
+          "label": "Top 8",
+          "rows": [
+            {
+              "count": 6,
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "count": 5,
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "count": 4,
+              "delta": 26.6,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 7.450000000000003,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 3.1899999999999977,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 3,
+              "delta": 20.48,
+              "name": "Pelipper",
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 3,
+              "delta": 3.460000000000001,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Grimmsnarl",
+              "sprite": [
+                71,
+                9
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 10.11,
+              "name": "Charizard-Mega-Y",
+              "sprite": [
+                110,
+                2
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Garchomp-Mega-Z",
+              "sprite": [
+                119,
+                7
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "total_teams": 8
+        }
+      ]
+    },
+    "pokemon_names": [
+      [
+        "Sneasler",
+        "56.2",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Kingambit",
+        "43.8",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Archaludon",
+        "37.5",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "37.5",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Rillaboom",
+        "37.5",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Incineroar",
+        "37.5",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Pelipper",
+        "25.0",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Basculegion",
+        "25.0",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "25.0",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Charizard-Mega-Y",
+        "18.8",
+        [
+          110,
+          2
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "18.8",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Indeedee",
+        "18.8",
+        [
+          73,
+          0
+        ]
+      ],
+      [
+        "Grimmsnarl",
+        "12.5",
+        [
+          71,
+          9
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "12.5",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Venusaur",
+        "12.5",
+        [
+          0,
+          3
+        ]
+      ],
+      [
+        "Armarouge",
+        "12.5",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "12.5",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Politoed",
+        "12.5",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Swampert-Mega",
+        "12.5",
+        [
+          111,
+          11
+        ]
+      ],
+      [
+        "Sinistcha",
+        "12.5",
+        [
+          84,
+          5
+        ]
+      ],
+      [
+        "Glimmora-Mega",
+        "12.5",
+        [
+          120,
+          7
+        ]
+      ],
+      [
+        "Milotic",
+        "12.5",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "6.2",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Volcarona",
+        "6.2",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Mawile-Mega",
+        "6.2",
+        [
+          112,
+          2
+        ]
+      ],
+      [
+        "Sableye",
+        "6.2",
+        [
+          25,
+          2
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "6.2",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Tyranitar-Mega",
+        "6.2",
+        [
+          111,
+          8
+        ]
+      ],
+      [
+        "Excadrill",
+        "6.2",
+        [
+          44,
+          2
+        ]
+      ],
+      [
+        "Corviknight",
+        "6.2",
+        [
+          68,
+          7
+        ]
+      ],
+      [
+        "Torkoal",
+        "6.2",
+        [
+          27,
+          0
+        ]
+      ],
+      [
+        "Staraptor-Mega",
+        "6.2",
+        [
+          119,
+          6
+        ]
+      ],
+      [
+        "Garchomp",
+        "6.2",
+        [
+          37,
+          1
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "6.2",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "6.2",
+        [
+          113,
+          1
+        ]
+      ],
+      [
+        "Kommo-o",
+        "6.2",
+        [
+          65,
+          4
+        ]
+      ],
+      [
+        "Whimsicott",
+        "6.2",
+        [
+          45,
+          7
+        ]
+      ]
+    ],
+    "pokemon_types": [
+      "Fighting",
+      "Poison"
+    ],
+    "selected_pokemon": "Sneasler",
+    "selected_tournament": {
+      "date": "2026-09-26",
+      "day2_count": 47,
+      "day2_source": "pairings",
+      "format": "gen9championsvgc2026regmc",
+      "id": "BR002-IU5yO1W76UpdyA",
+      "location": "",
+      "name": "2027 Brisbane Pokémon VGC Regional Championships",
+      "scraped_at": "2026-09-28T18:13:53.217098Z",
+      "teams_scraped": 327,
+      "total_players": 327,
+      "type": "Regional"
+    },
+    "teammates_list": [
+      [
+        "Floette-Mega",
+        "66.7",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Kingambit",
+        "55.6",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Rillaboom",
+        "44.4",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "44.4",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Incineroar",
+        "44.4",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Basculegion",
+        "22.2",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Archaludon",
+        "22.2",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Indeedee",
+        "22.2",
+        [
+          73,
+          0
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "11.1",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Pelipper",
+        "11.1",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "11.1",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Armarouge",
+        "11.1",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "11.1",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Politoed",
+        "11.1",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "11.1",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Volcarona",
+        "11.1",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Delphox-Mega",
+        "11.1",
+        [
+          118,
+          3
+        ]
+      ],
+      [
+        "Sinistcha",
+        "11.1",
+        [
+          84,
+          5
+        ]
+      ],
+      [
+        "Tyranitar-Mega",
+        "11.1",
+        [
+          111,
+          8
+        ]
+      ],
+      [
+        "Excadrill",
+        "11.1",
+        [
+          44,
+          2
+        ]
+      ],
+      [
+        "Corviknight",
+        "11.1",
+        [
+          68,
+          7
+        ]
+      ],
+      [
+        "Arcanine-Hisui",
+        "11.1",
+        [
+          103,
+          3
+        ]
+      ],
+      [
+        "Milotic",
+        "11.1",
+        [
+          29,
+          2
+        ]
+      ],
+      [
+        "Metagross-Mega",
+        "11.1",
+        [
+          113,
+          1
+        ]
+      ]
+    ],
+    "tera_types_list": [],
+    "total_teams": 16,
+    "tournaments": [
+      {
+        "date": "2026-10-24",
+        "day2_count": 48,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "PB002-r871Zfmc4WQbIO",
+        "location": "",
+        "name": "2027 Puebla Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:30:51.012154Z",
+        "teams_scraped": 333,
+        "total_players": 333,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-17",
+        "day2_count": 125,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "NC002-zBMwK69ABS7RRV",
+        "location": "",
+        "name": "2027 Nice Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:20:05.109271Z",
+        "teams_scraped": 862,
+        "total_players": 862,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-09",
+        "day2_count": 142,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "LO002-drfp6esCSpyU3s",
+        "location": "",
+        "name": "2027 Louisville Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T07:12:18.695654Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-03",
+        "day2_count": 31,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "RE002-wN97aUf4Psz0ZJ",
+        "location": "",
+        "name": "2027 Recife Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T06:43:23.080512Z",
+        "teams_scraped": 222,
+        "total_players": 222,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 163,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "FR002-fiunEHp9wx4mh4",
+        "location": "",
+        "name": "2027 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:50:05.083409Z",
+        "teams_scraped": 1129,
+        "total_players": 1129,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 47,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BR002-IU5yO1W76UpdyA",
+        "location": "",
+        "name": "2027 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:13:53.217098Z",
+        "teams_scraped": 327,
+        "total_players": 327,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-18",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BA002-JL3KVbvivVKNAc",
+        "location": "",
+        "name": "2027 Baltimore Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-21T21:03:01.587714Z",
+        "teams_scraped": 1079,
+        "total_players": 1079,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-08-28",
+        "day2_count": 56,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmb",
+        "id": "WCS02wAQpCIaqFmXxER4",
+        "location": "",
+        "name": "2026 Pokémon VGC World Championship",
+        "scraped_at": "2026-08-31T05:47:54.026858Z",
+        "teams_scraped": 395,
+        "total_players": 395,
+        "type": "Worlds"
+      },
+      {
+        "date": "2026-06-12",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "NA02wgUPFDXKmQmqILwS",
+        "location": "",
+        "name": "2026 North America Pokémon VGC International Championships",
+        "scraped_at": "2026-06-14T23:44:17.929025Z",
+        "teams_scraped": 1094,
+        "total_players": 1094,
+        "type": "International"
+      },
+      {
+        "date": "2026-06-06",
+        "day2_count": 135,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "TU02wKzv4cT2BBiI9dEg",
+        "location": "",
+        "name": "2026 Turin Pokémon VGC Special Championships",
+        "scraped_at": "2026-06-07T19:49:57.524626Z",
+        "teams_scraped": 941,
+        "total_players": 941,
+        "type": "Special"
+      },
+      {
+        "date": "2026-05-31",
+        "day2_count": 145,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "IN02wbUMQOt2eNv12cgC",
+        "location": "Indianapolis, IN",
+        "name": "2026 Indianapolis Pokémon VGC Regional Championships",
+        "scraped_at": "2026-06-01T04:22:59.107916Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-23",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "MB02w71HQZzTvTOYLtXb",
+        "location": "2026 Melbourne Pokémon Regional Championships",
+        "name": "2026 Melbourne Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:12:09.372589Z",
+        "teams_scraped": 290,
+        "topcut_cutoff_standing": 8,
+        "total_players": 290,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "UT02wFHDCjnKgZ9Gscu7",
+        "location": "2026 Utrecht Pokémon Regional Championships",
+        "name": "2026 Utrecht Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:30:45.786612Z",
+        "teams_scraped": 415,
+        "topcut_cutoff_standing": 8,
+        "total_players": 415,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 32,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CA02wLAJ2mRyQI5kryVw",
+        "location": "2026 Campinas Pokémon Regional Championships",
+        "name": "2026 Campinas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:18:43.056074Z",
+        "teams_scraped": 220,
+        "topcut_cutoff_standing": 8,
+        "total_players": 221,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-08",
+        "day2_cutoff_standing": 49,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "LS02w5lpCOiMwPPo7QWD",
+        "location": "2026 Los Angeles Pokémon Regional Championships",
+        "name": "2026 Los Angeles Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:46:16.084982Z",
+        "teams_scraped": 538,
+        "topcut_cutoff_standing": 8,
+        "total_players": 538,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-25",
+        "day2_cutoff_standing": 51,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "PR02wayEt6qQBnpFi6cp",
+        "location": "2026 Prague Pokémon Regional Championships",
+        "name": "2026 Prague Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:02:19.350183Z",
+        "teams_scraped": 558,
+        "topcut_cutoff_standing": 8,
+        "total_players": 558,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-04",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "QT02wgHCgGOEh4NP4jLE",
+        "location": "2026 Querétaro Pokémon Regional Championships",
+        "name": "2026 Querétaro Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:10:21.321391Z",
+        "teams_scraped": 269,
+        "topcut_cutoff_standing": 8,
+        "total_players": 269,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-03",
+        "day2_cutoff_standing": 61,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "OR02wF0GhaiorROTkFlu",
+        "location": "2026 Orlando Pokémon Regional Championships",
+        "name": "2026 Orlando Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:29:39.093719Z",
+        "teams_scraped": 675,
+        "topcut_cutoff_standing": 8,
+        "total_players": 675,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-28",
+        "day2_cutoff_standing": 54,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SV02wtoHf5SDBUM0ntB2",
+        "location": "2026 Seville Pokémon Special Championships",
+        "name": "2026 Seville Pokémon VGC Special Championships",
+        "scraped_at": "2026-05-30T08:46:39.146570Z",
+        "teams_scraped": 592,
+        "topcut_cutoff_standing": 8,
+        "total_players": 592,
+        "type": "Special"
+      },
+      {
+        "date": "2026-03-20",
+        "day2_cutoff_standing": 57,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "HO02w2PgpC7mWHP8zYRI",
+        "location": "2026 Houston Pokémon Regional Championships",
+        "name": "2026 Houston Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:04:35.994552Z",
+        "teams_scraped": 625,
+        "topcut_cutoff_standing": 8,
+        "total_players": 625,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-14",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CU02wOcwtjVNH6QdhfNE",
+        "location": "2026 Curitiba Pokémon Regional Championships",
+        "name": "2026 Curitiba Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:10:04.654905Z",
+        "teams_scraped": 179,
+        "topcut_cutoff_standing": 8,
+        "total_players": 179,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-27",
+        "day2_cutoff_standing": 74,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SE027LIri9yqbewCPonE",
+        "location": "2026 Seattle Pokémon Regional Championships",
+        "name": "2026 Seattle Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:33:28.882684Z",
+        "teams_scraped": 821,
+        "topcut_cutoff_standing": 8,
+        "total_players": 821,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-13",
+        "day2_cutoff_standing": 131,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "EU02mADIyxk2QHCU8dqx",
+        "location": "2026 Europe Pokémon International Championships",
+        "name": "2026 Europe Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T10:14:44.525227Z",
+        "teams_scraped": 1455,
+        "topcut_cutoff_standing": 8,
+        "total_players": 1455,
+        "type": "International"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SY02sMDp6JmCcnCynSLn",
+        "location": "2026 Sydney Pokémon Regional Championships",
+        "name": "2026 Sydney Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:29:18.788173Z",
+        "teams_scraped": 277,
+        "topcut_cutoff_standing": 8,
+        "total_players": 277,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ST02KJ5wqNl34q3KGE8N",
+        "location": "2026 Santiago Pokémon Regional Championships",
+        "name": "2026 Santiago Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:21:08.191905Z",
+        "teams_scraped": 214,
+        "topcut_cutoff_standing": 8,
+        "total_players": 214,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "BH02mBOy0UgfISzHnNdU",
+        "location": "2026 Birmingham Pokémon Regional Championships",
+        "name": "2026 Birmingham Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:48:57.503985Z",
+        "teams_scraped": 688,
+        "topcut_cutoff_standing": 8,
+        "total_players": 688,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 34,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ME02w00ChbJUX07ROH4K",
+        "location": "2026 Mérida Pokémon Regional Championships",
+        "name": "2026 Mérida Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:55:53.834494Z",
+        "teams_scraped": 234,
+        "topcut_cutoff_standing": 8,
+        "total_players": 234,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-16",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "TO027Rvi7XmbN1f355Nc",
+        "location": "2026 Toronto Pokémon Regional Championships",
+        "name": "2026 Toronto Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:17:11.584868Z",
+        "teams_scraped": 745,
+        "topcut_cutoff_standing": 8,
+        "total_players": 745,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-29",
+        "day2_cutoff_standing": 60,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "SG02gVKM38QMVGTcAiZN",
+        "location": "2026 Stuttgart Pokémon Regional Championships",
+        "name": "2026 Stuttgart Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:36:02.576187Z",
+        "teams_scraped": 661,
+        "topcut_cutoff_standing": 8,
+        "total_players": 661,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-21",
+        "day2_cutoff_standing": 47,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LA0226md2zDgZtmvexIY",
+        "location": "2026 Latin America Pokémon International Championships",
+        "name": "2026 Latin America Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T11:50:55.092664Z",
+        "teams_scraped": 517,
+        "topcut_cutoff_standing": 8,
+        "total_players": 517,
+        "type": "International"
+      },
+      {
+        "date": "2025-11-14",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LV02kSgge3zYTKAwlomv",
+        "location": "2026 Las Vegas Pokémon Regional Championships",
+        "name": "2026 Las Vegas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:11:41.659509Z",
+        "teams_scraped": 705,
+        "topcut_cutoff_standing": 8,
+        "total_players": 705,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "GD02yFCaTDuKwnIR9IKd",
+        "location": "2026 Gdańsk Pokémon Regional Championships",
+        "name": "2026 Gdańsk Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:30:01.617671Z",
+        "teams_scraped": 417,
+        "topcut_cutoff_standing": 8,
+        "total_players": 417,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BR02nX95OUm3tbvzmSPv",
+        "location": "2026 Brisbane Pokémon Regional Championships",
+        "name": "2026 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:17:58.800287Z",
+        "teams_scraped": 210,
+        "topcut_cutoff_standing": 8,
+        "total_players": 210,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-25",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LL02aDtPZHuHLDewaIqy",
+        "location": "2026 Lille Pokémon Regional Championships",
+        "name": "2026 Lille Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:49:28.070644Z",
+        "teams_scraped": 679,
+        "topcut_cutoff_standing": 8,
+        "total_players": 679,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-11",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BE02wX9mUPbgJsSba2pR",
+        "location": "2026 Belo Horizonte Pokémon Regional Championships",
+        "name": "2026 Belo Horizonte Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:55:02.048784Z",
+        "teams_scraped": 185,
+        "topcut_cutoff_standing": 8,
+        "total_players": 185,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-10",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MK02mx9kmM49UZ5g4JxH",
+        "location": "2026 Milwaukee Pokémon Regional Championships",
+        "name": "2026 Milwaukee Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:15:16.400494Z",
+        "teams_scraped": 708,
+        "topcut_cutoff_standing": 8,
+        "total_players": 708,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-19",
+        "day2_cutoff_standing": 68,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "PT02mMVCgJGPQcHccDoy",
+        "location": "2026 Pittsburgh Pokémon Regional Championships",
+        "name": "2026 Pittsburgh Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:37:10.485327Z",
+        "teams_scraped": 746,
+        "topcut_cutoff_standing": 8,
+        "total_players": 746,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "FR02mk9EZ28MWiUNIsTN",
+        "location": "2026 Frankfurt Pokémon Regional Championships",
+        "name": "2026 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:58:50.449245Z",
+        "teams_scraped": 742,
+        "topcut_cutoff_standing": 8,
+        "total_players": 742,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MT02mEWqwYNpTSVPcblx",
+        "location": "2026 Monterrey Pokémon Regional Championships",
+        "name": "2026 Monterrey Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T14:07:26.180309Z",
+        "teams_scraped": 281,
+        "topcut_cutoff_standing": 8,
+        "total_players": 281,
+        "type": "Regional"
+      }
+    ],
+    "win_rate": "77.8"
+  },
+  "top8": {
+    "abilities_list": [
+      [
+        "Unburden",
+        "66.7",
+        "If this Pokemon loses its held item for any reason, its Speed is doubled as long as it remains active, has this Ability, and is not holding an item."
+      ],
+      [
+        "Poison Touch",
+        "33.3",
+        "This Pokemon's contact moves have a 30% chance of poisoning. This effect comes after a move's inherent secondary effect chance."
+      ]
+    ],
+    "base_stats": [
+      80,
+      130,
+      60,
+      40,
+      80,
+      120
+    ],
+    "current_pokemon": [
+      "Sneasler",
+      75.0,
+      1,
+      [
+        75,
+        3
+      ]
+    ],
+    "day_filter": "top8",
+    "day_options": [
+      "all",
+      "day2",
+      "top16",
+      "top8"
+    ],
+    "items_list": [
+      [
+        "White Herb",
+        "50.0",
+        "Restores all lowered stat stages to 0 when one is less than 0. Single use.",
+        [
+          33,
+          7
+        ]
+      ],
+      [
+        "Focus Sash",
+        "33.3",
+        "If holder's HP is full, will survive an attack that would KO it with 1 HP. Single use.",
+        [
+          9,
+          7
+        ]
+      ],
+      [
+        "Grassy Seed",
+        "16.7",
+        "If the terrain is Grassy Terrain, raises holder's Defense by 1 stage. Single use.",
+        [
+          41,
+          11
+        ]
+      ]
+    ],
+    "moves_list": [
+      [
+        "Close Combat",
+        "100.0",
+        "Fighting (Physical)\nBase Power: 120\nAccuracy: 100\nPriority: 0\nLowers the user's Defense and Special Defense by 1 stage."
+      ],
+      [
+        "Protect",
+        "83.3",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 4\nThe user is protected from most attacks made by other Pokemon during this turn. This move has a 1/X chance of being successful, where X starts at 1 and triples each time this move is successfully used. X resets to 1 if this move fails, if the user's last move used is not Baneful Bunker, Burning Bulwark, Detect, Endure, King's Shield, Max Guard, Obstruct, Protect, Quick Guard, Silk Trap, Spiky Shield, or Wide Guard, or if it was one of those moves and the user's protection was broken. Fails if the user moves last this turn."
+      ],
+      [
+        "Dire Claw",
+        "83.3",
+        "Poison (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nHas a 50% chance to cause the target to either fall asleep, become poisoned, or become paralyzed."
+      ],
+      [
+        "Fake Out",
+        "50.0",
+        "Normal (Physical)\nBase Power: 40\nAccuracy: 100\nPriority: 3\nHas a 100% chance to make the target flinch. Fails unless it is the user's first turn on the field."
+      ],
+      [
+        "Rock Slide",
+        "33.3",
+        "Rock (Physical)\nBase Power: 75\nAccuracy: 90\nPriority: 0\nHas a 30% chance to make the target flinch."
+      ],
+      [
+        "Coaching",
+        "16.7",
+        "Fighting (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 0\nRaises the target's Attack and Defense by 1 stage. Fails if there is no ally adjacent to the user."
+      ],
+      [
+        "Swords Dance",
+        "16.7",
+        "Normal (Status)\nBase Power: N/A\nAccuracy: N/A\nPriority: 0\nRaises the user's Attack by 2 stages."
+      ],
+      [
+        "Throat Chop",
+        "16.7",
+        "Dark (Physical)\nBase Power: 80\nAccuracy: 100\nPriority: 0\nFor 2 turns, the target cannot use sound-based moves."
+      ]
+    ],
+    "natures_list": [
+      [
+        "Adamant",
+        "66.7",
+        "+Atk / -SpA"
+      ],
+      [
+        "Jolly",
+        "33.3",
+        "+Spe / -SpA"
+      ]
+    ],
+    "overview": {
+      "movers": [
+        {
+          "drops": [
+            {
+              "delta": -12.23,
+              "name": "Golisopod-Mega",
+              "prev_pct": 12.23,
+              "sprite": [
+                120,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -11.73,
+              "name": "Gholdengo",
+              "prev_pct": 28.75,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -9.280000000000001,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 26.3,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 17.02
+            },
+            {
+              "delta": -8.28,
+              "name": "Farigiraf",
+              "prev_pct": 12.54,
+              "sprite": [
+                81,
+                9
+              ],
+              "usage_pct": 4.26
+            },
+            {
+              "delta": -8.27,
+              "name": "Tyranitar-Mega",
+              "prev_pct": 10.4,
+              "sprite": [
+                111,
+                8
+              ],
+              "usage_pct": 2.13
+            }
+          ],
+          "gains": [
+            {
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "prev_pct": 22.32,
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "prev_pct": 11.62,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "prev_pct": 6.12,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "prev_pct": 7.34,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "delta": 8.18,
+              "name": "Ceruledge",
+              "prev_pct": 4.59,
+              "sprite": [
+                78,
+                1
+              ],
+              "usage_pct": 12.77
+            }
+          ],
+          "label": "Day 1 → Day 2"
+        },
+        {
+          "drops": [
+            {
+              "delta": -21.28,
+              "name": "Milotic",
+              "prev_pct": 21.28,
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Sinistcha",
+              "prev_pct": 19.15,
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -19.15,
+              "name": "Delphox-Mega",
+              "prev_pct": 19.15,
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Raichu-Mega-Y",
+              "prev_pct": 17.02,
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 0
+            },
+            {
+              "delta": -17.02,
+              "name": "Gholdengo",
+              "prev_pct": 17.02,
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 0
+            }
+          ],
+          "gains": [
+            {
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "prev_pct": 25.53,
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "prev_pct": 46.81,
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "delta": 26.6,
+              "name": "Archaludon",
+              "prev_pct": 23.4,
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "delta": 20.48,
+              "name": "Pelipper",
+              "prev_pct": 17.02,
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "delta": 18.62,
+              "name": "Venusaur",
+              "prev_pct": 6.38,
+              "sprite": [
+                0,
+                3
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "label": "Day 2 → Top 8"
+        }
+      ],
+      "stages": [
+        {
+          "label": "Day 1",
+          "rows": [
+            {
+              "count": 170,
+              "delta": null,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 51.99
+            },
+            {
+              "count": 134,
+              "delta": null,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 40.98
+            },
+            {
+              "count": 95,
+              "delta": null,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 29.05
+            },
+            {
+              "count": 94,
+              "delta": null,
+              "name": "Gholdengo",
+              "sprite": [
+                83,
+                4
+              ],
+              "usage_pct": 28.75
+            },
+            {
+              "count": 89,
+              "delta": null,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 27.22
+            },
+            {
+              "count": 86,
+              "delta": null,
+              "name": "Raichu-Mega-Y",
+              "sprite": [
+                119,
+                3
+              ],
+              "usage_pct": 26.3
+            },
+            {
+              "count": 73,
+              "delta": null,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 22.32
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 64,
+              "delta": null,
+              "name": "Arcanine-Hisui",
+              "sprite": [
+                103,
+                3
+              ],
+              "usage_pct": 19.57
+            },
+            {
+              "count": 55,
+              "delta": null,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 16.82
+            }
+          ],
+          "total_teams": 327
+        },
+        {
+          "label": "Day 2",
+          "rows": [
+            {
+              "count": 22,
+              "delta": -5.18,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 22,
+              "delta": 5.830000000000005,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 46.81
+            },
+            {
+              "count": 20,
+              "delta": 20.229999999999997,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 42.55
+            },
+            {
+              "count": 16,
+              "delta": 4.989999999999998,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 34.04
+            },
+            {
+              "count": 12,
+              "delta": 13.910000000000002,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 25.53
+            },
+            {
+              "count": 11,
+              "delta": 6.579999999999998,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 23.4
+            },
+            {
+              "count": 10,
+              "delta": 1.7100000000000009,
+              "name": "Milotic",
+              "sprite": [
+                29,
+                2
+              ],
+              "usage_pct": 21.28
+            },
+            {
+              "count": 9,
+              "delta": -8.07,
+              "name": "Salamence-Mega",
+              "sprite": [
+                113,
+                0
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 13.029999999999998,
+              "name": "Sinistcha",
+              "sprite": [
+                84,
+                5
+              ],
+              "usage_pct": 19.15
+            },
+            {
+              "count": 9,
+              "delta": 11.809999999999999,
+              "name": "Delphox-Mega",
+              "sprite": [
+                118,
+                3
+              ],
+              "usage_pct": 19.15
+            }
+          ],
+          "total_teams": 47
+        },
+        {
+          "label": "Top 8",
+          "rows": [
+            {
+              "count": 6,
+              "delta": 28.189999999999998,
+              "name": "Sneasler",
+              "sprite": [
+                75,
+                3
+              ],
+              "usage_pct": 75.0
+            },
+            {
+              "count": 5,
+              "delta": 36.97,
+              "name": "Floette-Mega",
+              "sprite": [
+                118,
+                6
+              ],
+              "usage_pct": 62.5
+            },
+            {
+              "count": 4,
+              "delta": 26.6,
+              "name": "Archaludon",
+              "sprite": [
+                84,
+                10
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 7.450000000000003,
+              "name": "Kingambit",
+              "sprite": [
+                81,
+                11
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 4,
+              "delta": 3.1899999999999977,
+              "name": "Rillaboom",
+              "sprite": [
+                67,
+                8
+              ],
+              "usage_pct": 50.0
+            },
+            {
+              "count": 3,
+              "delta": 20.48,
+              "name": "Pelipper",
+              "sprite": [
+                23,
+                3
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 3,
+              "delta": 3.460000000000001,
+              "name": "Incineroar",
+              "sprite": [
+                60,
+                7
+              ],
+              "usage_pct": 37.5
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Grimmsnarl",
+              "sprite": [
+                71,
+                9
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 10.11,
+              "name": "Charizard-Mega-Y",
+              "sprite": [
+                110,
+                2
+              ],
+              "usage_pct": 25.0
+            },
+            {
+              "count": 2,
+              "delta": 18.62,
+              "name": "Garchomp-Mega-Z",
+              "sprite": [
+                119,
+                7
+              ],
+              "usage_pct": 25.0
+            }
+          ],
+          "total_teams": 8
+        }
+      ]
+    },
+    "pokemon_names": [
+      [
+        "Sneasler",
+        "75.0",
+        [
+          75,
+          3
+        ]
+      ],
+      [
+        "Floette-Mega",
+        "62.5",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Archaludon",
+        "50.0",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Kingambit",
+        "50.0",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Rillaboom",
+        "50.0",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Pelipper",
+        "37.5",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Incineroar",
+        "37.5",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Grimmsnarl",
+        "25.0",
+        [
+          71,
+          9
+        ]
+      ],
+      [
+        "Charizard-Mega-Y",
+        "25.0",
+        [
+          110,
+          2
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "25.0",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Venusaur",
+        "25.0",
+        [
+          0,
+          3
+        ]
+      ],
+      [
+        "Basculegion",
+        "25.0",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "25.0",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "12.5",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "12.5",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Armarouge",
+        "12.5",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "12.5",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Politoed",
+        "12.5",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Volcarona",
+        "12.5",
+        [
+          53,
+          1
+        ]
+      ],
+      [
+        "Swampert-Mega",
+        "12.5",
+        [
+          111,
+          11
+        ]
+      ]
+    ],
+    "pokemon_types": [
+      "Fighting",
+      "Poison"
+    ],
+    "selected_pokemon": "Sneasler",
+    "selected_tournament": {
+      "date": "2026-09-26",
+      "day2_count": 47,
+      "day2_source": "pairings",
+      "format": "gen9championsvgc2026regmc",
+      "id": "BR002-IU5yO1W76UpdyA",
+      "location": "",
+      "name": "2027 Brisbane Pokémon VGC Regional Championships",
+      "scraped_at": "2026-09-28T18:13:53.217098Z",
+      "teams_scraped": 327,
+      "total_players": 327,
+      "type": "Regional"
+    },
+    "teammates_list": [
+      [
+        "Floette-Mega",
+        "83.3",
+        [
+          118,
+          6
+        ]
+      ],
+      [
+        "Kingambit",
+        "66.7",
+        [
+          81,
+          11
+        ]
+      ],
+      [
+        "Rillaboom",
+        "66.7",
+        [
+          67,
+          8
+        ]
+      ],
+      [
+        "Incineroar",
+        "50.0",
+        [
+          60,
+          7
+        ]
+      ],
+      [
+        "Basculegion",
+        "33.3",
+        [
+          75,
+          2
+        ]
+      ],
+      [
+        "Salamence-Mega",
+        "33.3",
+        [
+          113,
+          0
+        ]
+      ],
+      [
+        "Archaludon",
+        "33.3",
+        [
+          84,
+          10
+        ]
+      ],
+      [
+        "Garchomp-Mega",
+        "16.7",
+        [
+          113,
+          8
+        ]
+      ],
+      [
+        "Pelipper",
+        "16.7",
+        [
+          23,
+          3
+        ]
+      ],
+      [
+        "Gengar-Mega",
+        "16.7",
+        [
+          110,
+          8
+        ]
+      ],
+      [
+        "Armarouge",
+        "16.7",
+        [
+          78,
+          0
+        ]
+      ],
+      [
+        "Indeedee-F",
+        "16.7",
+        [
+          102,
+          0
+        ]
+      ],
+      [
+        "Politoed",
+        "16.7",
+        [
+          15,
+          6
+        ]
+      ],
+      [
+        "Garchomp-Mega-Z",
+        "16.7",
+        [
+          119,
+          7
+        ]
+      ],
+      [
+        "Volcarona",
+        "16.7",
+        [
+          53,
+          1
+        ]
+      ]
+    ],
+    "tera_types_list": [],
+    "total_teams": 8,
+    "tournaments": [
+      {
+        "date": "2026-10-24",
+        "day2_count": 48,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "PB002-r871Zfmc4WQbIO",
+        "location": "",
+        "name": "2027 Puebla Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:30:51.012154Z",
+        "teams_scraped": 333,
+        "total_players": 333,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-17",
+        "day2_count": 125,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "NC002-zBMwK69ABS7RRV",
+        "location": "",
+        "name": "2027 Nice Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-28T03:20:05.109271Z",
+        "teams_scraped": 862,
+        "total_players": 862,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-09",
+        "day2_count": 142,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "LO002-drfp6esCSpyU3s",
+        "location": "",
+        "name": "2027 Louisville Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T07:12:18.695654Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-10-03",
+        "day2_count": 31,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "RE002-wN97aUf4Psz0ZJ",
+        "location": "",
+        "name": "2027 Recife Pokémon VGC Regional Championships",
+        "scraped_at": "2026-10-12T06:43:23.080512Z",
+        "teams_scraped": 222,
+        "total_players": 222,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 163,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "FR002-fiunEHp9wx4mh4",
+        "location": "",
+        "name": "2027 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:50:05.083409Z",
+        "teams_scraped": 1129,
+        "total_players": 1129,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-26",
+        "day2_count": 47,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BR002-IU5yO1W76UpdyA",
+        "location": "",
+        "name": "2027 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-28T18:13:53.217098Z",
+        "teams_scraped": 327,
+        "total_players": 327,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-09-18",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmc",
+        "id": "BA002-JL3KVbvivVKNAc",
+        "location": "",
+        "name": "2027 Baltimore Pokémon VGC Regional Championships",
+        "scraped_at": "2026-09-21T21:03:01.587714Z",
+        "teams_scraped": 1079,
+        "total_players": 1079,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-08-28",
+        "day2_count": 56,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regmb",
+        "id": "WCS02wAQpCIaqFmXxER4",
+        "location": "",
+        "name": "2026 Pokémon VGC World Championship",
+        "scraped_at": "2026-08-31T05:47:54.026858Z",
+        "teams_scraped": 395,
+        "total_players": 395,
+        "type": "Worlds"
+      },
+      {
+        "date": "2026-06-12",
+        "day2_count": 156,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "NA02wgUPFDXKmQmqILwS",
+        "location": "",
+        "name": "2026 North America Pokémon VGC International Championships",
+        "scraped_at": "2026-06-14T23:44:17.929025Z",
+        "teams_scraped": 1094,
+        "total_players": 1094,
+        "type": "International"
+      },
+      {
+        "date": "2026-06-06",
+        "day2_count": 135,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "TU02wKzv4cT2BBiI9dEg",
+        "location": "",
+        "name": "2026 Turin Pokémon VGC Special Championships",
+        "scraped_at": "2026-06-07T19:49:57.524626Z",
+        "teams_scraped": 941,
+        "total_players": 941,
+        "type": "Special"
+      },
+      {
+        "date": "2026-05-31",
+        "day2_count": 145,
+        "day2_source": "pairings",
+        "format": "gen9championsvgc2026regma",
+        "id": "IN02wbUMQOt2eNv12cgC",
+        "location": "Indianapolis, IN",
+        "name": "2026 Indianapolis Pokémon VGC Regional Championships",
+        "scraped_at": "2026-06-01T04:22:59.107916Z",
+        "teams_scraped": 1013,
+        "total_players": 1013,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-23",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "MB02w71HQZzTvTOYLtXb",
+        "location": "2026 Melbourne Pokémon Regional Championships",
+        "name": "2026 Melbourne Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:12:09.372589Z",
+        "teams_scraped": 290,
+        "topcut_cutoff_standing": 8,
+        "total_players": 290,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "UT02wFHDCjnKgZ9Gscu7",
+        "location": "2026 Utrecht Pokémon Regional Championships",
+        "name": "2026 Utrecht Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:30:45.786612Z",
+        "teams_scraped": 415,
+        "topcut_cutoff_standing": 8,
+        "total_players": 415,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-16",
+        "day2_cutoff_standing": 32,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CA02wLAJ2mRyQI5kryVw",
+        "location": "2026 Campinas Pokémon Regional Championships",
+        "name": "2026 Campinas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:18:43.056074Z",
+        "teams_scraped": 220,
+        "topcut_cutoff_standing": 8,
+        "total_players": 221,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-05-08",
+        "day2_cutoff_standing": 49,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "LS02w5lpCOiMwPPo7QWD",
+        "location": "2026 Los Angeles Pokémon Regional Championships",
+        "name": "2026 Los Angeles Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T07:46:16.084982Z",
+        "teams_scraped": 538,
+        "topcut_cutoff_standing": 8,
+        "total_players": 538,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-25",
+        "day2_cutoff_standing": 51,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "PR02wayEt6qQBnpFi6cp",
+        "location": "2026 Prague Pokémon Regional Championships",
+        "name": "2026 Prague Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:02:19.350183Z",
+        "teams_scraped": 558,
+        "topcut_cutoff_standing": 8,
+        "total_players": 558,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-04",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "QT02wgHCgGOEh4NP4jLE",
+        "location": "2026 Querétaro Pokémon Regional Championships",
+        "name": "2026 Querétaro Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:10:21.321391Z",
+        "teams_scraped": 269,
+        "topcut_cutoff_standing": 8,
+        "total_players": 269,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-04-03",
+        "day2_cutoff_standing": 61,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regi",
+        "id": "OR02wF0GhaiorROTkFlu",
+        "location": "2026 Orlando Pokémon Regional Championships",
+        "name": "2026 Orlando Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T08:29:39.093719Z",
+        "teams_scraped": 675,
+        "topcut_cutoff_standing": 8,
+        "total_players": 675,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-28",
+        "day2_cutoff_standing": 54,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SV02wtoHf5SDBUM0ntB2",
+        "location": "2026 Seville Pokémon Special Championships",
+        "name": "2026 Seville Pokémon VGC Special Championships",
+        "scraped_at": "2026-05-30T08:46:39.146570Z",
+        "teams_scraped": 592,
+        "topcut_cutoff_standing": 8,
+        "total_players": 592,
+        "type": "Special"
+      },
+      {
+        "date": "2026-03-20",
+        "day2_cutoff_standing": 57,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "HO02w2PgpC7mWHP8zYRI",
+        "location": "2026 Houston Pokémon Regional Championships",
+        "name": "2026 Houston Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:04:35.994552Z",
+        "teams_scraped": 625,
+        "topcut_cutoff_standing": 8,
+        "total_players": 625,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-03-14",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "CU02wOcwtjVNH6QdhfNE",
+        "location": "2026 Curitiba Pokémon Regional Championships",
+        "name": "2026 Curitiba Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:10:04.654905Z",
+        "teams_scraped": 179,
+        "topcut_cutoff_standing": 8,
+        "total_players": 179,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-27",
+        "day2_cutoff_standing": 74,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SE027LIri9yqbewCPonE",
+        "location": "2026 Seattle Pokémon Regional Championships",
+        "name": "2026 Seattle Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T09:33:28.882684Z",
+        "teams_scraped": 821,
+        "topcut_cutoff_standing": 8,
+        "total_players": 821,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-13",
+        "day2_cutoff_standing": 131,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "EU02mADIyxk2QHCU8dqx",
+        "location": "2026 Europe Pokémon International Championships",
+        "name": "2026 Europe Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T10:14:44.525227Z",
+        "teams_scraped": 1455,
+        "topcut_cutoff_standing": 8,
+        "total_players": 1455,
+        "type": "International"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 25,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "SY02sMDp6JmCcnCynSLn",
+        "location": "2026 Sydney Pokémon Regional Championships",
+        "name": "2026 Sydney Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:29:18.788173Z",
+        "teams_scraped": 277,
+        "topcut_cutoff_standing": 8,
+        "total_players": 277,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-02-07",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ST02KJ5wqNl34q3KGE8N",
+        "location": "2026 Santiago Pokémon Regional Championships",
+        "name": "2026 Santiago Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:21:08.191905Z",
+        "teams_scraped": 214,
+        "topcut_cutoff_standing": 8,
+        "total_players": 214,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "BH02mBOy0UgfISzHnNdU",
+        "location": "2026 Birmingham Pokémon Regional Championships",
+        "name": "2026 Birmingham Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:48:57.503985Z",
+        "teams_scraped": 688,
+        "topcut_cutoff_standing": 8,
+        "total_players": 688,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-24",
+        "day2_cutoff_standing": 34,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "ME02w00ChbJUX07ROH4K",
+        "location": "2026 Mérida Pokémon Regional Championships",
+        "name": "2026 Mérida Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T10:55:53.834494Z",
+        "teams_scraped": 234,
+        "topcut_cutoff_standing": 8,
+        "total_players": 234,
+        "type": "Regional"
+      },
+      {
+        "date": "2026-01-16",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2026regf",
+        "id": "TO027Rvi7XmbN1f355Nc",
+        "location": "2026 Toronto Pokémon Regional Championships",
+        "name": "2026 Toronto Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:17:11.584868Z",
+        "teams_scraped": 745,
+        "topcut_cutoff_standing": 8,
+        "total_players": 745,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-29",
+        "day2_cutoff_standing": 60,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "SG02gVKM38QMVGTcAiZN",
+        "location": "2026 Stuttgart Pokémon Regional Championships",
+        "name": "2026 Stuttgart Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T11:36:02.576187Z",
+        "teams_scraped": 661,
+        "topcut_cutoff_standing": 8,
+        "total_players": 661,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-21",
+        "day2_cutoff_standing": 47,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LA0226md2zDgZtmvexIY",
+        "location": "2026 Latin America Pokémon International Championships",
+        "name": "2026 Latin America Pokémon VGC International Championships",
+        "scraped_at": "2026-05-30T11:50:55.092664Z",
+        "teams_scraped": 517,
+        "topcut_cutoff_standing": 8,
+        "total_players": 517,
+        "type": "International"
+      },
+      {
+        "date": "2025-11-14",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LV02kSgge3zYTKAwlomv",
+        "location": "2026 Las Vegas Pokémon Regional Championships",
+        "name": "2026 Las Vegas Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:11:41.659509Z",
+        "teams_scraped": 705,
+        "topcut_cutoff_standing": 8,
+        "total_players": 705,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 38,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "GD02yFCaTDuKwnIR9IKd",
+        "location": "2026 Gdańsk Pokémon Regional Championships",
+        "name": "2026 Gdańsk Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:30:01.617671Z",
+        "teams_scraped": 417,
+        "topcut_cutoff_standing": 8,
+        "total_players": 417,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-11-01",
+        "day2_cutoff_standing": 31,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BR02nX95OUm3tbvzmSPv",
+        "location": "2026 Brisbane Pokémon Regional Championships",
+        "name": "2026 Brisbane Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:17:58.800287Z",
+        "teams_scraped": 210,
+        "topcut_cutoff_standing": 8,
+        "total_players": 210,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-25",
+        "day2_cutoff_standing": 62,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "LL02aDtPZHuHLDewaIqy",
+        "location": "2026 Lille Pokémon Regional Championships",
+        "name": "2026 Lille Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:49:28.070644Z",
+        "teams_scraped": 679,
+        "topcut_cutoff_standing": 8,
+        "total_players": 679,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-11",
+        "day2_cutoff_standing": 27,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "BE02wX9mUPbgJsSba2pR",
+        "location": "2026 Belo Horizonte Pokémon Regional Championships",
+        "name": "2026 Belo Horizonte Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T12:55:02.048784Z",
+        "teams_scraped": 185,
+        "topcut_cutoff_standing": 8,
+        "total_players": 185,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-10-10",
+        "day2_cutoff_standing": 64,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MK02mx9kmM49UZ5g4JxH",
+        "location": "2026 Milwaukee Pokémon Regional Championships",
+        "name": "2026 Milwaukee Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:15:16.400494Z",
+        "teams_scraped": 708,
+        "topcut_cutoff_standing": 8,
+        "total_players": 708,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-19",
+        "day2_cutoff_standing": 68,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "PT02mMVCgJGPQcHccDoy",
+        "location": "2026 Pittsburgh Pokémon Regional Championships",
+        "name": "2026 Pittsburgh Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:37:10.485327Z",
+        "teams_scraped": 746,
+        "topcut_cutoff_standing": 8,
+        "total_players": 746,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 67,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "FR02mk9EZ28MWiUNIsTN",
+        "location": "2026 Frankfurt Pokémon Regional Championships",
+        "name": "2026 Frankfurt Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T13:58:50.449245Z",
+        "teams_scraped": 742,
+        "topcut_cutoff_standing": 8,
+        "total_players": 742,
+        "type": "Regional"
+      },
+      {
+        "date": "2025-09-13",
+        "day2_cutoff_standing": 26,
+        "day2_source": "pairings",
+        "format": "gen9vgc2025regh",
+        "id": "MT02mEWqwYNpTSVPcblx",
+        "location": "2026 Monterrey Pokémon Regional Championships",
+        "name": "2026 Monterrey Pokémon VGC Regional Championships",
+        "scraped_at": "2026-05-30T14:07:26.180309Z",
+        "teams_scraped": 281,
+        "topcut_cutoff_standing": 8,
+        "total_players": 281,
+        "type": "Regional"
+      }
+    ],
+    "win_rate": "79.3"
+  }
+}
