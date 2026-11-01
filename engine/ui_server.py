@@ -24,6 +24,7 @@ import csv
 from datetime import datetime, timezone
 import http.server
 import json
+import os
 from pathlib import Path
 import re
 import socketserver
@@ -42,6 +43,7 @@ from flask import (
     send_file,
     send_from_directory,
 )
+from werkzeug.security import safe_join
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "engine"))
@@ -135,7 +137,7 @@ def validate_scraping_target(target: str):
 
 def slugify(text: str) -> str:
     """Canonical slug transformation for Pokémon species and item filenames."""
-    clean = re.sub(r"\s*\([mf]\)\s*", "", str(text or ""), flags=re.I).strip().lower()
+    clean = re.sub(r"\([mfMF]\)", "", str(text or "")).strip().lower()
     clean = re.sub(r"[^a-z0-9]+", "-", clean)
     return clean.strip("-")
 
@@ -157,7 +159,7 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
     is_female = bool(re.search(r"\(f\)|-f$|-female$", clean, re.I))
     is_male = bool(re.search(r"\(m\)|-m$|-male$", clean, re.I))
     stripped = re.sub(r"\bshiny\b", "", clean, flags=re.I)
-    stripped = re.sub(r"\s*\([mf]\)\s*", "", stripped, flags=re.I).strip()
+    stripped = re.sub(r"\([mfMF]\)", "", stripped).strip()
     slug = slugify(stripped)
     alnum = alnum_key(stripped)
 
@@ -213,19 +215,30 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
             candidates.append("mega-" + slug[:-5])
 
     # 6. Base species fallback
-    base_slug = re.sub(r"^mega-|-mega.*$|-[xyz]$|-(alolan|hisuian|galarian|paldean).*$", "", slug)
-    base_slug = re.sub(r"^(alolan|hisuian|galarian|paldean)-", "", base_slug)
+    base_slug = slug
+    if base_slug.startswith("mega-"):
+        base_slug = base_slug[5:]
+    for reg in ("alolan", "hisuian", "galarian", "paldean"):
+        if base_slug.startswith(f"{reg}-"):
+            base_slug = base_slug[len(reg) + 1:]
+    for suffix_token in ("-mega", "-alolan", "-hisuian", "-galarian", "-paldean"):
+        if suffix_token in base_slug:
+            base_slug = base_slug.split(suffix_token, 1)[0]
+    if base_slug.endswith(("-x", "-y", "-z")):
+        base_slug = base_slug[:-2]
     if base_slug and base_slug not in candidates:
         candidates.append(base_slug)
 
+    assets_canon = ASSETS_DIR.resolve()
     for c in candidates:
         if not c:
             continue
         stems = [f"{c}-shiny", f"{c}shiny"] if check_shiny else [c]
         for s in stems:
             for p in [SPRITES_REG_MC_DIR / f"{s}.png", SPRITES_ROOT_DIR / f"{s}.png"]:
-                if p.exists():
-                    return p
+                canon_p = p.resolve()
+                if canon_p.is_file() and os.path.commonpath([str(assets_canon), str(canon_p)]) == str(assets_canon):
+                    return canon_p
 
     return None
 
@@ -272,9 +285,9 @@ def execute_prompt_crawl_and_dump(user_prompt: str, export_csv: bool = True) -> 
         if url:
             try:
                 scraped_live = scrape_munchstats_url_or_json(url, save_to_csv=True)
-            except Exception as exc:
+            except Exception:
                 scraped_live = [{
-                    "warning": f"Live URL fetch blocked or offline ({exc}); falling back to local Scouted_Teams.csv."
+                    "warning": "Live URL fetch blocked or offline; falling back to local Scouted_Teams.csv."
                 }]
 
     # Read verified rows from data/Scouted_Teams.csv
@@ -475,16 +488,20 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         if any(res in fn_lower for res in RESTRICTED_PATH_PATTERNS) or "/." in fn_lower or ".." in filename:
             abort(403, description="Access Denied: Restricted System Resource")
 
-        safe_path = (ASSETS_DIR / filename).resolve()
-        try:
-            safe_path.relative_to(ASSETS_DIR.resolve())
-        except ValueError:
+        assets_canon = ASSETS_DIR.resolve()
+        safe_str = safe_join(str(assets_canon), filename)
+        if safe_str is None:
             abort(403, description="Access Denied: Path Traversal Attempt")
 
-        if not safe_path.exists() or safe_path.is_dir():
+        safe_path = Path(safe_str).resolve()
+        if os.path.commonpath([str(assets_canon), str(safe_path)]) != str(assets_canon):
+            abort(403, description="Access Denied: Path Traversal Attempt")
+
+        if not safe_path.is_file():
             abort(404, description="Asset Not Found")
 
-        resp = send_from_directory(ASSETS_DIR, filename)
+        rel_name = safe_path.relative_to(assets_canon).as_posix()
+        resp = send_from_directory(assets_canon, rel_name)
         # Allow browser caching for static raster/vector assets
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
@@ -496,15 +513,19 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         Returns matching 128x128 PNG from Reg_M-C or dynamic vector crest if uncatalogued.
         Query args: ?shiny=1 or ?shiny=true
         """
+        clean_species = re.sub(r"[^a-zA-Z0-9_\-()]", "", species).strip()
         is_shiny = request.args.get("shiny", "").lower() in ("1", "true", "yes")
-        sprite_file = resolve_sprite_path(species, is_shiny=is_shiny)
-        if sprite_file and sprite_file.exists():
-            resp = send_file(sprite_file, mimetype="image/png")
-            resp.headers["Cache-Control"] = "public, max-age=86400"
-            return resp
+        sprite_file = resolve_sprite_path(clean_species, is_shiny=is_shiny)
+        assets_canon = ASSETS_DIR.resolve()
+        if sprite_file and sprite_file.is_file():
+            canon_sprite = sprite_file.resolve()
+            if os.path.commonpath([str(assets_canon), str(canon_sprite)]) == str(assets_canon):
+                resp = send_file(canon_sprite, mimetype="image/png")
+                resp.headers["Cache-Control"] = "public, max-age=86400"
+                return resp
 
         # Fallback to dynamic SVG battle crest
-        svg_code = generate_anatomical_battle_crest_svg(species)
+        svg_code = generate_anatomical_battle_crest_svg(clean_species)
         resp = Response(svg_code, mimetype="image/svg+xml; charset=utf-8")
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
@@ -512,17 +533,21 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
     @app.route("/api/items/<path:item>", methods=["GET"])
     def api_get_item(item: str):
         """Dynamic item & megastone icon resolver endpoint."""
-        slug = slugify(item)
+        slug = re.sub(r"[^a-z0-9\-]", "", slugify(item))
+        if not slug:
+            abort(404, description="Item Icon Not Found")
         cand_paths = [
             ITEMS_DIR / f"{slug}.png",
             ITEMS_DIR / f"{slug}.svg",
             MEGASTONES_DIR / f"{slug}.png",
             MEGASTONES_DIR / f"{slug}.svg",
         ]
+        assets_canon = ASSETS_DIR.resolve()
         for p in cand_paths:
-            if p.exists():
-                mime = "image/png" if p.suffix == ".png" else "image/svg+xml; charset=utf-8"
-                resp = send_file(p, mimetype=mime)
+            canon_p = p.resolve()
+            if canon_p.is_file() and os.path.commonpath([str(assets_canon), str(canon_p)]) == str(assets_canon):
+                mime = "image/png" if canon_p.suffix == ".png" else "image/svg+xml; charset=utf-8"
+                resp = send_file(canon_p, mimetype=mime)
                 resp.headers["Cache-Control"] = "public, max-age=86400"
                 return resp
         abort(404, description="Item Icon Not Found")
@@ -744,19 +769,23 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
             return
 
         if path.startswith("/api/sprites/"):
-            species_raw = path.replace("/api/sprites/", "").strip()
+            species_raw = path.replace("/api/sprites/", "").split("?")[0].strip()
+            clean_species = re.sub(r"[^a-zA-Z0-9_\-()]", "", species_raw).strip()
             params = urllib.parse.parse_qs(parsed.query)
             is_shiny = "shiny" in params and params["shiny"][0].lower() in ("1", "true")
-            sprite_file = resolve_sprite_path(species_raw, is_shiny=is_shiny)
-            if sprite_file and sprite_file.exists():
-                payload = sprite_file.read_bytes()
-                self.send_response(200)
-                self.send_header("Content-Type", "image/png")
-                self.send_header("Content-Length", str(len(payload)))
-                self.end_headers()
-                self.wfile.write(payload)
-                return
-            svg_code = generate_anatomical_battle_crest_svg(species_raw).encode("utf-8")
+            sprite_file = resolve_sprite_path(clean_species, is_shiny=is_shiny)
+            assets_canon = ASSETS_DIR.resolve()
+            if sprite_file and sprite_file.is_file():
+                canon_sprite = sprite_file.resolve()
+                if os.path.commonpath([str(assets_canon), str(canon_sprite)]) == str(assets_canon):
+                    payload = canon_sprite.read_bytes()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
+                    return
+            svg_code = generate_anatomical_battle_crest_svg(clean_species).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "image/svg+xml; charset=utf-8")
             self.send_header("Content-Length", str(len(svg_code)))
