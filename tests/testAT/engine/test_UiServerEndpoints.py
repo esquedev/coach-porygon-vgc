@@ -11,6 +11,7 @@ from pyhocon import ConfigFactory
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
 from engine.ui_server import create_app
+from tests.test_constants import TEST_DATA_DIR
 
 class TestUiServerEndpoints(unittest.TestCase):
     """Rigorous unit tests for the Flask web application in ui_server.py."""
@@ -18,7 +19,7 @@ class TestUiServerEndpoints(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Create test client from application factory."""
-        cls.flask_app = create_app()
+        cls.flask_app = create_app(data_dir=TEST_DATA_DIR)
         cls.flask_app.config["TESTING"] = True
         cls.client = cls.flask_app.test_client()
 

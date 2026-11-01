@@ -29,6 +29,7 @@ import re
 import socketserver
 import sys
 import urllib.parse
+from typing import Optional
 
 from flask import (
     Flask,
@@ -399,9 +400,10 @@ def execute_prompt_crawl_and_dump(user_prompt: str, export_csv: bool = True) -> 
     }
 
 
-def create_app() -> Flask:
+def create_app(data_dir: Optional[Path] = None) -> Flask:
     """Application factory creating the Coach Porygon VGC Flask web app."""
     app = Flask(__name__, static_folder=None)
+    app.config["DATA_DIR"] = Path(data_dir) if data_dir else DATA_DIR
 
     @app.before_request
     def check_security_guardrails():
@@ -528,7 +530,7 @@ def create_app() -> Flask:
     @app.route("/api/health", methods=["GET"])
     def api_health():
         """Health check endpoint exposing live system status and telemetry metrics."""
-        data = load_live_telemetry()
+        data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
         return jsonify({
             "status": "UP",
             "version": "1.0.0",
@@ -541,13 +543,13 @@ def create_app() -> Flask:
     @app.route("/api/telemetry", methods=["GET"])
     def api_telemetry():
         """Returns live workspace telemetry snapshot."""
-        data = load_live_telemetry()
+        data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
         return jsonify(data)
 
     @app.route("/api/munchstats/data", methods=["GET"])
     def api_munchstats_data():
         """Returns structured MunchStats metagame datasets."""
-        data = load_live_telemetry()
+        data = load_live_telemetry(data_dir=app.config.get("DATA_DIR"))
         return jsonify({
             "tournaments": data.get("tournaments", []),
             "overview": data.get("munchstats_overview", []),

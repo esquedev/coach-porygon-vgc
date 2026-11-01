@@ -111,7 +111,8 @@ class TestCommandCenterConnectivity(unittest.TestCase):
         self.assertIn('http://localhost:8000', self.html_text)
 
         # 2. Telemetry embedded snapshot contains all 64 scouted teams and 7 tournaments
-        telemetry = load_live_telemetry()
+        from tests.test_constants import TEST_DATA_DIR
+        telemetry = load_live_telemetry(data_dir=TEST_DATA_DIR)
         self.assertEqual(len(telemetry.get("scouted", [])), 64)
         self.assertEqual(len(telemetry.get("tournaments", [])), 7)
         self.assertEqual(len(telemetry.get("munchstats_overview", [])), 7)

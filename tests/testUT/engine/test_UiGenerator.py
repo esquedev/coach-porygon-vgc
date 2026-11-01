@@ -18,6 +18,7 @@ from engine.ui_generator import (
     write_svg_assets,
 )
 from engine.ui_server import execute_prompt_crawl_and_dump
+from tests.test_constants import TEST_DATA_DIR
 
 
 class TestUiGenerator(unittest.TestCase):
@@ -25,7 +26,7 @@ class TestUiGenerator(unittest.TestCase):
 
     def test_load_live_telemetry_structure(self):
         """Verify load_live_telemetry populates all required high-level dashboard keys."""
-        data = load_live_telemetry()
+        data = load_live_telemetry(data_dir=TEST_DATA_DIR)
         self.assertIsInstance(data, dict)
         self.assertIn("total_matches", data)
         self.assertIn("total_calcs", data)
@@ -40,7 +41,7 @@ class TestUiGenerator(unittest.TestCase):
 
     def test_load_pokedex_db(self):
         """Verify load_pokedex_db accurately parses Regulation M-C species and stat bounds."""
-        pokedex = load_pokedex_db()
+        pokedex = load_pokedex_db(data_dir=TEST_DATA_DIR)
         self.assertIsInstance(pokedex, dict)
         self.assertGreaterEqual(len(pokedex), 300)
 

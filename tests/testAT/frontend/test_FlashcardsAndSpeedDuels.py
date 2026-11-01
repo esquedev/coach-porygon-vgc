@@ -19,6 +19,7 @@ from pyhocon import ConfigFactory
 import unittest
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
+from tests.test_constants import TEST_DATA_DIR
 from engine.scenarios_data import FLASHCARD_SCENARIOS
 from engine.speed_duels_data import SPEED_DUELS
 from engine.validate_roster import load_legal_items
@@ -84,7 +85,7 @@ class TestFlashcardsAndSpeedDuels(unittest.TestCase):
         )
 
         # Also verify data/Flashcard_Scenarios.csv directly
-        csv_path = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
+        csv_path = TEST_DATA_DIR / "Flashcard_Scenarios.csv"
         self.assertTrue(csv_path.exists(), "Flashcard_Scenarios.csv must exist on disk")
         with open(csv_path, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)

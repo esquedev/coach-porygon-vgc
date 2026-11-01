@@ -19,7 +19,7 @@ import json
 import re
 from collections import Counter
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = REPO_ROOT / "data"
@@ -38,10 +38,11 @@ def write_svg_assets() -> Dict[str, str]:
     return {}
 
 
-def load_pokedex_db() -> Dict[str, Dict]:
-    """Loads all 363 legal Regulation M-C Pokémon from `data/MC_Available_Pokemon.csv`."""
+def load_pokedex_db(data_dir: Optional[Path] = None) -> Dict[str, Dict]:
+    """Loads all 363 legal Regulation M-C Pokémon from `MC_Available_Pokemon.csv`."""
     db: Dict[str, Dict] = {}
-    csv_p = DATA_DIR / "MC_Available_Pokemon.csv"
+    target_dir = Path(data_dir) if data_dir else DATA_DIR
+    csv_p = target_dir / "MC_Available_Pokemon.csv"
     if not csv_p.exists():
         return db
     with open(csv_p, "r", encoding="utf-8") as f:
@@ -157,13 +158,14 @@ def compute_vp_curve_for_match(m: dict, diags_map: dict):
     return pts, tp_turn, tp_desc
 
 
-def load_live_telemetry() -> Dict:
+def load_live_telemetry(data_dir: Optional[Path] = None) -> Dict:
     """Loads live rosters, scouted teams, match logs, diagnostics, Pokédex, and damage calcs."""
-    pokedex = load_pokedex_db()
+    target_dir = Path(data_dir) if data_dir else DATA_DIR
+    pokedex = load_pokedex_db(data_dir=target_dir)
 
     teams = []
-    if (DATA_DIR / "Teams.csv").exists():
-        with open(DATA_DIR / "Teams.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Teams.csv").exists():
+        with open(target_dir / "Teams.csv", "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 teams.append({
                     "id": r.get("Team_ID", ""),
@@ -173,8 +175,8 @@ def load_live_telemetry() -> Dict:
                 })
 
     scouted = []
-    if (DATA_DIR / "Scouted_Teams.csv").exists():
-        with open(DATA_DIR / "Scouted_Teams.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Scouted_Teams.csv").exists():
+        with open(target_dir / "Scouted_Teams.csv", "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 scouted.append({
                     "id": r.get("Scouted_Team_ID", ""),
@@ -188,15 +190,15 @@ def load_live_telemetry() -> Dict:
 
     # Pre-load diagnostics for exact VP delta tracking
     diags_map = {}
-    if (DATA_DIR / "Playstyle_Diagnostics.csv").exists():
-        with open(DATA_DIR / "Playstyle_Diagnostics.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Playstyle_Diagnostics.csv").exists():
+        with open(target_dir / "Playstyle_Diagnostics.csv", "r", encoding="utf-8") as f:
             for dr in csv.DictReader(f):
                 dmid = str(dr.get("Match_ID", "")).replace(".0", "")
                 diags_map[dmid] = dr
 
     raw_matches = []
-    if (DATA_DIR / "Raw_Matches.csv").exists():
-        with open(DATA_DIR / "Raw_Matches.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Raw_Matches.csv").exists():
+        with open(target_dir / "Raw_Matches.csv", "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 u_l1 = r.get("User_Lead_1", "").strip()
                 u_l2 = r.get("User_Lead_2", "").strip()
@@ -238,8 +240,8 @@ def load_live_telemetry() -> Dict:
                 })
 
     diagnostics = []
-    if (DATA_DIR / "Playstyle_Diagnostics.csv").exists():
-        with open(DATA_DIR / "Playstyle_Diagnostics.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Playstyle_Diagnostics.csv").exists():
+        with open(target_dir / "Playstyle_Diagnostics.csv", "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 diagnostics.append({
                     "match_id": r.get("Match_ID", ""),
@@ -250,8 +252,8 @@ def load_live_telemetry() -> Dict:
                 })
 
     calcs = []
-    if (DATA_DIR / "Damage_Calculations.csv").exists():
-        with open(DATA_DIR / "Damage_Calculations.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "Damage_Calculations.csv").exists():
+        with open(target_dir / "Damage_Calculations.csv", "r", encoding="utf-8") as f:
             for r in csv.DictReader(f):
                 try:
                     raw_min = float(r.get("Min_Dmg_Pct", 0) or 0)
@@ -274,7 +276,7 @@ def load_live_telemetry() -> Dict:
                 })
 
     tournaments = []
-    tourn_meta_path = DATA_DIR / "Tournament_Meta.json"
+    tourn_meta_path = target_dir / "Tournament_Meta.json"
     if tourn_meta_path.exists():
         try:
             t_data = json.loads(tourn_meta_path.read_text(encoding="utf-8"))
@@ -283,39 +285,19 @@ def load_live_telemetry() -> Dict:
             tournaments = []
 
     munch_overview = []
-    if (DATA_DIR / "MunchStats_Overview.csv").exists():
-        with open(DATA_DIR / "MunchStats_Overview.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "MunchStats_Overview.csv").exists():
+        with open(target_dir / "MunchStats_Overview.csv", "r", encoding="utf-8") as f:
             munch_overview = list(csv.DictReader(f))
 
     munch_usage = []
-    if (DATA_DIR / "MunchStats_Usage.csv").exists():
-        with open(DATA_DIR / "MunchStats_Usage.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "MunchStats_Usage.csv").exists():
+        with open(target_dir / "MunchStats_Usage.csv", "r", encoding="utf-8") as f:
             munch_usage = list(csv.DictReader(f))
 
     munch_top_teams = []
-    if (DATA_DIR / "MunchStats_Top_Teams.csv").exists():
-        with open(DATA_DIR / "MunchStats_Top_Teams.csv", "r", encoding="utf-8") as f:
+    if (target_dir / "MunchStats_Top_Teams.csv").exists():
+        with open(target_dir / "MunchStats_Top_Teams.csv", "r", encoding="utf-8") as f:
             munch_top_teams = list(csv.DictReader(f))
-
-    # Resilient offline fallback: If live scouted/munch datasets are unpopulated or template-only
-    # (e.g. in clean CI checkouts where private telemetry CSVs are omitted), seed from the
-    # canonical embedded snapshot assets/live_telemetry.json
-    snapshot_path = ASSETS_DIR / "live_telemetry.json"
-    if snapshot_path.exists():
-        try:
-            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
-            if len(scouted) <= 1 and snapshot.get("scouted"):
-                scouted = snapshot["scouted"]
-            if not tournaments and snapshot.get("tournaments"):
-                tournaments = snapshot["tournaments"]
-            if not munch_overview and snapshot.get("munchstats_overview"):
-                munch_overview = snapshot["munchstats_overview"]
-            if not munch_usage and snapshot.get("munchstats_usage"):
-                munch_usage = snapshot["munchstats_usage"]
-            if not munch_top_teams and snapshot.get("munchstats_top_teams"):
-                munch_top_teams = snapshot["munchstats_top_teams"]
-        except Exception:
-            pass
 
     wins = sum(1 for r in raw_matches if r.get("result", "").strip().lower() == "win")
     total_m = len(raw_matches)

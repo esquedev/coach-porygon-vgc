@@ -94,3 +94,6 @@ reports/*.html
 !data/compendium/Champions_Mechanics_Compendium.md
 !data/compendium/M-C Calcs & Sets.md
 !data/compendium/README.md
+
+!tests/data/
+!tests/data/**

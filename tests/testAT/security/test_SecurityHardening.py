@@ -23,6 +23,7 @@ from engine.ui_server import CoachPorygonHTTPHandler, validate_scraping_target
 from engine.verify_png_inventory import DANGEROUS_SVG_PATTERNS
 
 from engine.telemetry import append_csv_row
+from tests.test_constants import TEST_DATA_DIR
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
 
@@ -180,7 +181,7 @@ class TestSecurityHardening(unittest.TestCase):
         self.assertIn("Path Traversal Shield", str(ctx_lfi.exception))
 
         # 6. Valid local file inside REPO_ROOT must succeed
-        valid_local = REPO_ROOT / "data" / "Scouted_Teams.csv"
+        valid_local = TEST_DATA_DIR / "Scouted_Teams.csv"
         is_url_local, validated_local = validate_scraping_target(str(valid_local))
         self.assertFalse(is_url_local)
         self.assertEqual(validated_local, valid_local)

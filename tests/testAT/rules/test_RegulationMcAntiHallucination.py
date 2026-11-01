@@ -17,6 +17,7 @@ from pathlib import Path
 import re
 import pyhocon
 from pyhocon import ConfigFactory
+from tests.test_constants import TEST_DATA_DIR
 import unittest
 
 REPO_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "pyproject.toml").exists())
@@ -50,7 +51,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         violations = []
 
         # 1. Check data/Flashcard_Scenarios.csv active slots
-        flashcard_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
+        flashcard_csv = TEST_DATA_DIR / "Flashcard_Scenarios.csv"
         if flashcard_csv.exists():
             with open(flashcard_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -63,7 +64,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                                 violations.append((f"Flashcard_Scenarios.csv:{sc_id}", col, val, banned))
 
         # 2. Check data/Speed_Duel_Scenarios.csv
-        speed_csv = REPO_ROOT / "data" / "Speed_Duel_Scenarios.csv"
+        speed_csv = TEST_DATA_DIR / "Speed_Duel_Scenarios.csv"
         if speed_csv.exists():
             with open(speed_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -77,7 +78,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
 
         # 3. Check data/Teams.csv and data/Scouted_Teams.csv
         for team_file in ["Teams.csv", "Scouted_Teams.csv"]:
-            tpath = REPO_ROOT / "data" / team_file
+            tpath = TEST_DATA_DIR / team_file
             if tpath.exists():
                 with open(tpath, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
@@ -117,7 +118,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
         violations = []
 
         # 1. Flashcard_Scenarios.csv
-        flashcard_csv = REPO_ROOT / "data" / "Flashcard_Scenarios.csv"
+        flashcard_csv = TEST_DATA_DIR / "Flashcard_Scenarios.csv"
         if flashcard_csv.exists():
             with open(flashcard_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -131,7 +132,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
                                 violations.append((f"Flashcard_Scenarios.csv:{sc_id}", col, item_val))
 
         # 2. Speed_Duel_Scenarios.csv
-        speed_csv = REPO_ROOT / "data" / "Speed_Duel_Scenarios.csv"
+        speed_csv = TEST_DATA_DIR / "Speed_Duel_Scenarios.csv"
         if speed_csv.exists():
             with open(speed_csv, "r", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
@@ -146,7 +147,7 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
 
         # 3. Teams.csv and Scouted_Teams.csv
         for team_file in ["Teams.csv", "Scouted_Teams.csv"]:
-            tpath = REPO_ROOT / "data" / team_file
+            tpath = TEST_DATA_DIR / team_file
             if tpath.exists():
                 with open(tpath, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
@@ -195,7 +196,8 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
             r"\bevolution\s+stage\s+2\b",
         ]
 
-        scanned_files = list((REPO_ROOT / "data").glob("*.csv")) + list((REPO_ROOT / "engine").glob("*.py"))
+        data_csvs = list((REPO_ROOT / "data").glob("*.csv")) if (REPO_ROOT / "data").exists() else []
+        scanned_files = list(TEST_DATA_DIR.glob("*.csv")) + data_csvs + list((REPO_ROOT / "engine").glob("*.py"))
         violations = []
 
         for fpath in scanned_files:
@@ -217,9 +219,11 @@ class TestRegulationMcAntiHallucination(unittest.TestCase):
 
     def test_sp_economy_and_ev_terminology_guardrail(self):
         """Ensure team spreads obey 66-SP limits and do not introduce Gen 1-9 legacy EV numbers."""
-        tpath = REPO_ROOT / "data" / "Teams.csv"
+        tpath = TEST_DATA_DIR / "Teams.csv"
         if not tpath.exists():
-            self.skipTest("data/Teams.csv not found")
+            tpath = REPO_ROOT / "data" / "Teams.csv"
+        if not tpath.exists():
+            self.skipTest("Teams.csv not found in tests/data or data/")
 
         with open(tpath, "r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
