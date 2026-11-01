@@ -20,7 +20,9 @@ classifiers = [
     "Topic :: Games/Entertainment :: Turn Based Strategy",
     "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
-dependencies = []
+dependencies = [
+    "flask>=3.0.0"
+]
 
 [project.urls]
 Homepage = "https://github.com/unkil/coach-porygon-vgc"
@@ -38,6 +40,7 @@ dev = [
     "flake8>=6.1.0",
     "pycodestyle>=2.11.0",
     "pyhocon>=0.3.59",
+    "flask>=3.0.0",
     "build>=1.0.0",
     "twine>=4.0.0",
     "tomli>=1.1.0; python_version < '3.11'"
