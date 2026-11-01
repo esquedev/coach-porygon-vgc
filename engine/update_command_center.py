@@ -11,7 +11,10 @@ Compiles:
 
 import base64
 import io
-from PIL import Image
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 import json
 import os
 import re
@@ -73,7 +76,7 @@ def build_base64_maps():
 
     for asset_path in sorted(all_sprite_paths):
         key = asset_path.stem.lower()
-        if asset_path.suffix == ".png":
+        if asset_path.suffix == ".png" and Image is not None:
             try:
                 im = Image.open(asset_path)
                 im_p = im.quantize(colors=256, method=Image.Quantize.FASTOCTREE)

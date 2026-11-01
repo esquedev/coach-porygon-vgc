@@ -297,6 +297,26 @@ def load_live_telemetry() -> Dict:
         with open(DATA_DIR / "MunchStats_Top_Teams.csv", "r", encoding="utf-8") as f:
             munch_top_teams = list(csv.DictReader(f))
 
+    # Resilient offline fallback: If live scouted/munch datasets are unpopulated or template-only
+    # (e.g. in clean CI checkouts where private telemetry CSVs are omitted), seed from the
+    # canonical embedded snapshot assets/live_telemetry.json
+    snapshot_path = ASSETS_DIR / "live_telemetry.json"
+    if snapshot_path.exists():
+        try:
+            snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+            if len(scouted) <= 1 and snapshot.get("scouted"):
+                scouted = snapshot["scouted"]
+            if not tournaments and snapshot.get("tournaments"):
+                tournaments = snapshot["tournaments"]
+            if not munch_overview and snapshot.get("munchstats_overview"):
+                munch_overview = snapshot["munchstats_overview"]
+            if not munch_usage and snapshot.get("munchstats_usage"):
+                munch_usage = snapshot["munchstats_usage"]
+            if not munch_top_teams and snapshot.get("munchstats_top_teams"):
+                munch_top_teams = snapshot["munchstats_top_teams"]
+        except Exception:
+            pass
+
     wins = sum(1 for r in raw_matches if r.get("result", "").strip().lower() == "win")
     total_m = len(raw_matches)
     trap_counts = dict(Counter(r.get("root_cognitive_trap", "Unknown") for r in diagnostics))
