@@ -2,7 +2,7 @@
 """
 Unit tests for NeuralEvaluator and RegulationMcValueNet (engine/tactics/neural_evaluator.py).
 Verifies GPU/CPU batch inference (25, 36) -> (25, 1), sub-millisecond forward pass,
-output bounds in [-1.0, 1.0], and 5x5 payoff matrix evaluation via ClientReplaySimulator.
+output bounds in [-1.0, 1.0], and N x M payoff matrix evaluation via ClientReplaySimulator.
 """
 
 from pathlib import Path
@@ -58,18 +58,26 @@ class TestNeuralEvaluator(unittest.TestCase):
         self.assertTrue(np.all(out >= -1.0) and np.all(out <= 1.0))
         self.assertLess(elapsed_ms, 50.0)
 
-    def test_evaluate_5x5_payoff_matrix_from_simulator_states(self) -> None:
-        """Verify 5x5 payoff matrix evaluation backed by ClientReplaySimulator."""
+    def test_evaluate_payoff_matrix_from_simulator_states(self) -> None:
+        """Verify dynamic N x M payoff matrix evaluation backed by ClientReplaySimulator."""
         p1_lines = self.pruner.prune_side_actions(self.turn_3_snapshot, side="p1")
         p2_lines = self.pruner.prune_side_actions(self.turn_3_snapshot, side="p2")
 
+        # Standard pruned size
         matrix = self.evaluator.evaluate_payoff_matrix(
             self.turn_3_snapshot, p1_lines, p2_lines
         )
-        self.assertEqual(matrix.shape, (5, 5))
+        self.assertEqual(matrix.shape, (len(p1_lines), len(p2_lines)))
         self.assertTrue(np.all(matrix >= -1.0) and np.all(matrix <= 1.0))
         # Spread move (index 2) should outperform Double Offensive Focus (index 0) into Redirection/Protect
         self.assertGreater(matrix[2, 3], matrix[0, 3])
+
+        # Asymmetric arbitrary shape verification (e.g. 3 x 4)
+        matrix_asym = self.evaluator.evaluate_payoff_matrix(
+            self.turn_3_snapshot, p1_lines[:3], p2_lines[:4]
+        )
+        self.assertEqual(matrix_asym.shape, (3, 4))
+        self.assertTrue(np.all(matrix_asym >= -1.0) and np.all(matrix_asym <= 1.0))
 
     def test_invalid_feature_dimension_raises_value_error(self) -> None:
         """Verify wrong input tensor dimension raises ValueError."""

@@ -9,6 +9,20 @@ description: >-
 
 Autonomous metagame intelligence powered by competitive tournament data from **MunchStats** (`www.munchstats.com/tournaments/`) and official Play! Pokémon tournament brackets.
 
+---
+
+## 0. Governance, Role Alignment & Validation Matrix
+- **Owner Role:** Metagame & Scouting Analyst (`Role: Analyst`)
+- **Domain Layer:** Domain Core (Conversion Metrics & Pick Taxonomy) & Infrastructure (Data Crawler & DB)
+- **Permissions:** Read raw data in `data/munchstats/raw/`; write to `data/MunchStats_*.csv`, `data/Scouted_Teams.csv`, and `data/munchstats/output/`; execute `engine/munchstats_analyzer.py` and `engine/db.py`. Codebase is locked.
+- **Minimum Viable Context (MVC):** MunchStats CSV headers, mathematical conversion formulas, pick evaluation taxonomy tiers. Exclude: Turn simulator micro-branches, sparring clock rules, UI HTML tokens.
+- **Deterministic Validation Criteria:**
+  - Exact mathematical conversion percentage formulas.
+  - Standardized taxonomy tier assignments (`CHAMPIONSHIP_CONVERTER`, `DAY2_GATEKEEPER`, `SLEEPER_PUNISHER`, `SWISS_TRAP`, `META_PILLAR`).
+  - Strict preservation of schema parity against `data/*.example.csv`.
+
+---
+
 ## 1. Purpose & Overview
 Provides empirical metagame grounding for Coach Porygon:
 1. **Tournament Usage Tracking:** Species usage rates, Mega Evolution distribution, common items, abilities, movesets, and Champion archetypes per tournament.

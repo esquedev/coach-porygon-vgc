@@ -10,6 +10,11 @@ for the Pokémon Champions (Regulation M-C) competitive ecosystem.
 from engine.gpu.tensor_encoder import TensorEncoder, TurnStateTensor
 from engine.gpu.payoff_builder import PayoffBuilder
 from engine.gpu.uncertainty import UncertaintyModel, UncertaintyProfile
+from engine.gpu.board_state_simulator import (
+    BoardStateSimulator,
+    BoardStateScenario,
+    BoardStateSimulationResult,
+)
 
 __all__ = [
     "TensorEncoder",
@@ -17,4 +22,7 @@ __all__ = [
     "PayoffBuilder",
     "UncertaintyModel",
     "UncertaintyProfile",
+    "BoardStateSimulator",
+    "BoardStateScenario",
+    "BoardStateSimulationResult",
 ]

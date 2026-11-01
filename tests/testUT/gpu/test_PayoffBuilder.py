@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Unit tests for PayoffBuilder (engine/gpu/payoff_builder.py).
-Verifies vectorized outcome tensor (B, N, M, 16) generation, 5x5 payoff matrix
+Verifies vectorized outcome tensor (B, N, M, 16) generation, N x M payoff matrix
 construction, strict parity with ClientReplaySimulator, and throughput benchmarking.
 """
 
@@ -62,6 +62,17 @@ class TestPayoffBuilder(unittest.TestCase):
         parity = sim.compare_with_gpu(matrix, reference_matrix=matrix, atol=1e-5)
         self.assertTrue(parity["parity_passed"])
         self.assertEqual(parity["max_abs_diff"], 0.0)
+
+    def test_arbitrary_asymmetric_matrix_shapes(self) -> None:
+        """Verify outcome tensor and payoff matrix handle arbitrary dynamic N x M shapes."""
+        snap = self.parsed.turns[2]
+        p1_lines = self.pruner.prune_side_actions(snap, side="p1")[:3]
+        p2_lines = self.pruner.prune_side_actions(snap, side="p2")[:4]
+        outcome_t = self.builder.build_outcome_tensor([snap], [p1_lines], [p2_lines])
+        self.assertEqual(tuple(outcome_t.shape), (1, 3, 4, 16))
+        matrix = self.builder.build_payoff_matrix(snap, p1_lines, p2_lines)
+        self.assertEqual(matrix.shape, (3, 4))
+        self.assertTrue((matrix >= -1.0).all() and (matrix <= 1.0).all())
 
     def test_benchmark_throughput_returns_valid_metrics(self) -> None:
         """Verify benchmark_throughput executes and reports positive throughput."""

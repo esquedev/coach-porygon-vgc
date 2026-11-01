@@ -85,8 +85,6 @@ This document establishes the mandatory software engineering standards, reposito
   * Monolithic multi-class test catch-alls (e.g. bundling disparate domain components into a single file) are strictly prohibited.
   * Negative adversarial tests must be co-located or mapped directly to their target unit (e.g., `test_Negative<TargetClass>.py` or as dedicated negative test methods within `Test<TargetClass>`).
 
-
-
 ---
 
 ## 7. Mandatory Third-Party Dependency Parity
@@ -97,3 +95,19 @@ This document establishes the mandatory software engineering standards, reposito
   * `pyproject.toml` (under `dependencies` or `[project.optional-dependencies]`)
 * **Graceful Degradation & Test Collection Shielding:** Modules utilizing optional machine learning, linear programming, or scientific packages (`torch`, `scipy`) must implement graceful degradation imports (`try ... except ImportError`) and corresponding test skip decorators (`@unittest.skipUnless(HAS_..., ...)` or `pytest.importorskip`) so that test discovery and collection never fails in minimal or clean-room CI environments.
 * **Automated Static Audit:** Phase 3 of the CI runner (`evals/run_static_checks.py`) strictly verifies AST imports against declared manifests on every test run.
+
+---
+
+## 8. Architectural Layering: Domain vs. Infrastructure vs. UX
+
+To enforce clean separation of concerns and prevent monolithic entanglement:
+
+1. **Domain Core Layer (`engine/turn_simulator.py`, `engine/sp_calculator.py`, `engine/validate_roster.py`, `.agents/rules/`):**
+   - Encapsulates pure competitive rules, damage calculations, and 66-SP conversions.
+   - **Rule:** ZERO dependencies on Flask, web frameworks, HTML rendering, or external network packages. Pure functions must execute deterministically in memory.
+2. **Infrastructure Core Layer (`engine/gpu/`, `engine/db.py`, `engine/ui_server.py`, `engine/telemetry.py`):**
+   - Manages computation (PyTorch CUDA tensors, payoff matrices), persistence (atomic CSV read/write), local HTTP loopback routing, and pre-flight CI gates.
+   - **Rule:** Never embed narrative coaching logic. Expose typed (PEP 484), thread-safe APIs.
+3. **UX & Publishing Layer (`assets/command_center.html`, `engine/pdf_exporter.py`, `reports/`):**
+   - Presents telemetry, interactive flashcards, esports infographics, and printable dossiers.
+   - **Rule:** 100% self-contained outputs without remote CDN links. Strictly respect Guardrail 11 (Exclusive Artifact Lock: only `assets/command_center.html` synchronizes automatically to the artifact directory).

@@ -31,3 +31,13 @@ Every tactical error code (`POS`, `TGT`, `MEC`, `SPD`) logged to `data/Playstyle
 * `Autopilot`: Clicking default lead attacks or switches out of habit without running the 4-Step Pre-Turn Validation Checklist.
 * `Tilt`: Rushing turn execution or making high-variance desperation reads after suffering an unexpected KO or critical hit.
 * `Format_Divergence`: Applying legacy VGC mechanics instead of Regulation M-C rules (e.g., forgetting instantaneous Mega speed or Psychic Terrain airborne exemptions).
+
+## 3. High-Risk / High-Reward Strategic Evaluation
+
+In elite VGC tournaments, tactical decisions do not exist on a rigid binary ($0$ or $100$) scale. Not every high-variance action represents an unforced error:
+- **`Mechanically_Invalid`:** Physical cartridge impossibilities that always fail with $0\%$ utility (e.g., `Fake Out` on active turns $> 1$, priority into grounded targets under Psychic Terrain). Always classified under `MEC-01` or `MEC-02`.
+- **`High_Risk_High_Reward` (Calculated Tournament Gambles):**
+  * **Consecutive Protect:** Carries a $\approx 33\%$ mechanical success chance. When facing guaranteed double lethal, gambling on a consecutive Protect is mathematically superior to taking guaranteed fainting, preserving the win condition.
+  * **Hard Prediction Switches:** Switching a fragile sweeper directly into an opponent's slot on a hard read that the opponent will status, protect, or target the partner slot.
+  * **Switch-In Targeting:** Directing offensive nukes into an apparent resistance or immunity anticipating a hard switch by the opponent into a fragile sweeper.
+- **Coaching Directive:** Coach Porygon evaluates high-risk lines by assessing whether the player held a commanding board state (where gambling represents `Greed`) or was in a desperate/checkmate position (where gambling represents a necessary high-upside `Calculated_Risk`).

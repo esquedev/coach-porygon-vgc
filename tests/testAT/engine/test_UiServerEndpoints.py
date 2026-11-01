@@ -71,6 +71,45 @@ class TestUiServerEndpoints(unittest.TestCase):
         self.assertIn("image/svg+xml", resp_unknown.content_type)
         resp_unknown.close()
 
+    def test_flask_form_specific_sprite_resolution(self):
+        """Validate specialized forms (Lycanroc Midnight, Toxtricity Low-Key, Paldean Tauros) serve authentic PNG."""
+        forms = [
+            "/api/sprites/Lycanroc (Midnight Form)",
+            "/api/sprites/Toxtricity (Low-Key Form)",
+            "/api/sprites/Paldean Tauros",
+            "/api/sprites/Florges (Blue Flower)",
+        ]
+        for url in forms:
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200, f"Failed on {url}")
+            self.assertEqual(resp.content_type, "image/png", f"Did not return PNG on {url}")
+            self.assertIn("ETag", resp.headers)
+            resp.close()
+
+    def test_flask_asset_etag_caching_and_304_not_modified(self):
+        """Validate that sprites and items serve ETags and respond with HTTP 304 on cache hits."""
+        # Test sprite conditional GET
+        resp_sprite = self.client.get("/api/sprites/Charizard")
+        self.assertEqual(resp_sprite.status_code, 200)
+        etag = resp_sprite.headers.get("ETag")
+        self.assertIsNotNone(etag)
+        resp_sprite.close()
+
+        resp_sprite_cached = self.client.get("/api/sprites/Charizard", headers={"If-None-Match": etag})
+        self.assertEqual(resp_sprite_cached.status_code, 304)
+        resp_sprite_cached.close()
+
+        # Test item conditional GET
+        resp_item = self.client.get("/api/items/leftovers")
+        self.assertEqual(resp_item.status_code, 200)
+        item_etag = resp_item.headers.get("ETag")
+        self.assertIsNotNone(item_etag)
+        resp_item.close()
+
+        resp_item_cached = self.client.get("/api/items/leftovers", headers={"If-None-Match": item_etag})
+        self.assertEqual(resp_item_cached.status_code, 304)
+        resp_item_cached.close()
+
     def test_flask_security_sensitive_paths_blocked_with_403(self):
         """Validate Flask blocks .git, .github, and trainer_profile.json with HTTP 403."""
         blocked_paths = [
@@ -129,6 +168,84 @@ class TestUiServerEndpoints(unittest.TestCase):
         bench_json = resp_bench.get_json()
         self.assertEqual(bench_json.get("status"), "OK")
         self.assertIn("gpu_batch_benchmark", bench_json)
+
+    def test_flask_meta_feed_endpoint(self):
+        """Validate Flask /api/meta/feed returns tournament intelligence feed and conversion rates."""
+        resp = self.client.get("/api/meta/feed")
+        self.assertEqual(resp.status_code, 200)
+        feed_json = resp.get_json()
+        self.assertEqual(feed_json.get("status"), "OK")
+        self.assertIn("tournaments", feed_json)
+        self.assertIn("top_species", feed_json)
+        self.assertIn("unsupervised_threats", feed_json)
+        self.assertGreaterEqual(len(feed_json.get("unsupervised_threats", [])), 10)
+        self.assertIn("dominant_megas", feed_json)
+        self.assertIn("feed_events", feed_json)
+
+    def test_flask_meta_threats_unsupervised_endpoint(self):
+        """Validate Flask /api/meta/threats returns unsupervised neural autoencoder threats from in-memory SQLite."""
+        resp = self.client.get("/api/meta/threats?limit=12")
+        self.assertEqual(resp.status_code, 200)
+        t_json = resp.get_json()
+        self.assertEqual(t_json.get("status"), "OK")
+        self.assertEqual(t_json.get("count"), 12)
+        self.assertIn("sqlite3(:memory:)", t_json.get("storage_engine", ""))
+        top_threat = t_json["threats"][0]
+        self.assertEqual(top_threat["species"], "Rillaboom")
+        self.assertEqual(top_threat["cluster_label"], "APEX_META_PILLAR")
+        self.assertIn("archetypes", t_json)
+        self.assertIn("speed_benchmarks", t_json)
+
+    def test_flask_enhanced_flashcards_endpoint(self):
+        """Validate Flask /api/flashcards/enhanced returns scenarios with 4-slot board state and payoff logs."""
+        resp = self.client.get("/api/flashcards/enhanced")
+        self.assertEqual(resp.status_code, 200)
+        fc_json = resp.get_json()
+        self.assertEqual(fc_json.get("status"), "OK")
+        self.assertGreaterEqual(fc_json.get("count", 0), 1)
+        card = fc_json["flashcards"][0]
+        self.assertIn("board_state", card)
+        self.assertIn("payoff_logs", card)
+        self.assertIn("payoff_matrix", card["payoff_logs"])
+
+    def test_flask_spread_calculator_and_benchmarks(self):
+        """Validate Flask /api/calc/spread calculates Level 50 stats, speed ladder, and 16+ real-time damage calcs."""
+        payload = {
+            "species": "Charizard-Mega-Y",
+            "sp": {"hp": 4, "spa": 32, "spe": 30},
+            "nature": "Modest",
+            "item": "Charizardite Y",
+            "ability": "Drought",
+            "field": {"weather": "sun", "tailwind": True}
+        }
+        resp = self.client.post("/api/calc/spread", json=payload)
+        self.assertEqual(resp.status_code, 200)
+        calc_json = resp.get_json()
+        self.assertEqual(calc_json.get("status"), "OK")
+        self.assertTrue(calc_json.get("is_legal_budget"))
+        self.assertIn("stats", calc_json)
+        self.assertIn("speed_analysis", calc_json)
+        self.assertGreaterEqual(calc_json.get("total_calculations", 0), 16)
+        # Verify calculation items have direction, species, moves, and modifiers
+        c1 = calc_json["calculations"][0]
+        self.assertIn("direction", c1)
+        self.assertIn("attacker", c1)
+        self.assertIn("defender", c1)
+        self.assertIn("move", c1)
+        self.assertIn("calc_type", c1)
+        self.assertIn("modifiers", c1)
+
+    def test_flask_sprite_extension_precision(self):
+        """Validate that /api/sprites/ accurately resolves PNG even with .png suffix in request path."""
+        resp = self.client.get("/api/sprites/Incineroar.png")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.content_type, "image/png")
+        resp.close()
+
+        resp_mega = self.client.get("/api/sprites/Charizard-Mega-Y.png")
+        self.assertEqual(resp_mega.status_code, 200)
+        self.assertEqual(resp_mega.content_type, "image/png")
+        resp_mega.close()
 
 
 if __name__ == "__main__":

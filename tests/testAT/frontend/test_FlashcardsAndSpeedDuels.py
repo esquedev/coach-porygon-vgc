@@ -3,7 +3,7 @@
 """
 Coach Porygon VGC — Unit & Acceptance Tests for Flash Cards & Speed Duels UX
 Verifies:
-1. All 42 Flash Card scenarios have clean, spoiler-free option labels before submission.
+1. All 50 Flash Card scenarios have clean, spoiler-free option labels before submission.
 2. All items in Flash Card scenarios and Speed Duels are strictly legal in Regulation M-C.
 3. Item Clause compliance across player and opponent slots in all Flash Card scenarios.
 4. Zero blacklisted species appear in active battle slots across Flash Card scenarios.
@@ -48,7 +48,7 @@ class TestFlashcardsAndSpeedDuels(unittest.TestCase):
             'control de velocidad seguro', 'inversión de velocidad'
         ]
         violations = []
-        self.assertEqual(len(FLASHCARD_SCENARIOS), 42, "Expected exactly 42 Flash Card scenarios")
+        self.assertEqual(len(FLASHCARD_SCENARIOS), 50, "Expected exactly 50 Flash Card scenarios")
 
         for sc in FLASHCARD_SCENARIOS:
             options = sc.get("options", [])
@@ -67,7 +67,7 @@ class TestFlashcardsAndSpeedDuels(unittest.TestCase):
         self.assertEqual(violations, [], f"Found spoiler tokens in scenario labels: {violations}")
 
     def test_flashcard_scenarios_all_items_strictly_legal_in_regulation_mc(self):
-        """Verify that every held item across all 42 Flash Card scenarios is strictly legal in Regulation M-C."""
+        """Verify that every held item across all 50 Flash Card scenarios is strictly legal in Regulation M-C."""
         illegal_items = []
         for sc in FLASHCARD_SCENARIOS:
             for side in ["oppSlots", "mySlots"]:
@@ -146,7 +146,7 @@ class TestFlashcardsAndSpeedDuels(unittest.TestCase):
 
     def test_speed_duels_initial_conditions_hide_raw_speed_numbers(self):
         """Ensure Speed Duel conditions do not display bare parenthetical speeds like '(169 Spe)'."""
-        self.assertEqual(len(SPEED_DUELS), 25, "Expected exactly 25 Speed Duels")
+        self.assertEqual(len(SPEED_DUELS), 50, "Expected exactly 50 Speed Duels")
 
         for d in SPEED_DUELS:
             self.assertIn(d["winner"], ["A", "B", "TIE"], f"{d['id']} winner must be A, B, or TIE")

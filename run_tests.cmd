@@ -38,7 +38,12 @@ if errorlevel 1 (
     echo %C_RED%  [FAIL] Phase 0: Workspace sanitization failed.%C_RESET%
     exit /b 1
 )
-echo %C_GREEN%  [OK] Workspace sanitized (scratch, caches, and test residue purged).%C_RESET%
+call "%PY%" evals/purge_html_artifacts.py
+if errorlevel 1 (
+    echo %C_RED%  [FAIL] Phase 0: HTML artifacts purge failed.%C_RESET%
+    exit /b 1
+)
+echo %C_GREEN%  [OK] Workspace sanitized (scratch, caches, and volatile HTML reports purged).%C_RESET%
 echo.
 
 REM --- PHASE 1: Initialize Public Schema Templates ---
@@ -78,14 +83,18 @@ if "!ENFORCE_AI_AUDIT!"=="1" goto :phase3_enforce
 goto :phase3_skip
 
 :phase3_enforce
-echo %C_CYAN%[PHASE 3/5]%C_RESET% %C_WHITE%Verifying AI Health Stress Audit and Static Guardrails [ENFORCED]...%C_RESET%
+echo %C_CYAN%[PHASE 3/5]%C_RESET% %C_WHITE%Verifying AI Health Stress Audit, Static Guardrails and Species Lock [ENFORCED]...%C_RESET%
+call "%PY%" evals/scan_repo_hallucinations.py
+if errorlevel 1 goto :phase3_static_fail
 call "%PY%" evals/evaluate_release_health.py --verify
 if errorlevel 1 goto :phase3_fail
 echo %C_GREEN%  [OK] AI Health Stress audit and static guardrails verified and consumed.%C_RESET%
 goto :phase3_done
 
 :phase3_skip
-echo %C_CYAN%[PHASE 3/5]%C_RESET% %C_WHITE%Verifying Static Guardrails and Link Integrity [AUDIT SKIPPED]...%C_RESET%
+echo %C_CYAN%[PHASE 3/5]%C_RESET% %C_WHITE%Verifying Static Guardrails, Species Lock and Link Integrity [AUDIT SKIPPED]...%C_RESET%
+call "%PY%" evals/scan_repo_hallucinations.py
+if errorlevel 1 goto :phase3_static_fail
 call "%PY%" evals/run_static_checks.py
 if errorlevel 1 goto :phase3_static_fail
 echo %C_YELLOW%  [SKIP] AI Health Stress Audit consumption skipped - run with --pre-push to enforce.%C_RESET%

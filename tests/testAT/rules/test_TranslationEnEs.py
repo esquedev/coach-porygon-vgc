@@ -84,8 +84,8 @@ class TestTranslationEnEs(unittest.TestCase):
         self.assertEqual(missing_en, set(), f"HTML data-i18n tags missing in I18N.en: {missing_en}")
 
     def test_speed_duels_bilingual_explanations_completeness(self):
-        """Verify that all 25 Speed Duels have distinct Spanish and English explanations."""
-        self.assertEqual(len(SPEED_DUELS), 25, "Expected 25 Speed Duels in speed_duels_data.py")
+        """Verify that all 50 Speed Duels have distinct Spanish and English explanations."""
+        self.assertEqual(len(SPEED_DUELS), 50, "Expected 50 Speed Duels in speed_duels_data.py")
 
         for d in SPEED_DUELS:
             duel_id = d["id"]

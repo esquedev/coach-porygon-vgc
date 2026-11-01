@@ -101,7 +101,7 @@ def sanitize_temp_files(dry_run: bool = False) -> int:
     removed = 0
     for pat in patterns:
         for p in REPO_ROOT.rglob(pat):
-            if ".venv" in str(p) or ".git" in str(p):
+            if ".venv" in str(p) or ".git" in str(p) or "assets" in str(p):
                 continue
             try:
                 if not dry_run:

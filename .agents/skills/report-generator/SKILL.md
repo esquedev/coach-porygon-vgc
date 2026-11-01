@@ -2,37 +2,114 @@
 name: report-generator
 description: >-
   Generates publication-quality, esports-styled HTML and headless Chrome/Edge PDF visual reports
-  for tournament intelligence, team rosters, match breakdowns, and Swiss scouting dossiers.
+  for tournament intelligence, team rosters, match breakdowns, coach QA audits, and Swiss scouting dossiers.
 ---
 
 # Visual Report Generation & Esports Infographic Design System
 
-Autonomous publication engine providing standardized guidelines, CSS design tokens, HTML component blueprints, and headless Chrome/Edge PDF compilation for Coach Porygon VGC.
+Autonomous publication engine providing standardized guidelines, CSS design tokens, HTML component blueprints, insight taxonomy, and headless Chrome/Edge PDF compilation for **BeRightVGC / Coach Porygon VGC**.
 
 ---
 
-## 1. Core Architectural Mandates (AI-First Generation)
-
-1. **AI-First Visual Composition (No Rigid Python HTML Builders):**
-   - The AI Agent acts directly as the **Lead Esports Graphic Designer & Data Analyst**.
-   - Python code must NEVER attempt to hardcode complex visual layouts, multi-line string templates, or infographic markup. Python is strictly limited to data computation (`engine/munchstats_analyzer.py`, `engine/turn_simulator.py`) and compilation utilities (`export_pdf`).
-   - The AI Agent directly generates the modern, self-contained HTML/CSS tailored dynamically to the specific tournament, opponent roster, or team audit.
-2. **Self-Contained Single-File Portability:**
-   - Every generated HTML report must be 100% self-contained.
-   - **Zero External CDNs or Web Fonts:** Never link to external Google Fonts, unpkg, cdnjs, or Tailwind CDN scripts. Use robust system font stacks (`ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`).
-   - **Zero Remote Image URLs:** All Pokémon sprites, item thumbnails, and icons must be inlined as Base64 data URIs (`data:image/png;base64,...`) sourced directly from [`assets/sprites/Reg_M-C/`](../../../assets/sprites/Reg_M-C/), [`assets/items/`](../../../assets/items/), and [`assets/icons/`](../../../assets/icons/).
-3. **Dual-Presentation Modes:**
-   - **Esports Infographic Mode (Primary / Digital):** High-impact competitive analytics layout for VGC esports. High information density, midnight-dark canvas, neon cyan/mint victory accents, coral/red alarms, trophy gold callouts, and modular card columns.
-   - **Executive Multi-Page Dossier Mode (Print / A4):** Clean, crisp, high-contrast pages with structured chapter numbering (`01`, `02`, `03`), roadmap arrows, and strict `@page` pagination for physical tournament preparation.
-4. **Deterministic File Locations & Exclusive Artifact Lock:**
-   - Save all generated reports under `reports/` (or tournament-specific directories `data/munchstats/output/{slug}/`) on disk.
-   - **Exclusive Artifact Lock:** NEVER copy report outputs (`.html`, `.pdf`) or create markdown showcase artifacts in the Antigravity Brain artifact directory (`<appDataDir>/brain/<conversation-id>/`) without explicit Trainer permission. Only `assets/command_center.html` is authorized for automatic artifact synchronization.
+## 0. Governance, Role Alignment & Validation Matrix
+- **Owner Role:** Esports Reporter & Visual Publisher (`Role: Reporter`)
+- **Domain Layer:** Presentation & Publishing Layer (UX / Infographics / Dossiers / Command Center)
+- **Permissions:** Read `reports/`, `data/MunchStats_*.csv`, `data/Teams.csv`, `assets/sprites/`, `assets/items/`, `assets/icons/`; write to `reports/*.html`, `reports/*.pdf`, `data/munchstats/output/`, and `assets/command_center.html`; execute `engine/pdf_exporter.py`. Codebase backend is locked.
+- **Minimum Viable Context (MVC):** Midnight Cyber & Print CSS design tokens, Base64 asset mapping table, structured JSON data of the report. Exclude: Turn simulator minimax tree code, CI/CD test manifests, raw database migrations.
+- **Deterministic Validation Criteria:**
+  - 100% self-contained HTML (zero external CDN or web font dependencies, inlined base64 images).
+  - Strict compliance with Guardrail 11 (Exclusive Artifact Lock: only `assets/command_center.html` synchronizes automatically to the Antigravity Brain artifact directory; all other reports reside on disk under `reports/` or `data/munchstats/output/`).
+  - Headless Chrome/Edge PDF compilation succeeds with zero asset 404s.
 
 ---
 
-## 2. Design Tokens & Aesthetic Palettes
+## 1. Official Report Taxonomy (The 5 Canonical Report Types)
 
-### 🎮 Preset A: Midnight Cyber Esports Infographic (Primary)
+The system autonomously synthesizes 5 discrete classes of reports tailored to specific tournament operational scenarios:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        BERIGHTVGC OFFICIAL REPORT TAXONOMY                             │
+├────────────────────────────┬─────────────────────────────────┬─────────────────────────┤
+│ Report Type                │ Core Operational Purpose        │ Key Output Artifacts    │
+├────────────────────────────┼─────────────────────────────────┼─────────────────────────┤
+│ 1. Tactical Replay Audit   │ Granular post-match turning-    │ Turning Point isolation,│
+│    (Táctica Determinista)  │ point isolation, simultaneous   │ Nash 5×5 payoff matrix, │
+│                            │ 5×5 payoff matrix, equity loss. │ ΔV*, CVaR risk profile. │
+├────────────────────────────┼─────────────────────────────────┼─────────────────────────┤
+│ 2. Metagame Intelligence   │ MunchStats Swiss & bracket      │ D1→D2 conversion %,     │
+│    (Metagame & Swiss)      │ clustering, archetype attrition │ archetype attrition,    │
+│                            │ and item/tera frequency.        │ Top Cut podium rosters. │
+├────────────────────────────┼─────────────────────────────────┼─────────────────────────┤
+│ 3. Telemetry Diagnostic    │ Longitudinal player leak audit, │ Cumulative VP curves,   │
+│    (Telemetría & Sesión)   │ error code clustering and       │ POS/TGT/MEC/SPD matrix, │
+│                            │ tilt-o-meter tracking.          │ cognitive driver graph. │
+├────────────────────────────┼─────────────────────────────────┼─────────────────────────┤
+│ 4. Coach QA & Decision     │ Algorithmic benchmark verifying │ AI advice vs engine     │
+│    Audit (Auditoría QA)    │ coaching advice against engine  │ ground-truth delta,     │
+│                            │ ground-truth and official rules.│ confidence calibration. │
+├────────────────────────────┼─────────────────────────────────┼─────────────────────────┤
+│ 5. Swiss Opponent Scouting │ Pre-match Bo3 dossier & high-   │ Level 50 speed ladder,  │
+│    & Caster Aid (Scout)    │ impact cheat sheet for live     │ hazard/weather triggers,│
+│                            │ esports casters & commentators. │ narrative talking points│
+└────────────────────────────┴─────────────────────────────────┴─────────────────────────┘
+```
+
+---
+
+## 2. Insight Generation Hierarchy & Depth Taxonomy
+
+Every competitive insight generated by this skill must be classified into a 4-tier analytical depth model:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                     THE 4-TIER COMPETITIVE INSIGHT TAXONOMY                            │
+├───────────────┬───────────────────────────────────┬────────────────────────────────────┤
+│ Tier / Level  │ Classification & Analytical Depth │ Measurable Grounding Requirement   │
+├───────────────┼───────────────────────────────────┼────────────────────────────────────┤
+│ Level 4 (L4)  │ Prescriptive & Actionable:        │ Concrete line prescription for     │
+│               │ Exact sequence for TN ➔ TN+1 and  │ next turn, minimax safeguard, and  │
+│               │ cognitive tilt reset cues.        │ psychological tilt recovery action.│
+├───────────────┼───────────────────────────────────┼────────────────────────────────────┤
+│ Level 3 (L3)  │ Game-Theoretic & Equity:          │ Exact Game Value (v*), Equity Loss │
+│               │ Von Neumann Nash equilibrium and  │ (ΔV*), and full 16 damage rolls    │
+│               │ probabilistic payoff evaluation.  │ quantiles (p10, p50, p90, p95).    │
+├───────────────┼───────────────────────────────────┼────────────────────────────────────┤
+│ Level 2 (L2)  │ Diagnostic & Error Attribution:   │ Explicit taxonomy code (POS-01..03,│
+│               │ Misplay classification matched to │ TGT-01..03, MEC-01..02, SPD-01..02)│
+│               │ primary cognitive trap driver.    │ paired with Greed, Autopilot, etc. │
+├───────────────┼───────────────────────────────────┼────────────────────────────────────┤
+│ Level 1 (L1)  │ Descriptive & Cartridge Mechanics:│ Exact Base Stats, Level 50 speed,  │
+│               │ Active board state, items, teras, │ STAB multipliers, weather climate, │
+│               │ terrain, and turn counter.        │ and active speed bracket.          │
+└───────────────┴───────────────────────────────────┴────────────────────────────────────┘
+```
+
+### Measurability & Verification Invariants:
+1. **Zero Hallucination Tolerance:** Every numerical assertion must originate from `engine/turn_simulator.py`, `engine/sp_calculator.py`, or `data/Tournament_Meta.json`.
+2. **Equity Delta ($\Delta V^*$):** Equity losses must be calculated as $\Delta V^* = v^* - V_{\text{real}} \in [-1.0, +1.0]$.
+3. **16-Roll Quantile Dispersion:** Always express damage uncertainty with the official 16 discrete damage rolls ($p_{10}, p_{50}, p_{90}, p_{95}$) plus KO probability.
+
+---
+
+## 3. Visual Customization & Design Presets by Use Case
+
+The system adapts its visual presentation dynamically according to the persona and consumption medium:
+
+```
+                              VISUAL PRESET MATRIX
+                                        │
+     ┌───────────────────────┬──────────┴────────────┬───────────────────────┐
+     ▼                       ▼                       ▼                       ▼
+[PRESET 1: MIDNIGHT     [PRESET 2: DEEP         [PRESET 3: EXECUTIVE    [PRESET 4: SPONSOR
+ CYBER HUD]              DIAGNOSTIC MATRIX]      PRINT A4 / CASTER]      EXECUTIVE BRIEF]
+ • Active Competitor     • Coach & Analyst       • Esports Broadcaster   • Managers & Sponsors
+ • High data density     • Granular turn logs    • High-contrast A4      • Minimalist corporate
+ • Dark #0b0e14 canvas   • Full 5x5 Nash table   • Speed tier ladder     • Winrate conversion
+ • Neon mint/cyan glow   • Probability vectors   • Bulleted talking pts  • High-level KPI cards
+```
+
+### Preset 1: Midnight Cyber Esports Infographic (Primary Digital)
 ```css
 :root {
   --bg-primary: #0b0e14;        /* Deep Midnight Esports Canvas */
@@ -58,198 +135,81 @@ Autonomous publication engine providing standardized guidelines, CSS design toke
 }
 ```
 
-### 📄 Preset B: Executive Multi-Page Editorial (Print-Ready)
+### Preset 2: Executive Print & Caster Aid (Print-Ready A4)
 ```css
 :root {
-  --bg-primary: #f8fafc;
-  --bg-card: #ffffff;
+  --bg-primary: #ffffff;
+  --bg-card: #f8fafc;
   --border-card: #e2e8f0;
   --text-main: #0f172a;
-  --text-muted: #64748b;
-  --accent-primary: #2563eb;    /* Deep Royal Blue */
-  --accent-mint: #059669;       /* Forest Emerald */
-  --accent-coral: #dc2626;      /* Crimson */
-  --accent-gold: #d97706;       /* Amber Gold */
-  --bar-track: #e2e8f0;
+  --text-muted: #475569;
+  --accent-primary: #0284c7;    /* High-Visibility Cerulean */
+  --accent-mint: #059669;       /* Crisp Forest Green */
+  --accent-coral: #dc2626;      /* High-Visibility Crimson */
+  --accent-gold: #d97706;       /* Warm Bronze Trophy */
+  --bar-track: #cbd5e1;
 }
-```
 
----
-
-## 3. Core HTML/CSS Component Blueprints
-
-### Component 1: Esports Hero Header
-```html
-<header class="esports-header">
-  <div class="brand-left">
-    <span class="partner-badge">COACH PORYGON × PLAY! POKÉMON</span>
-    <h1 class="main-title">BALTIMORE REGIONAL INFOGRAPHIC</h1>
-    <p class="subtitle">Regulation M-C • Masters Division • 428 Trainers</p>
-  </div>
-  <div class="brand-right">
-    <div class="rank-trophy">
-      <span class="trophy-icon">🏆</span>
-      <div class="trophy-meta">
-        <span class="trophy-label">CHAMPION</span>
-        <span class="trophy-name">Charizard-Y Sun Offense</span>
-      </div>
-    </div>
-  </div>
-</header>
-```
-
-### Component 2: High-Density Metric Strip (KPIs)
-```html
-<div class="kpi-strip">
-  <div class="kpi-card">
-    <span class="kpi-label">TOTAL MASTERS</span>
-    <span class="kpi-value text-cyan">428</span>
-    <span class="kpi-sub">Day 1 Field</span>
-  </div>
-  <div class="kpi-card">
-    <span class="kpi-label">DAY 2 CUT</span>
-    <span class="kpi-value text-mint">64</span>
-    <span class="kpi-sub">14.95% Cut Rate</span>
-  </div>
-  <div class="kpi-card">
-    <span class="kpi-label">TOP CUT PODIUM</span>
-    <span class="kpi-value text-gold">8</span>
-    <span class="kpi-sub">Bo3 Single Elimination</span>
-  </div>
-  <div class="kpi-card">
-    <span class="kpi-label">LETHAL CORE</span>
-    <span class="kpi-value text-mint">83.3%</span>
-    <span class="kpi-sub">Zard-Y + Salamence</span>
-  </div>
-</div>
-```
-
-### Component 3: Species Showcase with Element Avatar Ring
-```html
-<div class="species-row">
-  <div class="species-avatar-container">
-    <div class="avatar-ring ring-fire">
-      <img src="data:image/png;base64,..." alt="Charizard-Mega-Y" class="sprite-avatar" />
-    </div>
-  </div>
-  <div class="species-meta">
-    <div class="species-name-row">
-      <span class="species-name">Charizard-Mega-Y</span>
-      <span class="badge-role">CHAMPION</span>
-    </div>
-    <div class="species-stats-row">
-      <span>D1: <strong>112 (26.2%)</strong></span>
-      <span>•</span>
-      <span>D2: <strong>32 (50.0%)</strong></span>
-      <span>•</span>
-      <span>Top Cut: <strong class="text-mint">6 (75.0%)</strong></span>
-    </div>
-  </div>
-  <div class="species-conversion">
-    <span class="conv-pct text-mint">18.75%</span>
-    <span class="conv-label">D2 → CUT</span>
-  </div>
-</div>
-```
-
-### Component 4: Stacked Winrate Tendency Bar
-```html
-<div class="tendency-bar-group">
-  <div class="tendency-label-row">
-    <span class="category-name">Sun Hyper Offense</span>
-    <span class="tendency-stat text-mint">71.4% Winrate</span>
-    <span class="placement-pill pill-gold">1st Place</span>
-  </div>
-  <div class="progress-track">
-    <div class="progress-fill fill-mint" style="width: 71.4%;"></div>
-  </div>
-</div>
-```
-
-### Component 5: Swiss Rounds / Metagame Tenure Gantt Chart
-```html
-<div class="gantt-chart-container">
-  <h3 class="card-title">Top Cut Archetype Evolution Across Rounds</h3>
-  <div class="gantt-axis">
-    <span>Swiss R1-4</span>
-    <span>Swiss R5-7</span>
-    <span>Swiss R8-9</span>
-    <span>Top 8</span>
-    <span>Finals</span>
-  </div>
-  <div class="gantt-row">
-    <span class="gantt-label">Charizard Sun</span>
-    <div class="gantt-track">
-      <div class="gantt-bar bar-mint" style="left: 0%; width: 100%;">Champion</div>
-    </div>
-  </div>
-  <div class="gantt-row">
-    <span class="gantt-label">Rain Archaludon</span>
-    <div class="gantt-track">
-      <div class="gantt-bar bar-cyan" style="left: 0%; width: 80%;">Top 4</div>
-    </div>
-  </div>
-  <div class="gantt-row">
-    <span class="gantt-label">Psyspam Balance</span>
-    <div class="gantt-track">
-      <div class="gantt-bar bar-purple" style="left: 0%; width: 60%;">Top 8</div>
-    </div>
-  </div>
-</div>
-```
-
----
-
-## 4. Headless Chrome/Edge PDF Compilation Protocol
-
-To compile pixel-perfect, vector-sharp PDFs without ugly page breaks or header headers:
-
-### 1. In CSS (`@page` and print media):
-```css
 @page {
   size: A4 portrait;
-  margin: 10mm 10mm 12mm 10mm;
+  margin: 10mm 12mm 12mm 10mm;
 }
 
 @media print {
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    background: #ffffff !important;
   }
   .no-break {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
-  .page-break {
-    page-break-after: always !important;
-    break-after: page !important;
-  }
 }
-```
-
-### 2. Execution via Python (`engine/pdf_exporter.py`):
-```python
-from engine.pdf_exporter import export_pdf
-
-# 1. Compile full HTML string with embedded Base64 sprites
-html_content = generate_my_report_html(data)
-
-# 2. Export directly to PDF using installed Chrome/Edge
-res = export_pdf(html_content, "reports/my_report.pdf", theme="porygon")
-print(f"Generated PDF: {res['pdf_path']} ({res['size_bytes']} bytes)")
-```
-
-### 3. Direct Shell Command (if invoked manually):
-```bash
-chrome.exe --headless=new --disable-gpu --no-sandbox --no-pdf-header-footer --print-to-pdf="reports/output.pdf" "reports/output.html"
 ```
 
 ---
 
-## 5. Agent Verification Checklist Before Delivery
+## 4. Insight Quality Scoring Rubric ($Q \in [0, 100]$)
 
-- [ ] **Zero External Network Assets:** Confirmed zero `<link href="http...">` or `<script src="http...">` tags.
-- [ ] **Zero Pokeball Leaks:** All sprites validated through `get_species_sprite()` (curated PNGs from `assets/sprites/Reg_M-C/`).
-- [ ] **Dual Deliverable:** Both `.html` and `.pdf` files written to `reports/` or `data/munchstats/output/{slug}/`.
-- [ ] **Exclusive Artifact Lock Enforced:** Verified report outputs remain strictly in `reports/` on disk and are NOT copied to the Antigravity Artifact directory without explicit Trainer permission.
-- [ ] **WCAG Contrast Compliance:** All text readable against `#0B0E14` or `#131823` card backgrounds.
+To guarantee rigor, generated reports are evaluated against four objective pillars:
+
+$$\text{Quality Score } Q = 0.25 Q_{\text{det}} + 0.25 Q_{\text{math}} + 0.25 Q_{\text{act}} + 0.25 Q_{\text{cog}}$$
+
+1. **Format Grounding ($Q_{\text{det}}$):** 100% compliance with Regulation M-C rules and species blacklist (zero non-format Pokémon).
+2. **Mathematical Rigor ($Q_{\text{math}}$):** Presence of exact 66-SP budgets, 16 damage roll intervals, and Game Value $v^*$.
+3. **Actionability ($Q_{\text{act}}$):** Presence of concrete, deterministic instructions for upcoming turns ($T_N \to T_{N+1}$).
+4. **Cognitive Attribution ($Q_{\text{cog}}$):** Explicit link between observed errors and the standardized mistake taxonomy (`POS`, `TGT`, `MEC`, `SPD`).
+
+---
+
+## 5. Headless Chrome/Edge PDF Compilation Protocol
+
+To compile publication-grade PDFs without page clipping or asset 404s:
+
+1. **Invoke via Python:**
+   ```python
+   from engine.pdf_exporter import export_pdf
+
+   result = export_pdf(
+       html_content=html_string,
+       output_pdf_path="reports/tactical_audit_match_321.pdf",
+       theme="midnight",
+       sync_to_artifact=False
+   )
+   ```
+
+2. **Headless Execution Invariants:**
+   - Chrome / Edge executes with: `--headless=new --disable-gpu --no-sandbox --no-pdf-header-footer`.
+   - All sprites and icons MUST be inlined Base64 data URIs (`data:image/png;base64,...`) or inline SVGs.
+   - Guardrail 11 is strictly enforced: PDF output files remain in `reports/` on disk and are never written to the Antigravity Brain artifact directory unless explicitly requested by the Trainer.
+
+---
+
+## 6. Pre-Delivery Verification Checklist
+
+- [ ] **Zero External Network Assets:** Zero `<link href="http...">` or `<script src="http...">` tags.
+- [ ] **Zero Format Hallucinations:** Checked against `REGULATION_MC_SPECIES_BLACKLIST`.
+- [ ] **Dual Delivery Output:** Saved on disk as both `.html` and `.pdf` under `reports/`.
+- [ ] **Guardrail 11 Compliance:** Artifact directory isolated from automatic report syncs.
+- [ ] **Paginator Safety:** Print CSS contains `break-inside: avoid;` on all card elements.

@@ -224,16 +224,78 @@ def apply_stat_boost(stat: int, boost: int) -> int:
 
 
 def get_type_effectiveness(move_type: str, def_types: List[str], move_name: str = "", scrappy: bool = False) -> float:
-    """Calculate elemental type matchup multiplier against dual-type defender."""
+    """Calculate elemental type matchup multiplier against single or dual-type defender."""
     mult = 1.0
     for dt in def_types:
         if move_name == "Freeze-Dry" and dt == "Water":
             mult *= 2.0
             continue
+        if move_name == "Thousand Arrows" and dt == "Flying":
+            mult *= 1.0
+            continue
         if scrappy and dt == "Ghost" and move_type in ("Normal", "Fighting"):
             continue
         mult *= TYPE_CHART.get(move_type, {}).get(dt, 1.0)
     return mult
+
+
+def get_type_effectiveness_breakdown(
+    move_type: str,
+    def_types: List[str],
+    move_name: str = "",
+    scrappy: bool = False
+) -> Dict[str, Any]:
+    """
+    Computes compound elemental type matchup multiplier against single or dual-type defenders.
+    Returns structured breakdown with exact multiplier, discrete classification, and factor list:
+    - 0.0x: 'Immunity (0x)'
+    - 0.25x: 'Double Resistance (0.25x)'
+    - 0.5x: 'Resistance (0.5x)'
+    - 1.0x: 'Neutral (1.0x)'
+    - 2.0x: 'Super Effective (2.0x)'
+    - 4.0x: 'Double Weakness (4.0x)'
+    """
+    factors: List[float] = []
+    mult = 1.0
+    for dt in def_types:
+        if move_name == "Freeze-Dry" and dt == "Water":
+            f = 2.0
+        elif move_name == "Thousand Arrows" and dt == "Flying":
+            f = 1.0
+        elif scrappy and dt == "Ghost" and move_type in ("Normal", "Fighting"):
+            f = 1.0
+        else:
+            f = TYPE_CHART.get(move_type, {}).get(dt, 1.0)
+        factors.append(f)
+        mult *= f
+
+    if mult == 0.0:
+        classification = "Immunity (0x)"
+        label = "immune"
+    elif mult <= 0.25:
+        classification = "Double Resistance (0.25x)"
+        label = "double-resisted"
+    elif mult <= 0.5:
+        classification = "Resistance (0.5x)"
+        label = "resisted"
+    elif mult >= 4.0:
+        classification = "Double Weakness (4.0x)"
+        label = "double-weak"
+    elif mult >= 2.0:
+        classification = "Super Effective (2.0x)"
+        label = "super-effective"
+    else:
+        classification = "Neutral (1.0x)"
+        label = "neutral"
+
+    return {
+        "multiplier": mult,
+        "classification": classification,
+        "label": label,
+        "factors": factors,
+        "def_types": list(def_types),
+        "move_type": move_type,
+    }
 
 
 def is_airborne(slot: dict, field: Optional[dict] = None) -> bool:
@@ -395,6 +457,124 @@ def evaluate_move_synergy(
             "tactical_rating": "Optimal",
             "speed_multiplier": 2.0,
             "description": f"Consuming {item} will activate Unburden, permanently doubling Speed until switch-out."
+        }
+
+    # 9. Type-Changing Abilities with Dual-Type STAB Integration
+    type_change_map = {
+        "Pixilate": "Fairy",
+        "Aerilate": "Flying",
+        "Refrigerate": "Ice",
+        "Galvanize": "Electric",
+        "Dragonize": "Dragon",
+    }
+    if ability in type_change_map and m_type == "Normal" and cat != "Status":
+        new_t = type_change_map[ability]
+        sp_types = BASE_STATS_DB.get(species, {}).get("types", [])
+        has_stab = new_t in sp_types
+        eff_mult = 1.8 if has_stab else 1.2
+        stab_label = f" + {new_t} STAB (1.8x total)" if has_stab else " (1.2x boost)"
+        return {
+            "synergy_detected": True,
+            "synergy_type": f"{ability} Type Conversion",
+            "tactical_rating": "Elite" if has_stab else "Optimal",
+            "damage_multiplier": eff_mult,
+            "converted_type": new_t,
+            "has_stab": has_stab,
+            "description": (
+                f"{ability} converts {move_name} from Normal to {new_t} type with a 20% power boost{stab_label}."
+            )
+        }
+
+    if ability == "Liquid Voice" and "sound" in flags and cat != "Status":
+        sp_types = BASE_STATS_DB.get(species, {}).get("types", [])
+        has_stab = "Water" in sp_types
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Liquid Voice Sound-to-Water Conversion",
+            "tactical_rating": "Optimal",
+            "converted_type": "Water",
+            "has_stab": has_stab,
+            "damage_multiplier": 1.5 if has_stab else 1.0,
+            "description": f"Liquid Voice converts sound move {move_name} to Water type{' with 1.5x STAB' if has_stab else ''}."
+        }
+
+    # 10. Weather Damage Amplification & Solar Charge Bypass
+    if weather == "sun":
+        if m_type == "Fire" or move_name == "Hydro Steam":
+            return {
+                "synergy_detected": True,
+                "synergy_type": "Sun Fire Amplification",
+                "tactical_rating": "Elite",
+                "damage_multiplier": 1.5,
+                "description": f"Sun amplifies {move_name} damage by 1.5x."
+            }
+        elif move_name in ("Solar Beam", "Solar Blade"):
+            return {
+                "synergy_detected": True,
+                "synergy_type": "Sun Instant Solar Execution",
+                "tactical_rating": "Elite",
+                "description": f"Sun eliminates the charging turn for {move_name}, allowing instantaneous execution."
+            }
+    elif weather == "rain":
+        if m_type == "Water":
+            return {
+                "synergy_detected": True,
+                "synergy_type": "Rain Water Amplification",
+                "tactical_rating": "Elite",
+                "damage_multiplier": 1.5,
+                "description": f"Rain amplifies {move_name} damage by 1.5x."
+            }
+        elif move_name in ("Thunder", "Hurricane", "Bleakwind Storm", "Wildbolt Storm"):
+            return {
+                "synergy_detected": True,
+                "synergy_type": "Rain 100% Accuracy Bypass",
+                "tactical_rating": "Elite",
+                "accuracy": 100,
+                "description": f"Rain completely bypasses accuracy checks for {move_name}, guaranteeing a 100% hit rate."
+            }
+    elif weather == "snow" and move_name == "Blizzard":
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Snow Blizzard Bypass",
+            "tactical_rating": "Elite",
+            "accuracy": 100,
+            "description": "Snow grants Blizzard 100% accuracy and hits both opposing slots in doubles."
+        }
+
+    # 11. Terrain Damage Boosts
+    if terrain == "electric" and m_type == "Electric" and cat != "Status":
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Electric Terrain Power Amplification",
+            "tactical_rating": "Optimal",
+            "damage_multiplier": 1.3,
+            "description": f"Electric Terrain boosts {move_name} by 30% for grounded attackers."
+        }
+    elif terrain == "grassy" and m_type == "Grass" and cat != "Status":
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Grassy Terrain Power Amplification",
+            "tactical_rating": "Optimal",
+            "damage_multiplier": 1.3,
+            "description": f"Grassy Terrain boosts {move_name} by 30% for grounded attackers."
+        }
+    elif terrain == "psychic" and m_type == "Psychic" and cat != "Status" and move_name != "Expanding Force":
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Psychic Terrain Power Amplification",
+            "tactical_rating": "Optimal",
+            "damage_multiplier": 1.3,
+            "description": f"Psychic Terrain boosts {move_name} by 30% for grounded attackers."
+        }
+
+    # 12. Speed Control & Area Debuffs
+    if move_name in ("Electroweb", "Icy Wind", "Bulldoze") and cat != "Status":
+        return {
+            "synergy_detected": True,
+            "synergy_type": "Area Speed Control Drop",
+            "tactical_rating": "Elite",
+            "speed_drop": -1,
+            "description": f"{move_name} deals spread damage and inflicts a guaranteed -1 Speed drop on both opponents."
         }
 
     # Default neutral
