@@ -21,6 +21,6 @@ Coach Porygon VGC implements strict defensive guardrails against LLM and web app
 
 If you discover a security vulnerability or bypass of our deterministic guardrails:
 1. **Do not create a public GitHub issue.**
-2. Send a responsible disclosure report directly to the repository maintainer via the contact email listed on the lead developer's [GitHub profile (@unkil)](https://github.com/unkil).
+2. Send a responsible disclosure report directly to the repository maintainer via the contact email listed on the lead developer's [GitHub profile (@esquedev)](https://github.com/esquedev).
 3. Include detailed steps to reproduce the vulnerability, sample inputs, and potential impact.
 4. You will receive an acknowledgment within 48 hours, followed by a remediation timeline.
