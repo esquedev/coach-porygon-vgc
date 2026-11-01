@@ -51,7 +51,8 @@ echo ""
 # --- PHASE 0: Workspace Sanitization & Scratch Cleanup ---
 echo -e "${C_CYAN}[PHASE 0/5]${C_RESET} ${C_WHITE}Sanitizing Workspace & Garbage Collection...${C_RESET}"
 $PY engine/clean_workspace.py
-echo -e "${C_GREEN}  [OK] Workspace sanitized (scratch, caches, and test residue purged).${C_RESET}"
+$PY evals/purge_html_artifacts.py
+echo -e "${C_GREEN}  [OK] Workspace sanitized (scratch, caches, and volatile HTML reports purged).${C_RESET}"
 echo ""
 
 # --- PHASE 1: Initialize Public Schema Templates ---
@@ -74,6 +75,7 @@ echo -e "${C_GREEN}  [OK] Code style and syntax verified (0 violations).${C_RESE
 echo ""
 
 # --- PHASE 3: AI Health Stress Audit & Static Guardrails ---
+$PY evals/scan_repo_hallucinations.py
 if [ "$ENFORCE_AI_AUDIT" -eq 1 ]; then
     echo -e "${C_CYAN}[PHASE 3/5]${C_RESET} ${C_WHITE}Verifying AI Health Stress Audit and Static Guardrails [ENFORCED]...${C_RESET}"
     $PY evals/evaluate_release_health.py --verify

@@ -1,15 +1,16 @@
 # ⚖️ Legal Notice, Intellectual Property & Fair Use Policy
 
-**Project:** Coach Porygon VGC  
-**Maintainer / Lead Architect:** Esquedev (@esquedev)  
-**Document Version:** 1.0  
-**Effective Date:** 2026
+**Project:** BeRightVGC (Execution Engine: Coach Porygon VGC)  
+**Maintainer / Lead Architect:** esquedev (@esquedev)  
+**Product Brand:** BeRightVGC (Telemetry Handle: brightvgc)  
+**Document Version:** 1.2  
+**Effective Date:** 2026 / 2027  
 
 ---
 
 ## 1. Anti-Affiliation & Independent Community Tool Notice
 
-**Coach Porygon VGC is an independent, open-source competitive esports analytics and simulation tool.**
+**BeRightVGC / Coach Porygon VGC is an independent, open-source competitive esports analytics and simulation suite.**
 
 This project is **NOT** affiliated with, endorsed, sponsored, supported, or approved by:
 * **Nintendo Co., Ltd.**
@@ -31,17 +32,17 @@ All references to Pokémon names, abilities, items, battle mechanics, and compet
 
 ---
 
-## 3. Original Vector Asset Warranty & Zero-ROM-Rip Policy
+## 3. Curated Asset Warranty & Zero-ROM-Rip Policy
 
-1. **Authentic Vector Code:** All **539 vector graphics (SVGs)** contained in the [`assets/`](assets/) directory are original, hand-crafted, or programmatically rendered geometric vector illustrations created specifically for this open-source tool.
-2. **Zero ROM Rips or Proprietary Binaries:** This repository does **not** host, extract, redistribute, or link to any copyrighted game ROMs, proprietary 3D models, sound files, proprietary textures, or commercial game binaries.
-3. **Audit Verification:** All assets are tracked in [`assets/png_manifest.json`](assets/png_manifest.json) with cryptographic SHA-256 digests and audited to ensure zero embedded raster bitmaps and zero active scripts.
+1. **Authentic Curated Assets:** All creature sprites, thumbnails, and icons contained in the [`assets/`](assets/) directory are curated strictly for non-commercial identification under nominative fair use.
+2. **Zero ROM Rips or Proprietary Game Binaries:** This repository does **not** host, extract, redistribute, or link to any copyrighted game ROMs, proprietary 3D models, audio files, proprietary textures, or commercial game binaries.
+3. **Cryptographic Audit Verification:** All assets are tracked in [`assets/png_manifest.json`](assets/png_manifest.json) with cryptographic SHA-256 digests and audited to ensure zero embedded active scripts or malware.
 
 ---
 
 ## 4. Non-Commercial Covenant & Downstream Sale Prohibition
 
-1. **100% Free & Open-Source:** Coach Porygon VGC is distributed free of charge. The maintainers do not accept payments, subscriptions, donations, in-app purchases, advertising revenue, or cryptocurrency transactions for access to this tool.
+1. **100% Free & Open-Source:** BeRightVGC is distributed free of charge. The maintainers do not accept payments, subscriptions, donations, in-app purchases, advertising revenue, or cryptocurrency transactions for access to this tool.
 2. **Strict Downstream Commercialization Prohibition:**  
    While the software algorithms and Python source code are licensed under the MIT License, **the MIT License does not and cannot grant rights to commercialize, sell, or monetize third-party intellectual property or trademarks belonging to Nintendo or The Pokémon Company**.
 3. Any downstream fork, distributor, or organization that attempts to sell, monetize, or package this tool with commercial intent does so in direct violation of this policy and assumes sole legal liability for their actions.
@@ -56,19 +57,5 @@ We respect the privacy of competitive trainers and players:
 * **Esports Public Record:** Tournament rosters and placements are compiled strictly for historical analytics, meta-frequency tracking, and sports science research.
 * **Opt-Out / Anonymization Request:** Any competitive player, trainer, or tournament participant who wishes to have their username or personal identifier removed or anonymized in our scouted dataset may request an opt-out:
   - **Via GitHub Issue / Chat:** Open an issue with the prefix `[Privacy/Opt-Out]` on the [GitHub Issues page](https://github.com/esquedev/coach-porygon-vgc/issues).
-  - **Via GitHub Profile Contact:** Send an email or direct message to the maintainer via the contact email listed on the lead developer's [GitHub profile (@esquedev)](https://github.com/esquedev).
+  - **Via Maintainer Contact:** Send an email or direct message to the maintainer via the contact email listed on the lead developer's [GitHub profile (@esquedev)](https://github.com/esquedev).
 * Upon receiving a verified request, the maintainer will anonymize the player's handle (e.g., replacing it with `Anonymous Trainer`) within 72 business hours.
-
----
-
-## 6. Good-Faith Safe Harbor & Notice-and-Takedown Protocol
-
-The maintainers of Coach Porygon VGC are committed to good-faith open-source compliance:
-* If you are a copyright or trademark owner (or an authorized representative thereof) and believe that any specific asset or data entry within this repository exceeds fair use or infringes upon your intellectual property rights, please contact the maintainer directly via GitHub or the profile contact email before initiating formal legal proceedings.
-* We will promptly review, evaluate, and where appropriate, modify or remove the identified material in an amicable, collaborative, and expeditious manner.
-
----
-
-<div align="center">
-  <sub>Coach Porygon VGC — Advancing Esports Analytics & Mathematical Sports Science Responsibly.</sub>
-</div>

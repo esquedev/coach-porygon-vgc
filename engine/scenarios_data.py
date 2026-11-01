@@ -4,7 +4,7 @@ null = None
 # -*- coding: utf-8 -*-
 """
 Coach Porygon VGC — Mode 3 Flashcard Sparring Scenarios
-42 Deterministic Scenarios (SC-01 to SC-42) with 4 options each (168 Total Options)
+50 Deterministic Scenarios (SC-01 to SC-50) with 4 options each (200 Total Options)
 """
 
 CRUCIBLE_SCENARIOS = [
@@ -164,11 +164,11 @@ CRUCIBLE_SCENARIOS = [
           "2. Pelipper usa Hurricane sobre Farigiraf (-40% HP). Armor Tail previene cualquier interferencia.",
           "3. Farigiraf ejecuta Trick Room con éxito!",
           "4. Dimensiones distorsionadas: en Turno 3 tus atacantes lentos se mueven primero.",
-          "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Ursaluna/Torkoal) se mueven antes que Archaludon y Pelipper.",
+          "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Rhyperior/Torkoal) se mueven antes que Archaludon y Pelipper.",
           "6. [PROYECCIÓN TURNO +3 / WINCON]: Reviertes la lluvia reactivando Sol con switch o castigas con ataques coordinados bajo dimensiones distorsionadas (+1.60 VP)."
         ],
         "verdict": "✅ ÓPTIMO (+1.60 VP): Neutralizas el nuke eléctrico con Protect mientras Farigiraf invierte el orden de velocidad a tu favor, garantizando iniciativa total en T+2 y T+3.",
-        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Ursaluna/Torkoal) se mueven antes que Archaludon y Pelipper. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Reviertes la lluvia reactivando Sol con switch o castigas con ataques coordinados bajo dimensiones distorsionadas (+1.60 VP)."
+        "futureProjection": "5. [PROYECCIÓN TURNO +2]: Trick Room activo (4T restantes). Farigiraf y Charizard-Mega-Y (o switch a Rhyperior/Torkoal) se mueven antes que Archaludon y Pelipper. • 6. [PROYECCIÓN TURNO +3 / WINCON]: Reviertes la lluvia reactivando Sol con switch o castigas con ataques coordinados bajo dimensiones distorsionadas (+1.60 VP)."
       },
       {
         "id": "OPT-B",
@@ -1032,12 +1032,12 @@ CRUCIBLE_SCENARIOS = [
       },
       {
         "id": "OPT-C",
-        "label": "C) Cambiar a Charizard por Ursaluna en la banca",
+        "label": "C) Cambiar a Charizard por Rhyperior en la banca",
         "optimal": false,
         "vpDelta": "-2.50 VP",
         "log": [
-          "1. Intento de switch a especie Ursaluna...",
-          "2. [ILLEGAL_FORMAT_SPECIES]: Ursaluna no forma parte de la lista permitida de Regulation M-C.",
+          "1. Intento de switch a Rhyperior en seco...",
+          "2. Rhyperior entra al campo pero cede la iniciativa ante Rillaboom y Kingambit.",
           "3. Descalificación inmediata o turno anulado por infracción de formato.",
           "5. [PROYECCIÓN TURNO +2]: Cambiaste a Farigiraf perdiendo Armor Tail. Kingambit conectó Sucker Punch y Rillaboom Grassy Glide sobre Charizard-Mega-Y, debilitándolo de inmediato.",
           "6. [PROYECCIÓN TURNO +3 / DERROTA]: Pérdida de tu Mega por retirar la protección contra prioridad."
@@ -4083,8 +4083,757 @@ CRUCIBLE_SCENARIOS = [
         "verdict": "❌ FUGA TÁCTICA (POS-03 Passive Protect): Doble Protect pasivo sin objetivo táctico (-1.25 VP)."
       }
     ]
+  },
+  {
+    "id": "SC-43",
+    "title": "M353 Turno 1: SPD-02 Weather Sequencing (Excadrill + Tyranitar vs Salamence-Mega + Gholdengo)",
+    "driver": "Autopilot",
+    "code": "SPD-02",
+    "turnBadge": "TURNO 1 • TORMENTA DE ARENA • VP 4v4 (+0.0)",
+    "context": "Abriste con Excadrill (Sand Rush, Focus Sash) y Tyranitar (Sand Stream, Smooth Rock) ante Salamence-Mega (Salamencite) y Gholdengo (Air Balloon). Salamence amenaza Tailwind o Draco Meteor, mientras Gholdengo es inmune a ataques de Tierra por Air Balloon. Si Excadrill ataca en seco sin romper el globo o ignora la velocidad de Salamence-Mega tras Tailwind, pierdes la iniciativa de arena.",
+    "oppSlots": [
+      {
+        "name": "Salamence-Mega",
+        "item": "Salamencite",
+        "ability": "Aerilate",
+        "hp": 100,
+        "status": "Spe 189"
+      },
+      {
+        "name": "Gholdengo",
+        "item": "Air Balloon",
+        "ability": "Good as Gold",
+        "hp": 100,
+        "status": "Inmune a Tierra"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Excadrill",
+        "item": "Focus Sash",
+        "ability": "Sand Rush",
+        "hp": 100,
+        "status": "Spe 308 (Sand)"
+      },
+      {
+        "name": "Tyranitar",
+        "item": "Smooth Rock",
+        "ability": "Sand Stream",
+        "hp": 100,
+        "status": "Spe 81"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Excadrill Rock Slide en Salamence-Mega + Tyranitar Knock Off en Gholdengo",
+        "optimal": true,
+        "vpDelta": "+1.75 VP",
+        "log": [
+          "1. Excadrill con Sand Rush supera a Salamence y conecta Rock Slide masivo (-65% HP).",
+          "2. Tyranitar sobrevive el embate y conecta Knock Off en Gholdengo rompiendo su Air Balloon.",
+          "3. El control del clima se preserva 8 turnos por Smooth Rock.",
+          "4. Gholdengo queda vulnerable a High Horsepower para el Turno 2."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Maximizas la ventaja de velocidad de Sand Rush con daño disperso sobre Salamence mientras Tyranitar destruye la inmunidad de Air Balloon de Gholdengo."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Excadrill High Horsepower en Gholdengo + Tyranitar Rock Slide",
+        "optimal": false,
+        "vpDelta": "-1.85 VP",
+        "log": [
+          "1. Excadrill lanza High Horsepower en Gholdengo pero falla por Air Balloon!",
+          "2. Salamence-Mega activa Tailwind duplicando la velocidad rival.",
+          "3. Gholdengo ataca con Make It Rain debilitando a Tyranitar.",
+          "4. Pierdes un slot clave sin lograr daño alguno."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (MEC-01 / Autopilot): Lanzar ataques de Tierra contra un objetivo con Air Balloon activo desperdicia el turno de tu atacante más rápido (-1.85 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Excadrill Swords Dance + Tyranitar Protect pasivo",
+        "optimal": false,
+        "vpDelta": "-1.60 VP",
+        "log": [
+          "1. Excadrill usa Swords Dance aumentando su Ataque.",
+          "2. Tyranitar usa Protect.",
+          "3. Salamence-Mega activa Tailwind y Gholdengo prepara Make It Rain.",
+          "4. En T+2 Salamence supera a Excadrill incluso bajo arena."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Greed / SPD-02): Buscar setup ofensivo sin atacar permite a Salamence montar Tailwind gratis, superando a Excadrill en el siguiente turno (-1.60 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Cambiar Excadrill por Rillaboom + Tyranitar Stone Edge en Salamence-Mega",
+        "optimal": false,
+        "vpDelta": "-1.45 VP",
+        "log": [
+          "1. Cambias a Excadrill en seco por Rillaboom.",
+          "2. Salamence conecta Hyper Voice castigando severamente a Rillaboom.",
+          "3. Tyranitar falla Stone Edge por evasión.",
+          "4. Cedes la ventaja de tempo por completo."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a tu atacante más rápido bajo clima activo regala la ventaja posicional y expone a tu banca al daño rival (-1.45 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-44",
+    "title": "M354 Turno 1: POS-02 Lead Compression vs Swampert-Mega + Pelipper Rain",
+    "driver": "Format_Divergence",
+    "code": "POS-02",
+    "turnBadge": "TURNO 1 • GUERRA DE CLIMA • VP 4v4 (+0.0)",
+    "context": "Abriste con Charizard-Mega-Y (Drought, Charizardite Y) y Venusaur (Chlorophyll, Life Orb) frente a Swampert-Mega (Swift Swim, Swampertite) y Pelipper (Drizzle, Damp Rock). La velocidad base de Pelipper es menor a Charizard-Mega-Y, por lo que Drizzle sobreescribe Drought si ambos entran en turno 1. Swampert-Mega en Lluvia alcanza 288 Spe y amenaza Waterfall mortal en Charizard.",
+    "oppSlots": [
+      {
+        "name": "Swampert-Mega",
+        "item": "Swampertite",
+        "ability": "Swift Swim",
+        "hp": 100,
+        "status": "Spe 288 (Rain)"
+      },
+      {
+        "name": "Pelipper",
+        "item": "Damp Rock",
+        "ability": "Drizzle",
+        "hp": 100,
+        "status": "Rain Active 5T"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Charizard-Mega-Y",
+        "item": "Charizardite Y",
+        "ability": "Drought",
+        "hp": 100,
+        "status": "Clima Perdido"
+      },
+      {
+        "name": "Venusaur",
+        "item": "Life Orb",
+        "ability": "Chlorophyll",
+        "hp": 100,
+        "status": "Spe 145"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Charizard-Mega-Y Protect + Venusaur Giga Drain en Swampert-Mega",
+        "optimal": true,
+        "vpDelta": "+1.80 VP",
+        "log": [
+          "1. Charizard-Mega-Y usa Protect absorbiendo el ataque de agua de Swampert-Mega.",
+          "2. Venusaur conecta Giga Drain con debilidad 4x en Swampert-Mega (-95% HP).",
+          "3. Swampert-Mega queda en rango crítico o fainted.",
+          "4. Preservas a tu Mega para resetear el clima en T+2."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.80 VP): Proteges a Charizard del nuke de lluvia rival mientras Venusaur explota la debilidad cuádruple de Swampert-Mega, neutralizando la mayor amenaza ofensiva del oponente."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Charizard-Mega-Y Heat Wave en Pelipper + Venusaur Sludge Bomb en Pelipper",
+        "optimal": false,
+        "vpDelta": "-1.90 VP",
+        "log": [
+          "1. Swampert-Mega ataca primero en lluvia con Waterfall y debilita a Charizard-Mega-Y de un golpe!",
+          "2. Heat Wave no se ejecuta.",
+          "3. Venusaur conecta Sludge Bomb en Pelipper sin lograr el KO.",
+          "4. Pierdes a tu Mega en el primer turno sin causar bajas."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Format Divergence / SPD-02): Lanzar ataques de fuego en lluvia sin cubrir a Charizard de Swift Swim regala tu condición de victoria en el primer turno (-1.90 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Charizard-Mega-Y Solar Beam en Swampert-Mega + Venusaur Protect",
+        "optimal": false,
+        "vpDelta": "-1.75 VP",
+        "log": [
+          "1. Charizard intenta cargar Solar Beam porque en lluvia requiere 2 turnos!",
+          "2. Swampert-Mega conecta Waterfall y fulmina a Charizard.",
+          "3. Solar Beam se cancela por KO.",
+          "4. Quedas en desventaja 3v4 inmediata."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (MEC-02 Cartridge Mechanic): Olvidar que Solar Beam pierde su activación en 1 turno bajo clima lluvioso resulta en la pérdida gratuita de tu Mega (-1.75 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Cambiar Charizard-Mega-Y por Incineroar + Venusaur Sleep Powder en Pelipper",
+        "optimal": false,
+        "vpDelta": "-1.50 VP",
+        "log": [
+          "1. Cambias a Charizard por Incineroar directamente a la lluvia.",
+          "2. Swampert-Mega conecta Waterfall sobre el slot de Incineroar causando un KO inmediato.",
+          "3. Sleep Powder falla por precisión.",
+          "4. Desastre posicional irreversible."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un Pokémon de Fuego frente a un atacante de Agua bajo lluvia activa es un error crítico de posicionamiento (-1.50 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-45",
+    "title": "M355 Turno 2: TGT-01 Protect Tunneling vs Kingambit (Archaludon + Kingambit)",
+    "driver": "Tunnel_Vision",
+    "code": "TGT-01",
+    "turnBadge": "TURNO 2 • PRESIÓN DE STEEL • VP 4v4 (+0.0)",
+    "context": "Tienes a Lucario-Mega (Adaptability, Lucarionite) y Clefable (Follow Me, Sitrus Berry) en campo. Kingambit rival (Leftovers, 35% HP) está en rango de KO de Close Combat, pero usó Kowtow Cleave el turno anterior y tiene Protect telegrafiado. A su lado Archaludon (Rocky Helmet, 90% HP) prepara Electro Shot o Body Press.",
+    "oppSlots": [
+      {
+        "name": "Kingambit",
+        "item": "Leftovers",
+        "ability": "Defiant",
+        "hp": 35,
+        "status": "Protect Obvio"
+      },
+      {
+        "name": "Archaludon",
+        "item": "Rocky Helmet",
+        "ability": "Stamina",
+        "hp": 90,
+        "status": "Amenaza Electro Shot"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Lucario-Mega",
+        "item": "Lucarionite",
+        "ability": "Adaptability",
+        "hp": 85,
+        "status": "Spe 180 (Mega)"
+      },
+      {
+        "name": "Clefable",
+        "item": "Sitrus Berry",
+        "ability": "Unaware",
+        "hp": 100,
+        "status": "Follow Me Ready"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Lucario-Mega Aura Sphere en Archaludon + Clefable Follow Me",
+        "optimal": true,
+        "vpDelta": "+1.70 VP",
+        "log": [
+          "1. Kingambit rival usa Protect absorbiendo cualquier presión sobre su slot.",
+          "2. Clefable usa Follow Me redirigiendo la represalia de Archaludon.",
+          "3. Lucario-Mega desata Aura Sphere especial en Archaludon castigando su debilidad sin activar Rocky Helmet.",
+          "4. Archaludon sufre daño masivo (-70% HP) y Kingambit queda solo para T+3."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.70 VP): Anticipas el Protect de Kingambit y rediriges el daño hacia Archaludon con un ataque especial que evita la activación de Rocky Helmet y Stamina."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Lucario-Mega Close Combat en Kingambit + Clefable Moonblast en Archaludon",
+        "optimal": false,
+        "vpDelta": "-1.80 VP",
+        "log": [
+          "1. Kingambit usa Protect! El Close Combat de Lucario es completamente bloqueado.",
+          "2. Archaludon ataca con Flash Cannon y debilita a Clefable.",
+          "3. Lucario queda expuesto a Sucker Punch en el turno siguiente.",
+          "4. Pierdes el tempo y la ventaja de piezas."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (TGT-01 Protect Tunneling): Concentrar el ataque principal en el slot telegrafiado con Protect desperdicia el turno de tu atacante más potente (-1.80 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Lucario-Mega Close Combat en Archaludon + Clefable Protect",
+        "optimal": false,
+        "vpDelta": "-1.35 VP",
+        "log": [
+          "1. Kingambit usa Protect.",
+          "2. Clefable usa Protect.",
+          "3. Lucario conecta Close Combat en Archaludon pero recibe recoil de Rocky Helmet y reduce sus defensas.",
+          "4. Archaludon activa Stamina y Kingambit sobrevive."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Greed / Contact Penalty): Atacar con contacto físico a Archaludon activa Rocky Helmet y reduce defensas, dejándote a tiro de Sucker Punch (-1.35 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Cambiar Lucario-Mega por Incineroar + Clefable Moonlight",
+        "optimal": false,
+        "vpDelta": "-1.50 VP",
+        "log": [
+          "1. Cambias a Lucario por Incineroar.",
+          "2. Kingambit usa Protect.",
+          "3. Archaludon conecta Body Press masivo en el cambio de Incineroar causando KO crítico.",
+          "4. Regalas a tu pivot sin obtener beneficio alguno."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar a un atacante con ventaja de velocidad frente a Archaludon preparado para atacar regala un KO gratuito (-1.50 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-46",
+    "title": "M356 Turno 2: TGT-02 Spread Redirection (Garchomp + Rotom-Wash vs Clefable + Sneasler)",
+    "driver": "Greed",
+    "code": "TGT-02",
+    "turnBadge": "TURNO 2 • PRESIÓN DE REDIRECCIÓN • VP 4v4 (+0.0)",
+    "context": "Tienes a Garchomp (Yache Berry) y Rotom-Wash (Sitrus Berry) frente a Clefable (Leftovers, Follow Me) y Sneasler (White Herb, Unburden). Clefable amenaza Follow Me para absorber ataques de un solo objetivo, permitiendo que Sneasler lance Close Combat o Dire Claw con total impunidad.",
+    "oppSlots": [
+      {
+        "name": "Clefable",
+        "item": "Leftovers",
+        "ability": "Friend Guard",
+        "hp": 85,
+        "status": "Follow Me Ready"
+      },
+      {
+        "name": "Sneasler",
+        "item": "White Herb",
+        "ability": "Unburden",
+        "hp": 100,
+        "status": "Amenaza Dire Claw"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Garchomp",
+        "item": "Yache Berry",
+        "ability": "Rough Skin",
+        "hp": 90,
+        "status": "Spe 169"
+      },
+      {
+        "name": "Rotom-Wash",
+        "item": "Sitrus Berry",
+        "ability": "Levitate",
+        "hp": 100,
+        "status": "Inmune a Tierra"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Garchomp Earthquake + Rotom-Wash Hydro Pump en Clefable",
+        "optimal": true,
+        "vpDelta": "+1.65 VP",
+        "log": [
+          "1. Clefable usa Follow Me intentando absorber la agresión.",
+          "2. Garchomp desata Earthquake! Al ser un ataque de área, ignora por completo la redirección.",
+          "3. Sneasler sufre daño letal súper efectivo y queda debilitado.",
+          "4. Rotom-Wash remata a Clefable asegurando ventaja numérica 4v2."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.65 VP): Los ataques de propagación (spread moves) no pueden ser redirigidos por Follow Me, castigando a Sneasler con debilidad de Tierra a pesar de la pantalla protectora."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Garchomp Stomping Tantrum en Sneasler + Rotom-Wash Thunderbolt en Sneasler",
+        "optimal": false,
+        "vpDelta": "-1.75 VP",
+        "log": [
+          "1. Clefable activa Follow Me!",
+          "2. Ambos ataques dirigidos a Sneasler son absorbidos por Clefable.",
+          "3. Sneasler ataca libremente y conecta Dire Claw con probabilidad de veneno en Garchomp.",
+          "4. Desperdicias ambos slots ofensivos sin tocar al sweeper rival."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (TGT-02 Spread Redirection Error): Dirigir ataques de un solo objetivo ante una redirección obvia permite al atacante rival actuar impunemente (-1.75 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Garchomp Dragon Claw en Sneasler + Rotom-Wash Protect",
+        "optimal": false,
+        "vpDelta": "-1.50 VP",
+        "log": [
+          "1. Clefable absorbe Dragon Claw con inmunidad de Tipo Hada!",
+          "2. Sneasler usa Swords Dance gratis.",
+          "3. Rotom-Wash quema Protect pasivamente sin presionar el tablero.",
+          "4. Sneasler queda a +2 de Ataque con ventaja de velocidad."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (TGT-02 / MEC-01): Atacar con dragón frente a un usuario de Follow Me de Tipo Hada resulta en absorción de daño cero (-1.50 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Cambiar Garchomp por Corviknight + Rotom-Wash Will-O-Wisp en Sneasler",
+        "optimal": false,
+        "vpDelta": "-1.40 VP",
+        "log": [
+          "1. Cambias a Garchomp por Corviknight.",
+          "2. Clefable absorbe Will-O-Wisp con Follow Me.",
+          "3. Sneasler conecta Close Combat en Corviknight rompiendo su resistencia.",
+          "4. Cedes la iniciativa ofensiva por completo."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-01 Dry Hard Switch): Cambiar en seco a tu atacante principal permite al rival controlar la fase media de la partida (-1.40 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-47",
+    "title": "M357 Turno 3: MEC-01 Terrain Priority Collision (Mega Raichu Y + Indeedee vs Basculegion Rain)",
+    "driver": "Format_Divergence",
+    "code": "MEC-01",
+    "turnBadge": "TURNO 3 • TERRENO PSÍQUICO • VP 3v3 (+0.0)",
+    "context": "Tienes a Mega Raichu Y (Raichunite Y) e Indeedee-F (Psychic Surge, Psychic Seed) en campo con Terreno Psíquico activo. El rival tiene a Basculegion-M (Mystic Water) bajo lluvia con Swift Swim y Pelipper (Damp Rock). Basculegion amenaza Wave Crash letal, pero el Terreno Psíquico bloquea movimientos de prioridad contra objetivos en el suelo.",
+    "oppSlots": [
+      {
+        "name": "Basculegion-M",
+        "item": "Mystic Water",
+        "ability": "Swift Swim",
+        "hp": 85,
+        "status": "Swift Swim Active"
+      },
+      {
+        "name": "Pelipper",
+        "item": "Damp Rock",
+        "ability": "Drizzle",
+        "hp": 60,
+        "status": "Rain 3T"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Raichu-Mega-Y",
+        "item": "Raichunite Y",
+        "ability": "Lightning Rod",
+        "hp": 100,
+        "status": "Terreno Psíquico"
+      },
+      {
+        "name": "Indeedee-F",
+        "item": "Psychic Seed",
+        "ability": "Psychic Surge",
+        "hp": 80,
+        "status": "SpD +1"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Raichu-Mega-Y Thunderbolt en Pelipper + Indeedee-F Dazzling Gleam",
+        "optimal": true,
+        "vpDelta": "+1.75 VP",
+        "log": [
+          "1. Basculegion-M ataca en lluvia con Wave Crash sobre Indeedee-F (-70% HP).",
+          "2. Indeedee-F sobrevive gracias al boost de Psychic Seed y conecta Dazzling Gleam.",
+          "3. Raichu-Mega-Y fulmina a Pelipper con Thunderbolt súper efectivo.",
+          "4. Remueves al setter de lluvia y dejas a Basculegion sin soporte."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.75 VP): Eliminas al setter de lluvia para neutralizar Swift Swim en el siguiente turno mientras Indeedee absorbe el golpe con su defensa especial incrementada."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Raichu-Mega-Y Fake Out en Basculegion-M + Indeedee-F Follow Me",
+        "optimal": false,
+        "vpDelta": "-1.95 VP",
+        "log": [
+          "1. Raichu-Mega-Y intenta usar Fake Out pero el Terreno Psíquico bloquea la prioridad sobre Basculegion!",
+          "2. El ataque falla por completo.",
+          "3. Basculegion desata Wave Crash y fulmina a Indeedee-F.",
+          "4. Quedas sin control de velocidad ni soporte."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (MEC-01 Terrain Priority Collision): Usar Fake Out u otros ataques prioritarios sobre objetivos en suelo bajo Terreno Psíquico resulta en un fallo automático del 100% (-1.95 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Raichu-Mega-Y Volt Switch en Basculegion-M + Indeedee-F Helping Hand",
+        "optimal": false,
+        "vpDelta": "-1.45 VP",
+        "log": [
+          "1. Basculegion-M con Swift Swim es más rápido y conecta Wave Crash debilitando a Raichu-Mega-Y de un golpe!",
+          "2. Volt Switch no se ejecuta.",
+          "3. Pierdes a tu Mega atacante sin lograr intercambio.",
+          "4. Colapso del tablero."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Autopilot / Greed): Ignorar la velocidad superior de Swift Swim bajo lluvia condena a tu atacante más frágil (-1.45 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Raichu-Mega-Y Protect + Indeedee-F Protect",
+        "optimal": false,
+        "vpDelta": "-1.40 VP",
+        "log": [
+          "1. Ambos Pokémon usan Protect.",
+          "2. Basculegion y Pelipper se reposicionan con Tailwind.",
+          "3. En T+4 el rival tiene doble acelerador de velocidad activo.",
+          "4. Cedes la iniciativa."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-03 Passive Protect): El doble Protect pasivo sin alterar el clima ni debilitar piezas rivales permite al oponente establecer Tailwind gratis (-1.40 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-48",
+    "title": "M358 Turno 4: TGT-03 Damage Overkill (Gholdengo + Rillaboom vs Incineroar 22% HP)",
+    "driver": "Greed",
+    "code": "TGT-03",
+    "turnBadge": "TURNO 4 • FINAL DE PARTIDA 2v1 • VP 3v1 (+1.5)",
+    "context": "Tienes una ventaja posicional clara de 2v1: Gholdengo (Metal Coat, 45% HP) y Rillaboom (Miracle Seed, 100% HP) frente a un solitario Incineroar rival (Sitrus Berry, 22% HP) que ya consumió su baya. Si ambos slots atacan a Incineroar y este usa Protect, desperdicias ambos recursos; si uno cubre el Protect y el otro ataca con prioridad, garantizas el checkmate.",
+    "oppSlots": [
+      {
+        "name": "Incineroar",
+        "item": "Sitrus Berry",
+        "ability": "Intimidate",
+        "hp": 22,
+        "status": "Sin Baya / A Tiro de KO"
+      },
+      {
+        "name": "Primarina",
+        "item": "Mystic Water",
+        "ability": "Liquid Voice",
+        "hp": 0,
+        "status": "Debilitado (KO)"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Gholdengo",
+        "item": "Metal Coat",
+        "ability": "Good as Gold",
+        "hp": 45,
+        "status": "Spe 149"
+      },
+      {
+        "name": "Rillaboom",
+        "item": "Miracle Seed",
+        "ability": "Grassy Surge",
+        "hp": 100,
+        "status": "Grassy Glide Ready"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Gholdengo Protect + Rillaboom Grassy Glide en Incineroar",
+        "optimal": true,
+        "vpDelta": "+1.85 VP",
+        "log": [
+          "1. Gholdengo usa Protect asegurando su permanencia en campo ante un posible Flare Blitz.",
+          "2. Rillaboom conecta Grassy Glide con prioridad bajo Terreno de Hierba (-25% HP).",
+          "3. Incineroar es debilitado sin poder contraatacar.",
+          "4. Victoria limpia sin conceder bajas."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.85 VP): Cubres a Gholdengo de una represalia de Fuego mientras Rillaboom remata con prioridad garantizada, cerrando la partida con cero riesgo de varianza."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Gholdengo Make It Rain + Rillaboom Wood Hammer en Incineroar",
+        "optimal": false,
+        "vpDelta": "-1.60 VP",
+        "log": [
+          "1. Incineroar usa Protect! Absorbe ambos ataques.",
+          "2. En T+5 Incineroar conecta Flare Blitz y debilita a Gholdengo.",
+          "3. Rillaboom recibe daño innecesario de retroceso de Wood Hammer.",
+          "4. Concedes una baja evitable en final de partida."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (TGT-03 Damage Overkill): Concentrar doble ataque pesado sobre un objetivo en rango de KO regala un turno completo si el rival protege (-1.60 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Gholdengo Shadow Ball en Incineroar + Rillaboom Swords Dance",
+        "optimal": false,
+        "vpDelta": "-1.45 VP",
+        "log": [
+          "1. Gholdengo ataca con Shadow Ball pero Incineroar resiste con Tipo Siniestro.",
+          "2. Incineroar conecta Knock Off y fulmina a Gholdengo.",
+          "3. Rillaboom usa Swords Dance sin necesidad.",
+          "4. Alargas la partida innecesariamente."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Greed / Autopilot): Buscar boost con Swords Dance en situación de 2v1 en vez de asegurar el KO extiende la partida y arriesga una remontada (-1.45 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Gholdengo Make It Rain + Rillaboom Protect",
+        "optimal": false,
+        "vpDelta": "-1.30 VP",
+        "log": [
+          "1. Rillaboom usa Protect.",
+          "2. Incineroar es más lento pero sobrevive el Make It Rain debilitado por reducción de SpA.",
+          "3. Incineroar conecta Flare Blitz en Gholdengo.",
+          "4. Pierdes a Gholdengo."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-03 Inefficient Action): Dejar a Gholdengo expuesto a un ataque súper efectivo mientras tu slot sano protege de forma pasiva es una mala gestión de recursos (-1.30 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-49",
+    "title": "M359 Turno 4: POS-03 Passive Protect vs Garchomp + Mega Charizard Y (1v2 Desesperado)",
+    "driver": "Tilt",
+    "code": "POS-03",
+    "turnBadge": "TURNO 4 • DESVENTAJA 1v2 • VP 1v2 (-1.0)",
+    "context": "Te encuentras en una posición crítica de 1v2 con solo Sneasler (Focus Sash, 100% HP) frente a Garchomp (Yache Berry, 40% HP) y Charizard-Mega-Y (Charizardite Y, 55% HP). Ambos rivales están en rango de Close Combat o Poison Jab. Si usas Protect pasivo, el rival se reposiciona o dobla el slot; tu única línea de victoria matemática es explotar la banda focus y eliminar a uno de ellos de inmediato.",
+    "oppSlots": [
+      {
+        "name": "Garchomp",
+        "item": "Yache Berry",
+        "ability": "Rough Skin",
+        "hp": 40,
+        "status": "En Rango de KO"
+      },
+      {
+        "name": "Charizard-Mega-Y",
+        "item": "Charizardite Y",
+        "ability": "Drought",
+        "hp": 55,
+        "status": "Spe 167 (Sol)"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Sneasler",
+        "item": "Focus Sash",
+        "ability": "Unburden",
+        "hp": 100,
+        "status": "Spe 189 (Banda Intacta)"
+      },
+      {
+        "name": "Farigiraf",
+        "item": "Mental Herb",
+        "ability": "Armor Tail",
+        "hp": 0,
+        "status": "Debilitado (KO)"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Sneasler Close Combat en Garchomp",
+        "optimal": true,
+        "vpDelta": "+1.60 VP",
+        "log": [
+          "1. Sneasler (189 Spe) supera a Garchomp (169 Spe) y a Charizard-Mega-Y (167 Spe).",
+          "2. Conecta Close Combat fulminando a Garchomp antes de que ataque.",
+          "3. Charizard-Mega-Y ataca con Heat Wave, pero Focus Sash preserva a Sneasler con 1 HP.",
+          "4. Sneasler activa Unburden duplicando su velocidad a 378 Spe para rematar a Charizard en T+5."
+        ],
+        "verdict": "✅ ÓPTIMO (+1.60 VP): En posición de 1v2, quemar Protect es perder; atacar garantiza eliminar a un rival, activa tu Focus Sash y dispara Unburden para barrer al último Pokémon en el siguiente turno."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Sneasler Protect pasivo",
+        "optimal": false,
+        "vpDelta": "-1.90 VP",
+        "log": [
+          "1. Sneasler usa Protect absorbiendo el turno.",
+          "2. Charizard-Mega-Y usa Tailwind y Garchomp usa Swords Dance.",
+          "3. En T+5 ambos rivales superan a Sneasler y rompen su Focus Sash sin resistencia.",
+          "4. Jaque mate rival."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-03 Passive Protect): Usar Protect cuando estás abajo en equidad permite al rival preparar setup de victoria sin arriesgar nada (-1.90 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Sneasler Fake Out en Charizard-Mega-Y",
+        "optimal": false,
+        "vpDelta": "-1.50 VP",
+        "log": [
+          "1. Sneasler usa Fake Out en Charizard causando daño leve.",
+          "2. Garchomp conecta Stomping Tantrum y activa la Focus Sash de Sneasler.",
+          "3. Ningún rival fue eliminado.",
+          "4. En T+5 Charizard y Garchomp atacan juntos y aseguran la victoria."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Autopilot / Greed): Usar Fake Out para daño residual en vez de eliminar a un atacante permite a Garchomp quebrar tu Focus Sash sin contraprestación (-1.50 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Sneasler Poison Jab en Charizard-Mega-Y",
+        "optimal": false,
+        "vpDelta": "-1.45 VP",
+        "log": [
+          "1. Sneasler ataca con Poison Jab en Charizard dejándolo a 10% HP.",
+          "2. Garchomp conecta Earthquake fulminando a Sneasler a través de Focus Sash con daño secundario.",
+          "3. Derrota."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (TGT-03 Inefficient Targeting): Dirigir el ataque al objetivo con mayor HP en vez de asegurar el KO limpio en Garchomp entrega la partida (-1.45 VP)."
+      }
+    ]
+  },
+  {
+    "id": "SC-50",
+    "title": "M360 Turno 5: SPD-01 Priority Mind-Game (Kingambit vs Choice Scarf Gholdengo 1v1)",
+    "driver": "Tunnel_Vision",
+    "code": "SPD-01",
+    "turnBadge": "TURNO 5 • DUELO FINAL 1v1 • VP 1v1 (+0.0)",
+    "context": "Duelo final decisivo 1v1 por la victoria del match: Kingambit (Black Glasses, 25% HP) frente a Gholdengo (Choice Scarf, 30% HP). Gholdengo tiene Choice Scarf (223 Spe) y supera a Kingambit por velocidad natural; amenaza Focus Blast o Shadow Ball. Kingambit dispone de Sucker Punch (+1 de prioridad) y Kowtow Cleave. Si Gholdengo ataca, Sucker Punch gana; si Gholdengo anticipa el Sucker Punch y usa Nasty Plot o Trick, Sucker Punch falla.",
+    "oppSlots": [
+      {
+        "name": "Gholdengo",
+        "item": "Choice Scarf",
+        "ability": "Good as Gold",
+        "hp": 30,
+        "status": "Spe 223 (Scarf Lock)"
+      },
+      {
+        "name": "Archaludon",
+        "item": "Rocky Helmet",
+        "ability": "Stamina",
+        "hp": 0,
+        "status": "Debilitado (KO)"
+      }
+    ],
+    "mySlots": [
+      {
+        "name": "Kingambit",
+        "item": "Black Glasses",
+        "ability": "Supreme Overlord",
+        "hp": 25,
+        "status": "Spe 70 (+5 Atk Supreme)"
+      },
+      {
+        "name": "Clefable",
+        "item": "Sitrus Berry",
+        "ability": "Unaware",
+        "hp": 0,
+        "status": "Debilitado (KO)"
+      }
+    ],
+    "options": [
+      {
+        "id": "OPT-A",
+        "label": "A) Kingambit Sucker Punch en Gholdengo",
+        "optimal": true,
+        "vpDelta": "+1.90 VP",
+        "log": [
+          "1. Gholdengo con Choice Scarf está bloqueado en modo ofensivo y declara Shadow Ball.",
+          "2. Kingambit activa Sucker Punch en el bracket +1 de prioridad superando a Gholdengo.",
+          "3. El ataque potencidado por Black Glasses y Supreme Overlord (+5) conecta golpe fatal.",
+          "4. Gholdengo cae debilitado antes de ejecutar su movimiento. Victoria!"
+        ],
+        "verdict": "✅ ÓPTIMO (+1.90 VP): El usuario de Choice Scarf no puede permitirse movimientos de estado sin quedar bloqueado; Sucker Punch asegura la prioridad matemática y cierra el match."
+      },
+      {
+        "id": "OPT-B",
+        "label": "B) Kingambit Kowtow Cleave en Gholdengo",
+        "optimal": false,
+        "vpDelta": "-1.95 VP",
+        "log": [
+          "1. Gholdengo con Choice Scarf (223 Spe) actúa primero.",
+          "2. Conecta Focus Blast súper efectivo y fulmina a Kingambit de un solo golpe.",
+          "3. Kowtow Cleave no llega a ejecutarse.",
+          "4. Derrota en el último turno."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (SPD-01 Activation Phase Blindness): Atacar sin prioridad frente a un rival que te supera ampliamente en velocidad por Choice Scarf resulta en KO previo fatal (-1.95 VP)."
+      },
+      {
+        "id": "OPT-C",
+        "label": "C) Kingambit Protect pasivo",
+        "optimal": false,
+        "vpDelta": "-1.50 VP",
+        "log": [
+          "1. Kingambit usa Protect absorbiendo el ataque de Gholdengo.",
+          "2. En el turno siguiente Kingambit enfrenta un 33% de probabilidad de éxito en Protect consecutivo.",
+          "3. No alteras el estado del tablero y pospones la resolución a una moneda al aire.",
+          "4. Variación innecesaria."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (POS-03 Passive Protect): Usar Protect en un 1v1 donde tienes la prioridad garantizada con Sucker Punch solo arriesga perder el turno siguiente (-1.50 VP)."
+      },
+      {
+        "id": "OPT-D",
+        "label": "D) Kingambit Swords Dance",
+        "optimal": false,
+        "vpDelta": "-1.85 VP",
+        "log": [
+          "1. Gholdengo ataca primero con Shadow Ball y elimina a Kingambit.",
+          "2. Swords Dance no se ejecuta.",
+          "3. Derrota inmediata."
+        ],
+        "verdict": "⚠️ FUGA TÁCTICA (Greed / Overkill): Buscar incremento de ataque en rango de KO mortal sin prioridad es un error definitivo de codicia (-1.85 VP)."
+      }
+    ]
   }
 ]
 
-# Backward compatibility alias
 FLASHCARD_SCENARIOS = CRUCIBLE_SCENARIOS

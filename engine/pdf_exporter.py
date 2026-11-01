@@ -112,3 +112,18 @@ def export_pdf(
             "message": f"Browser invocation failed: {str(e)}",
             "theme": theme
         }
+
+
+def export_html_to_pdf(
+    input_html_path: str,
+    output_pdf_path: str,
+    theme: str = "porygon"
+) -> Dict[str, Any]:
+    """
+    Convenience wrapper to read an existing HTML file and compile to PDF.
+    """
+    html_file = Path(input_html_path).resolve()
+    if not html_file.exists():
+        raise FileNotFoundError(f"Input HTML file does not exist: {input_html_path}")
+    content = html_file.read_text(encoding="utf-8")
+    return export_pdf(content, output_pdf_path, theme=theme)

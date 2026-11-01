@@ -79,7 +79,7 @@ class OpenTeamSheet:
 
 @dataclass
 class SlotState:
-    """Represents the exact state of a single active Pokemon slot."""
+    """Represents the exact state of a single active Pokemon slot with dual-typing tracking."""
 
     species: str
     hp_pct: float = 1.0
@@ -89,6 +89,7 @@ class SlotState:
     speed_tier: float = 100.0
     item: str = ""
     ability: str = ""
+    types: List[str] = field(default_factory=list)
     boosts: Dict[str, int] = field(
         default_factory=lambda: {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}
     )
@@ -104,7 +105,39 @@ class SlotState:
             speed_tier=self.speed_tier,
             item=self.item,
             ability=self.ability,
+            types=list(self.types),
             boosts=dict(self.boosts),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert SlotState to dictionary representation."""
+        return {
+            "species": self.species,
+            "hp_pct": round(self.hp_pct, 4),
+            "is_mega": self.is_mega,
+            "status": self.status,
+            "fainted": self.fainted,
+            "speed_tier": self.speed_tier,
+            "item": self.item,
+            "ability": self.ability,
+            "types": list(self.types),
+            "boosts": dict(self.boosts),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "SlotState":
+        """Reconstruct SlotState from dictionary."""
+        return cls(
+            species=data.get("species", "None"),
+            hp_pct=float(data.get("hp_pct", 1.0)),
+            is_mega=bool(data.get("is_mega", False)),
+            status=str(data.get("status", "None")),
+            fainted=bool(data.get("fainted", False)),
+            speed_tier=float(data.get("speed_tier", 100.0)),
+            item=str(data.get("item", "")),
+            ability=str(data.get("ability", "")),
+            types=list(data.get("types", [])),
+            boosts=dict(data.get("boosts", {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0})),
         )
 
 
@@ -149,6 +182,59 @@ class TurnSnapshot:
     is_ots: bool = False
     p1_ots: Optional[OpenTeamSheet] = None
     p2_ots: Optional[OpenTeamSheet] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert TurnSnapshot to dictionary representation."""
+        return {
+            "turn_number": self.turn_number,
+            "p1_slots": [s.to_dict() for s in self.p1_slots],
+            "p2_slots": [s.to_dict() for s in self.p2_slots],
+            "p1_bench_alive": self.p1_bench_alive,
+            "p2_bench_alive": self.p2_bench_alive,
+            "p1_bench_species": list(self.p1_bench_species),
+            "p2_bench_species": list(self.p2_bench_species),
+            "p1_mega_used": self.p1_mega_used,
+            "p2_mega_used": self.p2_mega_used,
+            "weather": self.weather,
+            "weather_turns": self.weather_turns,
+            "terrain": self.terrain,
+            "terrain_turns": self.terrain_turns,
+            "hp_deltas": dict(self.hp_deltas),
+            "kos": list(self.kos),
+            "mega_evolutions": list(self.mega_evolutions),
+            "weather_changed": self.weather_changed,
+            "terrain_changed": self.terrain_changed,
+            "redirection_active": self.redirection_active,
+            "protect_absorptions": self.protect_absorptions,
+            "is_ots": self.is_ots,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TurnSnapshot":
+        """Reconstruct TurnSnapshot from dictionary representation."""
+        return cls(
+            turn_number=int(data.get("turn_number", 1)),
+            p1_slots=[SlotState.from_dict(s) for s in data.get("p1_slots", [])],
+            p2_slots=[SlotState.from_dict(s) for s in data.get("p2_slots", [])],
+            p1_bench_alive=int(data.get("p1_bench_alive", 2)),
+            p2_bench_alive=int(data.get("p2_bench_alive", 2)),
+            p1_bench_species=list(data.get("p1_bench_species", [])),
+            p2_bench_species=list(data.get("p2_bench_species", [])),
+            p1_mega_used=bool(data.get("p1_mega_used", False)),
+            p2_mega_used=bool(data.get("p2_mega_used", False)),
+            weather=str(data.get("weather", "Clear")),
+            weather_turns=int(data.get("weather_turns", 0)),
+            terrain=str(data.get("terrain", "None")),
+            terrain_turns=int(data.get("terrain_turns", 0)),
+            hp_deltas=dict(data.get("hp_deltas", {})),
+            kos=list(data.get("kos", [])),
+            mega_evolutions=list(data.get("mega_evolutions", [])),
+            weather_changed=bool(data.get("weather_changed", False)),
+            terrain_changed=bool(data.get("terrain_changed", False)),
+            redirection_active=bool(data.get("redirection_active", False)),
+            protect_absorptions=int(data.get("protect_absorptions", 0)),
+            is_ots=bool(data.get("is_ots", False)),
+        )
 
 
 @dataclass
@@ -333,6 +419,16 @@ class ShowdownParser:
             if cand and cand in BASE_STATS_DB:
                 return cand
         return species
+
+    def _lookup_types(self, species: str, is_mega: bool = False) -> List[str]:
+        """Lookup canonical elemental types for species, accounting for Mega evolution."""
+        target = self._resolve_mega_species(species) if is_mega else species
+        if target in BASE_STATS_DB:
+            return list(BASE_STATS_DB[target].get("types", []))
+        canon = self._canonical_species(species)
+        if canon in BASE_STATS_DB:
+            return list(BASE_STATS_DB[canon].get("types", []))
+        return []
 
     def _lookup_speed(self, species: str, is_mega: bool = False) -> float:
         """Compute Level 50 Speed stat using turn_simulator.calculate_level_50_stats."""
@@ -576,6 +672,7 @@ class ShowdownParser:
                 speed_tier=self._lookup_speed(canon, is_m),
                 item=item,
                 ability=ability,
+                types=self._lookup_types(canon, is_m),
             )
             existing_idx = next(
                 (i for i, s in enumerate(active_list) if s.species == canon), None
@@ -941,6 +1038,7 @@ class ShowdownParser:
                     species=species,
                     hp_pct=1.0,
                     speed_tier=self._lookup_speed(species, False),
+                    types=self._lookup_types(species, False),
                 )
                 if ident.startswith("p1"):
                     p1_slots[ident[:3]] = slot_obj

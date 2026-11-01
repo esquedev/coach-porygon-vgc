@@ -110,6 +110,7 @@ def verify_stress_cases_schema():
         assert cid, f"Missing case id in {c}"
         assert cid not in seen_ids, f"Duplicate case id: {cid}"
         seen_ids.add(cid)
+        assert c.get("family") in ("domain_critical", "agent_perturbation"), f"Case {cid} missing or invalid family"
         assert c.get("category"), f"Case {cid} missing category"
         assert c.get("mode"), f"Case {cid} missing mode"
         assert c.get("description"), f"Case {cid} missing description"

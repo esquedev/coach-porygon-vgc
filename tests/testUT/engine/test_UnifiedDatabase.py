@@ -29,10 +29,50 @@ class TestUnifiedDatabase(unittest.TestCase):
         self.db.close()
 
     def test_schema_initialization_and_empty_tables(self) -> None:
-        """Verify all four canonical tables exist and are initially empty."""
-        for table in ("matches", "tactical_audits", "diagnostics", "munchstats_meta"):
+        """Verify canonical audit tables are initially empty and MunchStats JSONL auto-ingests in RAM."""
+        for table in ("matches", "tactical_audits", "diagnostics"):
             rows = self.db.query(f"SELECT COUNT(*) AS cnt FROM {table}")
             self.assertEqual(rows[0]["cnt"], 0)
+        # munchstats_meta and munchstats_threats are auto-populated from data/munchstats_threats.jsonl
+        threat_rows = self.db.query("SELECT COUNT(*) AS cnt FROM munchstats_threats")
+        self.assertGreaterEqual(threat_rows[0]["cnt"], 50)
+        meta_rows = self.db.query("SELECT COUNT(*) AS cnt FROM munchstats_meta")
+        self.assertGreaterEqual(meta_rows[0]["cnt"], 50)
+
+    def test_unsupervised_munchstats_threats_and_sql_queries(self) -> None:
+        """Verify unsupervised neural autoencoder + clustering threats are queryable via SQL with zero .db files."""
+        # Ensure zero .db files exist in data/
+        db_files = list((REPO_ROOT / "data").rglob("*.db"))
+        self.assertEqual(len(db_files), 0)
+
+        threats = self.db.get_unsupervised_threats(limit=12)
+        self.assertEqual(len(threats), 12)
+        top = threats[0]
+        self.assertEqual(top["species"], "Rillaboom")
+        self.assertGreaterEqual(top["threat_score"], 90.0)
+        self.assertEqual(top["cluster_label"], "APEX_META_PILLAR")
+        self.assertEqual(sum(top["sp_spread"].values()), 66)
+
+        # Verify SQL filtering by cluster_label
+        pillars = self.db.query(
+            "SELECT species, threat_score, top_item FROM munchstats_threats WHERE cluster_label = ? ORDER BY threat_score DESC",
+            ("APEX_META_PILLAR",),
+        )
+        self.assertGreaterEqual(len(pillars), 4)
+        # Ensure Archaludon uses legal Leftovers (not illegal Assault Vest)
+        arch = self.db.query(
+            "SELECT top_item, top_ability FROM munchstats_threats WHERE species = ?",
+            ("Archaludon",),
+        )
+        self.assertEqual(len(arch), 1)
+        self.assertEqual(arch[0]["top_item"], "Leftovers")
+
+        benchmarks = self.db.get_speed_benchmarks(limit=10)
+        self.assertEqual(len(benchmarks), 10)
+        self.assertGreaterEqual(benchmarks[0]["spe"], benchmarks[-1]["spe"])
+
+        archetypes = self.db.get_unsupervised_archetypes(limit=8)
+        self.assertGreaterEqual(len(archetypes), 4)
 
     def test_ingest_jsonl_fixture_and_relational_join(self) -> None:
         """Verify batch ingestion of tactical_audits.jsonl and relational JOIN queries."""
@@ -123,6 +163,31 @@ class TestUnifiedDatabase(unittest.TestCase):
 
         with self.assertRaises(ValueError):
             self.db.append_audit_record({})
+
+    def test_get_meta_feed_aggregation(self) -> None:
+        """Verify get_meta_feed aggregates real tournament results and conversion rates."""
+        feed = self.db.get_meta_feed()
+        self.assertEqual(feed["status"], "OK")
+        self.assertIn("summary", feed)
+        self.assertIn("tournaments", feed)
+        self.assertGreaterEqual(len(feed["tournaments"]), 1)
+        self.assertIn("top_species", feed)
+        self.assertIn("dominant_megas", feed)
+        self.assertIn("feed_events", feed)
+
+    def test_get_enhanced_flashcards_board_state_and_payoff(self) -> None:
+        """Verify get_enhanced_flashcards enriches scenarios with 4-slot board state and payoff matrix."""
+        flashcards = self.db.get_enhanced_flashcards()
+        self.assertGreaterEqual(len(flashcards), 1)
+        sample = flashcards[0]
+        self.assertIn("board_state", sample)
+        self.assertIn("user_slot1", sample["board_state"])
+        self.assertIn("opp_slot1", sample["board_state"])
+        self.assertIn("options", sample)
+        self.assertEqual(len(sample["options"]), 4)
+        self.assertIn("payoff_logs", sample)
+        self.assertIn("payoff_matrix", sample["payoff_logs"])
+        self.assertIn("simulated_damage_roll", sample["payoff_logs"])
 
 
 if __name__ == "__main__":

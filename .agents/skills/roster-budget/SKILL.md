@@ -9,6 +9,20 @@ description: >-
 
 Deliver deterministic 66-SP roster engineering with zero conversational padding.
 
+---
+
+## 0. Governance, Role Alignment & Validation Matrix
+- **Owner Role:** Roster & Stat Engineer (`Role: RosterEngineer`)
+- **Domain Layer:** Domain Core (66-SP Allocation & Format Legality)
+- **Permissions:** Read `data/Regulation_MC_Items.csv`, `data/MC_Available_Pokemon.csv`; execute `engine/sp_calculator.py`, `engine/validate_roster.py`, and `engine/register_team.py`; write (register) to `data/Teams.csv` and `data/trainer_profile.json`. Codebase infrastructure is locked.
+- **Minimum Viable Context (MVC):** `Regulation_MC_Items.csv`, Level 50 SP formula, typing/STAB matrix, Item Clause. Exclude: Replay battle histories, MunchStats Swiss standings, frontend UI code.
+- **Deterministic Validation Criteria:**
+  - Mandatory arithmetic verification string output: `[HP] HP + [Atk] Atk + ... = 66 SP`.
+  - All 6 slots verified via `engine/validate_roster.py` returning `[PASS - 100% LEGAL]`.
+  - Exact sequential Team ID assignment (`Txx`).
+
+---
+
 ## Execution Workflow
 
 1. **Legacy Purge Guardrail**:

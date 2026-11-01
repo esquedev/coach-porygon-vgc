@@ -9,6 +9,20 @@ description: >-
 
 Deliver dense, mathematically grounded coaching analysis directly without conversational preambles or pleasantries.
 
+---
+
+## 0. Governance, Role Alignment & Validation Matrix
+- **Owner Role:** Metagame & Scouting Analyst (`Role: Analyst`) / Head Coach (`Role: Coach`)
+- **Domain Layer:** Domain Core (Turn Simulation & Turning Point Logic) & Infrastructure (Telemetry Persistence)
+- **Permissions:** Read `data/trainer_profile.json`, `data/Teams.csv`, `data/Scouted_Teams.csv`; execute `engine/turn_simulator.py` and `engine/telemetry.py`; write (append) to `data/Raw_Matches.csv`, `data/Playstyle_Diagnostics.csv`, `data/Scouted_Raw_Matches.csv`, and `data/Damage_Calculations.csv`. Codebase is locked.
+- **Minimum Viable Context (MVC):** Replay log, `known_alts`, `last_team_id`, Turning Point detection criteria, mistake taxonomy. Exclude: UI CSS design tokens, crawler HTML parsers, unit test implementations.
+- **Deterministic Validation Criteria:**
+  - Mandatory POV binding against `trainer_profile.json` (halt on ambiguity).
+  - Multi-turn Minimax simulation ($T_N \to T_{N+1} \to T_{N+2}$) quantifying net $\Delta VP$.
+  - Atomic telemetry logging via `python engine/telemetry.py`.
+
+---
+
 ## Execution Workflow
 
 1. **Trainer Profile & Strict Team ID Verification**:
@@ -21,7 +35,7 @@ Deliver dense, mathematically grounded coaching analysis directly without conver
 2. **Pre-Turn Validation & Multi-Turn Minimax Branch Simulation ($T_N \to T_{N+1} \to T_{N+2}$)**:
    - Identify the **Turning Point** where a massive tempo swing or decisive $\Delta VP$ divergence occurred.
    - Actively execute [`engine/turn_simulator.py`](../../../engine/turn_simulator.py) to simulate the divergence across 2 to 3 turns:
-     - **Turn $N$ Divergence:** Compare the user's actual action against the Minimax optimal line, calculating damage rolls, status procs, and immediate VP gain/loss.
+      - **Turn $N$ Divergence:** Compare the user's actual action against the Minimax optimal line, calculating exact Showdown damage rolls, dual-typing effectiveness (4.0x weaknesses, 0.25x double resistances, 0.0x immunities), active STAB bonuses (Primary, Secondary, or converted '-ate' STAB), status procs, and immediate VP gain/loss.
      - **Turn $N+1$ Board Fallout:** Feed the simulator's output state into the next turn. Evaluate the resulting positional fallout (field condition expirations, exposed slots, lost weather/terrain momentum).
      - **Turn $N+2$ End-Game Trajectory:** Project the checkmate or stabilization path, establishing why the optimal branch preserved the win condition while the user's line collapsed.
 
@@ -31,7 +45,7 @@ Deliver dense, mathematically grounded coaching analysis directly without conver
    - **The Turning Point (Turn-by-Turn Minimax Simulation):**
      - Explicitly detail Turn $N$, Turn $N+1$, and Turn $N+2$ progression for both the **User's Line** and the **Minimax Counter-Line**.
      - Quantify the net VP delta (`Standard KO = +2 VP`, `Mega KO = +3 VP`, `Hard read / immunity switch = +2 VP`, `Critical Protect = +1 VP`).
-   - **Tactical Execution & Misplay Diagnosis:** Assign standardized error codes (`POS-01`–`POS-03`, `TGT-01`–`TGT-03`, `MEC-01`–`MEC-02`, `SPD-01`–`SPD-02`), classify the root cognitive trap (`Tunnel_Vision`, `Greed`, `Autopilot`, `Tilt`, `Format_Divergence`), and dictate the deterministic imperative fix.
+    - **Tactical Execution & Misplay Diagnosis:** Assign standardized error codes (`POS-01`–`POS-03`, `TGT-01`–`TGT-03`, `MEC-01`–`MEC-02`, `SPD-01`–`SPD-02`), classify the root cognitive trap (`Tunnel_Vision`, `Greed`, `Autopilot`, `Tilt`, `Format_Divergence`), evaluate dual-type resistance or immunity errors, and dictate the deterministic imperative fix.
    - **Team Evolution & Commentary:** Formulate concise, actionable roster improvements (SP spread optimizations, item swaps, tech moves).
 
 4. **Direct CSV Telemetry Ingestion**:

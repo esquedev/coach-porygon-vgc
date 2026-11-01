@@ -18,7 +18,7 @@ Serves the bilingual (EN / ES) Command Center and exposes live endpoints:
 - POST /api/scouted/ingest         : Ingests verified scouted OTS teams
 - GET  /api/status                 : System & GPU/CUDA hardware status
 - POST /api/audit                  : Game-Theoretic All-Turns & Turning Point replay audit
-- POST /api/gpu-matrix             : 5x5 Payoff Matrix, Nash equilibrium & Uncertainty profile
+- POST /api/gpu-matrix             : GPU Payoff Matrix, Nash equilibrium & Uncertainty profile
 - GET  /api/report/<audit_id>      : Print-ready HTML tactical report for an audit ID
 - POST /api/benchmark              : PyTorch GPU/CPU throughput & latency benchmark
 """
@@ -27,6 +27,7 @@ import argparse
 from collections import Counter
 import csv
 from datetime import datetime, timezone
+import hashlib
 import http.server
 import json
 import os
@@ -35,7 +36,7 @@ import re
 import socketserver
 import sys
 import urllib.parse
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from flask import (
     Flask,
@@ -73,6 +74,23 @@ SPRITES_ROOT_DIR = ASSETS_DIR / "sprites"
 ITEMS_DIR = ASSETS_DIR / "items"
 MEGASTONES_DIR = ASSETS_DIR / "megastones"
 DATA_DIR = REPO_ROOT / "data"
+MANIFEST_PATH = ASSETS_DIR / "png_manifest.json"
+
+_MANIFEST_CACHE: Optional[Dict[str, Any]] = None
+
+
+def get_asset_manifest() -> Dict[str, Any]:
+    """Retrieve in-memory cached asset manifest to ensure O(1) asset resolution."""
+    global _MANIFEST_CACHE
+    if _MANIFEST_CACHE is None:
+        if MANIFEST_PATH.is_file():
+            try:
+                _MANIFEST_CACHE = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+            except Exception:
+                _MANIFEST_CACHE = {}
+        else:
+            _MANIFEST_CACHE = {}
+    return _MANIFEST_CACHE
 
 RESTRICTED_PATH_PATTERNS = (
     "/.git",
@@ -156,9 +174,9 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
     """
     Dynamically resolves the authentic sprite PNG path for a Pokémon name or alias.
     Checks assets/sprites/Reg_M-C/ first, falling back to assets/sprites/.
-    Handles shinies, gender variants (-female, -male), regional forms, Rotom, and Megas.
+    Utilizes in-memory manifest cache for O(1) lookups with comprehensive form resolution.
     """
-    raw = str(species or "").strip()
+    raw = re.sub(r"\.(?:png|svg|webp|jpe?g)$", "", str(species or "").strip(), flags=re.I)
     clean = raw.split("@")[0].strip()
     check_shiny = is_shiny or bool(re.search(r"\bshiny\b", clean, re.I))
     is_female = bool(re.search(r"\(f\)|-f$|-female$", clean, re.I))
@@ -168,9 +186,22 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
     slug = slugify(stripped)
     alnum = alnum_key(stripped)
 
+    assets_canon = ASSETS_DIR.resolve()
+
+    # 1. Fast path: In-memory Manifest Lookup
+    if not check_shiny:
+        manifest = get_asset_manifest()
+        species_map = manifest.get("species", {})
+        for lookup_key in (raw, clean, stripped, slug, alnum):
+            if lookup_key in species_map:
+                rel = species_map[lookup_key]
+                cand = (REPO_ROOT / rel).resolve()
+                if cand.is_file() and os.path.commonpath([str(assets_canon), str(cand)]) == str(assets_canon):
+                    return cand
+
     candidates = []
 
-    # 1. Gender differentiated candidates
+    # 2. Gender differentiated candidates
     if is_female:
         candidates.extend([f"{slug}-female", f"{slug}-f", f"{slug}female", f"{alnum}-female"])
         if "basculegion" in slug:
@@ -192,23 +223,79 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
         if "pyroar" in slug:
             candidates.insert(0, "pyroar-male")
 
-    # 2. Standard slug and alnum keys
+    # 3. Specialized Form Mappings
+    if "tauros" in slug:
+        if "aqua" in slug:
+            candidates.extend(["tauros-paldean-aqua", "tauros-aqua"])
+        elif "blaze" in slug:
+            candidates.extend(["tauros-paldean-blaze", "tauros-blaze"])
+        elif "combat" in slug or slug == "paldean-tauros":
+            candidates.extend(["tauros-paldean-combat", "tauros-combat"])
+        elif slug == "tauros":
+            candidates.append("tauros")
+
+    if "lycanroc" in slug:
+        if "midnight" in slug:
+            candidates.extend(["lycanroc-midnight"])
+        elif "dusk" in slug:
+            candidates.extend(["lycanroc-dusk"])
+        elif "midday" in slug or slug == "lycanroc":
+            candidates.extend(["lycanroc"])
+
+    if "toxtricity" in slug:
+        if "low-key" in slug or "lowkey" in slug:
+            candidates.extend(["toxtricity-low-key"])
+        elif "amped" in slug or slug == "toxtricity":
+            candidates.extend(["toxtricity"])
+
+    if "florges" in slug:
+        for col in ["blue", "orange", "white", "yellow"]:
+            if col in slug:
+                candidates.extend([f"florges-{col}"])
+        if "red" in slug or slug == "florges":
+            candidates.extend(["florges"])
+
+    if "squawkabilly" in slug:
+        for col in ["blue", "white", "yellow"]:
+            if col in slug:
+                candidates.extend([f"squawkabilly-{col}"])
+        if "green" in slug or slug == "squawkabilly":
+            candidates.extend(["squawkabilly"])
+
+    if "gourgeist" in slug:
+        if "small" in slug:
+            candidates.extend(["gourgeist-small"])
+        elif "large" in slug:
+            candidates.extend(["gourgeist-large"])
+        elif "jumbo" in slug or "super" in slug:
+            candidates.extend(["gourgeist-super"])
+        elif slug == "gourgeist":
+            candidates.extend(["gourgeist"])
+
+    if "furfrou" in slug:
+        for trim in ["dandy", "debutante", "diamond", "heart", "kabuki", "la-reine", "matron", "pharaoh", "star"]:
+            if trim in slug or trim.replace("-", "") in slug:
+                candidates.extend([f"furfrou-{trim}"])
+        if slug == "furfrou":
+            candidates.extend(["furfrou"])
+
+    # 4. Standard slug and alnum keys
     candidates.extend([slug, alnum])
 
-    # 3. Regional forms permutations
+    # 5. Regional forms permutations
     for reg in ["alolan", "hisuian", "galarian", "paldean"]:
         if slug.startswith(f"{reg}-"):
             candidates.append(slug.replace(f"{reg}-", "") + f"-{reg}")
         if slug.endswith(f"-{reg}"):
             candidates.append(f"{reg}-" + slug.replace(f"-{reg}", ""))
 
-    # 4. Rotom appliances
+    # 6. Rotom appliances
     if "rotom" in slug:
         for app in ["wash", "heat", "frost", "fan", "mow"]:
             if app in slug:
                 candidates.extend([f"rotom-{app}", f"{app}-rotom"])
 
-    # 5. Mega normalization permutations
+    # 7. Mega normalization permutations
     if "mega" in slug:
         m_x = re.match(r"^(?:mega-)?([a-z0-9]+)-(?:mega-)?([xyz])$", slug)
         if m_x:
@@ -219,7 +306,7 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
         elif slug.endswith("-mega"):
             candidates.append("mega-" + slug[:-5])
 
-    # 6. Base species fallback
+    # 8. Base species fallback
     base_slug = slug
     if base_slug.startswith("mega-"):
         base_slug = base_slug[5:]
@@ -234,7 +321,6 @@ def resolve_sprite_path(species: str, is_shiny: bool = False) -> Path | None:
     if base_slug and base_slug not in candidates:
         candidates.append(base_slug)
 
-    assets_canon = ASSETS_DIR.resolve()
     for c in candidates:
         if not c:
             continue
@@ -418,6 +504,300 @@ def execute_prompt_crawl_and_dump(user_prompt: str, export_csv: bool = True) -> 
     }
 
 
+def compute_comprehensive_spread_analytics(payload: dict) -> dict:
+    """
+    Computes comprehensive Regulation M-C Level 50 stats, Speed Ladder ranking,
+    and 16+ real-time offensive and defensive damage calculations vs top meta threats.
+    """
+    from engine.turn_simulator import (
+        ClientReplaySimulator, calculate_level_50_stats, BASE_STATS_DB, MOVE_DB
+    )
+    from engine.sp_calculator import validate_and_calculate_sp
+
+    species = str(payload.get("species", "Charizard-Mega-Y")).strip()
+    sp_in = payload.get("sp") or {}
+    sp_spread = {
+        "hp": int(sp_in.get("hp", payload.get("hp", 0))),
+        "atk": int(sp_in.get("atk", payload.get("atk", 0))),
+        "def": int(sp_in.get("def", payload.get("def_sp", payload.get("def", 0)))),
+        "spa": int(sp_in.get("spa", payload.get("spa", 0))),
+        "spd": int(sp_in.get("spd", payload.get("spd", 0))),
+        "spe": int(sp_in.get("spe", payload.get("spe", 0))),
+    }
+    nature = str(payload.get("nature", "Modest")).capitalize()
+    item = str(payload.get("item", "Life Orb")).strip()
+    ability = str(payload.get("ability", "")).strip()
+    boosts = payload.get("boosts") or {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}
+    for k in ("atk", "def", "spa", "spd", "spe"):
+        boosts[k] = int(boosts.get(k, 0))
+
+    field_in = payload.get("field") or {}
+    weather = str(field_in.get("weather", payload.get("weather", "none"))).lower()
+    weather = None if weather in ("none", "") else weather
+    terrain = str(field_in.get("terrain", payload.get("terrain", "none"))).lower()
+    terrain = None if terrain in ("none", "") else terrain
+
+    tailwind = bool(field_in.get("tailwind", payload.get("tailwind", False)))
+    helping_hand = bool(field_in.get("helping_hand", payload.get("helping_hand", False)))
+    reflect = bool(field_in.get("reflect", payload.get("reflect", False)))
+    light_screen = bool(field_in.get("light_screen", payload.get("light_screen", False)))
+    friend_guard = bool(field_in.get("friend_guard", payload.get("friend_guard", False)))
+
+    # Calculate Level 50 stats with sequential floor rounding
+    ok, sp_verif, final_stats = validate_and_calculate_sp(species, sp_spread, nature=nature)
+    if not ok:
+        hp_val, st_val = calculate_level_50_stats(species, sp_spread, nature=nature)
+        final_stats = {"hp": hp_val, **st_val}
+        total_sp = sum(sp_spread.values())
+        sp_verif = (
+            f"{sp_spread['hp']} HP + {sp_spread['atk']} Atk + {sp_spread['def']} Def + "
+            f"{sp_spread['spa']} SpA + {sp_spread['spd']} SpD + {sp_spread['spe']} Spe = {total_sp} SP"
+        )
+
+    user_base = BASE_STATS_DB.get(species, {"types": ["Normal"]})
+    user_types = list(user_base.get("types", ["Normal"]))
+
+    # Speed Tier Analysis
+    raw_spe = final_stats.get("spe", 80)
+    effective_spe = raw_spe
+    if tailwind:
+        effective_spe *= 2
+    if item == "Choice Scarf":
+        effective_spe = int(effective_spe * 1.5)
+    spe_boost = boosts.get("spe", 0)
+    if spe_boost > 0:
+        effective_spe = int(effective_spe * (2 + spe_boost) / 2)
+    elif spe_boost < 0:
+        effective_spe = int(effective_spe * 2 / (2 - spe_boost))
+
+    from engine.db import UnifiedCoachDatabase
+
+    db_inst = UnifiedCoachDatabase()
+    sql_speed_benchmarks = db_inst.get_speed_benchmarks(limit=15)
+    sql_threats = db_inst.get_unsupervised_threats(limit=12)
+    db_inst.close()
+
+    if sql_speed_benchmarks:
+        speed_benchmarks = [
+            {
+                "name": b["name"],
+                "speed": int(b["spe"]),
+                "tier": f"Tier ({b['tier']}) — {b['usage_pct']}% Regional Usage",
+            }
+            for b in sql_speed_benchmarks
+        ]
+    else:
+        speed_benchmarks = [
+            {"name": "Raichu-Mega-Y (Timid 32 SP)", "speed": 200, "tier": "Tier 1: Fast"},
+            {"name": "Salamence-Mega (Timid 32 SP)", "speed": 189, "tier": "Tier 1: Fast"},
+            {"name": "Sneasler (Adamant 32 SP)", "speed": 172, "tier": "Tier 2: High Speed"},
+            {"name": "Charizard-Mega-Y (Modest 32 SP)", "speed": 152, "tier": "Tier 3: Mid Speed"},
+            {"name": "Rillaboom (Adamant 32 SP)", "speed": 137, "tier": "Tier 3: Mid Speed"},
+            {"name": "Archaludon (Calm 0 SP)", "speed": 105, "tier": "Tier 4: Bulky"},
+            {"name": "Gholdengo (Modest 0 SP)", "speed": 104, "tier": "Tier 4: Bulky"},
+            {"name": "Incineroar (Careful 0 SP)", "speed": 80, "tier": "Tier 5: Slow Pivot"},
+            {"name": "Kingambit (Adamant 0 SP)", "speed": 70, "tier": "Tier 6: Trick Room"},
+        ]
+
+    speed_ladder = []
+    for b in speed_benchmarks:
+        status = "OUTSPEEDS" if effective_spe > b["speed"] else ("TIE" if effective_spe == b["speed"] else "UNDERSPEEDS")
+        speed_ladder.append({
+            "target": b["name"],
+            "target_speed": b["speed"],
+            "tier": b["tier"],
+            "status": status,
+            "delta": effective_spe - b["speed"],
+        })
+
+    if sql_threats:
+        meta_threats = [
+            {
+                "species": t["species"],
+                "types": t["types"],
+                "role": t["cluster_label"],
+                "threat_score": t["threat_score"],
+                "usage_pct": t["usage_pct"],
+                "item": t["item"],
+                "ability": t["ability"],
+                "nature": t["nature"],
+                "sp": t["sp_spread"],
+                "move": t["move"],
+                "bp": t["bp"],
+                "cat": t["cat"],
+                "type": t["mtype"],
+            }
+            for t in sql_threats
+        ]
+    else:
+        meta_threats = [
+            {"species": "Rillaboom", "types": ["Grass"], "role": "APEX_META_PILLAR", "threat_score": 99.5, "usage_pct": 50.35, "item": "Miracle Seed", "ability": "Grassy Surge", "nature": "Adamant", "sp": {"hp": 2, "atk": 32, "spe": 32}, "move": "Grassy Glide", "bp": 55, "cat": "Physical", "type": "Grass"},
+            {"species": "Sneasler", "types": ["Fighting", "Poison"], "role": "APEX_META_PILLAR", "threat_score": 94.8, "usage_pct": 38.85, "item": "White Herb", "ability": "Unburden", "nature": "Adamant", "sp": {"hp": 2, "atk": 32, "spe": 32}, "move": "Close Combat", "bp": 120, "cat": "Physical", "type": "Fighting"},
+            {"species": "Incineroar", "types": ["Fire", "Dark"], "role": "APEX_META_PILLAR", "threat_score": 87.3, "usage_pct": 34.1, "item": "Sitrus Berry", "ability": "Intimidate", "nature": "Careful", "sp": {"hp": 32, "def": 12, "spd": 22}, "move": "Flare Blitz", "bp": 120, "cat": "Physical", "type": "Fire"},
+            {"species": "Kingambit", "types": ["Dark", "Steel"], "role": "APEX_META_PILLAR", "threat_score": 76.5, "usage_pct": 23.67, "item": "Chople Berry", "ability": "Defiant", "nature": "Adamant", "sp": {"hp": 32, "atk": 32, "def": 2}, "move": "Kowtow Cleave", "bp": 85, "cat": "Physical", "type": "Dark"},
+            {"species": "Charizard-Mega-Y", "types": ["Fire", "Flying"], "role": "WALLBREAKER_NUKE", "threat_score": 68.8, "usage_pct": 16.96, "item": "Charizardite Y", "ability": "Drought", "nature": "Modest", "sp": {"hp": 2, "spa": 32, "spe": 32}, "move": "Heat Wave", "bp": 95, "cat": "Special", "type": "Fire"},
+            {"species": "Raichu-Mega-Y", "types": ["Electric"], "role": "APEX_META_PILLAR", "threat_score": 67.5, "usage_pct": 25.8, "item": "Raichunite Y", "ability": "Lightning Rod", "nature": "Timid", "sp": {"hp": 2, "spa": 32, "spe": 32}, "move": "Zap Cannon", "bp": 120, "cat": "Special", "type": "Electric"},
+            {"species": "Gholdengo", "types": ["Steel", "Ghost"], "role": "APEX_META_PILLAR", "threat_score": 67.2, "usage_pct": 25.24, "item": "Life Orb", "ability": "Good as Gold", "nature": "Modest", "sp": {"hp": 32, "spa": 32, "spd": 2}, "move": "Shadow Ball", "bp": 80, "cat": "Special", "type": "Ghost"},
+            {"species": "Archaludon", "types": ["Steel", "Dragon"], "role": "SWISS_GATEKEEPER", "threat_score": 65.3, "usage_pct": 17.22, "item": "Leftovers", "ability": "Stamina", "nature": "Calm", "sp": {"hp": 32, "def": 12, "spd": 22}, "move": "Electro Shot", "bp": 130, "cat": "Special", "type": "Electric"},
+            {"species": "Floette-Mega", "types": ["Fairy"], "role": "WALLBREAKER_NUKE", "threat_score": 62.6, "usage_pct": 13.07, "item": "Floettite", "ability": "Flower Veil", "nature": "Modest", "sp": {"hp": 2, "spa": 32, "spe": 32}, "move": "Dazzling Gleam", "bp": 80, "cat": "Special", "type": "Fairy"},
+            {"species": "Garchomp", "types": ["Dragon", "Ground"], "role": "WALLBREAKER_NUKE", "threat_score": 61.4, "usage_pct": 12.0, "item": "Choice Scarf", "ability": "Rough Skin", "nature": "Adamant", "sp": {"hp": 2, "atk": 32, "spe": 32}, "move": "Dragon Claw", "bp": 80, "cat": "Physical", "type": "Dragon"},
+        ]
+
+    primary_type = user_types[0] if user_types else "Normal"
+    is_special = final_stats.get("spa", 0) >= final_stats.get("atk", 0)
+
+    type_to_move = {
+        "Fire": ("Heat Wave", "Special", 95) if is_special else ("Flare Blitz", "Physical", 120),
+        "Water": ("Hydro Pump", "Special", 110) if is_special else ("Wave Crash", "Physical", 120),
+        "Grass": ("Energy Ball", "Special", 90) if is_special else ("Wood Hammer", "Physical", 120),
+        "Electric": ("Thunderbolt", "Special", 90) if is_special else ("Wild Charge", "Physical", 90),
+        "Dragon": ("Draco Meteor", "Special", 130) if is_special else ("Dragon Claw", "Physical", 80),
+        "Steel": ("Make It Rain", "Special", 120) if is_special else ("Iron Head", "Physical", 80),
+        "Dark": ("Dark Pulse", "Special", 80) if is_special else ("Knock Off", "Physical", 65),
+        "Ghost": ("Shadow Ball", "Special", 80) if is_special else ("Poltergeist", "Physical", 110),
+        "Fairy": ("Moonblast", "Special", 95) if is_special else ("Play Rough", "Physical", 90),
+        "Fighting": ("Aura Sphere", "Special", 80) if is_special else ("Close Combat", "Physical", 120),
+        "Psychic": ("Expanding Force", "Special", 80) if is_special else ("Zen Headbutt", "Physical", 80),
+        "Rock": ("Power Gem", "Special", 80) if is_special else ("Rock Slide", "Physical", 75),
+        "Ground": ("Earth Power", "Special", 90) if is_special else ("Earthquake", "Physical", 100),
+        "Flying": ("Hurricane", "Special", 110) if is_special else ("Brave Bird", "Physical", 120),
+        "Ice": ("Blizzard", "Special", 110) if is_special else ("Icicle Crash", "Physical", 85),
+        "Poison": ("Sludge Bomb", "Special", 90) if is_special else ("Gunk Shot", "Physical", 120),
+        "Bug": ("Bug Buzz", "Special", 90) if is_special else ("U-turn", "Physical", 70),
+        "Normal": ("Hyper Voice", "Special", 90) if is_special else ("Double-Edge", "Physical", 120),
+    }
+
+    user_move_info = type_to_move.get(primary_type, ("Hyper Voice", "Special", 90))
+    user_move_data = MOVE_DB.get(user_move_info[0], {
+        "name": user_move_info[0], "bp": user_move_info[2], "type": primary_type, "cat": user_move_info[1], "flags": []
+    })
+
+    sim_field = {"weather": weather, "terrain": terrain}
+    side_p1 = {"player": "p1", "reflect_turns": 5 if reflect else 0, "light_screen_turns": 5 if light_screen else 0, "friend_guard": friend_guard}
+    side_p2 = {"player": "p2"}
+
+    calculations = []
+
+    # 1. Offensive Calculations (User attacks 10 threats)
+    for t in meta_threats[:10]:
+        t_sp = t["sp"]
+        t_nature = t["nature"]
+        t_hp, t_stats = calculate_level_50_stats(t["species"], t_sp, t_nature)
+        state_off = {
+            "field": sim_field,
+            "slots": {
+                "p1a": {"species": species, "types": user_types, "ability": ability, "item": item, "sp_spread": sp_spread, "nature": nature, "boosts": boosts, "helping_hand_mult": 1.5 if helping_hand else 1.0},
+                "p2a": {"species": t["species"], "types": t["types"], "ability": t["ability"], "item": t["item"], "sp_spread": t_sp, "nature": t_nature, "boosts": {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}}
+            },
+            "p1": side_p1, "p2": side_p2
+        }
+        sim_off = ClientReplaySimulator(state_off, {})
+        d_min, p_min, eff, _ = sim_off.calculate_damage_full(sim_off.state["slots"]["p1a"], sim_off.state["slots"]["p2a"], user_move_data, is_spread=False, roll=0.85)
+        d_max, p_max, _, _ = sim_off.calculate_damage_full(sim_off.state["slots"]["p1a"], sim_off.state["slots"]["p2a"], user_move_data, is_spread=False, roll=1.00)
+
+        c_type = "Guaranteed OHKO" if p_min >= 100 else ("Probable OHKO" if p_max >= 100 else ("Guaranteed 2HKO" if p_min >= 50 else ("2HKO Roll" if p_max >= 50 else "3HKO+")))
+        mod_tokens = []
+        if weather: mod_tokens.append(f"Clima: {weather.capitalize()}")
+        if terrain: mod_tokens.append(f"Terreno: {terrain.capitalize()}")
+        if item: mod_tokens.append(item)
+        if helping_hand: mod_tokens.append("Helping Hand (+50%)")
+        if eff > 1.0: mod_tokens.append(f"Supereficaz ({eff:.1f}x)")
+        elif eff < 1.0 and eff > 0: mod_tokens.append(f"Resistido ({eff:.2f}x)")
+
+        calculations.append({
+            "direction": "Offensive",
+            "attacker": species,
+            "defender": t["species"],
+            "threat_role": t.get("role", "APEX_META_PILLAR"),
+            "threat_score": t.get("threat_score", 80.0),
+            "usage_pct": t.get("usage_pct", 20.0),
+            "move": user_move_data["name"],
+            "category": user_move_data.get("cat", "Special"),
+            "move_type": user_move_data.get("type", primary_type),
+            "min_pct": p_min,
+            "max_pct": p_max,
+            "min_dmg": d_min,
+            "max_dmg": d_max,
+            "defender_max_hp": t_hp,
+            "calc_type": c_type,
+            "modifiers": " • ".join(mod_tokens) if mod_tokens else "Neutral",
+            "effectiveness": eff,
+        })
+
+    # 2. Defensive Calculations (10 threats attack User)
+    for t in meta_threats[:10]:
+        t_sp = t["sp"]
+        t_nature = t["nature"]
+        t_mv_data = MOVE_DB.get(t["move"], {
+            "name": t["move"], "bp": t.get("bp", 100), "power": t.get("bp", 100), "type": t["type"], "cat": t["cat"], "flags": []
+        })
+        state_def = {
+            "field": sim_field,
+            "slots": {
+                "p1a": {"species": species, "types": user_types, "ability": ability, "item": item, "sp_spread": sp_spread, "nature": nature, "boosts": boosts, "current_hp_pct": 100.0},
+                "p2a": {"species": t["species"], "types": t["types"], "ability": t["ability"], "item": t["item"], "sp_spread": t_sp, "nature": t_nature, "boosts": {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0}}
+            },
+            "p1": side_p1, "p2": side_p2
+        }
+        sim_def = ClientReplaySimulator(state_def, {})
+        d_min, p_min, eff, _ = sim_def.calculate_damage_full(sim_def.state["slots"]["p2a"], sim_def.state["slots"]["p1a"], t_mv_data, is_spread=False, roll=0.85)
+        d_max, p_max, _, _ = sim_def.calculate_damage_full(sim_def.state["slots"]["p2a"], sim_def.state["slots"]["p1a"], t_mv_data, is_spread=False, roll=1.00)
+
+        c_type = "Guaranteed Survival" if p_max < 100 else ("OHKO Threat" if p_min >= 100 else "Survival Roll")
+        mod_tokens = []
+        if weather: mod_tokens.append(f"Clima: {weather.capitalize()}")
+        if terrain: mod_tokens.append(f"Terreno: {terrain.capitalize()}")
+        if t["item"]: mod_tokens.append(f"Ítem Rival: {t['item']}")
+        if reflect and t_mv_data.get("cat") == "Physical": mod_tokens.append("Reflect (-33%)")
+        if light_screen and t_mv_data.get("cat") == "Special": mod_tokens.append("Light Screen (-33%)")
+        if eff > 1.0: mod_tokens.append(f"Supereficaz ({eff:.1f}x)")
+        elif eff < 1.0 and eff > 0: mod_tokens.append(f"Resistido ({eff:.2f}x)")
+
+        calculations.append({
+            "direction": "Defensive",
+            "attacker": t["species"],
+            "defender": species,
+            "threat_role": t.get("role", "APEX_META_PILLAR"),
+            "threat_score": t.get("threat_score", 80.0),
+            "usage_pct": t.get("usage_pct", 20.0),
+            "move": t_mv_data["name"],
+            "category": t_mv_data.get("cat", "Physical"),
+            "move_type": t_mv_data.get("type", t["type"]),
+            "min_pct": p_min,
+            "max_pct": p_max,
+            "min_dmg": d_min,
+            "max_dmg": d_max,
+            "defender_max_hp": final_stats.get("hp", 100),
+            "calc_type": c_type,
+            "modifiers": " • ".join(mod_tokens) if mod_tokens else "Neutral",
+            "effectiveness": eff,
+        })
+
+    return {
+        "status": "OK",
+        "species": species,
+        "nature": nature,
+        "item": item,
+        "ability": ability,
+        "sp_spread": sp_spread,
+        "total_sp": sum(sp_spread.values()),
+        "sp_verification": sp_verif,
+        "is_legal_budget": ok,
+        "stats": final_stats,
+        "speed_analysis": {
+            "raw_speed": raw_spe,
+            "effective_speed": effective_spe,
+            "tailwind_speed": raw_spe * 2,
+            "scarf_speed": int(raw_spe * 1.5),
+            "plus1_speed": int(raw_spe * 1.5),
+            "ladder": speed_ladder,
+        },
+        "total_calculations": len(calculations),
+        "calculations": calculations,
+        "unsupervised_threats": meta_threats,
+    }
+
+
 def create_app(data_dir: Optional[Path] = None) -> Flask:
     """Application factory creating the Coach Porygon VGC Flask web app."""
     app = Flask(__name__, static_folder=None)
@@ -506,8 +886,24 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
             abort(404, description="Asset Not Found")
 
         rel_name = safe_path.relative_to(assets_canon).as_posix()
+        manifest = get_asset_manifest()
+        rel_key = safe_path.relative_to(REPO_ROOT).as_posix()
+        digest = manifest.get("sha256_digests", {}).get(rel_key)
+        if not digest and safe_path.is_file():
+            digest = hashlib.sha256(safe_path.read_bytes()).hexdigest()
+
+        if digest:
+            etag = f'"{digest}"'
+            if_none_match = request.headers.get("If-None-Match")
+            if if_none_match and etag in if_none_match:
+                resp = Response(status=304)
+                resp.headers["ETag"] = etag
+                resp.headers["Cache-Control"] = "public, max-age=86400"
+                return resp
+
         resp = send_from_directory(assets_canon, rel_name)
-        # Allow browser caching for static raster/vector assets
+        if digest:
+            resp.headers["ETag"] = f'"{digest}"'
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
 
@@ -518,14 +914,30 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         Returns matching 128x128 PNG from Reg_M-C or dynamic vector crest if uncatalogued.
         Query args: ?shiny=1 or ?shiny=true
         """
-        clean_species = re.sub(r"[^a-zA-Z0-9_\-()]", "", species).strip()
+        clean_raw = re.sub(r"\.(?:png|svg|webp|jpe?g)$", "", species, flags=re.I)
+        clean_species = re.sub(r"[^a-zA-Z0-9_\-() ]", "", clean_raw.replace("+", " ")).strip()
         is_shiny = request.args.get("shiny", "").lower() in ("1", "true", "yes")
         sprite_file = resolve_sprite_path(clean_species, is_shiny=is_shiny)
         assets_canon = ASSETS_DIR.resolve()
         if sprite_file and sprite_file.is_file():
             canon_sprite = sprite_file.resolve()
             if os.path.commonpath([str(assets_canon), str(canon_sprite)]) == str(assets_canon):
+                manifest = get_asset_manifest()
+                rel_key = canon_sprite.relative_to(REPO_ROOT).as_posix()
+                digest = manifest.get("sha256_digests", {}).get(rel_key)
+                if not digest:
+                    digest = hashlib.sha256(canon_sprite.read_bytes()).hexdigest()
+                etag = f'"{digest}"'
+
+                if_none_match = request.headers.get("If-None-Match")
+                if if_none_match and etag in if_none_match:
+                    resp = Response(status=304)
+                    resp.headers["ETag"] = etag
+                    resp.headers["Cache-Control"] = "public, max-age=86400"
+                    return resp
+
                 resp = send_file(canon_sprite, mimetype="image/png")
+                resp.headers["ETag"] = etag
                 resp.headers["Cache-Control"] = "public, max-age=86400"
                 return resp
 
@@ -537,25 +949,64 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
 
     @app.route("/api/items/<path:item>", methods=["GET"])
     def api_get_item(item: str):
-        """Dynamic item & megastone icon resolver endpoint."""
-        slug = re.sub(r"[^a-z0-9\-]", "", slugify(item))
+        """Dynamic item & megastone icon resolver endpoint with ETag caching."""
+        clean_item = re.sub(r"\.(?:png|svg|webp|jpe?g)$", "", item, flags=re.I)
+        slug = re.sub(r"[^a-z0-9\-]", "", slugify(clean_item))
         if not slug:
             abort(404, description="Item Icon Not Found")
-        cand_paths = [
-            ITEMS_DIR / f"{slug}.png",
-            ITEMS_DIR / f"{slug}.svg",
-            MEGASTONES_DIR / f"{slug}.png",
-            MEGASTONES_DIR / f"{slug}.svg",
-        ]
+
         assets_canon = ASSETS_DIR.resolve()
-        for p in cand_paths:
-            canon_p = p.resolve()
-            if canon_p.is_file() and os.path.commonpath([str(assets_canon), str(canon_p)]) == str(assets_canon):
-                mime = "image/png" if canon_p.suffix == ".png" else "image/svg+xml; charset=utf-8"
-                resp = send_file(canon_p, mimetype=mime)
-                resp.headers["Cache-Control"] = "public, max-age=86400"
-                return resp
-        abort(404, description="Item Icon Not Found")
+        manifest = get_asset_manifest()
+        items_map = manifest.get("items", {})
+        megas_map = manifest.get("megastones", {})
+
+        target_path: Optional[Path] = None
+        for key in (item, slug):
+            if key in items_map:
+                p = (REPO_ROOT / items_map[key]).resolve()
+                if p.is_file() and os.path.commonpath([str(assets_canon), str(p)]) == str(assets_canon):
+                    target_path = p
+                    break
+            if key in megas_map:
+                p = (REPO_ROOT / megas_map[key]).resolve()
+                if p.is_file() and os.path.commonpath([str(assets_canon), str(p)]) == str(assets_canon):
+                    target_path = p
+                    break
+
+        if not target_path:
+            cand_paths = [
+                ITEMS_DIR / f"{slug}.png",
+                ITEMS_DIR / f"{slug}.svg",
+                MEGASTONES_DIR / f"{slug}.png",
+                MEGASTONES_DIR / f"{slug}.svg",
+            ]
+            for p in cand_paths:
+                canon_p = p.resolve()
+                if canon_p.is_file() and os.path.commonpath([str(assets_canon), str(canon_p)]) == str(assets_canon):
+                    target_path = canon_p
+                    break
+
+        if not target_path:
+            abort(404, description="Item Icon Not Found")
+
+        rel_key = target_path.relative_to(REPO_ROOT).as_posix()
+        digest = manifest.get("sha256_digests", {}).get(rel_key)
+        if not digest:
+            digest = hashlib.sha256(target_path.read_bytes()).hexdigest()
+        etag = f'"{digest}"'
+
+        if_none_match = request.headers.get("If-None-Match")
+        if if_none_match and etag in if_none_match:
+            resp = Response(status=304)
+            resp.headers["ETag"] = etag
+            resp.headers["Cache-Control"] = "public, max-age=86400"
+            return resp
+
+        mime = "image/png" if target_path.suffix == ".png" else "image/svg+xml; charset=utf-8"
+        resp = send_file(target_path, mimetype=mime)
+        resp.headers["ETag"] = etag
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
     @app.route("/api/health", methods=["GET"])
     def api_health():
@@ -732,7 +1183,7 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
 
     @app.route("/api/gpu-matrix", methods=["POST"])
     def api_gpu_matrix():
-        """Evaluates the 5x5 GPU payoff matrix, Nash equilibrium, and UncertaintyProfile for a turn."""
+        """Evaluates the GPU payoff matrix, Nash equilibrium, and UncertaintyProfile for a turn."""
         body = request.get_json(silent=True) or {}
         raw_log = body.get("log", "") or body.get("raw_log", "")
         turn_num = body.get("turn", None)
@@ -793,6 +1244,57 @@ def create_app(data_dir: Optional[Path] = None) -> Flask:
         pipeline = TacticalPipeline(device=device_pref)
         metrics = pipeline.run_benchmark(raw_log=raw_log, batch_size=batch_size)
         return jsonify(metrics)
+
+    @app.route("/api/meta/feed", methods=["GET"])
+    def api_meta_feed():
+        """Returns live tournament metagame intelligence feed across all regional tournaments."""
+        from engine.db import UnifiedCoachDatabase
+        db_inst = UnifiedCoachDatabase()
+        feed = db_inst.get_meta_feed(data_dir=app.config.get("DATA_DIR"))
+        db_inst.close()
+        return jsonify(feed)
+
+    @app.route("/api/meta/threats", methods=["GET"])
+    def api_meta_threats():
+        """Returns unsupervised neural autoencoder + clustering metagame threats from in-memory SQLite."""
+        from engine.db import UnifiedCoachDatabase
+        limit = int(request.args.get("limit", 20))
+        db_inst = UnifiedCoachDatabase()
+        threats = db_inst.get_unsupervised_threats(limit=limit)
+        archetypes = db_inst.get_unsupervised_archetypes(limit=8)
+        benchmarks = db_inst.get_speed_benchmarks(limit=16)
+        db_inst.close()
+        return jsonify({
+            "status": "OK",
+            "storage_engine": "sqlite3(:memory:) <- data/munchstats_threats.jsonl",
+            "model": "Unsupervised Neural Autoencoder (16->10->4->10->16) + K-Means Clustering",
+            "count": len(threats),
+            "threats": threats,
+            "archetypes": archetypes,
+            "speed_benchmarks": benchmarks,
+        })
+
+    @app.route("/api/flashcards/enhanced", methods=["GET"])
+    def api_flashcards_enhanced():
+        """Returns 50 persistent flashcards enriched with 4-slot board state and payoff simulation logs."""
+        from engine.db import UnifiedCoachDatabase
+        db_inst = UnifiedCoachDatabase()
+        cards = db_inst.get_enhanced_flashcards(data_dir=app.config.get("DATA_DIR"))
+        db_inst.close()
+        return jsonify({"status": "OK", "count": len(cards), "flashcards": cards})
+
+    @app.route("/api/calc/spread", methods=["GET", "POST"])
+    def api_calc_spread():
+        """
+        Calculates Regulation M-C Level 50 stats, Speed Ladder ranking,
+        and 16+ real-time offensive and defensive damage calculations vs top meta threats.
+        """
+        if request.method == "POST":
+            payload = request.get_json(silent=True) or {}
+        else:
+            payload = request.args.to_dict()
+        result = compute_comprehensive_spread_analytics(payload)
+        return jsonify(result)
 
     return app
 
@@ -876,7 +1378,8 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
         if path.startswith("/api/sprites/"):
             species_raw = path.replace("/api/sprites/", "").split("?")[0].strip()
-            clean_species = re.sub(r"[^a-zA-Z0-9_\-()]", "", species_raw).strip()
+            clean_raw = re.sub(r"\.(?:png|svg|webp|jpe?g)$", "", species_raw, flags=re.I)
+            clean_species = re.sub(r"[^a-zA-Z0-9_\-() ]", "", clean_raw.replace("+", " ")).strip()
             params = urllib.parse.parse_qs(parsed.query)
             is_shiny = "shiny" in params and params["shiny"][0].lower() in ("1", "true")
             sprite_file = resolve_sprite_path(clean_species, is_shiny=is_shiny)
@@ -884,10 +1387,27 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
             if sprite_file and sprite_file.is_file():
                 canon_sprite = sprite_file.resolve()
                 if os.path.commonpath([str(assets_canon), str(canon_sprite)]) == str(assets_canon):
+                    manifest = get_asset_manifest()
+                    rel_key = canon_sprite.relative_to(REPO_ROOT).as_posix()
+                    digest = manifest.get("sha256_digests", {}).get(rel_key)
+                    if not digest:
+                        digest = hashlib.sha256(canon_sprite.read_bytes()).hexdigest()
+                    etag = f'"{digest}"'
+
+                    if_none_match = self.headers.get("If-None-Match")
+                    if if_none_match and etag in if_none_match:
+                        self.send_response(304)
+                        self.send_header("ETag", etag)
+                        self.send_header("Cache-Control", "public, max-age=86400")
+                        self.end_headers()
+                        return
+
                     payload = canon_sprite.read_bytes()
                     self.send_response(200)
                     self.send_header("Content-Type", "image/png")
                     self.send_header("Content-Length", str(len(payload)))
+                    self.send_header("ETag", etag)
+                    self.send_header("Cache-Control", "public, max-age=86400")
                     self.end_headers()
                     self.wfile.write(payload)
                     return
@@ -931,6 +1451,69 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(payload)
             return
 
+        if path == "/api/meta/feed":
+            from engine.db import UnifiedCoachDatabase
+            db_inst = UnifiedCoachDatabase()
+            feed = db_inst.get_meta_feed()
+            db_inst.close()
+            payload = json.dumps(feed, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
+        if path.startswith("/api/meta/threats"):
+            from engine.db import UnifiedCoachDatabase
+            params = urllib.parse.parse_qs(parsed.query)
+            limit = int(params.get("limit", [20])[0])
+            db_inst = UnifiedCoachDatabase()
+            threats = db_inst.get_unsupervised_threats(limit=limit)
+            archetypes = db_inst.get_unsupervised_archetypes(limit=8)
+            benchmarks = db_inst.get_speed_benchmarks(limit=16)
+            db_inst.close()
+            payload = json.dumps({
+                "status": "OK",
+                "storage_engine": "sqlite3(:memory:) <- data/munchstats_threats.jsonl",
+                "model": "Unsupervised Neural Autoencoder (16->10->4->10->16) + K-Means Clustering",
+                "count": len(threats),
+                "threats": threats,
+                "archetypes": archetypes,
+                "speed_benchmarks": benchmarks,
+            }, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
+        if path == "/api/flashcards/enhanced":
+            from engine.db import UnifiedCoachDatabase
+            db_inst = UnifiedCoachDatabase()
+            cards = db_inst.get_enhanced_flashcards()
+            db_inst.close()
+            payload = json.dumps({"status": "OK", "count": len(cards), "flashcards": cards}, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
+        if path.startswith("/api/calc/spread"):
+            params = urllib.parse.parse_qs(parsed.query)
+            payload_dict = {k: v[0] if len(v) == 1 else v for k, v in params.items()}
+            result = compute_comprehensive_spread_analytics(payload_dict)
+            payload = json.dumps(result, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
+
         if path == "/api/telemetry":
             data = load_live_telemetry()
             payload = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -958,6 +1541,16 @@ class CoachPorygonHTTPHandler(http.server.SimpleHTTPRequestHandler):
             body = json.loads(body_raw)
         except Exception:
             body = {}
+
+        if parsed.path == "/api/calc/spread":
+            result = compute_comprehensive_spread_analytics(body)
+            payload = json.dumps(result, ensure_ascii=False).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
 
         if parsed.path == "/api/munchstats/crawl":
             prompt_q = body.get("prompt", "") or body.get("tournament_id", "Nice 2027")

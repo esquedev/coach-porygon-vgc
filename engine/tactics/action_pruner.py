@@ -17,6 +17,7 @@ from engine.tactics.showdown_parser import (
     SlotState,
     TurnSnapshot,
 )
+from engine.tactics.logic_engine import LogicalConstraintEngine
 from engine.turn_simulator import (
     BASE_STATS_DB,
     ClientReplaySimulator,
@@ -102,6 +103,7 @@ class PrunedActionLine:
     slot_b_move: str
     simulator_choices: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     tactical_prior: float = 0.0
+    risk_classification: str = "Deterministic_Safe"
 
 
 class ActionPruner:
@@ -116,8 +118,9 @@ class ActionPruner:
     """
 
     def __init__(self) -> None:
-        """Initialize the ActionPruner with a ShowdownParser helper for simulator state conversion."""
+        """Initialize the ActionPruner with a ShowdownParser helper and LogicalConstraintEngine."""
         self._parser = ShowdownParser()
+        self._logic_engine = LogicalConstraintEngine()
 
     def _get_move_kit(
         self, species: str, ots: Optional[OpenTeamSheet] = None
@@ -428,7 +431,40 @@ class ActionPruner:
             tactical_prior=0.10,
         )
 
-        return [line_0, line_1, line_2, line_3, line_4]
+        candidate_lines = [line_0, line_1, line_2, line_3, line_4]
+        for line in candidate_lines:
+            res_a = self._logic_engine.evaluate_slot_action(
+                slot_species=slot_a.species,
+                move_name=line.slot_a_move,
+                target_species=opp_a.species,
+                active_turns=max(1, snapshot.turn_number),
+                field_state=field_dict,
+                was_protected_last_turn=(snapshot.turn_number > 1 and "protect" in line.slot_a_move.lower()),
+                is_target_airborne=("Flying" in getattr(opp_a, "types", [])),
+                user_ability=slot_a.ability,
+                target_ability=opp_a.ability,
+            )
+            res_b = self._logic_engine.evaluate_slot_action(
+                slot_species=slot_b.species,
+                move_name=line.slot_b_move,
+                target_species=opp_b.species,
+                active_turns=max(1, snapshot.turn_number),
+                field_state=field_dict,
+                was_protected_last_turn=(snapshot.turn_number > 1 and "protect" in line.slot_b_move.lower()),
+                is_target_airborne=("Flying" in getattr(opp_b, "types", [])),
+                user_ability=slot_b.ability,
+                target_ability=opp_b.ability,
+            )
+            scale = (res_a.recommended_prior_scale + res_b.recommended_prior_scale) / 2.0
+            line.tactical_prior = max(0.001, round(line.tactical_prior * scale, 3))
+            if res_a.classification == "High_Risk_High_Reward" or res_b.classification == "High_Risk_High_Reward":
+                line.risk_classification = "High_Risk_High_Reward"
+            elif res_a.classification == "Calculated_Risk" or res_b.classification == "Calculated_Risk":
+                line.risk_classification = "Calculated_Risk"
+            elif not res_a.is_mechanically_valid and not res_b.is_mechanically_valid:
+                line.risk_classification = "Mechanically_Invalid"
+
+        return candidate_lines
 
     def prune_dominated_actions(
         self,

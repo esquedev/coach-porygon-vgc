@@ -24,6 +24,7 @@ from engine.turn_simulator import (
     evaluate_move_synergy,
     calculate_level_50_stats,
     get_type_effectiveness,
+    get_type_effectiveness_breakdown,
     is_airborne,
     get_stage_multiplier,
     apply_stat_boost,
@@ -186,7 +187,7 @@ class TestTurnSimulator(unittest.TestCase):
         self.assertTrue(is_airborne(slot_charizard))
 
         # 3. Grounded species holding Air Balloon is airborne
-        slot_balloon = {"species": "Heatran", "types": ["Fire", "Steel"], "item": "Air Balloon"}
+        slot_balloon = {"species": "Kingambit", "types": ["Dark", "Steel"], "item": "Air Balloon"}
         self.assertTrue(is_airborne(slot_balloon))
 
     def test_type_effectiveness_and_scrappy(self):
@@ -357,6 +358,75 @@ class TestTurnSimulator(unittest.TestCase):
         hit, reason = sim.check_move_accuracy(sim.state["slots"]["p1a"], sim.state["slots"]["p2a"], {"name": "Zap Cannon", "accuracy": 50})
         self.assertTrue(hit)
         self.assertEqual(reason, "No Guard")
+
+
+
+    def test_type_effectiveness_breakdown_and_dual_typing(self):
+        """Test compound dual-typing effectiveness breakdown (0x, 0.25x, 0.5x, 1x, 2x, 4x, exceptions)."""
+        # 4.0x Double Weakness: Rock into Charizard (Fire/Flying)
+        b_rock_char = get_type_effectiveness_breakdown("Rock", ["Fire", "Flying"])
+        self.assertEqual(b_rock_char["multiplier"], 4.0)
+        self.assertEqual(b_rock_char["classification"], "Double Weakness (4.0x)")
+        self.assertEqual(b_rock_char["label"], "double-weak")
+
+        # 4.0x Double Weakness: Ice into Garchomp (Dragon/Ground)
+        b_ice_garch = get_type_effectiveness_breakdown("Ice", ["Dragon", "Ground"])
+        self.assertEqual(b_ice_garch["multiplier"], 4.0)
+        self.assertEqual(b_ice_garch["classification"], "Double Weakness (4.0x)")
+
+        # 0.25x Double Resistance: Grass into Charizard (Fire/Flying)
+        b_grass_char = get_type_effectiveness_breakdown("Grass", ["Fire", "Flying"])
+        self.assertEqual(b_grass_char["multiplier"], 0.25)
+        self.assertEqual(b_grass_char["classification"], "Double Resistance (0.25x)")
+        self.assertEqual(b_grass_char["label"], "double-resisted")
+
+        # 0.0x Absolute Immunity: Ground into Charizard (Fire/Flying)
+        b_ground_char = get_type_effectiveness_breakdown("Ground", ["Fire", "Flying"])
+        self.assertEqual(b_ground_char["multiplier"], 0.0)
+        self.assertEqual(b_ground_char["classification"], "Immunity (0x)")
+        self.assertEqual(b_ground_char["label"], "immune")
+
+        # Exception: Freeze-Dry on Water/Ground (Swampert) -> 2.0x * 2.0x = 4.0x
+        b_fd_swamp = get_type_effectiveness_breakdown("Ice", ["Water", "Ground"], move_name="Freeze-Dry")
+        self.assertEqual(b_fd_swamp["multiplier"], 4.0)
+
+        # Exception: Thousand Arrows on Flying -> neutral 1.0x
+        b_ta_flying = get_type_effectiveness_breakdown("Ground", ["Flying"], move_name="Thousand Arrows")
+        self.assertEqual(b_ta_flying["multiplier"], 1.0)
+
+    def test_evaluate_move_synergy_type_conversions_and_field_effects(self):
+        """Test extended synergy evaluation for -ate conversions, weather, and terrains."""
+        # Aerilate on Mega Salamence (Dragon/Flying): Normal -> Flying with 1.2x BP + Flying STAB (1.8x total)
+        syn_aeri = evaluate_move_synergy("Salamence-Mega", "Aerilate", "", "Hyper Voice")
+        self.assertTrue(syn_aeri["synergy_detected"])
+        self.assertEqual(syn_aeri["converted_type"], "Flying")
+        self.assertTrue(syn_aeri["has_stab"])
+        self.assertEqual(syn_aeri["damage_multiplier"], 1.8)
+
+        # Sun + Fire move amplification (1.5x)
+        syn_sun_fire = evaluate_move_synergy("Charizard", "Blaze", "", "Heat Wave", field={"weather": "sun"})
+        self.assertTrue(syn_sun_fire["synergy_detected"])
+        self.assertEqual(syn_sun_fire["damage_multiplier"], 1.5)
+
+        # Sun + Solar Beam instant execution
+        syn_solar = evaluate_move_synergy("Torkoal", "Drought", "", "Solar Beam", field={"weather": "sun"})
+        self.assertTrue(syn_solar["synergy_detected"])
+        self.assertEqual(syn_solar["synergy_type"], "Sun Instant Solar Execution")
+
+        # Rain + Thunder 100% accuracy bypass
+        syn_rain_thunder = evaluate_move_synergy("Archaludon", "Stamina", "", "Thunder", field={"weather": "rain"})
+        self.assertTrue(syn_rain_thunder["synergy_detected"])
+        self.assertEqual(syn_rain_thunder["accuracy"], 100)
+
+        # Snow + Blizzard 100% accuracy bypass
+        syn_snow_blizz = evaluate_move_synergy("Ninetales-Alola", "Snow Warning", "", "Blizzard", field={"weather": "snow"})
+        self.assertTrue(syn_snow_blizz["synergy_detected"])
+        self.assertEqual(syn_snow_blizz["accuracy"], 100)
+
+        # Electroweb area speed drop
+        syn_ew = evaluate_move_synergy("Regieleki", "Transistor", "", "Electroweb")
+        self.assertTrue(syn_ew["synergy_detected"])
+        self.assertEqual(syn_ew["speed_drop"], -1)
 
 
 if __name__ == "__main__":
