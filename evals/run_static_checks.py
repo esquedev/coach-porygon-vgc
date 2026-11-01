@@ -254,6 +254,7 @@ def verify_declared_dependencies():
         "scikit_learn": "sklearn",
         "pyyaml": "yaml",
         "pytest_cov": "pytest",
+        "tomli": "tomllib",
     }
     for dist, mod in import_map.items():
         if dist in declared:
@@ -263,14 +264,14 @@ def verify_declared_dependencies():
     stdlib.update({
         "abc", "argparse", "ast", "asyncio", "base64", "collections", "contextlib",
         "copy", "csv", "ctypes", "dataclasses", "datetime", "decimal", "difflib",
-        "enum", "fileinput", "fnmatch", "fractions", "functools", "glob", "gzip",
-        "hashlib", "heapq", "hmac", "html", "http", "importlib", "inspect", "io",
+        "enum", "fileinput", "fnmatch", "fractions", "functools", "glob", "graphlib", "gzip",
+        "hashlib", "heapq", "hmac", "html", "http", "importlib", "inspect", "io", "ipaddress",
         "itertools", "json", "logging", "math", "mimetypes", "multiprocessing",
         "operator", "os", "pathlib", "pickle", "platform", "pprint", "queue",
-        "random", "re", "secrets", "shutil", "signal", "socket", "sqlite3",
+        "random", "re", "secrets", "shutil", "signal", "socket", "socketserver", "sqlite3",
         "ssl", "stat", "string", "struct", "subprocess", "sys", "tempfile",
-        "threading", "time", "timeit", "traceback", "types", "typing",
-        "unicodedata", "unittest", "urllib", "uuid", "warnings", "weakref", "xml", "zipfile"
+        "threading", "time", "timeit", "tomllib", "traceback", "types", "typing",
+        "unicodedata", "unittest", "urllib", "uuid", "warnings", "weakref", "wsgiref", "xml", "zipfile", "zoneinfo"
     })
     internal_modules = {"engine", "evals", "tests", "main", "munchstats_scraper"}
     for p in (REPO_ROOT / "engine").rglob("*.py"):
