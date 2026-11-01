@@ -1,0 +1,161 @@
+☆aws_secret and ☆DarKgoD16 joined
+Format:
+[Gen 9 Champions] VGC 2026 Reg M-C
+Rated battle
+Species Clause: Limit one of each Pokemon
+Item Clause: Limit 1 of each item
+aws_secret's team:
+Charizard / Raichu / Garchomp / Grimmsnarl / Kingambit / Milotic
+DarKgoD16's team:
+Incineroar / Kingambit / Sinistcha / Sneasler / Floette-Eternal / Delphox
+
+Battle started between aws_secret and DarKgoD16!
+
+Go! Garchomp!
+
+Go! Grimmsnarl!
+
+DarKgoD16 sent out Sneasler!
+
+DarKgoD16 sent out Floette (Floette-Eternal)!
+
+Turn 1
+
+The opposing Floette's Floettite is reacting to the Key Stone!
+The opposing Floette has Mega Evolved into Mega Floette-Red!
+[The opposing Floette's Fairy Aura]
+The opposing Floette is radiating a fairy aura!
+
+Grimmsnarl used Reflect!
+Reflect made your team stronger against physical moves!
+
+The opposing Sneasler used Poison Jab!
+It's super effective!
+(Grimmsnarl lost 49.5% of its health!)
+Grimmsnarl was poisoned!
+
+Garchomp used Stomping Tantrum!
+It's super effective!
+The opposing Sneasler hung on using its Focus Sash!
+(The opposing Sneasler lost 99% of its health!)
+Garchomp lost some of its HP!
+
+The opposing Floette used Calm Mind!
+The opposing Floette's Sp. Atk rose!
+The opposing Floette's Sp. Def rose!
+
+Grimmsnarl was hurt by poison!
+
+Turn 2
+
+DarKgoD16 withdrew Sneasler!
+DarKgoD16 sent out Sinistcha!
+
+The opposing Floette used Dazzling Gleam!
+It's super effective on Garchomp!
+It's super effective on Grimmsnarl!
+(Garchomp lost 90.3% of its health!)
+(Grimmsnarl lost 38.1% of its health!)
+
+Garchomp fainted!
+Grimmsnarl fainted!
+
+Go! Kingambit!
+
+Go! Charizard!
+
+Turn 3
+
+Charizard's Charizardite Y is reacting to the Key Stone!
+Charizard has Mega Evolved into Mega Charizard!
+[Charizard's Drought]
+The sunlight turned harsh!
+
+The opposing Sinistcha used Rage Powder!
+The opposing Sinistcha became the center of attention!
+
+The opposing Floette used Draining Kiss!
+It's not very effective...
+(Charizard lost 32.9% of its health!)
+
+Charizard used Heat Wave!
+It's super effective on the opposing Sinistcha!
+(The opposing Sinistcha ate its Occa Berry!)
+The opposing Sinistcha's Occa Berry lessened the damage it took!
+(The opposing Sinistcha lost 83% of its health!)
+(The opposing Floette lost 39% of its health!)
+
+Kingambit used Iron Head!
+(The opposing Sinistcha lost 17% of its health!)
+
+The opposing Sinistcha fainted!
+
+(The sunlight is strong.)
+
+DarKgoD16 sent out Sneasler!
+
+Turn 4
+
+Charizard used Protect!
+Charizard protected itself!
+
+The opposing Sneasler used Quick Guard!
+Quick Guard protected the opposing team!
+
+The opposing Floette used Draining Kiss!
+Charizard protected itself!
+
+Kingambit used Iron Head!
+It's super effective!
+(The opposing Floette lost 61% of its health!)
+
+The opposing Floette fainted!
+
+(The sunlight is strong.)
+
+DarKgoD16 sent out Incineroar!
+[The opposing Incineroar's Intimidate]
+Kingambit's Attack fell!
+[Kingambit's Defiant]
+Kingambit's Attack rose sharply!
+Charizard's Attack fell!
+
+Turn 5
+
+The opposing Incineroar used Fake Out!
+It's not very effective...
+(Kingambit lost 4.0% of its health!)
+
+The opposing Sneasler used Poison Jab!
+(Charizard lost 35.5% of its health!)
+
+Charizard used Heat Wave!
+It's not very effective on the opposing Incineroar.
+(The opposing Sneasler lost 1% of its health!)
+(The opposing Incineroar lost 30% of its health!)
+
+The opposing Sneasler fainted!
+Kingambit flinched and couldn't move!
+
+(The sunlight is strong.)
+
+Turn 6
+
+Charizard used Scorching Sands!
+It's super effective!
+(The opposing Incineroar lost 56% of its health!)
+(The opposing Incineroar ate its Sitrus Berry!)
+The opposing Incineroar restored HP using its Sitrus Berry!
+
+Kingambit used Low Kick!
+It's super effective!
+(The opposing Incineroar lost 39% of its health!)
+
+The opposing Incineroar fainted!
+
+aws_secret won the battle!
+aws_secret's rating: 1191 → 1214
+(+23 for winning)
+DarKgoD16's rating: 1170 → 1147
+(-23 for losing)
+☆DarKgoD16 left

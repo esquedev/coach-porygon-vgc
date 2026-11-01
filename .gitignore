@@ -71,6 +71,7 @@ data/Scouted_Raw_Matches.csv
 data/Scouted_Teams.csv
 data/Recent_Matches.csv
 data/trainer_profile.json
+data/tactical_audits.jsonl
 data/*_Dump.csv
 data/MunchStats_Overview.csv
 data/MunchStats_Usage.csv
@@ -90,6 +91,7 @@ reports/*.html
 !AGENTS.md
 !data/*.example.csv
 !data/*.example.json
+!data/*.example.jsonl
 !data/pokedex_cache.json
 !data/compendium/Champions_Mechanics_Compendium.md
 !data/compendium/M-C Calcs & Sets.md

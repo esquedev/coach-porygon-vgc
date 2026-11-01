@@ -1,7 +1,7 @@
 {
-  "total_matches": 322,
-  "wins": 172,
-  "losses": 150,
+  "total_matches": 324,
+  "wins": 173,
+  "losses": 151,
   "win_rate": 53.4,
   "teams_count": 24,
   "teams": [
@@ -12151,6 +12151,71 @@
       ],
       "turning_point": "Turno 1: Apertura de Primer KO favorable (+1.8 VP)",
       "turning_point_turn": 1
+    },
+    {
+      "id": "323.0",
+      "date": "46327.3628",
+      "opponent": "test_23543ihjdsf",
+      "format": "VGC Reg M-C",
+      "result": "Win",
+      "team_id": "T24",
+      "turns": "4.0",
+      "enemy_archetype": "Psychic Terrain Offense",
+      "user_mega": "Raichu-Mega-X",
+      "enemy_mega": "None",
+      "user_leads": "Raichu + Charizard",
+      "opp_leads": "Indeedee-M + Maushold",
+      "user_back": "Garchomp + Milotic",
+      "first_blood_side": "User",
+      "mvp_pokemon": "Raichu-Mega-X",
+      "mvp_move": "Electric Surge / Volt Tackle",
+      "misplay_type": "None",
+      "key_rng_event": "None",
+      "core_lesson": "",
+      "notes": "Flawless terrain sequencing on Turn 1 and Turn 3 shutting down Sing and enabling Fake Out on Turn 1.",
+      "vp_curve": [
+        0.0,
+        1.7,
+        2.4,
+        2.9,
+        4.0
+      ],
+      "turning_point": "Turno 1: Apertura de Primer KO favorable (+1.7 VP)",
+      "turning_point_turn": 1
+    },
+    {
+      "id": "324.0",
+      "date": "46327.3715",
+      "opponent": "2horang",
+      "format": "VGC Reg M-C",
+      "result": "Loss",
+      "team_id": "T24",
+      "turns": "7.0",
+      "enemy_archetype": "Blastoise Rain / Offense",
+      "user_mega": "Charizard-Mega-Y",
+      "enemy_mega": "Blastoise-Mega",
+      "user_leads": "Charizard + Grimmsnarl",
+      "opp_leads": "Blastoise + Raichu",
+      "user_back": "Garchomp + Kingambit",
+      "first_blood_side": "Enemy",
+      "mvp_pokemon": "Charizard-Mega-Y",
+      "mvp_move": "Heat Wave",
+      "misplay_type": "[CAT:POS|Turn:1|Code:POS-01|Detail:Never dry-switch fragile sweepers into active un-weathered Water Spout; Mega Evolve Charizard Y on Turn 1 to halve Water damage via Drought while setting Light Screen.]",
+      "key_rng_event": "None",
+      "core_lesson": "",
+      "notes": "Dry switch of Garchomp into Mega Blastoise Water Spout on Turn 1 resulted in Garchomp losing 55% HP before moving and fainting on Turn 2 to Ice Beam without securing a KO. Double Protect tunneling on Turn 2 and 3 compounded tempo loss.",
+      "vp_curve": [
+        0.0,
+        -2.0,
+        -2.5,
+        -2.9,
+        -3.2,
+        -3.4,
+        -3.6,
+        -4.0
+      ],
+      "turning_point": "Turno 1: Quiebre por [CAT:POS|Turn:1|Code:POS-01|Detail:Never dry-switch fragile sweepers into active un-weathered Water Spout; Mega Evolve Charizard Y on Turn 1 to halve Water damage via Drought while setting Light Screen.] (-2.0 VP)",
+      "turning_point_turn": 1
     }
   ],
   "diagnostics": [
@@ -12251,22 +12316,29 @@
       "root_cognitive_trap": "Tunnel_Vision",
       "vp_delta_lost": -6.0,
       "fix_directives": ""
+    },
+    {
+      "match_id": "324.0",
+      "mistake_code": "POS-01",
+      "root_cognitive_trap": "Autopilot",
+      "vp_delta_lost": 4.0,
+      "fix_directives": ""
     }
   ],
   "trap_counts": {
     "Tunnel_Vision": 6,
     "Format_Divergence": 3,
-    "Autopilot": 4,
+    "Autopilot": 5,
     "Tilt": 1
   },
   "code_counts": {
     "POS-02": 2,
     "TGT-01": 4,
-    "POS-01": 5,
+    "POS-01": 6,
     "SPD-02": 1,
     "POS-03": 2
   },
-  "vp_bleed": -61.0,
+  "vp_bleed": -57.0,
   "all_calcs": [
     {
       "id": "CALC_001",
