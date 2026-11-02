@@ -11,9 +11,9 @@ Evaluates candidate Pokémon battle actions through a dual-mode logical lens:
 
 2. Soft Tactical Constraints (Continuous High-Risk / High-Reward Continuum):
    Unconventional or high-variance lines such as consecutive Protect at roughly
-   33% success probability, dry switches, and attacks into apparent resistances
-   anticipating a switch-in. These rules assign continuous risk-reward prior
-   weights instead of binary pass/fail outcomes.
+   33% success probability on the second use and sharply lower success on later
+   consecutive uses. The logic assigns continuous risk-reward priors instead of
+   rigid binary pass/fail outcomes.
 """
 
 from dataclasses import dataclass, field
@@ -147,6 +147,55 @@ class LogicalConstraintEngine:
             priority += 1
         return priority
 
+    @staticmethod
+    def _evaluate_protect_chain(
+        protect_chain_count: int,
+        move_name: str,
+    ) -> Optional[ConstraintResult]:
+        """
+        Evaluate repeated Protect usage with a Pokémon-style probability decay.
+
+        This is a tactical heuristic, not a strict legality rule. In official
+        Pokémon behavior, each consecutive Protect use after the first reduces the
+        success chance by roughly 1/3. Therefore, the second use is ~33%, the
+        third is ~11%, the fourth is ~3.7%, and so on. This is modeled as a risk
+        heuristic for AI prioritization.
+        """
+        if move_name not in PROTECT_MOVES:
+            return None
+
+        if protect_chain_count <= 0:
+            return None
+
+        success_probability = (1.0 / 3.0) ** protect_chain_count
+        risk_score = 1.0 - success_probability
+
+        if protect_chain_count == 1:
+            return ConstraintResult(
+                is_mechanically_valid=True,
+                risk_score=0.67,
+                upside_potential=0.85,
+                classification="High_Risk_High_Reward",
+                reasons=[
+                    "Consecutive Protect is being used again; official probability decays to ~33% on the second use."
+                ],
+                recommended_prior_scale=0.40,
+            )
+
+        if protect_chain_count >= 2:
+            return ConstraintResult(
+                is_mechanically_valid=True,
+                risk_score=min(0.97, max(0.89, round(risk_score, 3))),
+                upside_potential=0.90,
+                classification="High_Risk_High_Reward",
+                reasons=[
+                    f"Protect chain has reached {protect_chain_count} consecutive uses; success probability is ~{success_probability:.2%} and this line is extremely risky."
+                ],
+                recommended_prior_scale=0.10,
+            )
+
+        return None
+
     def prune_impossible_actions(
         self,
         candidate_actions: List[Dict[str, Any]],
@@ -177,6 +226,7 @@ class LogicalConstraintEngine:
         opposing_abilities: Optional[List[str]] = None,
         is_user_grounded: bool = True,
         is_target_grounded: Optional[bool] = None,
+        protect_chain_count: int = 0,
     ) -> ConstraintResult:
         """
         Evaluate a single move against physical invariants and tactical
@@ -195,7 +245,7 @@ class LogicalConstraintEngine:
         field_state:
             Current battlefield state, including weather and terrain.
         was_protected_last_turn:
-            Whether the user used a protective move on the previous turn.
+            Backward-compatible flag indicating the user protected on the previous turn.
         is_target_airborne:
             Whether the target is airborne at the moment of evaluation.
         user_ability:
@@ -210,6 +260,8 @@ class LogicalConstraintEngine:
             Whether the user is grounded.
         is_target_grounded:
             Explicit grounded state for the target, if known.
+        protect_chain_count:
+            Number of consecutive Protect uses already used in the current chain.
 
         Returns
         -------
@@ -221,6 +273,19 @@ class LogicalConstraintEngine:
         weather = (field.get("weather") or "").lower()
         terrain = (field.get("terrain") or "").lower()
         move_data = MOVE_DB.get(move_name, {})
+
+        if protect_chain_count < 0:
+            protect_chain_count = 0
+        if was_protected_last_turn and protect_chain_count == 0:
+            protect_chain_count = 1
+
+        if move_name in PROTECT_MOVES:
+            protect_result = self._evaluate_protect_chain(
+                protect_chain_count=protect_chain_count,
+                move_name=move_name,
+            )
+            if protect_result is not None:
+                return protect_result
 
         target_grounded = (
             is_target_grounded if is_target_grounded is not None else not is_target_airborne
@@ -242,19 +307,6 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=0.001,
             )
 
-        # 2. Soft constraint: consecutive Protect is valid but high-risk/high-reward.
-        if move_name in PROTECT_MOVES and was_protected_last_turn:
-            return self._make_result(
-                is_mechanically_valid=True,
-                risk_score=0.67,
-                upside_potential=0.85,
-                classification="High_Risk_High_Reward",
-                reasons=[
-                    "Consecutive Protect carries ~33% success probability; viable as high-risk/high-reward line under lethal threat."
-                ],
-                recommended_prior_scale=0.40,
-            )
-
         m_prio = self._resolve_move_priority(
             move_name=move_name,
             move_data=move_data,
@@ -263,7 +315,7 @@ class LogicalConstraintEngine:
             m_cat=m_cat,
         )
 
-        # 3. Hard mechanical invariants: priority blocking and terrain interactions.
+        # 2. Hard mechanical invariants: priority blocking and terrain interactions.
         if m_prio > 0 and opposing_abilities:
             if any(ability in PRIORITY_BLOCKING_ABILITIES for ability in opposing_abilities):
                 return self._make_result(
@@ -355,7 +407,7 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=0.001,
             )
 
-        # 4. Physical invariant vs hard read: Ground attack into airborne target.
+        # 3. Physical invariant vs hard read: Ground attack into airborne target.
         if m_type == "Ground" and m_cat != "Status" and move_name != "Thousand Arrows":
             if is_target_airborne:
                 return self._make_result(
@@ -369,7 +421,7 @@ class LogicalConstraintEngine:
                     recommended_prior_scale=0.20,
                 )
 
-        # 5. Accuracy risk pre-computation.
+        # 4. Accuracy risk pre-computation.
         acc_val = self._resolve_accuracy(
             move_name=move_name,
             move_data=move_data,
@@ -380,7 +432,7 @@ class LogicalConstraintEngine:
         is_inaccurate = acc_val < 85.0
         acc_risk = round((100.0 - acc_val) / 100.0, 3) if is_inaccurate else 0.0
 
-        # 6. Type effectiveness breakdown and high-risk targeting.
+        # 5. Type effectiveness breakdown and high-risk targeting.
         if target_species and m_cat != "Status":
             target_types = self._resolve_target_types(target_species, target_types)
             scrappy = user_ability in ("Scrappy", "Mind's Eye")
