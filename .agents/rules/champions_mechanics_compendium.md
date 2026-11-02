@@ -11,11 +11,11 @@
   - **NatureMult:** Applied *after* addition, truncating decimals (`1.1×` or `0.9×`).
 
 ## 2. Dynamic Speed Control, Turn Order & Priority
-- **Mega Evolution & Auto-Setters:** Resolves at Turn Start (Phase 0). Speed tiers update *immediately*. Abilities that set Weather (Drought, Drizzle) or Terrain (Psychic/Grassy Surge) trigger immediately.
+- **Mega Evolution & Auto-Setters:** Resolves at Turn Start (Phase 0). Speed tiers update *immediately*. Abilities that set Weather (Drought, Drizzle) or Terrain (Psychic/Grassy Surge) trigger immediately on turn start, before the first action is selected.
 - **Priority Brackets (Overrides Speed):**
   - **+5:** Helping Hand.
   - **+4:** Protect, Detect.
-  - **+3:** Fake Out *(Valid ONLY on the user's first turn on the field)*, Wide Guard. *(Note: Wide Guard protects against spread moves and **does not decay** upon consecutive uses).*
+  - **+3:** Fake Out *(Valid ONLY on the user's first turn on the field)*, Wide Guard. *(Note: Wide Guard protects against spread moves and **does not decay** upon consecutive uses).* 
   - **+2:** Ally Switch, Extreme Speed.
   - **+1:** Sucker Punch, Grassy Glide (in Grassy Terrain), Prankster status moves.
   - **0:** Standard moves.
@@ -96,3 +96,14 @@ All modifiers apply sequentially with `n / 4096` scaling and strict integer trun
   - *Sun:* Chlorophyll (`2×` Spe), Solar Beam (0 turn charge).
   - *Snow:* Slush Rush (`2×` Spe), Blizzard (100% Acc), Ice-types gain `1.5×` Def.
   - *Sand:* Sand Rush (`2×` Spe), Rock/Ground/Steel gain `1.3×` BP (Sand Force), Rock-types gain `1.5×` SpD.
+
+### Setting / Setup Moves
+- **Field-Setting Moves:** Moves that establish the battle state or control turn order for the team.
+  - **Reflect / Light Screen / Aurora Veil:** Setting screens grants defensive reduction for the active side, with full-screen math applied before damage resolves.
+  - **Terrain Setters:** `Electric Terrain`, `Grassy Terrain`, `Psychic Terrain`, and `Misty Terrain` establish zone control that affects grounded targets and priority interactions.
+  - **Hazards / Entry Control:** `Stealth Rock`, `Spikes`, `Toxic Spikes`, and similar hazard-setting moves impose persistent pressure but do not themselves count as offensive damage unless a move resolves them as part of a turn.
+- **Stat-Setting / Setup Moves:** Moves that create an immediate tactical advantage by modifying attack, speed, or utility turns.
+  - **Offensive Setup:** `Swords Dance`, `Nasty Plot`, `Dragon Dance`, `Calm Mind`, `Bulk Up`, `Shell Smash`, and similar boosting moves modify the battle state before the turn-attack sequence resolves.
+  - **Control Setup:** `Protect`/`Detect`, and `Substitute` are context-setting actions that change the other side's decision space while preserving momentum for the user.
+  - **Setup Integrity:** Setup actions must always be evaluated with turn order, priority, screens, weather, and target immunity rules in the same calculation chain; a setup that appears “safe” may fail if it is invalidated by prior field state or a priority interrupt.
+- **Decision Rule:** If a move creates a persistent battle-state change (weather, terrain, hazard, team speed, screen, or stat momentum), it must be treated as a “setting” and evaluated as part of the full tactical tree, not as a standalone event.
