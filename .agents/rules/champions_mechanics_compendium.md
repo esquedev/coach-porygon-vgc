@@ -36,25 +36,26 @@ All modifiers apply sequentially with $n / 4096$ scaling and strict integer trun
 - **Critical Hits:** $1.5\times$ damage multiplier. Critically, they **ignore** defensive screens (Reflect/Light Screen), **ignore** the attacker's negative stat drops, and **ignore** the defender's positive stat boosts.
 - **STAB Base:** $1.5\times$ (`6144 / 4096`). **Adaptability:** $2.0\times$ (`8192 / 4096`).
 
-## 4. Invariants, Immunities & Compound Effectiveness- **Effectiveness ($Eff$):** $Eff = M(Type_{atk}, Type1_{def}) \times M(Type_{atk}, Type2_{def})$
-- **Type Chart Delegation:** Exact $0.5\times$, $1.0\times$, and $2.0\times$ multipliers are calculated via the runtime `TYPE_CHART`. However, the following extremes dictate strict tactical logic:
-
-**Hard Immunities ($0.0\times$ - Prediction/Read only):**
-- `Normal` and `Fighting` $\to$ Immune: `Ghost`
-- `Ghost` $\to$ Immune: `Normal`
-- `Electric` $\to$ Immune: `Ground`
-- `Ground` $\to$ Immune: `Flying` (and `Levitate` / `Air Balloon`)
-- `Psychic` $\to$ Immune: `Dark`
-- `Dragon` $\to$ Immune: `Fairy`
-- `Poison` $\to$ Immune: `Steel`
-
-**Double Weaknesses ($4.0\times$ - High-Value Targets):**
-- `Rock` $\to$ Charizard, Talonflame, Volcarona.
-- `Ice` $\to$ Garchomp, Salamence, Dragonite.
-- `Ground` $\to$ Toxtricity.
-- `Fire` $\to$ Scizor, Forretress.
-- `Grass` $\to$ Swampert.
-  
+## 4. Invariants, Immunities & Compound Effectiveness
+- **Effectiveness (`Eff`):** `Eff = M(Type_atk, Type1_def) × M(Type_atk, Type2_def)`.
+- **Type chart delegation:** Exact `0.5×`, `1.0×`, and `2.0×` multipliers are calculated via the runtime `TYPE_CHART`. The tactical extremes below are the most important readouts:
+  - **Hard immunities (`0.0×` - Attacking Type → Immune Defending Type):**
+    - `Normal` or `Fighting` attacks → `Ghost` is immune.
+    - `Ghost` attacks → `Normal` is immune.
+    - `Electric` attacks → `Ground` is immune.
+    - `Ground` attacks → `Flying` (and `Levitate` / `Air Balloon`) are immune.
+    - `Psychic` attacks → `Dark` is immune.
+    - `Dragon` attacks → `Fairy` is immune.
+    - `Poison` attacks → `Steel` is immune.
+  - **Double weaknesses (`4.0×` - Requires BOTH defending types to be weak):**
+    - `Rock` attacks → `Fire/Flying`, `Bug/Flying`, `Bug/Fire`, `Ice/Flying` (e.g., Charizard, Talonflame, Volcarona).
+    - `Ice` attacks → `Dragon/Flying`, `Dragon/Ground`, `Ground/Flying`, `Grass/Flying` (e.g., Salamence, Garchomp, Landorus).
+    - `Ground` attacks → `Electric/Steel`, `Fire/Steel`, `Electric/Poison`, `Fire/Rock`, `Rock/Steel` (e.g., Magnezone, Heatran, Toxtricity, Stakataka).
+    - `Fire` attacks → `Bug/Steel`, `Grass/Steel`, `Grass/Bug`, `Ice/Steel` (e.g., Scizor, Ferrothorn, Kartana).
+    - `Grass` attacks → `Water/Ground`, `Water/Rock`, `Ground/Rock` (e.g., Swampert, Gastrodon, Rhyperior).
+    - `Water` attacks → `Fire/Ground`, `Fire/Rock`, `Ground/Rock` (e.g., Camerupt, Coalossal).
+    - `Fighting` attacks → `Dark/Rock`, `Steel/Rock`, `Normal/Rock`, `Dark/Ice` (e.g., Tyranitar, Aggron, Weavile).
+    - `Electric` attacks → `Water/Flying` (e.g., Gyarados, Pelipper).
 - **Powder / Spore Immunities:** `Grass`-type Pokémon and `Overcoat` ability users are 100% immune to `Rage Powder`, `Spore`, and `Sleep Powder`. (Do not recommend redirection against Grass-types).
 - **Psychic Terrain:** Grounded targets are IMMUNE to priority moves ($>0$). Airborne targets (Flying, Levitate, Balloon) remain vulnerable.
 - **Armor Tail / Queenly Majesty:** Flat immunity to incoming priority moves regardless of grounding.
