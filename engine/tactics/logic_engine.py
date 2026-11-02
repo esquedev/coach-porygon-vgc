@@ -1,32 +1,39 @@
 """
-Coach Porygon VGC — Logical Constraint & Risk-Reward Engine (engine/tactics/logic_engine.py)
+Coach Porygon VGC — Logical Constraint & Risk-Reward Engine
+(engine/tactics/logic_engine.py)
 
 Evaluates candidate Pokémon battle actions through a dual-mode logical lens:
+
 1. Hard Mechanical Invariants (Physical Failures — Probability 0%):
-   Physical engine impossibilities (Fake Out on active_turns > 1, priority into grounded foes
-   under Psychic Terrain, Hypnosis under Electric Terrain).
+   Physical engine impossibilities such as Fake Out on active_turns > 1,
+   priority moves into grounded foes under Psychic Terrain, and sleep moves
+   failing under Electric or Misty Terrain.
+
 2. Soft Tactical Constraints (Continuous High-Risk / High-Reward Continuum):
-   Unconventional or high-variance lines (consecutive Protect at ~33% success, dry switches,
-   attacks into apparent resistances anticipating a switch-in). Assigns continuous risk-reward
-   prior weights rather than binary 0/100 hard deletion.
+   Unconventional or high-variance lines such as consecutive Protect at roughly
+   33% success probability, dry switches, and attacks into apparent resistances
+   anticipating a switch-in. These rules assign continuous risk-reward prior
+   weights instead of binary pass/fail outcomes.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from engine.turn_simulator import (
     BASE_STATS_DB,
     MOVE_DB,
     PROTECT_MOVES,
-    TYPE_CHART,
-    get_type_effectiveness,
     get_type_effectiveness_breakdown,
 )
 
 PRIORITY_BLOCKING_ABILITIES = {"Armor Tail", "Queenly Majesty"}
 SOUND_MOVES = {
-    "Hyper Voice", "Parting Shot", "Bug Buzz", "Snarl", 
-    "Roar", "Disarming Voice", "Relic Song"
+    "Hyper Voice",
+    "Parting Shot",
+    "Bug Buzz",
+    "Snarl",
+    "Roar",
+    "Disarming Voice",
 }
 SLEEP_MOVES = {"Hypnosis", "Yawn", "Sleep Powder", "Spore", "Grass Whistle"}
 STATUS_ABSORBING_ABILITIES = {"Good as Gold"}
@@ -36,17 +43,17 @@ ELECTRIC_ABSORBING_ABILITIES = {"Lightning Rod", "Motor Drive", "Volt Absorb"}
 
 @dataclass
 class ConstraintResult:
-    """Represents the structured evaluation of an action by the Logical Constraint Engine."""
+    """Structured evaluation of a move or action by the logic engine."""
 
     is_mechanically_valid: bool
-    risk_score: float  # 0.0 (Safe) to 1.0 (Extreme risk)
-    upside_potential: float  # 0.0 (Minimal) to 1.0 (Game-winning blowout)
-    classification: str  # Deterministic_Safe, Calculated_Risk, High_Risk_High_Reward, Mechanically_Invalid
+    risk_score: float  # 0.0 = safe, 1.0 = extreme risk
+    upside_potential: float  # 0.0 = low upside, 1.0 = game-winning blowout
+    classification: str
     reasons: List[str] = field(default_factory=list)
-    recommended_prior_scale: float = 1.0  # Multiplier applied to tactical_prior in ActionPruner
+    recommended_prior_scale: float = 1.0
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert constraint result to a dictionary representation."""
+        """Return a JSON-like dictionary representation of this result."""
         return {
             "is_mechanically_valid": self.is_mechanically_valid,
             "risk_score": round(self.risk_score, 3),
@@ -59,23 +66,96 @@ class ConstraintResult:
 
 class LogicalConstraintEngine:
     """
-    Expert rule engine evaluating game invariants, cartridge failure preconditions,
-    and high-risk / high-reward tactical profiles in Regulation M-C doubles.
+    Expert rule engine for evaluating game invariants, impossible move states,
+    and high-risk / high-reward tactical lines in Regulation M-C doubles.
     """
 
     def __init__(self) -> None:
-        """Initialize LogicalConstraintEngine."""
+        """Initialize the constraint engine."""
         pass
+
+    @staticmethod
+    def _make_result(
+        *,
+        is_mechanically_valid: bool,
+        risk_score: float,
+        upside_potential: float,
+        classification: str,
+        reasons: Optional[List[str]] = None,
+        recommended_prior_scale: float = 1.0,
+    ) -> ConstraintResult:
+        """Create a standardized ConstraintResult instance."""
+        return ConstraintResult(
+            is_mechanically_valid=is_mechanically_valid,
+            risk_score=risk_score,
+            upside_potential=upside_potential,
+            classification=classification,
+            reasons=list(reasons or []),
+            recommended_prior_scale=recommended_prior_scale,
+        )
+
+    @staticmethod
+    def _resolve_target_types(
+        target_species: Optional[str],
+        target_types: Optional[List[str]],
+    ) -> List[str]:
+        """Resolve the target's type list from explicit or fallback data."""
+        if target_types:
+            return list(target_types)
+        if target_species:
+            species_entry = BASE_STATS_DB.get(target_species, {})
+            return list(species_entry.get("types", ["Normal"]))
+        return ["Normal"]
+
+    @staticmethod
+    def _resolve_accuracy(
+        move_name: str,
+        move_data: Dict[str, Any],
+        weather: str,
+        user_ability: str,
+        target_ability: str,
+    ) -> float:
+        """Resolve accuracy, including weather and ability-based modifiers."""
+        raw_acc = move_data.get("accuracy", 100)
+
+        try:
+            acc_val = float(raw_acc) if raw_acc not in (True, None, "--") else 100.0
+        except (TypeError, ValueError):
+            acc_val = 100.0
+
+        if user_ability == "No Guard" or target_ability == "No Guard":
+            return 100.0
+        if weather == "rain" and move_name in ("Thunder", "Hurricane", "Bleakwind Storm"):
+            return 100.0
+        if weather == "snow" and move_name == "Blizzard":
+            return 100.0
+        return acc_val
+
+    @staticmethod
+    def _resolve_move_priority(
+        move_name: str,
+        move_data: Dict[str, Any],
+        user_ability: str,
+        terrain: str,
+        m_cat: str,
+    ) -> int:
+        """Resolve the effective priority value for a move in the current state."""
+        priority = int(move_data.get("priority", 0))
+        if user_ability == "Prankster" and m_cat == "Status":
+            priority += 1
+        elif move_name == "Grassy Glide" and terrain == "grassy":
+            priority += 1
+        return priority
 
     def prune_impossible_actions(
         self,
         candidate_actions: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
         """
-        Takes a list of action dictionaries (must contain kwargs for evaluate_slot_action).
-        Returns only the actions where evaluate_slot_action(...).is_mechanically_valid == True.
+        Filter a list of candidate actions down to those that remain
+        mechanically valid after evaluation.
         """
-        valid_actions = []
+        valid_actions: List[Dict[str, Any]] = []
         for action_kwargs in candidate_actions:
             result = self.evaluate_slot_action(**action_kwargs)
             if result.is_mechanically_valid:
@@ -99,27 +179,61 @@ class LogicalConstraintEngine:
         is_target_grounded: Optional[bool] = None,
     ) -> ConstraintResult:
         """
-        Evaluate single move execution against physical invariants and risk-reward profile.
+        Evaluate a single move against physical invariants and tactical
+        risk-reward profile.
+
+        Parameters
+        ----------
+        slot_species:
+            The species executing the move.
+        move_name:
+            The move being evaluated.
+        target_species:
+            The species targeted by the move, if present.
+        active_turns:
+            Number of active turns the user has already been active.
+        field_state:
+            Current battlefield state, including weather and terrain.
+        was_protected_last_turn:
+            Whether the user used a protective move on the previous turn.
+        is_target_airborne:
+            Whether the target is airborne at the moment of evaluation.
+        user_ability:
+            Ability of the user.
+        target_ability:
+            Ability of the target.
+        target_types:
+            Explicit target type list, if known.
+        opposing_abilities:
+            Abilities on the opposing side that may affect move validity.
+        is_user_grounded:
+            Whether the user is grounded.
+        is_target_grounded:
+            Explicit grounded state for the target, if known.
+
+        Returns
+        -------
+        ConstraintResult
+            An object describing the move's mechanical validity, risk, upside,
+            and recommended prior weighting.
         """
-        f = field_state or {}
-        weather = (f.get("weather") or "").lower()
-        terrain = (f.get("terrain") or "").lower()
+        field = field_state or {}
+        weather = (field.get("weather") or "").lower()
+        terrain = (field.get("terrain") or "").lower()
         move_data = MOVE_DB.get(move_name, {})
 
-        # Grounded Normalization
-        target_grounded = is_target_grounded if is_target_grounded is not None else not is_target_airborne
-        user_grounded = is_user_grounded
-        
-        if f.get("gravity", False):
-            user_grounded = True
+        target_grounded = (
+            is_target_grounded if is_target_grounded is not None else not is_target_airborne
+        )
+        if field.get("gravity", False):
             target_grounded = True
 
         m_type = move_data.get("type", "Normal")
         m_cat = move_data.get("cat", "Status")
 
-        # 1. Physical Invariant: Fake Out / First Impression Turn 1 Restriction
+        # 1. Physical invariant: Fake Out / First Impression may only be used on turn 1.
         if move_name in ("Fake Out", "First Impression") and active_turns > 1:
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
                 upside_potential=0.0,
@@ -128,11 +242,11 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=0.001,
             )
 
-        # 2. Soft Constraint: Consecutive Protect Execution (High-Risk, High-Reward)
+        # 2. Soft constraint: consecutive Protect is valid but high-risk/high-reward.
         if move_name in PROTECT_MOVES and was_protected_last_turn:
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=True,
-                risk_score=0.67,  # ~33% success chance
+                risk_score=0.67,
                 upside_potential=0.85,
                 classification="High_Risk_High_Reward",
                 reasons=[
@@ -141,28 +255,32 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=0.40,
             )
 
-        m_prio = int(move_data.get("priority", 0))
-        if user_ability == "Prankster" and m_cat == "Status":
-            m_prio += 1
-        elif move_name == "Grassy Glide" and terrain == "grassy":
-            m_prio += 1
+        m_prio = self._resolve_move_priority(
+            move_name=move_name,
+            move_data=move_data,
+            user_ability=user_ability,
+            terrain=terrain,
+            m_cat=m_cat,
+        )
 
-        # Hard Mechanical Invariants
+        # 3. Hard mechanical invariants: priority blocking and terrain interactions.
         if m_prio > 0 and opposing_abilities:
             if any(ability in PRIORITY_BLOCKING_ABILITIES for ability in opposing_abilities):
-                return ConstraintResult(
+                return self._make_result(
                     is_mechanically_valid=False,
                     risk_score=1.0,
                     upside_potential=0.0,
                     classification="Mechanically_Invalid",
-                    reasons=[f"Priority move {move_name} blocked by opposing Armor Tail or Queenly Majesty."],
+                    reasons=[
+                        f"Priority move {move_name} blocked by opposing Armor Tail or Queenly Majesty."
+                    ],
                     recommended_prior_scale=0.001,
                 )
 
         if m_prio > 0 and terrain == "psychic":
             if target_species:
                 if target_grounded:
-                    return ConstraintResult(
+                    return self._make_result(
                         is_mechanically_valid=False,
                         risk_score=1.0,
                         upside_potential=0.0,
@@ -172,34 +290,33 @@ class LogicalConstraintEngine:
                         ],
                         recommended_prior_scale=0.001,
                     )
-                else:
-                    return ConstraintResult(
-                        is_mechanically_valid=True,
-                        risk_score=0.15,
-                        upside_potential=0.75,
-                        classification="Calculated_Risk",
-                        reasons=[
-                            f"Target {target_species} is airborne and exempt from Psychic Terrain; priority {move_name} connects cleanly."
-                        ],
-                        recommended_prior_scale=1.0,
-                    )
+                return self._make_result(
+                    is_mechanically_valid=True,
+                    risk_score=0.15,
+                    upside_potential=0.75,
+                    classification="Calculated_Risk",
+                    reasons=[
+                        f"Target {target_species} is airborne and exempt from Psychic Terrain; priority {move_name} connects cleanly."
+                    ],
+                    recommended_prior_scale=1.0,
+                )
 
         if user_ability == "Prankster" and m_cat == "Status":
-            t_types = target_types
-            if t_types is None and target_species:
-                t_types = BASE_STATS_DB.get(target_species, {}).get("types", ["Normal"])
-            if t_types and "Dark" in t_types:
-                return ConstraintResult(
+            resolved_target_types = self._resolve_target_types(target_species, target_types)
+            if resolved_target_types and "Dark" in resolved_target_types:
+                return self._make_result(
                     is_mechanically_valid=False,
                     risk_score=1.0,
                     upside_potential=0.0,
                     classification="Mechanically_Invalid",
-                    reasons=[f"Prankster {move_name} fails automatically against Dark-type {target_species}."],
+                    reasons=[
+                        f"Prankster {move_name} fails automatically against Dark-type {target_species}."
+                    ],
                     recommended_prior_scale=0.001,
                 )
 
         if (move_name in SOUND_MOVES or move_data.get("is_sound")) and target_ability == "Soundproof":
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
                 upside_potential=0.0,
@@ -209,7 +326,7 @@ class LogicalConstraintEngine:
             )
 
         if m_cat == "Status" and target_ability in STATUS_ABSORBING_ABILITIES:
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
                 upside_potential=0.0,
@@ -219,7 +336,7 @@ class LogicalConstraintEngine:
             )
 
         if m_type == "Fire" and target_ability in FIRE_ABSORBING_ABILITIES:
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
                 upside_potential=0.0,
@@ -229,7 +346,7 @@ class LogicalConstraintEngine:
             )
 
         if move_name in SLEEP_MOVES and target_grounded and terrain in ("electric", "misty"):
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
                 upside_potential=0.0,
@@ -238,13 +355,13 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=0.001,
             )
 
-        # 4. Physical Invariant vs Hard Read: Ground Attack into Airborne Target
+        # 4. Physical invariant vs hard read: Ground attack into airborne target.
         if m_type == "Ground" and m_cat != "Status" and move_name != "Thousand Arrows":
             if is_target_airborne:
-                return ConstraintResult(
+                return self._make_result(
                     is_mechanically_valid=True,
                     risk_score=0.80,
-                    upside_potential=0.90,  # If opponent switches to grounded partner, massive upside
+                    upside_potential=0.90,
                     classification="High_Risk_High_Reward",
                     reasons=[
                         f"Ground attack {move_name} deals 0x into airborne {target_species}; only viable as an aggressive hard read on switch-in."
@@ -252,33 +369,31 @@ class LogicalConstraintEngine:
                     recommended_prior_scale=0.20,
                 )
 
-        # 5. Accuracy Risk Pre-computation
-        raw_acc = move_data.get("accuracy", 100)
-        try:
-            acc_val = float(raw_acc) if raw_acc not in (True, None, "--") else 100.0
-        except (ValueError, TypeError):
-            acc_val = 100.0
-
-        if user_ability == "No Guard" or target_ability == "No Guard":
-            acc_val = 100.0
-        elif weather == "rain" and move_name in ("Thunder", "Hurricane", "Bleakwind Storm"):
-            acc_val = 100.0
-        elif weather == "snow" and move_name == "Blizzard":
-            acc_val = 100.0
-
+        # 5. Accuracy risk pre-computation.
+        acc_val = self._resolve_accuracy(
+            move_name=move_name,
+            move_data=move_data,
+            weather=weather,
+            user_ability=user_ability,
+            target_ability=target_ability,
+        )
         is_inaccurate = acc_val < 85.0
         acc_risk = round((100.0 - acc_val) / 100.0, 3) if is_inaccurate else 0.0
 
-        # 6. Type Effectiveness Breakdown & High-Risk Targeting
+        # 6. Type effectiveness breakdown and high-risk targeting.
         if target_species and m_cat != "Status":
-            tgt_entry = BASE_STATS_DB.get(target_species, {})
-            tgt_types = list(tgt_entry.get("types", ["Normal"]))
+            target_types = self._resolve_target_types(target_species, target_types)
             scrappy = user_ability in ("Scrappy", "Mind's Eye")
-            breakdown = get_type_effectiveness_breakdown(m_type, tgt_types, move_name=move_name, scrappy=scrappy)
+            breakdown = get_type_effectiveness_breakdown(
+                m_type,
+                target_types,
+                move_name=move_name,
+                scrappy=scrappy,
+            )
             eff = breakdown["multiplier"]
 
             if eff == 0.0:
-                return ConstraintResult(
+                return self._make_result(
                     is_mechanically_valid=True,
                     risk_score=0.85,
                     upside_potential=0.85,
@@ -288,8 +403,9 @@ class LogicalConstraintEngine:
                     ],
                     recommended_prior_scale=0.15,
                 )
-            elif eff <= 0.25:
-                return ConstraintResult(
+
+            if eff <= 0.25:
+                return self._make_result(
                     is_mechanically_valid=True,
                     risk_score=0.55,
                     upside_potential=0.60,
@@ -300,7 +416,7 @@ class LogicalConstraintEngine:
                     recommended_prior_scale=0.50,
                 )
 
-            reasons = []
+            reasons: List[str] = []
             if is_inaccurate:
                 reasons.append(f"{move_name} carries accuracy risk ({acc_val}% nominal hit rate).")
 
@@ -308,7 +424,7 @@ class LogicalConstraintEngine:
                 reasons.append(f"{move_name} exploits a devastating 4.0x double weakness on {target_species}.")
                 prior_scale = 1.35 * (acc_val / 100.0)
                 classification = "Calculated_Risk" if is_inaccurate else "Deterministic_Safe"
-                return ConstraintResult(
+                return self._make_result(
                     is_mechanically_valid=True,
                     risk_score=max(0.05, acc_risk),
                     upside_potential=0.95,
@@ -316,11 +432,12 @@ class LogicalConstraintEngine:
                     reasons=reasons,
                     recommended_prior_scale=round(prior_scale, 3),
                 )
-            elif eff >= 2.0:
+
+            if eff >= 2.0:
                 reasons.append(f"{move_name} is super effective (2.0x) against {target_species}.")
                 prior_scale = 1.20 * (acc_val / 100.0)
                 classification = "Calculated_Risk" if is_inaccurate else "Deterministic_Safe"
-                return ConstraintResult(
+                return self._make_result(
                     is_mechanically_valid=True,
                     risk_score=max(0.10, acc_risk),
                     upside_potential=0.85,
@@ -330,7 +447,7 @@ class LogicalConstraintEngine:
                 )
 
         if is_inaccurate:
-            return ConstraintResult(
+            return self._make_result(
                 is_mechanically_valid=True,
                 risk_score=acc_risk,
                 upside_potential=0.80,
@@ -339,8 +456,8 @@ class LogicalConstraintEngine:
                 recommended_prior_scale=round(acc_val / 100.0, 3),
             )
 
-        # Default standard safe execution
-        return ConstraintResult(
+        # Default standard safe execution.
+        return self._make_result(
             is_mechanically_valid=True,
             risk_score=0.10,
             upside_potential=0.70,
@@ -348,7 +465,3 @@ class LogicalConstraintEngine:
             reasons=[f"Standard valid execution of {move_name}."],
             recommended_prior_scale=1.0,
         )
-
-
-# Backward-compatible and semantic alias
-LogicEngine = LogicalConstraintEngine
