@@ -1,9 +1,0 @@
-{
-  "trainer_name": "aws_secret",
-  "known_alts": [
-    "aws_secret",
-    "brightvgc"
-  ],
-  "last_team_id": "T24",
-  "default_format": "Bo1_Ladder"
-}
