@@ -86,10 +86,9 @@ All modifiers apply sequentially with `n / 4096` scaling and strict integer trun
 - **IF [Psychic Terrain + Expanding Force] THEN:** BP `80 → 120` AND becomes a spread move AND grounded targets are immune to priority.
 - **IF [-ate Ability] (Pixilate/Aerilate/Refrigerate/Galvanize) THEN:** Normal moves convert to element AND gain `+20%` BP. Apply STAB (`1.5×`) if matches user type.
 - **IF [Liquid Voice] THEN:** Sound moves convert to `Water` type. Applies `1.5×` STAB if user is Water-type.
-- **IF [Unburden + Item Loss] THEN:** Speed is immediately doubled. Recalibrate turn order.
+- **IF [Unburden + Item Loss] THEN:** Speed is immediately doubled. Recalibrate turn order (e.g., Sneasler becomes the fastest in the format with unburden active).
 - **IF [Stamina] THEN:** User gains +1 Defense every time it is hit by an attack (e.g., Archaludon).
-- **IF [Choice Band / Specs / Scarf] THEN:** Apply `1.5×` multiplier to Atk / SpA / Spe, but user is locked into first move selected.
-- **IF [Assault Vest] THEN:** Apply `1.5×` multiplier to Sp. Def; Status moves cannot be selected.
+- **IF [Choice Scarf] THEN:** Apply `1.5×` multiplier to Spe, but user is locked into first move selected.
 - **IF [Focus Sash] THEN:** User survives any OHKO from 100% HP at exactly 1 HP.
 - **Disruption Moves (Taunt / Encore):** Taunt prevents status moves for 3 turns. Encore locks target into their last used move for 3 turns. `Mental Herb` cures these instantly once.
 - **IF [Weather Active] THEN:**
