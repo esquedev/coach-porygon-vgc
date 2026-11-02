@@ -24,9 +24,9 @@
   - **Paralysis:** Multiplies final Speed by $0.5\times$.
   - **Tailwind:** Multiplies team Speed by $2.0\times$ for 4 turns. *(Note: Tailwind modifies raw speed; if Trick Room is active, Tailwind makes you move LAST).*
   - **Icy Wind / Electroweb:** Drops targets' Speed by 1 stage ($\approx 0.67\times$ multiplier). Speed adjustments recalculate immediate turn order.
-- **Trick Room:** Inverts turn order within the same priority bracket (lowest Speed moves first). Priority still supersedes Trick Room.
-- **Quash:** Forces the target to execute its move *last* within its priority bracket.
-- **Ally Switch (+2):** User swaps field positions with its ally. Redirects single target attacks aimed at the original slot. Fails if used consecutively (shares the ~33% decay with Protect).
+- **Trick Room:** Inverts turn order within the same priority bracket (lowest Speed moves first). Priority still supersedes Trick Room (e.g., +1 Sucker Punch hits before 0 Icy Wind, even in TR).
+- **Quash:** Forces the target to execute its move *last* within its priority bracket, completely overriding their Speed stat or Trick Room advantage.
+- **Ally Switch (+2):** User swaps field positions with its ally. Redirects single-target attacks aimed at the original slot. Fails if used consecutively (shares the ~33% success decay with Protect).
 
 ## 3. Official VGC Math & Damage Modifiers
 All modifiers apply sequentially with $n / 4096$ scaling and strict integer truncation.
@@ -86,7 +86,7 @@ All modifiers apply sequentially with $n / 4096$ scaling and strict integer trun
 - **IF [Psychic Terrain + Expanding Force] THEN:** BP $80 \to 120$ AND becomes a spread move AND grounded targets are immune to priority.
 - **IF [-ate Ability] (Pixilate/Aerilate/Refrigerate/Galvanize) THEN:** Normal moves convert to element AND gain $+20\%$ BP. Apply STAB ($1.5\times$) if matches user type.
 - **IF [Liquid Voice] THEN:** Sound moves convert to `Water` type. Applies $1.5\times$ STAB if user is Water-type.
-- **IF [Unburden + Item Loss] THEN:** Speed is immediately doubled. Recalibrate turn order.
+- **IF [Unburden + Item Loss] THEN:** Speed is immediately doubled. Recalibrate turn order (e.g., Sneasler becomes the fastest in the format with unburden active).
 - **IF [Stamina] THEN:** User gains +1 Defense every time it is hit by an attack (e.g., Archaludon).
 - **IF [Choice Band / Specs / Scarf] THEN:** Apply $1.5\times$ multiplier to Atk / SpA / Spe, but user is locked into first move selected.
 - **IF [Assault Vest] THEN:** Apply $1.5\times$ multiplier to Sp. Def; Status moves cannot be selected.
