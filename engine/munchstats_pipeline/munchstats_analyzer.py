@@ -29,47 +29,6 @@ except ImportError:
     except ImportError:
         raise
 
-def infer_team_archetype(species_list: Sequence[str]) -> str:
-    """
-    Classify a team into a broad competitive archetype.
-    This logic is intentionally lightweight and deterministic.
-    """
-    lower_set = {s.lower() for s in species_list if s}
-
-    is_rain = any(k in lower_set for k in [
-        "pelipper", "politoed", "basculegion", "archaludon", "raichu-mega-x"
-    ])
-    is_sun = any(k in lower_set for k in [
-        "torkoal", "charizard-mega-y", "venusaur", "walking wake"
-    ])
-    is_sand = any(k in lower_set for k in [
-        "tyranitar", "tyranitar-mega", "excadrill", "hippowdon"
-    ])
-    is_trick_room = any(k in lower_set for k in [
-        "farigiraf", "rhyperior", "armarouge", "indeedee-f", "dusclops", "torkoal"
-    ])
-    is_psyspam = any(k in lower_set for k in ["indeedee", "indeedee-f"]) and any(
-        k in lower_set for k in ["armarouge", "alakazam", "gardevoir"]
-    )
-
-    if is_rain and any(k in lower_set for k in ["sneasler", "raichu-mega-x"]):
-        return "Rain Electric Seed Offense"
-    if is_rain:
-        return "Rain Archaludon Offense"
-    if is_sand:
-        return "Sand Rush Physical Offense"
-    if is_sun and is_trick_room:
-        return "Sun Trick Room Offense"
-    if is_sun:
-        return "Sun Mega Charizard Offense"
-    if is_psyspam:
-        return "Psychic Terrain Expanding Force"
-    if is_trick_room:
-        return "Trick Room Hard Offense"
-    if any(k in lower_set for k in ["kingambit", "gholdengo", "incineroar", "rillaboom"]):
-        return "Goodstuffs Pivot Balance"
-    return "Standard Competitive Balance"
-
 def compute_usage_ranking(conn: sqlite3.Connection, tournament_id: str, phase: str = "all", limit: int = 20) -> List[Dict[str, Any]]:
     rows = fetch_usage_by_phase(conn, tournament_id, phase)
     return rows[:limit]
