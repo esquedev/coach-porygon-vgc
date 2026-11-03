@@ -10,25 +10,25 @@
 
 ## 1. Overview
 
-Competitive Pokémon VGC 4v4 Doubles presents a severe combinatorial challenge: within a 45-second tournament clock, players navigate an action space of $26 \times 26 = 676$ joint choices per turn (evaluating up to $456,976$ joint board outcomes per turn across $K=16$ discrete cartridge damage rolls).
+Competitive Pokémon VGC 4v4 Doubles presents a severe combinatorial challenge: within a 45-second tournament clock, players navigate an action space of $26 \times 26 = 676$ joint choices per turn (evaluating up to $456,976$ joint board outcomes per turn across $K=16$ discrete in-game damage rolls).
 
-`vgc_tensor_core` translates the official cartridge turn execution pipeline into **dense linear algebra and tensor contractions**. By eliminating scalar object allocations and operating across batch dimensions, the engine enables:
+`vgc_tensor_core` translates the official in-game turn resolution pipeline into **dense linear algebra and tensor contractions**. By eliminating scalar object allocations and operating across batch dimensions, the engine enables:
 - **Instantaneous Grid Evaluation:** Computes all legal moves and damage distributions across the full $26 \times 26$ grid.
-- **Monte Carlo Timeline Expansion:** Evaluates $K=16$ discrete cartridge damage rolls $\{0.85, 0.86, \dots, 1.00\}$ to calculate empirical KO probabilities $P(\text{faint}) \in [0.0, 1.0]$.
+- **Monte Carlo Timeline Expansion:** Evaluates $K=16$ discrete in-game damage rolls $\{0.85, 0.86, \dots, 1.00\}$ to calculate empirical KO probabilities $P(\text{faint}) \in [0.0, 1.0]$.
 - **Hardware Agnostic:** Seamless execution on both PyTorch CUDA devices (e.g. RTX 3060) and vectorized CPU NumPy environments.
 - **Battle-Tested Invariants:** 50,000-turn adversarial fuzzer verified with zero NaNs, Infs, or invalid HP states.
 
 ---
 
-## 2. The 5 Synchronization Barriers of an Official VGC Turn
+## 2. The 5 Execution Phases of an Official VGC Turn
 
 ```mermaid
 flowchart TD
     State["Initial State Vectors [F, P, M] & Action Choices [p1, p2]"] --> B1
-    subgraph PreAttack ["Phases 1–3: Pre-Attack Synchronization"]
-        B1["Phase 1 — Barrier 1: Switches & Entry Abilities (+6)<br>• Active/Bench permutation swap<br>• Speed-sorted Weather/Terrain & Intimidate triggers"]
-        B2["Phase 2 — Barrier 2: Mega Evolution (+5.5)<br>• In-place 5-stat & ability interpolation<br>• Instantaneous Speed recalibration (Regulation M-C)<br>• Speed-sorted Mega Entry Abilities"]
-        B3["Phase 3 — Barrier 3: Speed, Priority & Jitter Sort<br>• Effective Speed S_eff & Effective Priority p_eff<br>• Speed tie detection & seeded +/-0.01 jitter<br>• execution_order = argsort(Score)"]
+    subgraph PreAttack ["Phases 1–3: Pre-Attack Resolution"]
+        B1["Phase 1: Switches & Entry Abilities (+6)<br>• Active/Bench permutation swap<br>• Speed-sorted Weather/Terrain & Intimidate triggers"]
+        B2["Phase 2: Mega Evolution (+5.5)<br>• In-place 5-stat & ability interpolation<br>• Instantaneous Speed recalibration (Regulation M-C)<br>• Speed-sorted Mega Entry Abilities"]
+        B3["Phase 3: Speed, Priority & Tie Resolution<br>• Effective Speed S_eff & Effective Priority p_eff<br>• Speed tie resolution (seeded RNG jitter)<br>• execution_order = argsort(Score)"]
         B1 --> B2 --> B3
     end
     B3 --> B4
@@ -48,7 +48,7 @@ flowchart TD
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/esquedev/coach-porygon-vgc.git
+git clone [https://github.com/esquedev/coach-porygon-vgc.git](https://github.com/esquedev/coach-porygon-vgc.git)
 cd coach-porygon-vgc
 
 # 2. Setup virtual environment
@@ -85,3 +85,10 @@ python vgc_tensor_core/benchmarks/roofline_benchmark.py
 ## 5. Tensor Geometry & State Dimensions
 
 The engine maintains a minimal, cache-aligned state vector partitioned into three primary tensors:
+
+*   **`F` (Field Tensor):** `[batch_size, num_field_features]`
+    *   Encodes global variables: active Weather, Terrain, Trick Room turns, Tailwind turns, and side-specific Screens.
+*   **`P` (Pokémon Tensor):** `[batch_size, 8, num_pokemon_features]`
+    *   Encodes the 4 active slots and 4 bench slots. Tracks HP %, current stat stages ($-6$ to $+6$), status conditions, volatile flags (e.g., Protect counters, flinch status), active abilities, and held item multipliers.
+*   **`M` (Move Tensor):** `[batch_size, 4, num_move_features]`
+    *   Encodes the metadata for the locked-in actions for the current turn, including Base Power, Type, Physical/Special split, Priority bracket, and target index.
