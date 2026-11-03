@@ -100,8 +100,8 @@ FUZZER RESULT: [PASS — PRODUCTION AIRTIGHT]
 ```
 
 ### 4.2. GPU Throughput & Latency Scaling (Roofline Benchmark)
-```
 Prior to native GPU loop unrolling, the baseline engine was evaluated across batch sizes from $B=1$ to $B=1,000$ on an **NVIDIA GeForce RTX 3060 Laptop GPU** (CUDA Compute Capability 8.6, PyTorch 2.6.0+cu124) against a multi-threaded **NumPy CPU** fallback.
+```
 +====================================================================================================================+
 |                                   VGC TENSOR CORE 2.0 BASELINE ENGINE BENCHMARKS                                   |
 +====================================================================================================================+
