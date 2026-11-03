@@ -102,14 +102,23 @@ FUZZER RESULT: [PASS — PRODUCTION AIRTIGHT]
 ### 4.2. GPU Throughput & Latency Scaling (Roofline Benchmark)
 ```
 Prior to native GPU loop unrolling, the baseline engine was evaluated across batch sizes from $B=1$ to $B=1,000$ on an **NVIDIA GeForce RTX 3060 Laptop GPU** (CUDA Compute Capability 8.6, PyTorch 2.6.0+cu124) against a multi-threaded **NumPy CPU** fallback.
-| Batch Size | NumPy CPU Latency (ms/pass \| turns/sec) | PyTorch CUDA Latency (ms/pass \| turns/sec) | CUDA VRAM Footprint (Allocated \| Reserved) | Architectural Profile |
-| :---: | :---: | :---: | :---: | :--- |
-| **1** | $5.39\text{ ms}$ \| $186\text{ t/s}$ | $16.04\text{ ms}$ \| $62\text{ t/s}$ | $8.46\text{ MB}$ \| $22.00\text{ MB}$ | Single-Turn Interactive Sparring |
-| **16** | $17.94\text{ ms}$ \| $892\text{ t/s}$ | $43.17\text{ ms}$ \| $371\text{ t/s}$ | $13.05\text{ MB}$ \| $22.00\text{ MB}$ | Small Tactical Beam Search |
-| **64** | $66.78\text{ ms}$ \| $958\text{ t/s}$ | $126.57\text{ ms}$ \| $506\text{ t/s}$ | $27.88\text{ MB}$ \| $42.00\text{ MB}$ | Pruned Action Space Exploration |
-| **256** | $258.59\text{ ms}$ \| $990\text{ t/s}$ | $442.26\text{ ms}$ \| $579\text{ t/s}$ | $86.59\text{ MB}$ \| $108.00\text{ MB}$ | Medium Multi-Branch Rollout |
-| **676** | **$686.27\text{ ms}$ \| $985\text{ t/s}$** | **$1,146.63\text{ ms}$ \| $590\text{ t/s}$** | $215.84\text{ MB}$ \| $304.00\text{ MB}$ | **Full $26 \times 26$ Joint Action Grid** |
-| **1000** | $995.34\text{ ms}$ \| $1,005\text{ t/s}$ | $1,945.79\text{ ms}$ \| $514\text{ t/s}$ | $315.60\text{ MB}$ \| $508.00\text{ MB}$ | Stress Test Saturation Limit |
++====================================================================================================================+
+|                                   VGC TENSOR CORE 2.0 BASELINE ENGINE BENCHMARKS                                   |
++====================================================================================================================+
+|  Compute Device  : NVIDIA GeForce RTX 3060 Laptop GPU                                                              |
+|  Architecture    : CUDA Compute Capability 8.6 (PyTorch 2.6.0+cu124)                                               |
+|  Evaluation      : Batch sizes B=1 to B=1,000 (Prior to native GPU loop unrolling)                                 |
++=======+==========================+==========================+==========================+===========================+
+| BATCH |  NUMPY CPU (ms | t/s)    | PYTORCH CUDA (ms | t/s)  | CUDA VRAM (Alloc | Rsvd) | ARCHITECTURAL PROFILE     |
++-------+--------------------------+--------------------------+--------------------------+---------------------------+
+|     1 |     5.39 ms |    186 t/s |    16.04 ms |     62 t/s |     8.46 MB |   22.00 MB | Single-Turn Sparring      |
+|    16 |    17.94 ms |    892 t/s |    43.17 ms |    371 t/s |    13.05 MB |   22.00 MB | Small Tactical Beam Search|
+|    64 |    66.78 ms |    958 t/s |   126.57 ms |    506 t/s |    27.88 MB |   42.00 MB | Pruned Action Space       |
+|   256 |   258.59 ms |    990 t/s |   442.26 ms |    579 t/s |    86.59 MB |  108.00 MB | Medium Multi-Branch       |
+|   676 |   686.27 ms |    985 t/s | 1,146.63 ms |    590 t/s |   215.84 MB |  304.00 MB | Full 26x26 Joint Grid     |
+|  1000 |   995.34 ms |  1,005 t/s | 1,945.79 ms |    514 t/s |   315.60 MB |  508.00 MB | Stress Test Saturation    |
++-------+--------------------------+--------------------------+--------------------------+---------------------------+
+BENCHMARK RESULT: [BASELINE CAPTURED — READY FOR NATIVE LOOP UNROLLING]
 ```
 
 ---
