@@ -14,7 +14,7 @@ Competitive Pokémon VGC 4v4 Doubles presents a severe combinatorial challenge: 
 
 `vgc_tensor_core` solves this by translating the entire cartridge turn execution pipeline into **dense linear algebra and branchless tensor contractions**. By eliminating Python branching, dictionary lookups, and scalar object allocations, the engine achieves:
 - **Throughput:** $> 1,000\text{ turns/second}$ across batch grids.
-- **Full Action Space Evaluation ($26 \times 26 = 676$ grid):** Evaluates all legal moves and Monte Carlo damage distributions in **$< 400\text{ ms}$ on CPU** and **$< 500\text{ ms}$ on RTX 3060 CUDA**.
+- **Full Action Space Evaluation ($26 \times 26 = 676$ grid):** Evaluates all legal moves and Monte Carlo damage distributions in 686.27 ms on CPU (985 turns/sec) and 1,146.63 ms on CUDA (590 turns/sec) prior to native GPU loop unrolling..
 - **Interactive Single-Turn Sparring ($B=1$):** Evaluates in **$< 6.3\text{ ms}$**.
 - **Adversarial Reliability:** Zero NaNs, Infs, or invalid states across **$50,000$ consecutive fuzzing turns**.
 
@@ -101,17 +101,15 @@ FUZZER RESULT: [PASS — PRODUCTION AIRTIGHT]
 
 ### 4.2. GPU Throughput & Latency Scaling (Roofline Benchmark)
 ```
-+-------+-------------------------+-------------------------+----------------------------------+
-| Batch |   NumPy CPU Latency     |   PyTorch CUDA Latency  | CUDA Memory Footprint & Notes    |
-| Size  |   (ms/pass | turns/sec) |   (ms/pass | turns/sec) | (Allocated MB | Reserved MB)     |
-+-------+-------------------------+-------------------------+----------------------------------+
-| 1     |    6.30 ms |     159 t/s |   16.33 ms |      61 t/s |  8.46 MB | 22.00 MB              |
-| 16    |   17.56 ms |     911 t/s |   40.74 ms |     393 t/s | 13.05 MB | 22.00 MB              |
-| 64    |   66.35 ms |     965 t/s |  123.56 ms |     518 t/s | 27.88 MB | 42.00 MB              |
-| 256   |  256.23 ms |     999 t/s |  436.06 ms |     587 t/s | 86.59 MB | 108.00 MB             |
-| 676   |  663.42 ms |    1019 t/s | 1169.73 ms |     578 t/s | 215.84 MB | 304.00 MB (26x26 Grid)|
-| 1000  |  988.42 ms |    1012 t/s | 1717.13 ms |     582 t/s | 315.60 MB | 508.00 MB            |
-+-------+-------------------------+-------------------------+----------------------------------+
+Prior to native GPU loop unrolling, the baseline engine was evaluated across batch sizes from $B=1$ to $B=1,000$ on an **NVIDIA GeForce RTX 3060 Laptop GPU** (CUDA Compute Capability 8.6, PyTorch 2.6.0+cu124) against a multi-threaded **NumPy CPU** fallback.
+| Batch Size | NumPy CPU Latency (ms/pass \| turns/sec) | PyTorch CUDA Latency (ms/pass \| turns/sec) | CUDA VRAM Footprint (Allocated \| Reserved) | Architectural Profile |
+| :---: | :---: | :---: | :---: | :--- |
+| **1** | $5.39\text{ ms}$ \| $186\text{ t/s}$ | $16.04\text{ ms}$ \| $62\text{ t/s}$ | $8.46\text{ MB}$ \| $22.00\text{ MB}$ | Single-Turn Interactive Sparring |
+| **16** | $17.94\text{ ms}$ \| $892\text{ t/s}$ | $43.17\text{ ms}$ \| $371\text{ t/s}$ | $13.05\text{ MB}$ \| $22.00\text{ MB}$ | Small Tactical Beam Search |
+| **64** | $66.78\text{ ms}$ \| $958\text{ t/s}$ | $126.57\text{ ms}$ \| $506\text{ t/s}$ | $27.88\text{ MB}$ \| $42.00\text{ MB}$ | Pruned Action Space Exploration |
+| **256** | $258.59\text{ ms}$ \| $990\text{ t/s}$ | $442.26\text{ ms}$ \| $579\text{ t/s}$ | $86.59\text{ MB}$ \| $108.00\text{ MB}$ | Medium Multi-Branch Rollout |
+| **676** | **$686.27\text{ ms}$ \| $985\text{ t/s}$** | **$1,146.63\text{ ms}$ \| $590\text{ t/s}$** | $215.84\text{ MB}$ \| $304.00\text{ MB}$ | **Full $26 \times 26$ Joint Action Grid** |
+| **1000** | $995.34\text{ ms}$ \| $1,005\text{ t/s}$ | $1,945.79\text{ ms}$ \| $514\text{ t/s}$ | $315.60\text{ MB}$ \| $508.00\text{ MB}$ | Stress Test Saturation Limit |
 ```
 
 ---

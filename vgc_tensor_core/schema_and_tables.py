@@ -7,17 +7,19 @@ Defines the exact tensor dimensions, feature slice indices, and constant
 linear-algebra operator matrices for the standalone 100x100 VGC Tensor State Machine:
 
 1. Global Field Tensor F: shape [..., 24]
-2. 8-Slot Unified Roster Tensor P: shape [..., 8, 80]
+# 2. 8-Slot Unified Roster Tensor P: shape [..., 8, 84]
    - Slots 0, 1: Player 1 Active (P1A, P1B)
    - Slots 2, 3: Player 1 Bench  (P1_Bench1, P1_Bench2)
    - Slots 4, 5: Player 2 Active (P2A, P2B)
    - Slots 6, 7: Player 2 Bench  (P2_Bench1, P2_Bench2)
-   - Why 80 floats (320 bytes = 2.5 x 128-byte CUDA cache lines) instead of 64?
+   - Why 84 floats (336 bytes = 2.625 x 128-byte CUDA cache lines) instead of 64 or 80?
      Because HP(3) + Stats(5) + Boosts(7) + Status_OneHot(7) + Type1_OneHot(18) + Type2_OneHot(18)
-     already equals 58 floats! Expanding to 80 gives 22 dedicated, un-aliased channels for all
-     Volatiles (Protect, Wide/Quick Guard, Flinch, Taunt, Encore, Helping Hand, Substitute, Active Turns)
-     AND full in-place Mega Evolution stats/abilities + Choice locks without bit-packing hacks.
-3. 8-Slot Move Tensor M_moves: shape [..., 8, 4, 48]
+     already equals 58 floats! Expanding to 84 provides 26 dedicated, un-aliased channels for:
+     • 10 Volatiles (Protect, Wide/Quick Guard, Flinch, Taunt, Encore, Substitute, Active Turns, Helping Hand)
+     • 8 Equipment & Tracking Flags (Grounded, Item Active, Item ID, Ability ID, Unburden, Choice Lock, Last Move, Toxic Counter)
+     • 8 In-Place Mega Evolution channels (Can Mega, Is Mega, 5 Post-Mega Level-50 Stats, Mega Ability ID)
+     without bit-packing hacks or host synchronization stalls.
+# 3. 8-Slot Move Tensor M_moves: shape [..., 8, 4, 52]
    - Moves 0..3 for each of the 8 Pokémon slots, carrying Move Type One-Hot (18),
      Category One-Hot (3), Base Power, Accuracy, Priority, Stat Deltas (7), Status Procs,
      Recoil/Drain, Spread/Protect flags, and Voluntary/Forced Switch flags.

@@ -5,7 +5,7 @@ Milestone 2: Showdown-to-Tensor Compiler & 26x26 Matrix Action Pruner
 
 Implements:
 1. Standalone Showdown-to-Tensor Compiler (`ShowdownTensorCompiler`):
-   - Compiles readable Field, 8-Slot Roster (`[8, 80]`), and 8-Slot Move (`[8, 4, 52]`)
+   - Compiles readable Field, 8-Slot Roster ([8, 84]), and 8-Slot Move ([8, 4, 52])
      specifications into aligned PyTorch CUDA/CPU or NumPy tensors.
    - Includes a self-contained Regulation M-C Move & Species Reference Dictionary
      (ZERO imports from `engine/`).
