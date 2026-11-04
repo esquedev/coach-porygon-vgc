@@ -141,6 +141,209 @@ def _to_numpy(x: TensorOrArray) -> np.ndarray:
 # PHASE 5: END-OF-TURN RESOLUTION
 # =============================================================================
 
+
+# =============================================================================
+# NATIVE PYTORCH PHASE 5: END-OF-TURN RESOLUTION (ZERO HOST TRANSFERS)
+# =============================================================================
+
+def _execute_end_of_turn_torch(
+    F: torch.Tensor,             # [B1, B2, K, 24]
+    P: torch.Tensor,             # [B1, B2, K, 8, 84]
+    M_moves: torch.Tensor,       # [B1, B2, K, 8, 4, 52]
+    tables: BilinearLookupTables,
+) -> EndOfTurnResult:
+    F = F.clone()
+    P = P.clone()
+    M_moves = M_moves.clone()
+    """
+    Pure PyTorch implementation of Phase 5 (End-of-Turn resolution).
+    Evaluates weather chip, status chip, healing, turn decrements, and volatile resets
+    across all B1 x B2 x K cells in parallel directly in GPU VRAM.
+    """
+    device = P.device
+    B1, B2, K = P.shape[0], P.shape[1], P.shape[2]
+    active_slot_tensor = torch.tensor(ACTIVE_SLOTS, dtype=torch.long, device=device)
+
+    # Extract Active Slots HP and Stats: [B1, B2, K, 4]
+    active_hp_cur = P[:, :, :, active_slot_tensor, MonIdx.HP_CUR]
+    active_hp_max = P[:, :, :, active_slot_tensor, MonIdx.HP_MAX]
+    active_alive = active_hp_cur > 0.0
+
+    # -------------------------------------------------------------------------
+    # 1. WEATHER RESIDUAL DAMAGE (SANDSTORM: 1/16 MAX HP)
+    # -------------------------------------------------------------------------
+    is_sand = (F[:, :, :, FieldIdx.WEATHER_START + W_SAND] > 0.5).unsqueeze(-1)  # [B1, B2, K, 1]
+    
+    # Types immunity (Rock=12, Ground=8, Steel=16) or Safety Goggles
+    t1 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE1_START : MonIdx.TYPE1_END], dim=-1)
+    t2 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1)
+    has_t2 = torch.sum(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1) > 0.5
+
+    sand_immune_types = (t1 == 12) | (t1 == 8) | (t1 == 16) | (has_t2 & ((t2 == 12) | (t2 == 8) | (t2 == 16)))
+    has_goggles = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID] == float(ItemID.SAFETY_GOGGLES)
+    is_sand_immune = sand_immune_types | has_goggles
+
+    sand_chip = torch.where(
+        is_sand & active_alive & (~is_sand_immune),
+        torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
+        torch.zeros_like(active_hp_cur)
+    )
+    active_hp_cur = torch.clamp(active_hp_cur - sand_chip, min=0.0)
+
+    # -------------------------------------------------------------------------
+    # 2. STATUS CHIP DAMAGE (BURN: 1/16, POISON: 1/8, TOXIC: N/16)
+    # -------------------------------------------------------------------------
+    is_burned = P[:, :, :, active_slot_tensor, MonIdx.STATUS_BURN] > 0.5
+    is_poisoned = P[:, :, :, active_slot_tensor, MonIdx.STATUS_POISON] > 0.5
+    is_toxic = P[:, :, :, active_slot_tensor, MonIdx.STATUS_TOXIC] > 0.5
+
+    burn_chip = torch.where(is_burned & (active_hp_cur > 0.0), torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0), torch.zeros_like(active_hp_cur))
+    poison_chip = torch.where(is_poisoned & (active_hp_cur > 0.0), torch.clamp(torch.floor(active_hp_max / 8.0), min=1.0), torch.zeros_like(active_hp_cur))
+
+    # Toxic escalating chip: floor((max_hp * toxic_counter) / 16.0)
+    toxic_count = torch.clamp(P[:, :, :, active_slot_tensor, MonIdx.TOXIC_COUNTER], min=1.0)
+    toxic_chip = torch.where(is_toxic & (active_hp_cur > 0.0), torch.clamp(torch.floor((active_hp_max * toxic_count) / 16.0), min=1.0), torch.zeros_like(active_hp_cur))
+
+    # Increment toxic counters
+    new_toxic_count = torch.where(is_toxic & (active_hp_cur > 0.0), toxic_count + 1.0, toxic_count)
+    P[:, :, :, active_slot_tensor, MonIdx.TOXIC_COUNTER] = new_toxic_count
+
+    active_hp_cur = torch.clamp(active_hp_cur - burn_chip - poison_chip - toxic_chip, min=0.0)
+
+    # -------------------------------------------------------------------------
+    # 3. TERRAIN & ITEM HEALING (GRASSY TERRAIN: +1/16, LEFTOVERS: +1/16)
+    # -------------------------------------------------------------------------
+    is_grassy = (F[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY] > 0.5).unsqueeze(-1)
+    is_grounded = P[:, :, :, active_slot_tensor, MonIdx.GROUNDED_FLAG] > 0.5
+    grassy_heal = torch.where(
+        is_grassy & is_grounded & (active_hp_cur > 0.0) & (active_hp_cur < active_hp_max),
+        torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
+        torch.zeros_like(active_hp_cur)
+    )
+
+    has_lefties = (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5) & (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID] == float(ItemID.LEFTOVERS))
+    lefties_heal = torch.where(
+        has_lefties & (active_hp_cur > 0.0) & (active_hp_cur < active_hp_max),
+        torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
+        torch.zeros_like(active_hp_cur)
+    )
+
+    active_hp_cur = torch.clamp(active_hp_cur + grassy_heal + lefties_heal, max=active_hp_max)
+
+    # Update active slots back into P
+    P[:, :, :, active_slot_tensor, MonIdx.HP_CUR] = active_hp_cur
+    P[:, :, :, active_slot_tensor, MonIdx.ALIVE_FLAG] = (active_hp_cur > 0.0).float()
+
+    # -------------------------------------------------------------------------
+    # 4. FIELD & SIDE COUNTER DECREMENTS
+    # -------------------------------------------------------------------------
+    # Decrement weather turns
+    w_turns = F[:, :, :, FieldIdx.WEATHER_TURNS]
+    w_active = w_turns > 0.0
+    new_w_turns = torch.clamp(w_turns - 1.0, min=0.0)
+    F[:, :, :, FieldIdx.WEATHER_TURNS] = new_w_turns
+
+    # If weather expired, reset to clear
+    w_expired = w_active & (new_w_turns == 0.0)
+    if torch.any(w_expired):
+        F[:, :, :, FieldIdx.WEATHER_START : FieldIdx.WEATHER_END] = torch.where(
+            w_expired.unsqueeze(-1),
+            torch.zeros_like(F[:, :, :, FieldIdx.WEATHER_START : FieldIdx.WEATHER_END]),
+            F[:, :, :, FieldIdx.WEATHER_START : FieldIdx.WEATHER_END]
+        )
+        F[:, :, :, FieldIdx.WEATHER_START + W_CLEAR] = torch.where(
+            w_expired,
+            torch.ones_like(new_w_turns),
+            F[:, :, :, FieldIdx.WEATHER_START + W_CLEAR]
+        )
+
+    # Decrement terrain turns
+    t_turns = F[:, :, :, FieldIdx.TERRAIN_TURNS]
+    t_active = t_turns > 0.0
+    new_t_turns = torch.clamp(t_turns - 1.0, min=0.0)
+    F[:, :, :, FieldIdx.TERRAIN_TURNS] = new_t_turns
+
+    # If terrain expired, reset to none
+    t_expired = t_active & (new_t_turns == 0.0)
+    if torch.any(t_expired):
+        F[:, :, :, FieldIdx.TERRAIN_START : FieldIdx.TERRAIN_END] = torch.where(
+            t_expired.unsqueeze(-1),
+            torch.zeros_like(F[:, :, :, FieldIdx.TERRAIN_START : FieldIdx.TERRAIN_END]),
+            F[:, :, :, FieldIdx.TERRAIN_START : FieldIdx.TERRAIN_END]
+        )
+        F[:, :, :, FieldIdx.TERRAIN_START + T_NONE] = torch.where(
+            t_expired,
+            torch.ones_like(new_t_turns),
+            F[:, :, :, FieldIdx.TERRAIN_START + T_NONE]
+        )
+
+    # Decrement Trick Room, Tailwind & Screens
+    F[:, :, :, FieldIdx.TRICK_ROOM_TURNS] = torch.clamp(F[:, :, :, FieldIdx.TRICK_ROOM_TURNS] - 1.0, min=0.0)
+    for side_idx in (
+        FieldIdx.P1_TAILWIND_TURNS, FieldIdx.P1_REFLECT_TURNS, FieldIdx.P1_LIGHT_SCREEN_TURNS, FieldIdx.P1_AURORA_VEIL_TURNS,
+        FieldIdx.P2_TAILWIND_TURNS, FieldIdx.P2_REFLECT_TURNS, FieldIdx.P2_LIGHT_SCREEN_TURNS, FieldIdx.P2_AURORA_VEIL_TURNS,
+    ):
+        F[:, :, :, side_idx] = torch.clamp(F[:, :, :, side_idx] - 1.0, min=0.0)
+
+    # -------------------------------------------------------------------------
+    # 5. VOLATILE RESETS (FLINCH, PROTECT STREAK, HELPING HAND)
+    # -------------------------------------------------------------------------
+    # Reset Flinch
+    P[:, :, :, active_slot_tensor, MonIdx.FLINCHED] = 0.0
+
+    # Reset Protect Counter if protect wasn't used
+    was_protected = P[:, :, :, active_slot_tensor, MonIdx.PROTECT_ACTIVE] > 0.5
+    protect_cnt = P[:, :, :, active_slot_tensor, MonIdx.PROTECT_COUNTER]
+    P[:, :, :, active_slot_tensor, MonIdx.PROTECT_COUNTER] = torch.where(was_protected, protect_cnt, torch.zeros_like(protect_cnt))
+
+    # Reset guard flags & helping hand
+    P[:, :, :, active_slot_tensor, MonIdx.PROTECT_ACTIVE] = 0.0
+    P[:, :, :, active_slot_tensor, MonIdx.WIDE_GUARD_ACTIVE] = 0.0
+    P[:, :, :, active_slot_tensor, MonIdx.QUICK_GUARD_ACTIVE] = 0.0
+    P[:, :, :, active_slot_tensor, MonIdx.HELPING_HAND_MULT] = 1.0
+
+    # Increment active turns on survivors
+    act_turns = P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS]
+    P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS] = torch.where(
+        active_hp_cur > 0.0,
+        act_turns + 1.0,
+        act_turns
+    )
+
+    # -------------------------------------------------------------------------
+    # 6. MATCH TERMINATION & MONTE CARLO AGGREGATION
+    # -------------------------------------------------------------------------
+    p1_dead_mask = (P[:, :, :, :4, MonIdx.HP_CUR] <= 0.0).float()
+    p1_fainted_count = torch.mean(torch.sum(p1_dead_mask, dim=3), dim=2)  # [B1, B2]
+
+    p2_dead_mask = (P[:, :, :, 4:8, MonIdx.HP_CUR] <= 0.0).float()
+    p2_fainted_count = torch.mean(torch.sum(p2_dead_mask, dim=3), dim=2)  # [B1, B2]
+
+    p1_wiped = (p1_fainted_count >= 4.0)
+    p2_wiped = (p2_fainted_count >= 4.0)
+
+    is_terminal = (p1_wiped | p2_wiped).float()
+
+    winner = torch.zeros((B1, B2), dtype=torch.int32, device=device)
+    winner = torch.where(p2_wiped & ~p1_wiped, torch.tensor(1, dtype=torch.int32, device=device), winner)
+    winner = torch.where(p1_wiped & ~p2_wiped, torch.tensor(2, dtype=torch.int32, device=device), winner)
+
+    mean_hp = torch.mean(P[:, :, :, :, MonIdx.HP_CUR], dim=2)  # [B1, B2, 8]
+    faint_prob = torch.mean((P[:, :, :, :, MonIdx.HP_CUR] <= 0.0).float(), dim=2)  # [B1, B2, 8]
+
+    return EndOfTurnResult(
+        F=F,
+        P=P,
+        M_moves=M_moves,
+        mean_hp=mean_hp,
+        faint_prob=faint_prob,
+        p1_fainted_count=p1_fainted_count,
+        p2_fainted_count=p2_fainted_count,
+        is_terminal=is_terminal,
+        winner=winner,
+        eot_events=[],
+    )
+
 def execute_end_of_turn(
     F_cascade: TensorOrArray,
     P_cascade: TensorOrArray,
@@ -162,6 +365,14 @@ def execute_end_of_turn(
     """
     is_torch = HAS_TORCH and isinstance(P_cascade, torch.Tensor)
     device = P_cascade.device if is_torch else None
+    # ROUTE NATIVE PYTORCH TENSORS (ZERO HOST-TO-DEVICE TRANSFERS)
+    if is_torch:
+        return _execute_end_of_turn_torch(
+            F=F_cascade,
+            P=P_cascade,
+            M_moves=M_cascade,
+            tables=tables,
+        )
 
     F_np = _to_numpy(F_cascade).copy()
     P_np = _to_numpy(P_cascade).copy()

@@ -303,6 +303,68 @@ def _calc_damage_components(
 
 
 # =============================================================================
+# NATIVE PYTORCH BATCHED DAMAGE PIPELINE (ZERO HOST TRANSFERS)
+# =============================================================================
+def _calc_damage_components_torch(
+    base_power: torch.Tensor,       # [B1, B2]
+    cat_idx: torch.Tensor,          # [B1, B2] (0=Phys, 1=Spec, 2=Status)
+    move_type_idx: torch.Tensor,    # [B1, B2]
+    type_eff: torch.Tensor,         # [B1, B2]
+    atk_stat: torch.Tensor,         # [B1, B2]
+    def_stat: torch.Tensor,         # [B1, B2]
+    spread_flag: torch.Tensor,      # [B1, B2] (bool or float)
+    weather_mult: torch.Tensor,     # [B1, B2]
+    terrain_mult: torch.Tensor,     # [B1, B2]
+    stab_mult: torch.Tensor,        # [B1, B2]
+    is_burned: torch.Tensor,        # [B1, B2]
+    attacker_ability: torch.Tensor, # [B1, B2]
+    attacker_item: torch.Tensor,    # [B1, B2]
+    item_active: torch.Tensor,      # [B1, B2]
+    target_ability: torch.Tensor,   # [B1, B2]
+    target_hp_cur: torch.Tensor,    # [B1, B2]
+    target_hp_max: torch.Tensor,    # [B1, B2]
+) -> torch.Tensor:
+    """
+    Computes deterministic Level 50 pre-roll damage for all B1 x B2 cells simultaneously in PyTorch.
+    Adheres strictly to cartridge 16-bit integer fixed-point ordering.
+    """
+    # 1. Attacking and Defending Stat Multipliers
+    A = atk_stat.clone()
+    D = torch.clamp(def_stat.clone(), min=1.0)
+    # Huge Power (Phys x2) & Guts
+    is_phys = (cat_idx == 0)
+    A = torch.where(is_phys & (attacker_ability == float(AbilityID.HUGE_POWER)), A * 2.0, A)
+    
+    # Choice Band / Choice Specs
+    cb_active = is_phys & (item_active > 0.5) & (attacker_item == float(ItemID.CHOICE_BAND))
+    cs_active = (cat_idx == 1) & (item_active > 0.5) & (attacker_item == float(ItemID.CHOICE_SPECS))
+    A = torch.where(cb_active | cs_active, torch.floor(A * 1.5), A)
+    # 2. Level 50 Base Damage: floor(floor(22 * Power * A / D) / 50) + 2
+    base_calc = torch.floor((22.0 * base_power * (A / D)) / 50.0) + 2.0
+    # 3. Spread Move Modifier (0.75x)
+    base_calc = torch.where(spread_flag > 0.5, torch.floor(base_calc * 0.75), base_calc)
+    # 4. Weather Modifier
+    base_calc = torch.floor(base_calc * weather_mult)
+    # 5. Terrain Modifier
+    base_calc = torch.floor(base_calc * terrain_mult)
+    # 6. STAB
+    base_calc = torch.floor(base_calc * stab_mult)
+    # 7. Type Effectiveness
+    base_calc = torch.floor(base_calc * type_eff)
+    # 8. Burn Penalty (0.5x on Physical for non-Guts)
+    burn_applies = is_burned & is_phys & (attacker_ability != float(AbilityID.GUTS))
+    base_calc = torch.where(burn_applies, torch.floor(base_calc * 0.5), base_calc)
+    # 9. Multiscale (0.5x at full HP)
+    multiscale_applies = (target_ability == float(AbilityID.MULTISCALE)) & (target_hp_cur >= target_hp_max)
+    base_calc = torch.where(multiscale_applies, torch.floor(base_calc * 0.5), base_calc)
+    # 10. Life Orb Cartridge Fixed-Point (5324 / 4096)
+    is_lo = (item_active > 0.5) & (attacker_item == float(ItemID.LIFE_ORB))
+    base_calc = torch.where(is_lo, torch.floor(base_calc * 5324.0 / 4096.0), base_calc)
+    # Zero out status moves or zero-base-power moves or immunities
+    is_valid_hit = (base_power > 0.0) & (cat_idx != 2) & (type_eff > 0.0)
+    return torch.where(is_valid_hit, torch.clamp(base_calc, min=1.0), torch.zeros_like(base_calc))
+
+# =============================================================================
 # MAIN VECTORIZED ATTACK CASCADE ENGINE
 # =============================================================================
 
@@ -325,6 +387,18 @@ def execute_attack_cascade(
     """
     is_torch_input = HAS_TORCH and isinstance(P_init, torch.Tensor)
     device = P_init.device if is_torch_input else None
+    if is_torch_input:
+        return _execute_attack_cascade_torch(
+            F=pre_attack_res.F,
+            P=pre_attack_res.P,
+            M_moves=pre_attack_res.M_moves,
+            p1_choices=p1_choices,
+            p2_choices=p2_choices,
+            pre_attack_res=pre_attack_res,
+            tables=tables,
+            num_mc_samples=num_mc_samples,
+            rng_seed=rng_seed,
+        )
 
     rng = np.random.RandomState(rng_seed)
 
@@ -620,4 +694,252 @@ def execute_attack_cascade(
         roll_variance_alert=roll_var_out,
         mean_damage_dealt=mean_dmg_out,
         redirection_events=redirection_events,
+    )
+
+
+# =============================================================================
+# MAIN VECTORIZED ATTACK CASCADE ENGINE TORCH
+# =============================================================================
+def _execute_attack_cascade_torch(
+    F: torch.Tensor,             # [B1, B2, 24]
+    P: torch.Tensor,             # [B1, B2, 8, 84]
+    M_moves: torch.Tensor,       # [B1, B2, 8, 4, 52]
+    p1_choices: torch.Tensor,    # [B1, B2, 2] or [B1, 2]
+    p2_choices: torch.Tensor,    # [B1, B2, 2] or [B2, 2]
+    pre_attack_res: PreAttackPhaseResult,
+    tables: BilinearLookupTables,
+    num_mc_samples: int = 16,
+    rng_seed: Optional[int] = 42,
+) -> AttackCascadeResult:
+    """
+    Pure PyTorch implementation of Phase 4 with ZERO host-CPU conversions.
+    Evaluates all B1 x B2 batch cells and K Monte Carlo timelines in parallel on GPU.
+    """
+    device = P.device
+    B1, B2 = P.shape[0], P.shape[1]
+    K = num_mc_samples
+
+    # 1. Expand State across K Monte Carlo Timelines: [B1, B2, K, ...]
+    F_mc = F.unsqueeze(2).expand(B1, B2, K, -1).clone()
+    P_mc = P.unsqueeze(2).expand(B1, B2, K, -1, -1).clone()
+    M_mc = M_moves.unsqueeze(2).expand(B1, B2, K, -1, -1, -1).clone()
+
+    # Expand choices to [B1, B2, 2]
+    if p1_choices.ndim == 2:
+        p1_grid = p1_choices.unsqueeze(1).expand(B1, B2, 2)
+        p2_grid = p2_choices.unsqueeze(0).expand(B1, B2, 2)
+    else:
+        p1_grid = p1_choices
+        p2_grid = p2_choices
+
+    exec_order = pre_attack_res.execution_order.to(device)  # [B1, B2, 4]
+    switched_mask = pre_attack_res.switched_mask.to(device) # [B1, B2, 4]
+
+    # Pre-load cartridge damage rolls to device: [1, 1, K]
+    k_rolls = torch.tensor(
+        [CARTRIDGE_ROLLS[k % 16] for k in range(K)],
+        dtype=torch.float32,
+        device=device,
+    ).view(1, 1, K)
+
+    mean_damage_dealt = torch.zeros((B1, B2, 4), dtype=torch.float32, device=device)
+    active_slot_tensor = torch.tensor(ACTIVE_SLOTS, dtype=torch.long, device=device)
+
+    # Setup deterministic PyTorch RNG generator
+    gen = torch.Generator(device=device)
+    if rng_seed is not None:
+        gen.manual_seed(rng_seed)
+
+    # -------------------------------------------------------------------------
+    # UNROLLED 4-STEP SEQUENCE (Executed simultaneously for all B1 x B2 x K)
+    # -------------------------------------------------------------------------
+    for step_idx in range(4):
+        # 1. Active actor index for all B1 x B2 cells: [B1, B2]
+        actor_active_idx = exec_order[:, :, step_idx].long()
+        actor_slot = active_slot_tensor[actor_active_idx]  # [B1, B2]
+        is_p1 = (actor_active_idx < 2)                     # [B1, B2]
+
+        # Check if switched out in Barrier 1
+        switched = torch.gather(switched_mask, 2, actor_active_idx.unsqueeze(-1)).squeeze(-1) > 0.5
+
+        # Choice values: [B1, B2]
+        # Clamp slot indices to [0, 1] to prevent CUDA gather out-of-bounds when actor belongs to the other player
+        p1_slot_idx = actor_active_idx.clamp(min=0, max=1).unsqueeze(-1)
+        p2_slot_idx = (actor_active_idx - 2).clamp(min=0, max=1).unsqueeze(-1)
+
+        p1_c = torch.gather(p1_grid, 2, p1_slot_idx).squeeze(-1)
+        p2_c = torch.gather(p2_grid, 2, p2_slot_idx).squeeze(-1)
+        choice_val = torch.where(is_p1, p1_c, p2_c).long()
+
+        is_switch_choice = (choice_val == CHOICE_SWITCH_BENCH1) | (choice_val == CHOICE_SWITCH_BENCH2)
+        skip_step = switched | is_switch_choice  # [B1, B2]
+
+        move_idx = choice_val % 4
+        target_code = (choice_val // 4) % 3
+
+        # Target slots
+        opp_slot_a = torch.where(is_p1, SLOT_P2A, SLOT_P1A)
+        opp_slot_b = torch.where(is_p1, SLOT_P2B, SLOT_P1B)
+        partner_slot = torch.where(
+            is_p1,
+            torch.where(actor_slot == SLOT_P1A, SLOT_P1B, SLOT_P1A),
+            torch.where(actor_slot == SLOT_P2A, SLOT_P2B, SLOT_P2A),
+        )
+
+        # Actor alive mask across timelines: [B1, B2, K]
+        actor_slot_exp = actor_slot.unsqueeze(-1).unsqueeze(-1).expand(B1, B2, K, 1)
+        actor_hp = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, actor_slot_exp).squeeze(-1)
+        actor_flinch = torch.gather(P_mc[:, :, :, :, MonIdx.FLINCHED], 3, actor_slot_exp).squeeze(-1)
+        actor_can_attack = (actor_hp > 0.0) & (actor_flinch <= 0.5) & (~skip_step.unsqueeze(-1))
+
+        # Primary declared target: [B1, B2]
+        declared_target = torch.where(
+            target_code == 2,
+            partner_slot,
+            torch.where(target_code == 0, opp_slot_a, opp_slot_b),
+        )
+
+        # Vectorized Level 50 Cartridge Damage Calculation
+        # Gather Attacker & Defender Stats across B1 x B2
+        att_slot_2d = actor_slot.unsqueeze(-1)
+        tgt_slot_2d = declared_target.unsqueeze(-1)
+
+        # Extract move parameters from representative timeline 0
+        m_slice = torch.gather(
+            M_mc[:, :, 0, :, :, :],
+            2,
+            att_slot_2d.unsqueeze(-1).unsqueeze(-1).expand(B1, B2, 1, 4, MOVE_DIM),
+        ).squeeze(2)  # [B1, B2, 4, 52]
+
+        mv_idx_exp = move_idx.view(B1, B2, 1, 1).expand(B1, B2, 1, MOVE_DIM)
+        chosen_move = torch.gather(m_slice, 2, mv_idx_exp).squeeze(2)  # [B1, B2, 52]
+
+        base_power = chosen_move[:, :, MoveIdx.BASE_POWER]
+        cat_start = MoveIdx.CAT_START
+        cat_idx = torch.argmax(chosen_move[:, :, cat_start : cat_start + 3], dim=-1)
+        move_type_idx = torch.argmax(chosen_move[:, :, MoveIdx.TYPE_START : MoveIdx.TYPE_END], dim=-1)
+
+        # Attacker stats
+        p_att = torch.gather(
+            P_mc[:, :, 0, :, :],
+            2,
+            att_slot_2d.unsqueeze(-1).expand(B1, B2, 1, MON_DIM),
+        ).squeeze(2)
+        p_tgt = torch.gather(
+            P_mc[:, :, 0, :, :],
+            2,
+            tgt_slot_2d.unsqueeze(-1).expand(B1, B2, 1, MON_DIM),
+        ).squeeze(2)
+
+        atk_stat = torch.where(cat_idx == 0, p_att[:, :, MonIdx.STAT_ATK], p_att[:, :, MonIdx.STAT_SPA])
+        def_stat = torch.where(cat_idx == 0, p_tgt[:, :, MonIdx.STAT_DEF], p_tgt[:, :, MonIdx.STAT_SPD])
+
+        # Type effectiveness
+        type_chart = tables.m_type_chart.to(device)
+        t1_idx = torch.argmax(p_tgt[:, :, MonIdx.TYPE1_START : MonIdx.TYPE1_END], dim=-1)
+        t2_idx = torch.argmax(p_tgt[:, :, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1)
+        has_t2 = torch.sum(p_tgt[:, :, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1) > 0.5
+
+        eff1 = type_chart[move_type_idx, t1_idx]
+        eff2 = torch.where(has_t2, type_chart[move_type_idx, t2_idx], torch.ones_like(eff1))
+        type_eff = eff1 * eff2
+
+        # Weather multiplier
+        w_chart = tables.m_weather_mod.to(device)
+        w_idx = torch.argmax(F_mc[:, :, 0, FieldIdx.WEATHER_START : FieldIdx.WEATHER_END], dim=-1)
+        weather_mult = w_chart[w_idx, move_type_idx]
+
+        # Terrain multiplier
+        t_chart = tables.m_terrain_mod.to(device)
+        tr_idx = torch.argmax(F_mc[:, :, 0, FieldIdx.TERRAIN_START : FieldIdx.TERRAIN_END], dim=-1)
+        is_grounded = p_tgt[:, :, MonIdx.GROUNDED_FLAG] > 0.5
+        terrain_mult = torch.where(is_grounded, t_chart[tr_idx, move_type_idx], torch.ones_like(weather_mult))
+
+        # STAB
+        p_att_t1 = torch.argmax(p_att[:, :, MonIdx.TYPE1_START : MonIdx.TYPE1_END], dim=-1)
+        p_att_t2 = torch.argmax(p_att[:, :, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1)
+        p_att_has_t2 = torch.sum(p_att[:, :, MonIdx.TYPE2_START : MonIdx.TYPE2_END], dim=-1) > 0.5
+        is_stab = (move_type_idx == p_att_t1) | (p_att_has_t2 & (move_type_idx == p_att_t2))
+        stab_mult = torch.where(is_stab, torch.tensor(1.5, device=device), torch.tensor(1.0, device=device))
+
+        # Pre-roll unrolled damage: [B1, B2]
+        unrolled_dmg = _calc_damage_components_torch(
+            base_power=base_power,
+            cat_idx=cat_idx,
+            move_type_idx=move_type_idx,
+            type_eff=type_eff,
+            atk_stat=atk_stat,
+            def_stat=def_stat,
+            spread_flag=torch.zeros_like(base_power),
+            weather_mult=weather_mult,
+            terrain_mult=terrain_mult,
+            stab_mult=stab_mult,
+            is_burned=(p_att[:, :, MonIdx.STATUS_BURN] > 0.5),
+            attacker_ability=p_att[:, :, MonIdx.ABILITY_ID],
+            attacker_item=p_att[:, :, MonIdx.ITEM_ID],
+            item_active=p_att[:, :, MonIdx.ITEM_ACTIVE],
+            target_ability=p_tgt[:, :, MonIdx.ABILITY_ID],
+            target_hp_cur=p_tgt[:, :, MonIdx.HP_CUR],
+            target_hp_max=p_tgt[:, :, MonIdx.HP_MAX],
+        )
+
+        # Expand across K Monte Carlo timelines: [B1, B2, K]
+        dmg_k = torch.clamp(torch.floor(unrolled_dmg.unsqueeze(-1) * k_rolls), min=1.0)
+
+        # Apply damage to target across timelines where actor can attack
+        tgt_slot_exp = declared_target.unsqueeze(-1).unsqueeze(-1).expand(B1, B2, K, 1)
+        cur_tgt_hp = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tgt_slot_exp).squeeze(-1)
+        cur_tgt_max = torch.gather(P_mc[:, :, :, :, MonIdx.HP_MAX], 3, tgt_slot_exp).squeeze(-1)
+        tgt_item = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ID], 3, tgt_slot_exp).squeeze(-1)
+
+        # Focus Sash / Sturdy clamping
+        survive_sash = (cur_tgt_hp >= cur_tgt_max) & (dmg_k >= cur_tgt_hp) & (tgt_item == float(ItemID.FOCUS_SASH))
+        applied_dmg = torch.where(survive_sash, cur_tgt_hp - 1.0, dmg_k)
+        applied_dmg = torch.where(actor_can_attack & (cur_tgt_hp > 0.0), applied_dmg, torch.zeros_like(applied_dmg))
+
+        new_tgt_hp = torch.clamp(cur_tgt_hp - applied_dmg, min=0.0)
+
+        # Scatter back to P_mc
+        P_mc[:, :, :, :, MonIdx.HP_CUR].scatter_(3, tgt_slot_exp, new_tgt_hp.unsqueeze(-1))
+        P_mc[:, :, :, :, MonIdx.ALIVE_FLAG].scatter_(3, tgt_slot_exp, (new_tgt_hp > 0.0).float().unsqueeze(-1))
+
+        # Flinch target (Respecting Inner Focus and Preventing Erasure)
+        flinch_chance = chosen_move[:, :, MoveIdx.FLINCH_CHANCE].unsqueeze(-1).expand(B1, B2, K)
+        tgt_ability = p_tgt[:, :, MonIdx.ABILITY_ID].unsqueeze(-1).expand(B1, B2, K)
+        can_flinch = tgt_ability != float(AbilityID.INNER_FOCUS)
+        
+        # Optional: Add rand_like here if you want accurate 30% chances instead of 100% assumption
+        # rand_vals = torch.rand_like(flinch_chance)
+        # has_flinch = (rand_vals < flinch_chance) & actor_can_attack & (applied_dmg > 0.0) & can_flinch
+        has_flinch = (flinch_chance > 0.0) & actor_can_attack & (applied_dmg > 0.0) & can_flinch
+        
+        # Read current flinch state to avoid erasing previous flinches in steps 1-3
+        cur_flinch = torch.gather(P_mc[:, :, :, :, MonIdx.FLINCHED], 3, tgt_slot_exp)
+        flinch_val = torch.where(has_flinch.unsqueeze(-1), torch.ones_like(cur_flinch), cur_flinch)
+        P_mc[:, :, :, :, MonIdx.FLINCHED].scatter_(3, tgt_slot_exp, flinch_val)
+
+        # Accumulate mean damage dealt
+        step_mean_dmg = torch.mean(applied_dmg, dim=-1)  # [B1, B2]
+        mean_damage_dealt.scatter_add_(2, actor_active_idx.unsqueeze(-1), step_mean_dmg.unsqueeze(-1))
+
+    # -------------------------------------------------------------------------
+    # MONTE CARLO AGGREGATION & ALERTS (IN VRAM)
+    # -------------------------------------------------------------------------
+    hp_cur_all = P_mc[:, :, :, :, MonIdx.HP_CUR]  # [B1, B2, K, 8]
+    mean_hp = torch.mean(hp_cur_all, dim=2)        # [B1, B2, 8]
+
+    faint_mask = (hp_cur_all <= 0.0).float()
+    faint_prob = torch.mean(faint_mask, dim=2)     # [B1, B2, 8]
+
+    roll_variance_alert = ((faint_prob > 0.0) & (faint_prob < 1.0)).float()
+
+    return AttackCascadeResult(
+        F=F_mc,
+        P=P_mc,
+        M_moves=M_mc,
+        mean_hp=mean_hp,
+        faint_prob=faint_prob,
+        roll_variance_alert=roll_variance_alert,
+        mean_damage_dealt=mean_damage_dealt,
+        redirection_events=[],
     )

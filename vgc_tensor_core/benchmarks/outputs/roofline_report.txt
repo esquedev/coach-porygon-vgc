@@ -13,12 +13,12 @@ VGC TENSOR CORE 2.0 — GPU ROOFLINE LATENCY & THROUGHPUT BENCHMARK
 | Batch |   NumPy CPU Latency     |   PyTorch CUDA Latency  | CUDA Memory Footprint & Notes    |
 | Size  |   (ms/pass | turns/sec) |   (ms/pass | turns/sec) | (Allocated MB | Reserved MB)     |
 +-------+-------------------------+-------------------------+----------------------------------+
-| 1     |    5.39 ms |     186 t/s |   16.04 ms |      62 t/s |  8.46 MB | 22.00 MB              |
-| 16    |   17.94 ms |     892 t/s |   43.17 ms |     371 t/s | 13.05 MB | 22.00 MB              |
-| 64    |   66.78 ms |     958 t/s |  126.57 ms |     506 t/s | 27.88 MB | 42.00 MB              |
-| 256   |  258.59 ms |     990 t/s |  442.26 ms |     579 t/s | 86.59 MB | 108.00 MB             |
-| 676   |  686.27 ms |     985 t/s | 1146.63 ms |     590 t/s | 215.84 MB | 304.00 MB (26x26 Full Grid!) |
-| 1000  |  995.34 ms |    1005 t/s | 1945.79 ms |     514 t/s | 315.60 MB | 508.00 MB            |
+| 1     |    5.04 ms |     199 t/s |   33.41 ms |      30 t/s |  8.32 MB | 22.00 MB              |
+| 16    |   16.99 ms |     942 t/s |   33.33 ms |     480 t/s | 10.75 MB | 22.00 MB              |
+| 64    |   64.38 ms |     994 t/s |   40.58 ms |    1577 t/s | 18.54 MB | 22.00 MB              |
+| 256   |  248.90 ms |    1029 t/s |   39.38 ms |    6501 t/s | 49.71 MB | 62.00 MB              |
+| 676   |  655.44 ms |    1031 t/s |   53.58 ms |   12616 t/s | 118.19 MB | 162.00 MB (26x26 Full Grid!) |
+| 1000  |  976.37 ms |    1024 t/s |   34.31 ms |   29148 t/s | 171.16 MB | 266.00 MB            |
 +-------+-------------------------+-------------------------+----------------------------------+
 
 KEY ARCHITECTURAL FINDINGS:
