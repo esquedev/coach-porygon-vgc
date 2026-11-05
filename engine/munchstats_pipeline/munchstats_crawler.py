@@ -22,12 +22,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-if str(REPO_ROOT / "engine") not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT / "engine"))
 
-from engine.analytics.munchstats_db import connect, init_schema, upsert_standing, upsert_stage, upsert_team_slot, upsert_tournament, upsert_usage
+from munchstats_db import connect, init_schema, upsert_standing, upsert_stage, upsert_team_slot, upsert_tournament, upsert_usage
 
 DATA_DIR = REPO_ROOT / "data"
 MUNCHSTATS_DATA_DIR = DATA_DIR / "munchstats"
