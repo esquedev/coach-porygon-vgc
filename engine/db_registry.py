@@ -156,3 +156,13 @@ class VGCDataRegistry:
                 ORDER BY tournament_id, placement ASC;
             """
             return self.query(sql, (top_rank,))
+
+
+_registry_instance: VGCDataRegistry | None = None
+
+def get_registry() -> VGCDataRegistry:
+    """Returns a shared in-memory DuckDB instance across agent calls."""
+    global _registry_instance
+    if _registry_instance is None:
+        _registry_instance = VGCDataRegistry()
+    return _registry_instance
