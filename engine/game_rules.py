@@ -1,3 +1,8 @@
+# engine/game_rules.py
+from __future__ import annotations
+
+from typing import Dict
+
 # ==============================================================================
 # STATIC GAME DATA & COEFFICIENTS (REGULATION M-C / SHOWDOWN SIM)
 # ==============================================================================
