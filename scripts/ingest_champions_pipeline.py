@@ -18,8 +18,8 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, Set
 
-ENGINE_DIR = Path(__file__).resolve().parents[1]
-OUTPUT_DIR = ENGINE_DIR / "data" / "showdown"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = REPO_ROOT / "src" / "engine" / "data" / "showdown"
 RAW_CACHE_DIR = OUTPUT_DIR / "raw_ts"
 
 MOD_URL_BASE = "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/champions"

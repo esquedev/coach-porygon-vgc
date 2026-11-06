@@ -56,10 +56,11 @@ Homepage = "https://github.com/esquedev/coach-porygon-vgc"
 Repository = "https://github.com/esquedev/coach-porygon-vgc.git"
 "Bug Tracker" = "https://github.com/esquedev/coach-porygon-vgc/issues"
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["vgc_tensor_core*", "engine*"]
-exclude = ["tests*", "evals*", "assets*"]
+exclude = ["tests*", "evals*", "assets*", "scripts*", "archive*"]
 [tool.pytest.ini_options]
 minversion = "7.0"
-testpaths = ["vgc_tensor_core/tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
+addopts = "-ra -q --import-mode=importlib"

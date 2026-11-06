@@ -159,7 +159,19 @@ def run_roofline_profiler() -> str:
 
 def main() -> None:
     rep = run_roofline_profiler()
-    out_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "outputs")
+    # Dynamic repo root detection: writes output cleanly to top-level reports/
+    cur_dir = os.path.abspath(__file__)
+    repo_root = cur_dir
+    for _ in range(5):
+        repo_root = os.path.dirname(repo_root)
+        if os.path.exists(os.path.join(repo_root, "pyproject.toml")):
+            break
+
+    out_dir = os.path.join(repo_root, "reports")
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, "roofline_report.txt")
+
+    out_dir = os.path.join(repo_root, "reports")
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, "roofline_report.txt")
     with open(out_path, "w", encoding="utf-8") as f:

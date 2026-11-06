@@ -41,6 +41,11 @@ scripts/patch_*.py
 *.tmp
 *.bak
 tempCodeRunnerFile.py
+reports/*
+!reports/.gitkeep
+!reports/agent_audits/
+logs/
+*.roofline.txt
 
 # 4. Secrets, Credentials & Environment Variables
 .env

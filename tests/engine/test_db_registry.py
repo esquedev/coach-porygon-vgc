@@ -2,11 +2,16 @@
 import sys
 from pathlib import Path
 
-# Add 'engine' folder to sys.path so db_registry can be imported directly
-ENGINE_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ENGINE_DIR))
+# Resolve to repo root and include src/ for imports
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from db_registry import VGCDataRegistry
+try:
+    from engine.db_registry import VGCDataRegistry
+except ImportError:
+    from src.engine.db_registry import VGCDataRegistry
 
 
 def run_tests():

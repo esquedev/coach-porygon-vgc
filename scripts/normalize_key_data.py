@@ -4,8 +4,8 @@ from pathlib import Path
 
 # Dynamically resolves to coach-porygon-vgc/engine/data regardless of execution folder
 SCRIPT_DIR = Path(__file__).resolve().parent
-ENGINE_DIR = SCRIPT_DIR.parent
-DATA_DIR = ENGINE_DIR / "data"
+REPO_ROOT = SCRIPT_DIR.parent
+DATA_DIR = REPO_ROOT / "src" / "engine" / "data"
 
 SHOWDOWN_DIR = DATA_DIR / "showdown"
 MUNCHSTATS_ARCHIVE_DIR = DATA_DIR / "munchstats" / "raw" / "archive"
