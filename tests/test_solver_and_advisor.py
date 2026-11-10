@@ -204,16 +204,44 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         self.assertIn("Rillaboom:", best.description)
         self.assertGreaterEqual(best.expected_mean_utility_vs_nash, best.expected_cvar_10_vs_nash - 1e-5)
 
-        report_text = advice.format_report(max_recommendations=3)
-        self.assertIn("BAYESIAN RISK-RESILIENT RECOMMENDATIONS FOR TRAINER_1", report_text)
-        self.assertIn("EXPECTED SLOT SURVIVAL / KO ODDS", report_text)
+        # Test Coach (plain English) verbosity
+        coach_text = advice.format_report(verbosity="coach", max_recommendations=3)
+        self.assertIn("TURN COACH ADVICE (MATCH PLAY)", coach_text)
+        self.assertIn("🎯 RECOMMENDED PLAY FOR THIS TURN", coach_text)
+        self.assertIn("💡 WHY THIS PLAY", coach_text)
+        self.assertIn("⚠️ WHAT COULD GO WRONG (THE RISK)", coach_text)
+        self.assertIn("📊 FIELD SURVIVAL & KO PROBABILITIES", coach_text)
+
+        # Test Standard (tactical metrics) verbosity
+        standard_text = advice.format_report(verbosity="standard", max_recommendations=3)
+        self.assertIn("BAYESIAN RISK-RESILIENT RECOMMENDATIONS FOR TRAINER_1", standard_text)
+        self.assertIn("EXPECTED SLOT SURVIVAL / KO ODDS", standard_text)
+
+        # Test Scientific (full mathematical & process audit) verbosity
+        sci_text = advice.format_report(verbosity="scientific", max_recommendations=3)
+        self.assertIn("COMPREHENSIVE MATHEMATICAL & PROCESS AUDIT REPORT", sci_text)
+        self.assertIn("STEP 1: INGESTION & 66-SP REGULATION M-C STAT PIPELINE", sci_text)
+        self.assertIn("STEP 2: COMBINATORIC ACTION SPACE & LOGICAL CONSTRAINT PRUNING", sci_text)
+        self.assertIn("STEP 3: DISCRETE-RNG DUAL-DRAW SPINNING-WHEEL & 5-PHASE CASCADE", sci_text)
+        self.assertIn("STEP 4: RISK-RESILIENT METRICS & BAD-LUCK FLOOR (CVaR_10)", sci_text)
+        self.assertIn("STEP 5: GAME-THEORETIC SOLVERS (IEDS, ZERO-SUM NASH, LOGIT QRE)", sci_text)
+        self.assertIn("STEP 6: RANKED JOINT ACTION EVALUATION TABLE", sci_text)
 
         eq_report = format_equilibrium_coach_report(
             advice.hypothesis_evaluations[0].equilibrium,
             num_simulations=24,
+            verbosity="coach",
             max_recommendations=3,
         )
-        self.assertIn("GAME-THEORETIC & BAD-LUCK RESILIENT TURN ADVISOR", eq_report)
+        self.assertIn("TURN COACH ADVICE", eq_report)
+
+        eq_report_sci = format_equilibrium_coach_report(
+            advice.hypothesis_evaluations[0].equilibrium,
+            num_simulations=24,
+            verbosity="scientific",
+            max_recommendations=3,
+        )
+        self.assertIn("MATHEMATICAL & PROCESS AUDIT", eq_report_sci)
 
 
 if __name__ == "__main__":

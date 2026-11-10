@@ -89,8 +89,130 @@ class BayesianTurnAdvice:
         """Return the #1 Bayesian + Risk-Resilient dominant strategy for `trainer_1`."""
         return self.recommendations[0]
 
-    def format_report(self, max_recommendations: int = 5) -> str:
-        """Format a complete Coach Porygon VGC advisory report."""
+    def format_report(
+        self,
+        verbosity: str = "coach",
+        max_recommendations: int = 5,
+    ) -> str:
+        """Format the advisory report at the requested verbosity / detail level.
+
+        Args:
+            verbosity: Detail level:
+                - `'coach'` (default): Plain English, intuitive tactical summary for
+                  the everyday player. No math jargon.
+                - `'standard'`: Balanced tactical breakdown with probabilities, opponent
+                  hypotheses, and top ranked plays.
+                - `'scientific'`: Full mathematical and algorithmic transparency, explicitly
+                  documenting all 5 pipeline steps, formulas, tensor dimensions, RNG distributions,
+                  CVaR tail risk, and equilibrium proofs.
+            max_recommendations: Maximum number of ranked recommendations to list.
+        """
+        v = str(verbosity or "coach").lower().strip()
+        if v in ("simple", "brief", "casual", "player"):
+            v = "coach"
+        elif v in ("nerd", "full", "audit", "deep", "verbose"):
+            v = "scientific"
+        elif v not in ("coach", "standard", "scientific"):
+            v = "coach"
+
+        if v == "coach":
+            return self._format_coach_report(max_recommendations)
+        elif v == "scientific":
+            return self._format_scientific_report(max_recommendations)
+        return self._format_standard_report(max_recommendations)
+
+    def _format_coach_report(self, max_recommendations: int = 5) -> str:
+        """Generate a clean, plain-English coach summary for everyday players."""
+        lines: List[str] = []
+        best = self.best_recommendation
+        first_h = self.hypothesis_evaluations[0] if self.hypothesis_evaluations else None
+        slot_sp = first_h.compiled_state.slot_species if first_h else ()
+
+        lines.append("=" * 88)
+        lines.append("COACH PORYGON VGC — TURN COACH ADVICE (MATCH PLAY)")
+        lines.append("=" * 88)
+
+        # 1. Recommended Play
+        lines.append("🎯 RECOMMENDED PLAY FOR THIS TURN:")
+        lines.append(f"   👉 {best.description}")
+        lines.append("")
+
+        # 2. Why this play
+        win_pct = best.win_turn_prob_vs_nash * 100.0
+        lines.append("💡 WHY THIS PLAY:")
+        lines.append(f"   • Win Probability: You have a {win_pct:.1f}% chance of coming out ahead this turn.")
+        if best.nash_probability > 0.05:
+            lines.append(
+                f"   • Game-Theoretic Optimal: Our solver gives this play {best.nash_probability * 100.0:.1f}% "
+                f"weight in the unexploitable game plan."
+            )
+        else:
+            lines.append("   • Solid Security Floor: Protects you from opponent traps while advancing board position.")
+
+        # Specific KO callouts
+        t2_a_ko = float(self.posterior_faint_prob_for_best[4]) * 100.0
+        t2_b_ko = float(self.posterior_faint_prob_for_best[5]) * 100.0
+        t1_a_surv = float(self.posterior_survival_prob_for_best[0]) * 100.0
+        t1_b_surv = float(self.posterior_survival_prob_for_best[1]) * 100.0
+
+        sp_t2_a = slot_sp[4] if len(slot_sp) > 4 and slot_sp[4] else "Opponent Slot A"
+        sp_t2_b = slot_sp[5] if len(slot_sp) > 5 and slot_sp[5] else "Opponent Slot B"
+        sp_t1_a = slot_sp[0] if len(slot_sp) > 0 and slot_sp[0] else "Your Slot A"
+        sp_t1_b = slot_sp[1] if len(slot_sp) > 1 and slot_sp[1] else "Your Slot B"
+
+        if t2_a_ko > 50.0:
+            lines.append(f"   • Pressure: High threat of knocking out {sp_t2_a} ({t2_a_ko:.1f}% KO chance).")
+        if t2_b_ko > 50.0:
+            lines.append(f"   • Pressure: High threat of knocking out {sp_t2_b} ({t2_b_ko:.1f}% KO chance).")
+        lines.append(f"   • Team Safety: {sp_t1_a} has {t1_a_surv:.1f}% survival; {sp_t1_b} has {t1_b_surv:.1f}% survival.")
+        lines.append("")
+
+        # 3. What could go wrong (Worst-case counter)
+        lines.append("⚠️ WHAT COULD GO WRONG (THE RISK):")
+        lines.append(f"   • Hardest Opponent Counter: {best.worst_case_counter_description}")
+        lines.append(
+            f"   • Bad-Luck Floor (Worst 10% RNG): {best.expected_cvar_10_vs_nash:+.3f} utility "
+            f"(even with misses or low damage rolls, this play minimizes downside risk)."
+        )
+        lines.append("")
+
+        # 4. Opponent's most likely response
+        if first_h and first_h.equilibrium.top_opponent_actions:
+            lines.append("🔮 OPPONENT'S MOST LIKELY MOVE:")
+            for rank, (_, _, desc_j, q_n, q_q) in enumerate(first_h.equilibrium.top_opponent_actions[:2], start=1):
+                prob = max(q_n, q_q) * 100.0
+                lines.append(f"   {rank}. (~{prob:.1f}% likelihood): {desc_j}")
+            lines.append("")
+
+        # 5. Field Survival & KO Odds
+        lines.append("📊 FIELD SURVIVAL & KO PROBABILITIES:")
+        lines.append(f"   • {sp_t1_a:16s} (You) : {t1_a_surv:5.1f}% Survives | {100.0 - t1_a_surv:5.1f}% KO Risk")
+        lines.append(f"   • {sp_t1_b:16s} (You) : {t1_b_surv:5.1f}% Survives | {100.0 - t1_b_surv:5.1f}% KO Risk")
+        lines.append(f"   • {sp_t2_a:16s} (Foe) : {100.0 - t2_a_ko:5.1f}% Survives | {t2_a_ko:5.1f}% KO Chance")
+        lines.append(f"   • {sp_t2_b:16s} (Foe) : {100.0 - t2_b_ko:5.1f}% Survives | {t2_b_ko:5.1f}% KO Chance")
+        lines.append("")
+
+        # 6. Alternate Recommendations
+        if len(self.recommendations) > 1:
+            lines.append("🔄 BACKUP OPTIONS:")
+            for rank, rec in enumerate(self.recommendations[1:max_recommendations], start=2):
+                lines.append(
+                    f"   #{rank} {rec.description} "
+                    f"(Win: {rec.win_turn_prob_vs_nash * 100.0:.1f}%, Risk Score: {rec.expected_risk_utility_vs_nash:+.3f})"
+                )
+            lines.append("")
+
+        lines.append("⚙️ CALCULATION AUDIT:")
+        lines.append(
+            f"   Simulated across {self.num_hypotheses} opponent build hypothesis(es) with "
+            f"{self.num_simulations_per_hypothesis} discrete dice rolls per matchup."
+        )
+        lines.append("   (Tip: Run with --verbosity scientific to view full mathematical proofs and damage formulas).")
+        lines.append("=" * 88)
+        return "\n".join(lines)
+
+    def _format_standard_report(self, max_recommendations: int = 5) -> str:
+        """Generate the standard balanced tactical report."""
         lines: List[str] = []
         lines.append("=" * 96)
         lines.append(
@@ -135,6 +257,162 @@ class BayesianTurnAdvice:
                     f"  Slot {s_idx} ({side_tag} - {sp_name:16s}): Survival={surv_pct:5.1f}% | KO={ko_pct:5.1f}%"
                 )
         lines.append("=" * 96)
+        return "\n".join(lines)
+
+    def _format_scientific_report(self, max_recommendations: int = 5) -> str:
+        """Generate the complete mathematical, algorithmic, and process audit report."""
+        lines: List[str] = []
+        first_h = self.hypothesis_evaluations[0] if self.hypothesis_evaluations else None
+        b1_count = len(self.recommendations)
+        b2_count = first_h.mask_trainer_2.pruned_choices.shape[0] if first_h else 0
+        total_cells = b1_count * b2_count
+        total_timelines = self.num_hypotheses * total_cells * self.num_simulations_per_hypothesis
+        slot_sp = first_h.compiled_state.slot_species if first_h else ()
+
+        lines.append("=" * 100)
+        lines.append("COACH PORYGON VGC — COMPREHENSIVE MATHEMATICAL & PROCESS AUDIT REPORT")
+        lines.append("=" * 100)
+        lines.append(
+            f"Execution Profile: {self.num_hypotheses} Opponent Hypothesis(es) | "
+            f"Evaluated Matrix [{b1_count} x {b2_count}] ({total_cells} joint action pairs) | "
+            f"K={self.num_simulations_per_hypothesis} MC threads/cell | "
+            f"Total Simulated Timelines: {total_timelines:,}"
+        )
+        lines.append("=" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 1: INGESTION & STAT ENGINE
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 1: INGESTION & 66-SP REGULATION M-C STAT PIPELINE")
+        lines.append("  • Champions Stat Scaling (Level 50, mandatory 31 IVs, max 66 SP total, max 32 SP/stat):")
+        lines.append("      HP   = floor(((2 * Base_HP + 31 + floor(SP_HP / 4)) * 50) / 100) + 60")
+        lines.append("      Stat = floor((floor(((2 * Base_Stat + 31 + floor(SP_Stat / 4)) * 50) / 100) + 5) * Nature_Mult)")
+        lines.append("  • In-Memory DuckDB Registry (`VGCDataRegistry`):")
+        lines.append("      - Mechanistic base data queried dynamically from `pokedex` and `moves` views.")
+        lines.append("      - Regional tournament usage weights queried from `tournament_team_slots` and `tournament_usage`.")
+        lines.append("  • Bayesian Opponent Set Hypotheses:")
+        for h in self.hypothesis_evaluations:
+            lines.append(
+                f"      [H{h.hypothesis_index + 1}] Weight w_{h.hypothesis_index + 1} = {h.posterior_weight * 100.0:5.2f}% | "
+                f"Build: {h.summary_label}"
+            )
+        lines.append("-" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 2: COMBINATORIC ACTION SPACE & PRUNING
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 2: COMBINATORIC ACTION SPACE & LOGICAL CONSTRAINT PRUNING")
+        lines.append("  • Theoretical Unconstrained Action Space:")
+        lines.append("      - Per-Pokémon Choice Tensor: 26 discrete actions (12 standard moves, 12 Mega moves, 2 bench switches).")
+        lines.append("      - Per-Player Joint Action Space: 26 x 26 = 676 combinations.")
+        lines.append("      - Full 2-Player Matchup Matrix: 676 x 676 = 456,976 cell evaluations.")
+        lines.append("  • Constraint Elimination via `LogicalConstraintEngine`:")
+        lines.append("      [!] Double-Protect Failure: consecutive Protect exponential decay ((1/3)^chain).")
+        lines.append("      [!] Fake Out Turn Expiration: suppressed if active_turns > 0.")
+        lines.append("      [!] Prankster Immunity: status moves into Dark-types blocked.")
+        lines.append("      [!] Bench Collision Gate: simultaneous switches into identical bench slots forbidden.")
+        lines.append("      [!] Single-Mega-Per-Side: simultaneous active mega evolutions strictly masked.")
+        lines.append(
+            f"  • Post-Pruning Dimension: trainer_1 B1 = {b1_count} actions (out of 676) | "
+            f"trainer_2 B2 = {b2_count} actions (out of 676)."
+        )
+        lines.append("-" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 3: DISCRETE-RNG VECTORIZED SIMULATION
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 3: DISCRETE-RNG DUAL-DRAW SPINNING-WHEEL & 5-PHASE CASCADE")
+        lines.append("  • Dual-Draw Spinning-Wheel on [0, 100) with Counter-Based SplitMix64 Scrambling:")
+        lines.append("      - Trigger condition: ((dart - window_start) % 100.0) < threshold_pct")
+        lines.append("      - Completely eliminates top-of-distribution miss clustering; yields exact uniform miss distributions.")
+        lines.append("  • Discrete Event Resolvers (Independent RNG Streams per Timeline):")
+        lines.append("      - Accuracy: Move-specific accuracy scaled by stage ratios max(3, 3+b)/max(3, 3-b).")
+        lines.append("      - Cartridge Critical Hits: Stage 0 (1/24 ~ 4.17%), Stage 1 (12.5%), Stage 2 (50.0%), Stage 3 (100.0%).")
+        lines.append("      - 16 Cartridge Damage Rolls: Discrete uniform draw from {85, 86, ..., 100} / 100.0.")
+        lines.append("      - Multi-Hit Counts: Standard (35% 2, 35% 3, 15% 4, 15% 5) vs Loaded Dice (50% 4, 50% 5).")
+        lines.append("      - Mechanics: Focus Sash 1-HP clamp, Beat Up + Justified boost, recoil, Life Orb, secondary status.")
+        lines.append("-" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 4: DOWNSIDE RISK & CVAR_10
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 4: RISK-RESILIENT METRICS & BAD-LUCK FLOOR (CVaR_10)")
+        lines.append("  • Expected Utility: E[U] = (1 / K) * sum_{k=1}^K U_k")
+        lines.append("  • Worst 10% Tail Risk (Conditional Value at Risk):")
+        lines.append("      CVaR_0.10[U] = (1 / (0.10 * K)) * sum_{k=1}^{floor(0.10 * K)} U_{(k)}  (where U_(1) <= ... <= U_(K))")
+        lines.append("  • Risk-Adjusted Optimization Objective (lambda = 0.25):")
+        lines.append("      U_risk = (1 - lambda) * E[U] + lambda * CVaR_0.10[U] = 0.75 * Mean + 0.25 * CVaR_10")
+        lines.append("      (Guarantees that high-variance coin-flips do not dominate consistent safe strategies).")
+        lines.append("-" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 5: GAME-THEORETIC EQUILIBRIUM SOLVERS
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 5: GAME-THEORETIC SOLVERS (IEDS, ZERO-SUM NASH, LOGIT QRE)")
+        if first_h:
+            eq = first_h.equilibrium
+            lines.append("  • Iterated Elimination of Dominated Strategies (IEDS):")
+            lines.append(
+                f"      - trainer_1: {eq.ieds.num_trainer_1_surviving} surviving, "
+                f"{len(eq.ieds.eliminated_trainer_1)} strictly/weakly dominated actions eliminated."
+            )
+            lines.append(
+                f"      - trainer_2: {eq.ieds.num_trainer_2_surviving} surviving, "
+                f"{len(eq.ieds.eliminated_trainer_2)} strictly/weakly dominated actions eliminated."
+            )
+            lines.append(f"      - Convergence achieved in {eq.ieds.rounds_executed} recursive round(s).")
+            lines.append("  • Zero-Sum Minimax / Nash Equilibrium (max_p min_q p^T U_risk q):")
+            lines.append(
+                f"      - Equilibrium Game Value v* = {eq.nash.game_value:+.4f} | "
+                f"Security Level (Maximin) = {eq.nash.pure_maximin_value:+.4f} | "
+                f"Ceiling (Minimax) = {eq.nash.pure_minimax_value:+.4f}"
+            )
+            lines.append(
+                f"      - Solver Engine: {eq.nash.solver_used} (Exploitability Gap = {eq.nash.exploitability_gap:.6f})"
+            )
+            lines.append("  • Logit Quantal Response Equilibrium (Human Showdown Behavioral Model):")
+            lines.append(
+                f"      - Inverse Rationality Temperature beta = {eq.qre.rationality_beta:.1f} | "
+                f"Expected Value E_QRE = {eq.qre.expected_value:+.4f} | "
+                f"Fixed-point iterations = {eq.qre.iterations_run}"
+            )
+            lines.append("      - Probability formula: q_j proportional to exp(-beta * (p^T U_risk)_j)")
+        lines.append("-" * 100)
+
+        # ---------------------------------------------------------------------
+        # STEP 6: RANKED ACTION BREAKDOWN
+        # ---------------------------------------------------------------------
+        lines.append("🔬 STEP 6: RANKED JOINT ACTION EVALUATION TABLE (TOP RECOMMENDATIONS)")
+        lines.append(
+            f"{'Rk':<3} | {'Idx':<7} | {'Action Description':<52} | "
+            f"{'RiskEV':<7} | {'MeanEV':<7} | {'CVaR10':<7} | {'Win%':<6} | {'Nash%':<6} | {'QRE%':<6}"
+        )
+        lines.append("-" * 115)
+        for rank, rec in enumerate(self.recommendations[:max_recommendations], start=1):
+            pair_str = f"[{rec.choice_pair[0]:2d},{rec.choice_pair[1]:2d}]"
+            short_desc = rec.description[:52]
+            lines.append(
+                f"#{rank:<2} | {pair_str:<7} | {short_desc:<52} | "
+                f"{rec.expected_risk_utility_vs_nash:+6.3f} | {rec.expected_mean_utility_vs_nash:+6.3f} | "
+                f"{rec.expected_cvar_10_vs_nash:+6.3f} | {rec.win_turn_prob_vs_nash * 100.0:5.1f}% | "
+                f"{rec.nash_probability * 100.0:5.1f}% | {rec.qre_probability * 100.0:5.1f}%"
+            )
+            lines.append(
+                f"     Worst Counter ({rec.worst_case_counter_utility:+.3f}): {rec.worst_case_counter_description}"
+            )
+
+        lines.append("-" * 100)
+        lines.append("EXPECTED SLOT SURVIVAL & KO DISTRIBUTIONS FOR #1 ACTION:")
+        for s_idx in (0, 1, 4, 5):
+            sp_name = slot_sp[s_idx] if len(slot_sp) > s_idx and slot_sp[s_idx] else f"Slot{s_idx}"
+            side_tag = "trainer_1" if s_idx < 4 else "trainer_2"
+            ko_pct = float(self.posterior_faint_prob_for_best[s_idx]) * 100.0
+            surv_pct = float(self.posterior_survival_prob_for_best[s_idx]) * 100.0
+            lines.append(
+                f"  Slot {s_idx} ({side_tag} - {sp_name:16s}): Survival = {surv_pct:5.1f}% | "
+                f"KO Probability = {ko_pct:5.1f}%"
+            )
+        lines.append("=" * 100)
         return "\n".join(lines)
 
 

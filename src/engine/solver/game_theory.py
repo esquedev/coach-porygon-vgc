@@ -880,10 +880,69 @@ def solve_turn_equilibrium(
 def format_equilibrium_coach_report(
     eq_result: TurnEquilibriumResult,
     num_simulations: int,
+    verbosity: str = "coach",
     max_recommendations: int = 5,
 ) -> str:
-    """Format a concise, coach-ready strategic report from `TurnEquilibriumResult`."""
-    lines: List[str] = []
+    """Format a strategic report from `TurnEquilibriumResult` at the requested detail level.
+
+    Args:
+        eq_result: Solved `TurnEquilibriumResult`.
+        num_simulations: Count of Monte Carlo RNG iterations evaluated per cell.
+        verbosity: Detail level:
+            - `'coach'` (default): Plain English summary for players.
+            - `'standard'`: Tactical metrics and probabilities.
+            - `'scientific'`: Mathematical audit of IEDS, Nash LP, QRE logit, and CVaR_10.
+        max_recommendations: Max number of top recommendations to show.
+    """
+    v = str(verbosity or "coach").lower().strip()
+    if v in ("simple", "brief", "casual", "player"):
+        v = "coach"
+    elif v in ("nerd", "full", "audit", "deep", "verbose"):
+        v = "scientific"
+    elif v not in ("coach", "standard", "scientific"):
+        v = "coach"
+
+    best = eq_result.best_recommendation
+
+    if v == "coach":
+        lines: List[str] = []
+        lines.append("=" * 88)
+        lines.append("COACH PORYGON VGC — TURN COACH ADVICE (MATCH PLAY)")
+        lines.append("=" * 88)
+        lines.append("🎯 RECOMMENDED PLAY FOR THIS TURN:")
+        lines.append(f"   👉 {best.description}")
+        lines.append("")
+        lines.append("💡 WHY THIS PLAY:")
+        lines.append(f"   • Win Probability: You have a {best.win_turn_prob_vs_nash * 100.0:.1f}% chance of winning this turn.")
+        lines.append(f"   • Game-Theoretic Optimal: Our solver gives this play {best.nash_probability * 100.0:.1f}% unexploitable weight.")
+        lines.append(f"   • Expected Average Score: {best.expected_mean_utility_vs_nash:+.3f} utility.")
+        lines.append("")
+        lines.append("⚠️ WHAT COULD GO WRONG (THE RISK):")
+        lines.append(f"   • Hardest Opponent Counter: {best.worst_case_counter_description}")
+        lines.append(
+            f"   • Bad-Luck Floor (Worst 10% RNG): {best.expected_cvar_10_vs_nash:+.3f} utility "
+            f"(even with misses or low damage rolls, this play protects your downside)."
+        )
+        lines.append("")
+        if eq_result.top_opponent_actions:
+            lines.append("🔮 OPPONENT'S MOST LIKELY MOVE:")
+            for rank, (_, _, desc_j, q_n, q_q) in enumerate(eq_result.top_opponent_actions[:2], start=1):
+                prob = max(q_n, q_q) * 100.0
+                lines.append(f"   {rank}. (~{prob:.1f}% likelihood): {desc_j}")
+            lines.append("")
+        if len(eq_result.recommendations) > 1:
+            lines.append("🔄 BACKUP OPTIONS:")
+            for rank, rec in enumerate(eq_result.recommendations[1:max_recommendations], start=2):
+                lines.append(
+                    f"   #{rank} {rec.description} (Win: {rec.win_turn_prob_vs_nash * 100.0:.1f}%, Score: {rec.expected_risk_utility_vs_nash:+.3f})"
+                )
+            lines.append("")
+        lines.append(f"⚙️ CALCULATION AUDIT: Simulated across {num_simulations} discrete dice rolls per matchup cell.")
+        lines.append("   (Tip: Run with --verbosity scientific to view full mathematical derivation and damage rolls).")
+        lines.append("=" * 88)
+        return "\n".join(lines)
+
+    lines = []
     lines.append("=" * 92)
     lines.append(
         f"COACH PORYGON VGC — GAME-THEORETIC & BAD-LUCK RESILIENT TURN ADVISOR (K={num_simulations} sims)"
@@ -905,6 +964,15 @@ def format_equilibrium_coach_report(
     lines.append(
         f"Human QRE Value (b={eq_result.qre.rationality_beta:.1f}): {eq_result.qre.expected_value:+.4f}"
     )
+
+    if v == "scientific":
+        lines.append("-" * 92)
+        lines.append("MATHEMATICAL & PROCESS AUDIT:")
+        lines.append("  • Downside Risk Metric (CVaR_10): Conditional Value at Risk in worst 10% simulation timelines.")
+        lines.append("  • Optimization Objective: U_risk = 0.75 * Mean + 0.25 * CVaR_10")
+        lines.append(f"  • Nash Equilibrium Gap: {eq_result.nash.exploitability_gap:.6f} via {eq_result.nash.solver_used}")
+        lines.append(f"  • QRE Behavioral Temperature: beta={eq_result.qre.rationality_beta:.1f} ({eq_result.qre.iterations_run} fixed-point iterations)")
+
     lines.append("-" * 92)
     lines.append("TOP RECOMMENDED JOINT ACTIONS FOR TRAINER_1 (RANKED BY RISK-RESILIENT EQUILIBRIUM VALUE):")
     for rank, rec in enumerate(eq_result.recommendations[:max_recommendations], start=1):
