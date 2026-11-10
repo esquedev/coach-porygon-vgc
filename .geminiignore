@@ -1,0 +1,19 @@
+# Virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Distribution / builds
+build/
+dist/
+*.egg-info/
+
+# Cache directories
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Git internals
+.git/

@@ -1,0 +1,35 @@
+{"name": "brn", "effectType": "Status", "onResidualOrder": 10, "id": "brn"}
+{"name": "par", "effectType": "Status", "onModifySpePriority": -101, "onBeforeMovePriority": 1, "id": "par"}
+{"name": "slp", "effectType": "Status", "onBeforeMovePriority": 10, "id": "slp"}
+{"name": "frz", "effectType": "Status", "onBeforeMovePriority": 10, "id": "frz"}
+{"name": "psn", "effectType": "Status", "onResidualOrder": 9, "id": "psn"}
+{"name": "tox", "effectType": "Status", "onResidualOrder": 9, "id": "tox"}
+{"name": "confusion", "onBeforeMovePriority": 3, "id": "confusion"}
+{"name": "flinch", "duration": 1, "onBeforeMovePriority": 8, "id": "flinch"}
+{"name": "trapped", "noCopy": true, "id": "trapped"}
+{"name": "trapper", "noCopy": true, "id": "trapper"}
+{"name": "partiallytrapped", "duration": 5, "onResidualOrder": 13, "id": "partiallytrapped"}
+{"name": "lockedmove", "duration": 2, "id": "lockedmove"}
+{"name": "twoturnmove", "duration": 2, "id": "twoturnmove"}
+{"name": "choicelock", "noCopy": true, "id": "choicelock"}
+{"name": "mustrecharge", "duration": 2, "onBeforeMovePriority": 11, "onLockMove": "recharge", "id": "mustrecharge"}
+{"name": "futuremove", "onResidualOrder": 3, "id": "futuremove"}
+{"name": "healreplacement", "id": "healreplacement"}
+{"name": "stall", "duration": 2, "counterMax": 729, "id": "stall"}
+{"name": "gem", "duration": 1, "affectsFainted": true, "onBasePowerPriority": 14, "id": "gem"}
+{"name": "RainDance", "effectType": "Weather", "duration": 5, "onFieldResidualOrder": 1, "id": "raindance"}
+{"name": "PrimordialSea", "effectType": "Weather", "duration": 0, "onTryMovePriority": 1, "onFieldResidualOrder": 1, "id": "primordialsea"}
+{"name": "SunnyDay", "effectType": "Weather", "duration": 5, "onFieldResidualOrder": 1, "id": "sunnyday"}
+{"name": "DesolateLand", "effectType": "Weather", "duration": 0, "onTryMovePriority": 1, "onFieldResidualOrder": 1, "id": "desolateland"}
+{"name": "Sandstorm", "effectType": "Weather", "duration": 5, "onModifySpDPriority": 10, "onFieldResidualOrder": 1, "id": "sandstorm"}
+{"name": "Hail", "effectType": "Weather", "duration": 5, "onFieldResidualOrder": 1, "id": "hail"}
+{"name": "Snowscape", "effectType": "Weather", "duration": 5, "onModifyDefPriority": 10, "onFieldResidualOrder": 1, "id": "snowscape"}
+{"name": "DeltaStream", "effectType": "Weather", "duration": 0, "onEffectivenessPriority": -1, "onFieldResidualOrder": 1, "id": "deltastream"}
+{"name": "Dynamax", "noCopy": true, "onBeforeSwitchOutPriority": -1, "onDragOutPriority": 2, "onResidualPriority": -100, "id": "dynamax"}
+{"name": "Commanded", "noCopy": true, "onDragOutPriority": 2, "onTrapPokemonPriority": -11, "id": "commanded"}
+{"name": "Commanding", "noCopy": true, "onDragOutPriority": 2, "onTrapPokemonPriority": -11, "onInvulnerability": false, "id": "commanding"}
+{"name": "Arceus", "onTypePriority": 1, "id": "arceus"}
+{"name": "Silvally", "onTypePriority": 1, "id": "silvally"}
+{"name": "Zacian", "id": "zacian"}
+{"name": "Zamazenta", "id": "zamazenta"}
+{"name": "rolloutstorage", "duration": 2, "id": "rolloutstorage"}

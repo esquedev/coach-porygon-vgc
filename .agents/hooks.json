@@ -1,0 +1,17 @@
+{
+  "file-protection-gate": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "edit_file|write_file|run_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/file_guard.py",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
