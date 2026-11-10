@@ -68,24 +68,8 @@ Desktop.ini
 *.swo
 
 # 6. Private Coaching Telemetry, Rosters, Scouting Intel & Heavy Tournament Dumps
-#    (Public schema templates live alongside as *.example.csv)
-data/Raw_Matches.csv
-data/Teams.csv
-data/Playstyle_Diagnostics.csv
-data/Scouted_Raw_Matches.csv
-data/Scouted_Teams.csv
-data/Recent_Matches.csv
-data/trainer_profile.json
-data/tactical_audits.jsonl
-data/*_Dump.csv
-data/MunchStats_Overview.csv
-data/MunchStats_Usage.csv
-data/MunchStats_Standings.csv
-data/MunchStats_Top_Teams.csv
-data/MunchStats_Pokemon_Sets.csv
-data/munchstats_standings/
-data/munchstats/output/
-data/compendium/Proto*.md
+data/
+src/data/
 reports/*.pdf
 reports/*.html
 !reports/agent_audits/
