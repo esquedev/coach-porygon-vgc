@@ -35,6 +35,11 @@ class VGCDataRegistry:
                     name,
                     num,
                     types,
+                    baseSpecies,
+                    forme,
+                    requiredItem,
+                    otherFormes,
+                    baseStats,
                     baseStats.hp AS hp,
                     baseStats.atk AS atk,
                     baseStats.def AS def,
@@ -42,7 +47,7 @@ class VGCDataRegistry:
                     baseStats.spd AS spd,
                     baseStats.spe AS spe,
                     abilities
-                FROM read_ndjson('{pokedex_path}');
+                FROM read_ndjson('{pokedex_path}', union_by_name=True);
             """)
 
         if Path(moves_path).exists():
@@ -56,29 +61,34 @@ class VGCDataRegistry:
                     priority,
                     category,
                     type,
-                    target
-                FROM read_ndjson('{moves_path}');
+                    target,
+                    flags,
+                    secondary,
+                    boosts,
+                    drain,
+                    recoil
+                FROM read_ndjson('{moves_path}', union_by_name=True);
             """)
 
         if Path(items_path).exists():
             self.con.execute(f"""
                 CREATE OR REPLACE VIEW items AS 
-                SELECT id, name, desc 
-                FROM read_ndjson('{items_path}');
+                SELECT * 
+                FROM read_ndjson('{items_path}', union_by_name=True);
             """)
 
         if Path(abilities_path).exists():
             self.con.execute(f"""
                 CREATE OR REPLACE VIEW abilities AS 
-                SELECT id, name, desc, shortDesc 
-                FROM read_ndjson('{abilities_path}');
+                SELECT * 
+                FROM read_ndjson('{abilities_path}', union_by_name=True);
             """)
 
         if Path(learnsets_path).exists():
             self.con.execute(f"""
                 CREATE OR REPLACE VIEW learnsets AS 
                 SELECT id, learnset 
-                FROM read_ndjson('{learnsets_path}');
+                FROM read_ndjson('{learnsets_path}', union_by_name=True);
             """)
 
         if Path(conditions_path).exists():
@@ -106,6 +116,32 @@ class VGCDataRegistry:
             self.con.execute(f"""
                 CREATE OR REPLACE VIEW tournament_overview AS 
                 SELECT * FROM read_ndjson('{overview_glob}', union_by_name=True);
+            """)
+
+            self.con.execute("""
+                CREATE OR REPLACE TABLE tournament_team_slots AS
+                SELECT
+                    t.tournament_id,
+                    REPLACE(REPLACE(TRIM(CAST(t.name AS VARCHAR)), '’', ''''), '‘', '''') AS player_name,
+                    COALESCE(TRY_CAST(t.placement AS INTEGER), 999) AS placement,
+                    COALESCE(CAST(t.day_reached AS VARCHAR), 'all') AS day_reached,
+                    CASE
+                        WHEN COALESCE(TRY_CAST(t.placement AS INTEGER), 999) <= 8 OR t.day_reached = 'top8' THEN 3.0
+                        WHEN COALESCE(TRY_CAST(t.placement AS INTEGER), 999) <= 16 OR t.day_reached = 'top16' THEN 2.25
+                        WHEN COALESCE(TRY_CAST(t.placement AS INTEGER), 999) <= 64 OR t.day_reached = 'day2' THEN 1.5
+                        ELSE 1.0
+                    END AS weight,
+                    REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''') AS species,
+                    REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''') AS item,
+                    REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.ability AS VARCHAR), '')), '’', ''''), '‘', '''') AS ability,
+                    COALESCE(NULLIF(TRIM(CAST(u.slot.nature AS VARCHAR)), ''), 'Hardy') AS nature,
+                    list_transform(
+                        u.slot.moves,
+                        lambda m: REPLACE(REPLACE(TRIM(CAST(m AS VARCHAR)), '’', ''''), '‘', '''')
+                    ) AS moves
+                FROM tournament_standings t,
+                UNNEST(t.team) AS u(slot)
+                WHERE u.slot.pokemon IS NOT NULL AND TRIM(CAST(u.slot.pokemon AS VARCHAR)) != '';
             """)
 
     def query(self, sql: str, params: tuple | list = ()) -> list[dict[str, Any]]:
