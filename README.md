@@ -1,235 +1,217 @@
-<div align="center">
+# Coach Porygon VGC 🦆⚡
 
-# ⚡ BeRightVGC: Coach Porygon Runtime
-### Autonomous Esports Intelligence, Scouting & Deterministic Turn-Simulation Runtime
-**Engineered by [esquedev](https://github.com/esquedev) for Pokémon Champions (Regulation M-C)**
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-In--Memory_Telemetry-FFF000.svg)](https://duckdb.org/)
+[![Regulation M-C](https://img.shields.io/badge/Format-Regulation_M--C_(Champions)-purple.svg)](https://www.pokemon.com/)
+[![Tests Passing](https://img.shields.io/badge/Tests-25%2F25_Passing-brightgreen.svg)](tests/)
 
-<p align="center">
-  <img src="assets/icons/pokeball.svg" width="36" height="36" alt="Pokeball" />
-  &nbsp;&nbsp;
-  <img src="assets/sprites/charizard-mega-y.svg" width="64" height="64" alt="Mega Charizard Y" />
-  &nbsp;&nbsp;
-  <img src="assets/icons/mega-sigil.svg" width="36" height="36" alt="Mega Sigil" />
-</p>
-
-[![CI / CD Pipeline](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml/badge.svg)](https://github.com/esquedev/coach-porygon-vgc/actions/workflows/ci.yml)
-[![Tests: 247 Passed](https://img.shields.io/badge/Tests-247%20Passed%20(100%25)-10b981.svg)](tests/)
-[![Python 3.10 | 3.11 | 3.12](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-[![Format](https://img.shields.io/badge/VGC-Regulation%20M--C%20(2027)-e11d48.svg)](data/MC_Available_Pokemon.csv)
-[![Curated Assets](https://img.shields.io/badge/Assets-916%20Curated%20PNGs%20(SHA--256)-06b6d4.svg)](assets/png_manifest.json)
-[![Zero Core Dependencies](https://img.shields.io/badge/Core%20Engine-Standard%20Library%20(Zero%20Dep)-10b981.svg)](pyproject.toml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-f59e0b.svg)](LICENSE)
-[![Legal & Fair Use](https://img.shields.io/badge/Legal-Nominative%20Fair%20Use-purple.svg)](LEGAL.md)
-
-<p align="center">
-  <b>100% Dependency-Free Core Engine</b> • <b>Official VGC Fixed-Point Damage Simulator</b> • <b>OWASP LLM01 Hardened</b><br/>
-  <b>Bilingual Cyberpunk Command Center (EN / ES)</b> • <b>Showdown EV ↔ 66-SP Bijective Converter</b> • <b>GPU HiGHS Nash Matrices</b>
-</p>
+**The World's First Single-Turn Exact Game-Theoretic & Risk-Resilient Decision Engine for Competitive Pokémon VGC 4v4 Doubles (Regulation M-C).**
 
 ---
 
-</div>
+## 1. Why Coach Porygon VGC?
 
-> [!NOTE]
-> **Brand & Nominative Fair Use Notice:**  
-> **BeRightVGC** (telemetry handle: `brightvgc`) is an esports intelligence suite created by **esquedev**. Its core execution engine, **Coach Porygon VGC**, is an independent, non-commercial open-source research platform and is **not affiliated with, endorsed, sponsored, or approved by Nintendo, Game Freak, or The Pokémon Company**. All Pokémon names, likenesses, and battle mechanics are referenced strictly under the legal doctrine of [Nominative Fair Use](LEGAL.md).
+Competitive Pokémon VGC is one of the most mathematically brutal simultaneous-decision games in eSports:
+1. **The Combinatorial Explosion ($456,976$ Cell Matchups):** Within a strict 45-second tournament clock, both players simultaneously select actions for two active Pokémon. Each Pokémon has 26 discrete choices (12 normal moves, 12 Mega Evolution lines, 2 bench switches), creating a per-turn joint action space of:
+   $$26 \times 26 = 676 \text{ joint actions per player} \implies 676 \times 676 = 456,976 \text{ joint matchup outcomes per turn}$$
+2. **The "Expected-Value Smearing" Trap:** Traditional Pokémon bots compute deterministic average damage (e.g. `85 BP × 1.5 STAB × 90% Acc = 114.75`). In high-level tournament play, this fails catastrophically: a greedy play that claims a "90% win on average" will lose the match when a Heat Wave misses or when the opponent hits a low damage roll.
+3. **The Mindgame Paradox (Nash vs. Human Behavior):** If an engine always picks the single highest-value play, a human opponent easily counters it with `Protect`, `Sucker Punch`, or a defensive switch. Conversely, pure minimax bots play excessively paranoid lines.
 
----
-
-## 🌟 The Hook: Why BeRightVGC / Coach Porygon?
-
-Most AI tools for competitive gaming suffer from two fatal vulnerabilities:
-1. **Mental Math Hallucinations:** Generative LLMs invent illegal damage rolls, hallucinate impossible stat spreads, and miscalculate weather/terrain damage multipliers.
-2. **Tactical Drift & Format Leaks:** General models frequently forget format rules (such as instantaneous Mega Evolution speed scaling or Psychic Terrain airborne exemptions) and suggest banned staples (`Urshifu`, `Flutter Mane`, `Amoonguss`).
-
-**BeRightVGC bridges this gap with mathematical finality.** Instead of asking a generative model to compute damage in its head, BeRightVGC positions a **deterministic micro-simulation runtime built on Python standard library and GPU-accelerated payoff matrices**, delivering:
-- 🎯 **Official VGC Micro-Simulator (`engine/turn_simulator.py`):** Fixed-point damage formula accuracy, dynamic speed recalculation, terrain/weather interactions, and branching minimax rolls.
-- 📐 **66-Stat-Point (SP) Budget Calculator (`engine/sp_calculator.py`):** Mathematical validation with sequential floor rounding at Level 50, featuring seamless **1:1 bijective conversion with Pokémon Showdown EVs**.
-- 🎲 **Von Neumann Nash Equilibrium Solver (`engine/tactics/`):** Simultaneous $5 \times 5$ action matrices, pure/mixed minimax strategies via HiGHS linear programming, and counterfactual equity loss ($\Delta V^*$) calculations.
-- 🛡️ **OWASP LLM01 Hardening & Anti-Hallucination Scanner:** Permanent quarantine on non-format species and complete isolation of untrusted replay strings.
-- 🖥️ **Bilingual Cyberpunk Command Center HUD (`assets/command_center.html`):** Standalone reactive dashboard with **916 curated SHA-256 assets**, live cognitive health tracking, tilt barometers, and 45-second interactive board sparring.
+**Coach Porygon V2** solves these challenges by combining:
+- **Dense GPU/CPU Tensor Contractions** simulating thousands of discrete-RNG parallel timelines in milliseconds.
+- **Dual-Draw Spinning-Wheel Monte Carlo RNG** resolving cartridge accuracy, 16 damage rolls ($\{85..100\}/100$), and crits without expected-value smearing.
+- **Conditional Value at Risk ($CVaR_{10}$)** guaranteeing that recommended plays protect your downside floor in the worst 10% bad-luck timelines.
+- **Iterated Elimination of Dominated Strategies (IEDS) + Zero-Sum Nash Linear Programming + Logit Quantal Response Equilibrium (QRE)** modeling both unexploitable game plans and realistic bounded-rationality human opponents.
+- **In-Memory DuckDB Tournament Telemetry** dynamically inferring unrevealed opponent 66-SP spreads and items from actual Regional Championship data.
 
 ---
 
-## 🏛️ Brand Architecture: esquedev × BeRightVGC × Coach Porygon
+## 2. The 5 Execution Phases of an Official VGC Turn
 
-To maintain clear separation between organization, product line, and runtime code:
+```mermaid
+flowchart TD
+    State["Initial State Vectors: Field F [24], Roster P [8, 84], Moves M [8, 4, 56]<br>Legal Joint Actions: trainer_1 [B1, 2] vs trainer_2 [B2, 2]"] --> B1
+    
+    subgraph PreAttack ["Phases 1–3: Pre-Attack Resolution"]
+        B1["Phase 1: Switches & Entry Abilities (+6)<br>• Active/Bench permutation swap<br>• Speed-sorted Weather/Terrain & Intimidate triggers"]
+        B2["Phase 2: Mega Evolution (+5.5)<br>• In-place stat & ability interpolation<br>• Instantaneous Speed recalculation (Regulation M-C)<br>• Speed-sorted Mega Entry Abilities"]
+        B3["Phase 3: Priority & Speed-Tie Order<br>• Effective Speed S_eff & Effective Priority p_eff<br>• Independent SplitMix64 50/50 speed-tie jitter<br>• Per-thread execution order = argsort(Score)"]
+        B1 --> B2 --> B3
+    end
 
-```
-                            THE BERIGHTVGC ECOSYSTEM
-                                       │
-        ┌──────────────────────────────┴──────────────────────────────┐
-        ▼                                                             ▼
- [STUDIO & ENGINEERING]                                    [PRODUCT & PLATFORM]
-       esquedev                                                 BeRightVGC
- Lead architecture, AI system                              Competitive intelligence,
- design, and core research.                                scouting, and analytics suite
-                                                           (Telemetry: brightvgc).
-        │                                                             │
-        └──────────────────────────────┬──────────────────────────────┘
-                                       ▼
-                         [DETERMINISTIC RUNTIME ENGINE]
-                               coach-porygon-vgc
-                    Official Level 50 turn simulator, 66-SP
-                  calculator, GPU payoff matrices & CI/CD pipeline.
+    B3 --> B4
+
+    subgraph AttackCascade ["Phase 4: Vectorized Discrete-RNG Attack Cascade (K Timelines)"]
+        B4["Phase 4: 4-Step Vectorized Attack Loop across [B1, B2, K]<br>• Gating: Sleep (50% wake), Freeze (20% thaw), Paralysis (25% immobilize), Flinch<br>• Protect Wheel: Consecutive decay ((1/3)^chain); Wide/Quick Guard<br>• Target Resolution: Follow Me / Rage Powder redirection & KO-Target XOR<br>• Dual-Draw Spinning-Wheel Accuracy: ((dart - window_start) % 100) < Acc<br>• Multi-Hit Discrete Loop: 35/35/15/15 standard vs 50/50 Loaded Dice<br>• Per-Hit Crits: Stage 0 (1/24), Stage 1 (12.5%), Stage 2 (50%), Stage 3 (100%)<br>• 16 Cartridge Damage Rolls: Discrete uniform draw from {85..100} / 100.0<br>• Defensive Clamps: Focus Sash & Sturdy 1-HP clamp (Hit 1 breaks Sash; Hit 2+ KOs)<br>• Special Mechanics: Beat Up + Justified, Pollen Puff ally heal, Body Press / Foul Play<br>• Recoil (-10% Life Orb, -33% moves), Drain (+75%), Secondary status/stat drops<br>• Mid-Turn Pivots: U-turn, Volt Switch, Flip Turn, Parting Shot bench swaps"]
+    end
+
+    B4 --> B5
+
+    subgraph EndOfTurn ["Phase 5: End-of-Turn Resolution & Risk Aggregation"]
+        B5["Phase 5: Residuals, Volatile Resets & Risk Evaluation<br>• Weather Chip: Sandstorm 1/16 max HP to non-Rock/Ground/Steel<br>• Terrain/Item Healing: Grassy Terrain (+1/16 grounded), Leftovers (+1/16)<br>• Status Damage: Burn (1/16), Poison (1/8), Toxic (N/16 escalating)<br>• Decrements: Weather, Terrain, Tailwind, Trick Room, Screens (-1 turn)<br>• Volatile Resets: Flinch, Protect streak (reset if unused), Helping Hand<br>• Downside Risk Aggregation: Mean, CVaR_10, Win Turn %, Faint/Survival Odds"]
+    end
+
+    B5 --> Solver["Step 6: Game Theory Engine (IEDS -> Zero-Sum Nash LP -> Logit QRE)"]
+    Solver --> Out["BayesianTurnAdvice: Top Recommended Action, Hardest Counter & KO Probabilities"]
 ```
 
 ---
 
-## ⚡ Quickstart (Clone & Run in 10 Seconds)
+## 3. Mathematical Foundations
 
-The core engine requires **zero third-party dependencies** at runtime. You only need standard Python 3.10+.
+### A. Dual-Draw Spinning-Wheel Monte Carlo RNG on $[0, 100)$
+Standard pseudo-random generators trap misses at the tail of the distribution (e.g. an $85\%$ move only misses on draws in $[85, 100)$), which clusters misses and distorts consecutive events. Coach Porygon implements the **Dual-Draw Spinning-Wheel ("Roulette Wheel")**:
+
+For each event stream $\text{event\_id}$ and simulation thread $k$:
+$$\text{window\_start} = \text{Uniform}[0, 100), \qquad \text{dart} = \text{Uniform}[0, 100)$$
+$$\text{Triggered} \iff \Big((\text{dart} - \text{window\_start}) \pmod{100.0}\Big) < \text{threshold\_pct}$$
+
+Every coordinate $(b_1, b_2, k, \text{step}, \text{hit})$ is hashed independently via **SplitMix64**:
+$$\text{key} = \text{seed} \oplus ((\text{event} + 1) \cdot c_1) \oplus ((\text{step} + 1) \cdot c_2) \oplus ((\text{hit} + 1) \cdot c_3)$$
+$$\text{hashed} = \text{SplitMix64}(\text{counter} \oplus \text{key})$$
+
+### B. Downside-Risk Protection ($CVaR_{10}$)
+To prevent the engine from recommending high-variance traps (e.g., relying on low-accuracy gambles that lose when they miss), the evaluation function optimizes **Risk-Adjusted Utility**:
+$$\mathbb{E}[U] = \frac{1}{K} \sum_{k=1}^K U_k$$
+$$CVaR_{0.10}[U] = \frac{1}{\lfloor 0.10 \cdot K \rfloor} \sum_{k=1}^{\lfloor 0.10 \cdot K \rfloor} U_{(k)} \quad \text{where } U_{(1)} \le U_{(2)} \le \dots \le U_{(K)}$$
+$$U_{\text{risk}} = (1 - \lambda) \cdot \mathbb{E}[U] + \lambda \cdot CVaR_{0.10}[U], \quad \lambda = 0.25$$
+
+### C. Game-Theoretic Solving (IEDS + Nash + QRE)
+1. **Iterated Elimination of Dominated Strategies (IEDS):**
+   Prunes actions for player 1 strictly worse than an alternative across all opponent responses:
+   $$\forall j \in \mathcal{A}_2, \quad U_{i', j} \ge U_{i, j} + \epsilon \implies \text{Action } i \text{ is pruned}$$
+2. **Zero-Sum Nash Equilibrium (Minimax):**
+   $$\max_{p \in \Delta_{B_1}} \min_{q \in \Delta_{B_2}} p^\top U_{\text{risk}} \, q$$
+   Solved via exact **HiGHS Linear Programming** (`scipy.optimize.linprog`) with a vectorized **Regret-Matching+ (RM+)** fallback.
+3. **Logit Quantal Response Equilibrium (Human Behavioral Model):**
+   Models boundedly rational human opponents on Pokémon Showdown who gravitate toward strong plays without playing a deterministic argmax:
+   $$q_j \propto \exp\left(-\beta \sum_i p_i U_{i, j}\right), \quad p_i \propto \exp\left(+\beta \sum_j U_{i, j} q_j\right), \quad \beta = 4.0$$
+
+---
+
+## 4. Regulation M-C (Champions Format) Invariants
+
+All calculations strictly enforce the official **Pokémon Champions (Regulation M-C)** rules:
+- **Stat Point (SP) Limit:** Exactly **66 total SP** budget per Pokémon; maximum **32 SP** in any single stat.
+- **Champions Level 50 Formulas (Mandatory 31 IVs):**
+  $$\text{HP} = \left\lfloor \frac{(2 \cdot \text{Base} + 31 + \lfloor \text{SP} / 4 \rfloor) \cdot 50}{100} \right\rfloor + 60$$
+  $$\text{Other Stats} = \left\lfloor \left( \left\lfloor \frac{(2 \cdot \text{Base} + 31 + \lfloor \text{SP} / 4 \rfloor) \cdot 50}{100} \right\rfloor + 5 \right) \cdot \text{NatureMult} \right\rfloor$$
+- **Mega Evolution Priority:** Mega Evolution resolves at **Priority `+5.5`**, recalculating speed tiers *instantaneously* before any move executes.
+- **Terastallization:** Strictly forbidden.
+
+---
+
+## 5. Quickstart & Installation
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/esquedev/coach-porygon-vgc.git
 cd coach-porygon-vgc
 
-# 2. Launch the Secure Local Command Center Backend
-python engine/ui_server.py
+# 2. Create and activate a Python virtual environment
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
 ```
-
-Open your browser at **[`http://localhost:8000/assets/command_center.html`](http://localhost:8000/assets/command_center.html)** (or access `/es` for Spanish, `/en` for English).
-
-> [!TIP]
-> On Windows systems, you can double-click `start_command_center.cmd` to boot the web server instantly in loopback mode!
 
 ---
 
-## 🎮 The 8 Operational Coaching Modes
+## 6. CLI Usage & Reporting Modes
 
-```mermaid
-graph LR
-    M0["<b>Mode 0</b><br/>Theorycrafting"] --> M1["<b>Mode 1</b><br/>Replay Audit"]
-    M1 --> M2["<b>Mode 2</b><br/>66-SP Roster"]
-    M2 --> M3["<b>Mode 3</b><br/>Flashcards"]
-    M3 --> M4["<b>Mode 4</b><br/>OTS Flowchart"]
-    M4 --> M5["<b>Mode 5</b><br/>Sports Psych"]
-    M5 --> M6["<b>Mode 6</b><br/>MunchStats"]
-    M6 --> M7["<b>Mode 7</b><br/>Health Auditor"]
-```
+Coach Porygon includes a multi-level Command Line Interface (`engine.cli`) supporting both raw paste strings and file paths:
 
-| Mode | Capability | Core Engine / Rule | Example Prompt / CLI Action |
-| :---: | :--- | :--- | :--- |
-| **Mode 0** | **General Coaching & Meta Theorycrafting** | `engine_rules.md` | *"What is the optimal counter-lead against Rain Archaludon?"* |
-| **Mode 1** | **Asynchronous Replay Breakdown** | `turn_simulator.py` + `telemetry.py` | *"Audit my replay vs Ash: Identify Turn 3 VP inflection point."* |
-| **Mode 2** | **66-SP Deterministic Roster Engineering** | `sp_calculator.py` + `validate_roster.py` | *"Optimize 66-SP spread for Mega Charizard Y to survive Timid Specs Draco Meteor."* |
-| **Mode 3** | **Interactive Board Sparring & Reflex Flashcards** | `scenarios_data.py` + `speed_duels_data.py` | *"Start a 45-Second flashcard scenario with unrevealed option evaluations."* |
-| **Mode 4** | **Open Team Sheet (OTS) Swiss Flowcharting** | `munchstats_threat_engine.py` | *"Opponent OTS: Garchomp, Incineroar, Rillaboom, Primarina, Chandelure, Archaludon."* |
-| **Mode 5** | **Cognitive Leak Eradication & Sports Psych** | `mistake_taxonomy.md` | *"Review my last 10 losses: Am I leaking VP due to Greed or Autopilot?"* |
-| **Mode 6** | **MunchStats Tournament Meta Ingestion** | `munchstats_meta` + `/api/munchstats` | *"Crawl and cluster 2027 Nice Regional Masters top cut."* |
-| **Mode 7** | **Release Health Auditor & Prompt Stress Evaluator** | `evals/evaluate_release_health.py` | `python evals/evaluate_release_health.py --verify` *(35 adversarial cases)* |
-
----
-
-## 🧮 66-SP Math ↔ Pokémon Showdown EV Bijective Mapping
-
-In Pokémon Champions Regulation M-C, trainers allocate **Stat Points (SP)** rather than legacy EVs. Because 1 SP adds exactly **+1 point** to a final Level 50 stat, our engine implements an exact bijective mathematical translation:
-
-```math
-\text{EV} = 4 + (\text{SP} - 1) \times 8 \quad (\text{for } \text{SP} \ge 1)
-```
-
-```math
-\text{SP} = 1 + \left\lfloor \frac{\text{EV} - 4}{8} \right\rfloor \quad (\text{for } \text{EV} \ge 4)
-```
-
-<div align="center">
-
-| Stat Points (SP) | Showdown EVs (Lv 50) | Stat Impact | Allocation Notes |
-| :---: | :---: | :---: | :--- |
-| **0 SP** | **0 EVs** | +0 | Base uninvested stat |
-| **1 SP** | **4 EVs** | +1 | Initial 4-EV bump |
-| **2 SP** | **12 EVs** | +2 | +8 EVs per subsequent point |
-| **3 SP** | **20 EVs** | +3 | Efficient defensive threshold |
-| **4 SP** | **28 EVs** | +4 | Speed creep tier |
-| ... | ... | ... | ... |
-| **32 SP** | **252 EVs** | +32 | **Single-Stat Hard Cap** |
-| **Total: 66 SP** | **Total: 508 EVs** | +66 | **Mandatory Team Allocation Budget** |
-
-</div>
-
----
-
-## 📊 Publication-Grade Reporting Suite (`report-generator`)
-
-BeRightVGC provides an autonomous visual publication engine for esports analytics, featuring 5 canonical report types:
-1. **Tactical Replay Audit:** Simultaneous payoff matrix, turning point identification, and equity delta ($\Delta V^*$).
-2. **Metagame & Swiss Intelligence:** Archetype clustering, Swiss attrition curves, and Day 1 $\to$ Day 2 conversion rates.
-3. **Telemetry & Playstyle Diagnostics:** Longitudinal error clustering (`POS`, `TGT`, `MEC`, `SPD`) and cognitive driver analysis.
-4. **Coach QA & Decision Audit:** Verifiable ground-truth benchmark comparing coaching recommendations with official damage calculations.
-5. **Swiss Opponent Scouting & Caster Aid:** Level 50 speed ladders, matchup threat matrices, and broadcast cheat sheets.
-
-Export seamlessly to self-contained HTML or print-ready PDF:
+### A. Coach Mode (Default — Plain English for Tournament Players)
 ```bash
-# Export tactical audit with Midnight Cyber preset
-python main.py --demo --format html --theme midnight --output-dir reports/
-
-# Export print-ready executive dossier to PDF
-python main.py --demo --format pdf --theme editorial --output-dir reports/
+PYTHONPATH=src python3 -m engine.cli \
+  --paste team.txt \
+  --log battle.log \
+  --pov "CyberPsycho" \
+  --sims 256 \
+  --verbosity coach
 ```
 
----
-
-## 🛡️ Security Posture & DevSecOps Hardening
-
+**Output Preview:**
 ```text
-Security Architecture Overview:
-├── Network Security     : Default binding strictly to 127.0.0.1 (SEC-01)
-├── Cross-Origin Policy  : CORS restricted to localhost & local file:// null origins (SEC-02)
-├── Document Root Guard  : HTTP 403 Forbidden on /.git, /.github, and trainer_profile.json (SEC-03)
-├── SSRF & LFI Shield    : Strict HTTPS domain whitelist for tournament scrapers (SEC-04)
-├── Asset Integrity      : 916 curated PNG assets tracked with SHA-256 hashes (SEC-05)
-├── Resource Protection  : 5 MB payload cap preventing memory exhaustion DoS (SEC-06)
-├── CSV Concurrency      : Thread-safe reentrant file locks preventing race conditions (SEC-07)
-├── Anti-Hallucination   : Automated repo-wide scanner enforcing Regulation M-C species lock (SEC-08)
-└── Static Analysis      : Automated GitHub CodeQL SAST scanning on Python & JS/TS
+========================================================================================
+COACH PORYGON VGC — TURN COACH ADVICE (MATCH PLAY)
+========================================================================================
+🎯 RECOMMENDED PLAY FOR THIS TURN:
+   👉 Charizard: Heat Wave [MEGA] (Spread Foes)  ||  Rillaboom: Fake Out (-> Incineroar (Opp A))
+
+💡 WHY THIS PLAY:
+   • Win Probability: You have a 95.3% chance of winning this turn's positioning.
+   • Game-Theoretic Optimal: Our solver gives this play 38.4% weight in the unexploitable game plan.
+   • Pressure: High threat of knocking out Gholdengo (82.1% KO chance).
+   • Team Safety: Charizard has 96.8% survival; Rillaboom has 100.0% survival.
+
+⚠️ WHAT COULD GO WRONG (THE RISK):
+   • Hardest Opponent Counter: Incineroar: Protect (Self) || Gholdengo: Shadow Ball
+   • Bad-Luck Floor (Worst 10% RNG): +0.720 utility (even with misses, your floor is protected).
+
+🔮 OPPONENT'S MOST LIKELY MOVE:
+   1. (~42.0% likelihood): Incineroar: Parting Shot || Gholdengo: Make It Rain
+   2. (~28.5% likelihood): Incineroar: Protect || Gholdengo: Shadow Ball
+
+📊 FIELD SURVIVAL & KO PROBABILITIES:
+   • Charizard        (You) :  96.8% Survives |   3.2% KO Risk
+   • Rillaboom        (You) : 100.0% Survives |   0.0% KO Risk
+   • Incineroar       (Foe) :  68.2% Survives |  31.8% KO Chance
+   • Gholdengo        (Foe) :  17.9% Survives |  82.1% KO Chance
+
+⚙️ CALCULATION AUDIT:
+   Simulated across 3 opponent build hypothesis(es) with 256 discrete dice rolls per matchup.
+   (Tip: Run with --verbosity scientific to view full mathematical proofs and damage formulas).
+========================================================================================
 ```
+
+### B. Scientific Mode (Comprehensive Mathematical & Process Audit)
+```bash
+PYTHONPATH=src python3 -m engine.cli \
+  --paste team.txt \
+  --log battle.log \
+  --pov "CyberPsycho" \
+  --sims 256 \
+  --verbosity scientific
+```
+*Outputs complete mathematical transparency: Level 50 scaling derivations, DuckDB tournament priors ($w_m$), combinatoric action reduction ($676 \to B_1$), Dual-Draw Spinning-Wheel RNG breakdowns, $CVaR_{10}$ integrals, IEDS round elimination tables, and Zero-Sum Nash LP dual gap proofs.*
 
 ---
 
-## 🧪 Testing & Verification Suite (247 Automated Tests)
+## 7. Running the Test Suite (100% Green Mandate)
 
-Our test suite guarantees 100% deterministic reliability across all subsystems without external network calls:
+Execute all 25 unit tests across the 5 engine phases:
 
 ```bash
-# Run the complete test suite with colorized visual ANSI output:
-.\run_tests.cmd          # On Windows Command Prompt / PowerShell
-./run_tests.sh           # On macOS / Linux
+PYTHONPATH=src python3 -m unittest \
+  tests/test_showdown_parser.py \
+  tests/test_set_inferencer.py \
+  tests/test_state_and_actions.py \
+  tests/test_dynamic_tensor_compiler.py \
+  tests/test_discrete_rng_state_machine.py \
+  tests/test_solver_and_advisor.py \
+  tests/engine/test_db_registry.py -v
 ```
 
-```text
-==============================================================================
-  BERIGHTVGC / COACH PORYGON VGC — LOCAL CI/CD PIPELINE (FULL 5-PHASE RUNNER)
-==============================================================================
-[PHASE 0/5] Sanitizing Workspace and Garbage Collection... [OK]
-[PHASE 1/5] Initializing Schema Templates... [OK]
-[PHASE 2/5] Linting and Syntax Compilation (0 violations)... [OK]
-[PHASE 3/5] Verifying AI Health Stress Audit (35 cases)... [OK]
-[PHASE 4/5] Auditing Curated Assets (916 SHA-256 digests)... [OK]
-[PHASE 5/5] Executing Full Test Suite (pytest with coverage parity)...
-============================ 247 passed in 13.53s =============================
-[PASS] ALL 5 CI/CD PIPELINE PHASES PASSED LOCALLY WITH ZERO ERRORS
-```
+All 25 tests complete in under 15 seconds with zero external dependencies.
 
 ---
 
-## 🤝 Contributing
+## 8. Tensor Architecture & Schema
 
-We welcome competitive players, prompt engineers, UI designers, and systems developers! Please review our **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for our development lifecycle, contribution opportunity matrix, and coding standards.
+The engine maintains a minimal, cache-aligned state vector partitioned into three primary tensors:
 
----
-
-## ⚖️ Intellectual Property, Fair Use & Legal Policy
-
-Pokémon character names, species designs, battle mechanics, items, and trademarks are the intellectual property of **The Pokémon Company**, **Nintendo**, **Creatures Inc.**, and **Game Freak**.
-
-- **Non-Commercial Esports Research:** BeRightVGC is an open-source, non-commercial analytical coaching and simulation framework created under Fair Use principles for competitive study and sports science research.
-- **Original Curated Assets:** All creature sprites and icons are curated strictly for non-commercial identification under nominative fair use. No proprietary binary game code or ROM assets are redistributed.
-- **Nominative Fair Use & Player Privacy:** For complete details on our legal defense, player opt-out / anonymization protocol, and commercialization limitations, please review **[`LEGAL.md`](LEGAL.md)**.
+| Tensor | Shape | Features | Description |
+| :--- | :--- | :--- | :--- |
+| **`F` (Field Tensor)** | `[B1, B2, K, 24]` | `FieldIdx` | Weather, Terrain, Trick Room, Tailwind, Reflect, Light Screen, Aurora Veil, Gravity. |
+| **`P` (Pokémon Tensor)** | `[B1, B2, K, 8, 84]` | `MonIdx` | Current HP, Max HP, Level 50 Stats (Atk..Spe), Boosts (-6..+6), Status conditions, Mega stats, Volatiles (Flinch, Protect chain), Items, Abilities. |
+| **`M` (Moves Tensor)** | `[B1, B2, K, 8, 4, 56]` | `MoveIdx` | Base Power, Accuracy, Priority, Type one-hot (18), Category (Physical/Special/Status), Target type, Expected hits, Overrides (Body Press, Foul Play), Recoil/Drain. |
 
 ---
 
-<div align="center">
-  <sub>Built with mathematical rigor by <b>esquedev</b> for competitive VGC Champions worldwide.</sub>
-</div>
+## 9. License
+
+Coach Porygon VGC is open-source software licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**.

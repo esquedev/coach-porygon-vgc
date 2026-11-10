@@ -22,7 +22,7 @@ venv/
 env/
 ENV/
 
-# 2. Raw Office / Google Drive Binary Exports (Convert to .md / .csv instead)
+# 2. Raw Office / Google Drive Binary Exports (Convert to .jsonl / .csv instead)
 *.docx
 *.doc
 *.xlsx
@@ -41,6 +41,11 @@ scripts/patch_*.py
 *.tmp
 *.bak
 tempCodeRunnerFile.py
+reports/*
+!reports/.gitkeep
+!reports/agent_audits/
+logs/
+*.roofline.txt
 
 # 4. Secrets, Credentials & Environment Variables
 .env
