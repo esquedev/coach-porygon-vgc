@@ -1,50 +1,41 @@
+# -*- coding: utf-8 -*-
 """
-VGC Tensor Core — Milestone 3: Phases 1–3 Pre-Attack Vectorized Engine
-======================================================================
+Coach Porygon VGC — Phases 1–3 Pre-Attack Vectorized Synchronization Engine
+===========================================================================
 
-This standalone module implements the first three synchronization barriers of an official
-Pokémon VGC 4v4 Doubles turn (Regulation M-C) across an entire `[B1, B2]` joint action grid
-simultaneously using pure matrix/tensor operations:
+Implements the first three synchronization barriers of an official Pokémon VGC 4v4
+Doubles turn (Regulation M-C) across a `[B1, B2]` joint action grid (`trainer_1` vs `trainer_2`)
+using pure matrix/tensor operations:
 
 1. **Optional Lead Entry Ability Pass (`resolve_lead_entry_abilities=True`)**:
-   - Sorts all 4 initial active leads (`0, 1, 4, 5`) by `TrickRoomSign * EffectiveSpeed`
-     and fires their switch-in abilities (`Weather`, `Terrain`, `Intimidate -> Defiant/Competitive`,
-     `Hospitality`) before Turn 1 choices execute.
+   - Sorts all 4 initial active leads (`0: trainer_1_a`, `1: trainer_1_b`, `4: trainer_2_a`, `5: trainer_2_b`)
+     by `TrickRoomSign * EffectiveSpeed` and fires their switch-in abilities (`Weather`, `Terrain`,
+     `Intimidate -> Defiant/Competitive`, `Hospitality`) before Turn 1 choices execute.
 2. **Phase 1 — Barrier 1: Voluntary Switches & Speed-Ordered Switch-In Abilities (`+6`)**:
    - Resets outgoing stat boosts (`8..14`) and volatile states (`58..66`) on switching active slots
      via Hadamard multiplication with `tables.switch_persist_mask`.
-   - Applies the $8 \times 8$ Switch Permutation Matrix $\mathbf{P}_{\text{perm}}^{(a,b)}$ to both
-     the Roster Tensor $\mathbf{P}$ (`[..., 8, 84]`) and Move Tensor $\mathbf{M}_{\text{moves}}$
-     (`[..., 8, 4, 52]`).
-   - Sorts all newly switched-in slots by `TrickRoomSign * EffectiveSpeed` (faster setter acts first
-     in Normal Room, so the **slower** setter acts second and overwrites Weather/Terrain!).
-   - Executes vectorized Switch-In Entry Abilities (`Drizzle`, `Drought`, `Sand Stream`, `Snow Warning`,
-     `Electric/Grassy/Psychic/Misty Surge`, `Hospitality`, and `Intimidate` with immediate reactive
-     `Defiant` $+2\text{ Atk}$ and `Competitive` $+2\text{ SpA}$, respecting `Clear Amulet`,
-     `Inner Focus`, `Scrappy`, and `Substitute`).
-3. **Phase 2 — Barrier 2: Mega Evolution & Instantaneous Speed Recalibration (`+5.5`)**:
+   - Swaps the active slot and bench slot in both Roster Tensor `P` (`[..., 8, 84]`) and Move Tensor
+     `M_moves` (`[..., 8, 4, 56]`).
+   - Sorts all newly switched-in slots by `TrickRoomSign * EffectiveSpeed` and fires their entry abilities.
+3. **Phase 2 — Barrier 2: Mega Evolution & Instantaneous Speed/Type/Ability Recalibration (`+5.5`)**:
    - Identifies active slots choosing Mega Evolution (`choice_idx in 12..23`) that have
      `CAN_MEGA == 1.0`, `IS_MEGA == 0.0`, and `SIDE_MEGA_USED == 0.0`.
-   - Transforms all 5 Level-50 stats (`STAT_ATK..STAT_SPE` $\leftarrow$ `MEGA_ATK..MEGA_SPE`) and
-     `ABILITY_ID` $\leftarrow$ `MEGA_ABILITY_ID` in-place via linear interpolation, sets
-     `IS_MEGA = 1.0`, `CAN_MEGA = 0.0`, and locks `P1_MEGA_USED` / `P2_MEGA_USED = 1.0`.
-   - Sorts newly Mega-Evolved slots by their new post-Mega `TrickRoomSign * EffectiveSpeed` and
-     fires Mega Entry Abilities (`Mega Charizard Y` `Drought` overwriting Phase 1 Switch-In
-     `Pelipper` `Rain`, `Mega Manectric` / `Mega Gyarados` `Intimidate`, etc.).
-4. **Phase 3 — Barrier 3: Effective Speed, Priority Bracket & Seeded Jitter Turn-Order Sort**:
+   - Transforms all 5 Level-50 stats (`STAT_ATK..STAT_SPE` <- `MEGA_ATK..MEGA_SPE`), updates secondary typing
+     (`TYPE2_START..TYPE2_END` <- `MEGA_TYPE_START..MEGA_TYPE_END` when present), updates
+     `ABILITY_ID` <- `MEGA_ABILITY_ID`, sets `IS_MEGA = 1.0`, `CAN_MEGA = 0.0`, and locks
+     `TRAINER_1_MEGA_USED` / `TRAINER_2_MEGA_USED = 1.0`.
+   - Sorts newly Mega-Evolved slots by their post-Mega `TrickRoomSign * EffectiveSpeed` and fires Mega
+     entry abilities (`Charizard-Mega-Y` Drought, `Raichu-Mega-X` Electric Surge, `Manectric-Mega` /
+     `Gyarados-Mega` Intimidate, etc.).
+4. **Phase 3 — Barrier 3: Effective Speed, Priority Bracket & Per-Thread Spinning-Wheel Speed-Tie Sort**:
    - Computes Effective Speed $S_{\text{eff}}$ accounting for stat stage ratio, `Tailwind` ($2.0\times$),
-     `Paralysis` ($0.5\times$), `Choice Scarf` ($1.5\times$), `Unburden` ($2.0\times$), and
-     weather speed abilities (`Swift Swim`, `Chlorophyll`, `Sand Rush`, `Slush Rush` $2.0\times$).
+     `Paralysis` ($0.5\times$), `Choice Scarf` ($1.5\times$), `Unburden` ($2.0\times$), and weather speed
+     abilities (`Swift Swim`, `Chlorophyll`, `Sand Rush`, `Slush Rush` $2.0\times$).
    - Computes Effective Priority $p_{\text{eff}}$ accounting for Switch priority (`+6.0`),
      `Prankster` ($+1.0$ on Status moves), and `Grassy Glide` ($+1.0$ when Grounded in Grassy Terrain).
-   - Detects exact intra-bracket speed ties (`speed_tie_alert` mask `[B1, B2]`), applies a
-     reproducible seeded `±0.01` tie-break jitter, generates human-readable `speed_tie_notes`,
-     and outputs `execution_order [B1, B2, 4]` via `argsort`.
-
-Strict Isolation Guardrail:
----------------------------
-ZERO imports from `engine/`. Uses only `torch` (with `numpy` fallback), Python stdlib,
-and sibling modules `schema_and_tables` and `compiler`.
+   - Detects exact intra-bracket speed ties (`speed_tie_alert [B1, B2]`) and generates both deterministic
+     baseline `execution_order [B1, B2, 4]` and per-simulation-thread `execution_order_k [B1, B2, K, 4]`
+     where every tied pair is resolved via a 50/50 Dual-Draw Spinning-Wheel coinflip per thread `k`.
 """
 
 from __future__ import annotations
@@ -57,6 +48,11 @@ import numpy as np
 from .compiler import (
     CHOICE_SWITCH_BENCH1,
     CHOICE_SWITCH_BENCH2,
+)
+from .rng_engine import (
+    RNGEventID,
+    counter_uniform_0_100_numpy,
+    counter_uniform_0_100_torch,
 )
 from .schema_and_tables import (
     AbilityID,
@@ -71,14 +67,14 @@ from .schema_and_tables import (
     MonIdx,
     MoveIdx,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P1_BENCH1,
-    SLOT_P1_BENCH2,
-    SLOT_P2A,
-    SLOT_P2B,
-    SLOT_P2_BENCH1,
-    SLOT_P2_BENCH2,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_1_BENCH1,
+    SLOT_TRAINER_1_BENCH2,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
+    SLOT_TRAINER_2_BENCH1,
+    SLOT_TRAINER_2_BENCH2,
     TERRAIN_TO_IDX,
     WEATHER_TO_IDX,
     build_bilinear_lookup_tables,
@@ -97,43 +93,46 @@ W_RAIN: int = WEATHER_TO_IDX["rain"]        # 2
 W_SAND: int = WEATHER_TO_IDX["sand"]        # 3
 W_SNOW: int = WEATHER_TO_IDX["snow"]        # 4
 
-T_NONE: int = TERRAIN_TO_IDX["none"]        # 0
+T_NONE: int = TERRAIN_TO_IDX["none"]          # 0
 T_ELECTRIC: int = TERRAIN_TO_IDX["electric"]  # 1
-T_GRASSY: int = TERRAIN_TO_IDX["grassy"]    # 2
-T_PSYCHIC: int = TERRAIN_TO_IDX["psychic"]  # 3
-T_MISTY: int = TERRAIN_TO_IDX["misty"]      # 4
+T_GRASSY: int = TERRAIN_TO_IDX["grassy"]      # 2
+T_PSYCHIC: int = TERRAIN_TO_IDX["psychic"]    # 3
+T_MISTY: int = TERRAIN_TO_IDX["misty"]        # 4
 
-ACTIVE_SLOTS: Tuple[int, int, int, int] = (SLOT_P1A, SLOT_P1B, SLOT_P2A, SLOT_P2B)
+ACTIVE_SLOTS: Tuple[int, int, int, int] = (
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
+)
 ACTIVE_SLOT_NAMES: Dict[int, str] = {
-    SLOT_P1A: "P1A(Slot0)",
-    SLOT_P1B: "P1B(Slot1)",
-    SLOT_P2A: "P2A(Slot4)",
-    SLOT_P2B: "P2B(Slot5)",
+    SLOT_TRAINER_1_A: "trainer_1_a(Slot0)",
+    SLOT_TRAINER_1_B: "trainer_1_b(Slot1)",
+    SLOT_TRAINER_2_A: "trainer_2_a(Slot4)",
+    SLOT_TRAINER_2_B: "trainer_2_b(Slot5)",
 }
 
 
 @dataclass(frozen=True)
 class PreAttackPhaseResult:
-    """
-    Structured output of Phases 1–3 (`execute_pre_attack_phases`) across a `[B1, B2]` action grid.
+    """Structured output of Phases 1–3 (`execute_pre_attack_phases`) across a `[B1, B2]` action grid.
 
     Attributes:
         F: Updated Field Tensor of shape `[B1, B2, 24]`.
         P: Updated 8-Slot Roster Tensor of shape `[B1, B2, 8, 84]`.
-        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 52]`.
+        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 56]`.
         effective_speeds: Effective Speed tensor for the 4 active slots `[B1, B2, 4]`
-            ordered as `(P1A=0, P1B=1, P2A=4, P2B=5)`.
+            ordered as `(trainer_1_a=0, trainer_1_b=1, trainer_2_a=4, trainer_2_b=5)`.
         effective_priorities: Effective Move/Action Priority tensor `[B1, B2, 4]`.
-        jitter_applied: Exact `±0.01` tie-break jitter tensor `[B1, B2, 4]` added to speed scores.
+        jitter_applied: Representative tie-break jitter tensor `[B1, B2, 4]`.
         sort_scores: Composite turn-order sort keys `[B1, B2, 4]`.
         execution_order: Integer permutation tensor `[B1, B2, 4]` with values in `{0, 1, 2, 3}`
-            (mapping to active slots `(0, 1, 4, 5)`) sorted from first actor (`index 0`) to
-            fourth actor (`index 3`).
+            (mapping to active slots `(0, 1, 4, 5)`) for representative timeline 0.
         switched_mask: Binary mask `[B1, B2, 4]` (`1.0` where active slot `k` voluntarily switched).
         mega_evolved_mask: Binary mask `[B1, B2, 4]` (`1.0` where active slot `k` Mega Evolved).
         speed_tie_alert: Binary mask `[B1, B2]` (`1.0` where at least two active slots shared
-            identical priority and effective speed before `±0.01` jitter resolution).
-        speed_tie_notes: Human-readable list of speed tie alerts and exact `±0.01` jitter flips.
+            identical priority and effective speed).
+        speed_tie_notes: Human-readable list of speed tie alerts and tie-break resolutions.
     """
 
     F: TensorOrArray
@@ -198,29 +197,10 @@ def compute_active_effective_speeds(
     F: TensorOrArray,
     P: TensorOrArray,
 ) -> TensorOrArray:
+    """Compute exact Cartridge Level-50 Effective Speed $S_{\\text{eff}}$ for the 4 active slots
+    (`0: trainer_1_a`, `1: trainer_1_b`, `4: trainer_2_a`, `5: trainer_2_b`) across `[..., 4]`.
     """
-    Compute the exact Cartridge Level-50 Effective Speed $S_{\text{eff}}$ for the 4 active slots
-    (`0: P1A`, `1: P1B`, `4: P2A`, `5: P2B`) across arbitrary batch dimensions `[..., 4]`.
-
-    Mathematical Formula:
-    ---------------------
-    For each active slot $s \in \{0, 1, 4, 5\}$:
-    1. **Stat Stage Multiplier ($b = \text{BOOST\_SPE} \in [-6, +6]$):**
-       $$\text{StageRatio}(b) = \frac{\max(2.0, 2.0 + b)}{\max(2.0, 2.0 - b)}$$
-       $$S_1 = \lfloor \text{STAT\_SPE} \times \text{StageRatio}(b) \rfloor$$
-    2. **Ability Weather Multiplier (`Swift Swim` in Rain, `Chlorophyll` in Sun,
-       `Sand Rush` in Sand, `Slush Rush` in Snow) + `Unburden` ($2.0\times$ when active):**
-       $$M_{\text{abil}} = (1.0 + I_{\text{weather\_speed}}) \times (1.0 + \text{UNBURDEN\_ACTIVE})$$
-    3. **Held Item Multiplier (`Choice Scarf` $1.5\times$ when `ITEM_ACTIVE == 1.0`):**
-       $$M_{\text{item}} = 1.0 + 0.5 \cdot (\text{ITEM\_ACTIVE} \cdot I_{\text{ITEM} == \text{CHOICE\_SCARF}})$$
-    4. **Side Tailwind Multiplier ($2.0\times$ when side `TAILWIND_TURNS > 0`):**
-       $$M_{\text{tw}} = 1.0 + I_{\text{TAILWIND\_TURNS} > 0}$$
-    5. **Paralysis Penalty ($0.5\times$ when `STATUS_PARALYZE == 1.0`):**
-       $$M_{\text{para}} = 1.0 - 0.5 \cdot \text{STATUS\_PARALYZE}$$
-    6. **Composite Effective Speed:**
-       $$S_{\text{eff}} = \lfloor \lfloor \lfloor \lfloor S_1 \times M_{\text{abil}} \rfloor \times M_{\text{item}} \rfloor \times M_{\text{tw}} \rfloor \times M_{\text{para}} \rfloor$$
-    """
-    active_indices = [SLOT_P1A, SLOT_P1B, SLOT_P2A, SLOT_P2B]
+    active_indices = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
     P_act = P[..., active_indices, :]  # [..., 4, 84]
 
     base_spe = P_act[..., MonIdx.STAT_SPE]
@@ -248,7 +228,9 @@ def compute_active_effective_speeds(
     is_sand_rush = ((abil_id == float(AbilityID.SAND_RUSH)) * 1.0) * w_sand
     is_slush_rush = ((abil_id == float(AbilityID.SLUSH_RUSH)) * 1.0) * w_snow
 
-    weather_spe_gate = _clamp(is_chlorophyll + is_swift_swim + is_sand_rush + is_slush_rush, 0.0, 1.0)
+    weather_spe_gate = _clamp(
+        is_chlorophyll + is_swift_swim + is_sand_rush + is_slush_rush, 0.0, 1.0
+    )
     unburden_gate = P_act[..., MonIdx.UNBURDEN_ACTIVE]
     m_abil = (1.0 + weather_spe_gate) * (1.0 + unburden_gate)
     s2 = _floor(s1 * m_abil)
@@ -259,13 +241,13 @@ def compute_active_effective_speeds(
     m_item = 1.0 + 0.5 * is_scarf
     s3 = _floor(s2 * m_item)
 
-    # Side Tailwind (Slots 0,1 use P1_TAILWIND_TURNS; Slots 2,3 use P2_TAILWIND_TURNS)
-    p1_tw = (F[..., FieldIdx.P1_TAILWIND_TURNS] > 0.0) * 1.0
-    p2_tw = (F[..., FieldIdx.P2_TAILWIND_TURNS] > 0.0) * 1.0
+    # Side Tailwind (Slots 0,1 use TRAINER_1_TAILWIND_TURNS; Slots 2,3 use TRAINER_2_TAILWIND_TURNS)
+    t1_tw = (F[..., FieldIdx.TRAINER_1_TAILWIND_TURNS] > 0.0) * 1.0
+    t2_tw = (F[..., FieldIdx.TRAINER_2_TAILWIND_TURNS] > 0.0) * 1.0
     if HAS_TORCH and isinstance(F, torch.Tensor):
-        tw_vec = torch.stack([p1_tw, p1_tw, p2_tw, p2_tw], dim=-1)
+        tw_vec = torch.stack([t1_tw, t1_tw, t2_tw, t2_tw], dim=-1)
     else:
-        tw_vec = np.stack([p1_tw, p1_tw, p2_tw, p2_tw], axis=-1).astype(np.float32)
+        tw_vec = np.stack([t1_tw, t1_tw, t2_tw, t2_tw], axis=-1).astype(np.float32)
 
     m_tw = 1.0 + tw_vec
     s4 = _floor(s3 * m_tw)
@@ -288,36 +270,32 @@ def _execute_speed_sorted_entry_abilities(
     trigger_mask: TensorOrArray,
     tables: BilinearLookupTables,
 ) -> Tuple[TensorOrArray, TensorOrArray]:
+    """Execute entry abilities (`Weather`, `Terrain`, `Intimidate -> Defiant/Competitive`, `Hospitality`)
+    for any active slots (`0: trainer_1_a`, `1: trainer_1_b`, `2: trainer_2_a(slot 4)`, `3: trainer_2_b(slot 5)`)
+    where `trigger_mask[..., k] == 1.0`, sorted by `TrickRoomSign * EffectiveSpeed`.
     """
-    Execute entry abilities (`Weather`, `Terrain`, `Intimidate -> Defiant/Competitive`, `Hospitality`)
-    for any active slots (`0: P1A`, `1: P1B`, `2: P2A(slot 4)`, `3: P2B(slot 5)`) where
-    `trigger_mask[..., k] == 1.0`, strictly sorted by `TrickRoomSign * EffectiveSpeed`.
-    """
-    active_roster_slots = (SLOT_P1A, SLOT_P1B, SLOT_P2A, SLOT_P2B)
+    active_roster_slots = (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
     eff_speeds = compute_active_effective_speeds(F, P)  # [..., 4]
 
-    # Trick Room sign: +1.0 in Normal Room, -1.0 when Trick Room is active
     tr_active = (F[..., FieldIdx.TRICK_ROOM_TURNS] > 0.0) * 1.0
     tr_sign = (1.0 - 2.0 * tr_active)[..., None]  # [..., 1]
 
     alive_act = P[..., list(active_roster_slots), MonIdx.ALIVE_FLAG]
     active_trig = trigger_mask * alive_act
 
-    # Fast-path skip if zero slots in the entire batch triggered an entry ability
     if HAS_TORCH and isinstance(active_trig, torch.Tensor):
         if float(active_trig.max().item()) <= 0.0:
             return F, P
+        slot_tie_offset = torch.tensor(
+            [0.0004, 0.0003, 0.0002, 0.0001], dtype=torch.float32, device=P.device
+        )
     else:
         if float(np.max(active_trig)) <= 0.0:
             return F, P
-
-    if HAS_TORCH and isinstance(P, torch.Tensor):
-        slot_tie_offset = torch.tensor([0.0004, 0.0003, 0.0002, 0.0001], dtype=torch.float32, device=P.device)
-    else:
         slot_tie_offset = np.array([0.0004, 0.0003, 0.0002, 0.0001], dtype=np.float32)
 
     entry_scores = active_trig * 100000.0 + (tr_sign * eff_speeds) + slot_tie_offset
-    entry_order = _argsort_desc(entry_scores, axis=-1)  # [..., 4] values in {0, 1, 2, 3}
+    entry_order = _argsort_desc(entry_scores, axis=-1)
 
     T_w = tables.t_set_weather
     T_t = tables.t_set_terrain
@@ -400,7 +378,11 @@ def _execute_speed_sorted_entry_abilities(
                 else float(np.max(fire_intim)) > 0.0
             )
             if has_any_intim:
-                opp_slots = (SLOT_P2A, SLOT_P2B) if r_slot in (SLOT_P1A, SLOT_P1B) else (SLOT_P1A, SLOT_P1B)
+                opp_slots = (
+                    (SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
+                    if r_slot in (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                    else (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                )
 
                 for opp_slot in opp_slots:
                     opp_alive = P[..., opp_slot, MonIdx.ALIVE_FLAG]
@@ -430,12 +412,12 @@ def _execute_speed_sorted_entry_abilities(
                     actually_lowered = intim_lands * ((old_atk_boost > -6.0) * 1.0)
                     new_atk_boost = _clamp(old_atk_boost - intim_lands * 1.0, -6.0, 6.0)
 
-                    # Immediate Reactive Defiant (+2 Atk)
                     is_defiant = (opp_abil == float(AbilityID.DEFIANT)) * 1.0
-                    new_atk_boost = _clamp(new_atk_boost + actually_lowered * is_defiant * 2.0, -6.0, 6.0)
+                    new_atk_boost = _clamp(
+                        new_atk_boost + actually_lowered * is_defiant * 2.0, -6.0, 6.0
+                    )
                     P[..., opp_slot, MonIdx.BOOST_ATK] = new_atk_boost
 
-                    # Immediate Reactive Competitive (+2 SpA)
                     is_competitive = (opp_abil == float(AbilityID.COMPETITIVE)) * 1.0
                     old_spa_boost = P[..., opp_slot, MonIdx.BOOST_SPA]
                     P[..., opp_slot, MonIdx.BOOST_SPA] = _clamp(
@@ -451,10 +433,10 @@ def _execute_speed_sorted_entry_abilities(
             )
             if has_any_hosp:
                 ally_slot = (
-                    SLOT_P1B if r_slot == SLOT_P1A else
-                    SLOT_P1A if r_slot == SLOT_P1B else
-                    SLOT_P2B if r_slot == SLOT_P2A else
-                    SLOT_P2A
+                    SLOT_TRAINER_1_B if r_slot == SLOT_TRAINER_1_A else
+                    SLOT_TRAINER_1_A if r_slot == SLOT_TRAINER_1_B else
+                    SLOT_TRAINER_2_B if r_slot == SLOT_TRAINER_2_A else
+                    SLOT_TRAINER_2_A
                 )
                 ally_alive = P[..., ally_slot, MonIdx.ALIVE_FLAG]
                 ally_hp_cur = P[..., ally_slot, MonIdx.HP_CUR]
@@ -481,42 +463,41 @@ def execute_barrier1_switches(
     F: TensorOrArray,
     P: TensorOrArray,
     M_moves: TensorOrArray,
-    p1_choices: TensorOrArray,
-    p2_choices: TensorOrArray,
+    trainer_1_choices: TensorOrArray,
+    trainer_2_choices: TensorOrArray,
     tables: BilinearLookupTables,
 ) -> Tuple[TensorOrArray, TensorOrArray, TensorOrArray, TensorOrArray]:
-    """
-    Execute Phase 1 (Barrier 1: Voluntary Switches at Priority `+6` + Speed-Sorted Entry Abilities)
+    """Execute Phase 1 (Barrier 1: Voluntary Switches at Priority `+6` + Speed-Sorted Entry Abilities)
     across the `[B1, B2]` joint action grid.
     """
-    c_p1a = p1_choices[:, None, 0]
-    c_p1b = p1_choices[:, None, 1]
-    c_p2a = p2_choices[None, :, 0]
-    c_p2b = p2_choices[None, :, 1]
+    c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
+    c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
+    c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
+    c_t2b = trainer_2_choices[None, :, 1] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 1]
 
-    B1 = p1_choices.shape[0]
-    B2 = p2_choices.shape[0]
+    B1 = P.shape[0]
+    B2 = P.shape[1]
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
-        c_p1a = c_p1a.expand(B1, B2)
-        c_p1b = c_p1b.expand(B1, B2)
-        c_p2a = c_p2a.expand(B1, B2)
-        c_p2b = c_p2b.expand(B1, B2)
+        c_t1a = c_t1a.expand(B1, B2)
+        c_t1b = c_t1b.expand(B1, B2)
+        c_t2a = c_t2a.expand(B1, B2)
+        c_t2b = c_t2b.expand(B1, B2)
     else:
-        c_p1a = np.broadcast_to(c_p1a, (B1, B2))
-        c_p1b = np.broadcast_to(c_p1b, (B1, B2))
-        c_p2a = np.broadcast_to(c_p2a, (B1, B2))
-        c_p2b = np.broadcast_to(c_p2b, (B1, B2))
+        c_t1a = np.broadcast_to(c_t1a, (B1, B2))
+        c_t1b = np.broadcast_to(c_t1b, (B1, B2))
+        c_t2a = np.broadcast_to(c_t2a, (B1, B2))
+        c_t2b = np.broadcast_to(c_t2b, (B1, B2))
 
     switch_specs = (
-        (SLOT_P1A, SLOT_P1_BENCH1, c_p1a, CHOICE_SWITCH_BENCH1),
-        (SLOT_P1A, SLOT_P1_BENCH2, c_p1a, CHOICE_SWITCH_BENCH2),
-        (SLOT_P1B, SLOT_P1_BENCH1, c_p1b, CHOICE_SWITCH_BENCH1),
-        (SLOT_P1B, SLOT_P1_BENCH2, c_p1b, CHOICE_SWITCH_BENCH2),
-        (SLOT_P2A, SLOT_P2_BENCH1, c_p2a, CHOICE_SWITCH_BENCH1),
-        (SLOT_P2A, SLOT_P2_BENCH2, c_p2a, CHOICE_SWITCH_BENCH2),
-        (SLOT_P2B, SLOT_P2_BENCH1, c_p2b, CHOICE_SWITCH_BENCH1),
-        (SLOT_P2B, SLOT_P2_BENCH2, c_p2b, CHOICE_SWITCH_BENCH2),
+        (SLOT_TRAINER_1_A, SLOT_TRAINER_1_BENCH1, c_t1a, CHOICE_SWITCH_BENCH1),
+        (SLOT_TRAINER_1_A, SLOT_TRAINER_1_BENCH2, c_t1a, CHOICE_SWITCH_BENCH2),
+        (SLOT_TRAINER_1_B, SLOT_TRAINER_1_BENCH1, c_t1b, CHOICE_SWITCH_BENCH1),
+        (SLOT_TRAINER_1_B, SLOT_TRAINER_1_BENCH2, c_t1b, CHOICE_SWITCH_BENCH2),
+        (SLOT_TRAINER_2_A, SLOT_TRAINER_2_BENCH1, c_t2a, CHOICE_SWITCH_BENCH1),
+        (SLOT_TRAINER_2_A, SLOT_TRAINER_2_BENCH2, c_t2a, CHOICE_SWITCH_BENCH2),
+        (SLOT_TRAINER_2_B, SLOT_TRAINER_2_BENCH1, c_t2b, CHOICE_SWITCH_BENCH1),
+        (SLOT_TRAINER_2_B, SLOT_TRAINER_2_BENCH2, c_t2b, CHOICE_SWITCH_BENCH2),
     )
 
     persist_mask = tables.switch_persist_mask  # [84]
@@ -534,43 +515,38 @@ def execute_barrier1_switches(
             if float(np.max(sw_gate)) <= 0.0:
                 continue
 
-        # 1. Reset outgoing active slot boosts & volatiles via Hadamard mask
         sw_gate_mon = sw_gate[..., None]
         effective_persist = (1.0 - sw_gate_mon) + sw_gate_mon * persist_mask
         P[..., act_slot, :] = P[..., act_slot, :] * effective_persist
 
-        # Ensure Unburden (72) and Choice Lock (73) reset on outgoing switch
         P[..., act_slot, MonIdx.UNBURDEN_ACTIVE] = P[..., act_slot, MonIdx.UNBURDEN_ACTIVE] * (1.0 - sw_gate)
         P[..., act_slot, MonIdx.CHOICE_LOCKED_MOVE] = (
             P[..., act_slot, MonIdx.CHOICE_LOCKED_MOVE] * (1.0 - sw_gate) + (-1.0) * sw_gate
         )
 
-        # 2. Swap active slot <-> bench slot directly (equivalent to P_switch_perms[act_slot, bench_slot])
         p_act = P[..., act_slot, :].clone() if (HAS_TORCH and isinstance(P, torch.Tensor)) else P[..., act_slot, :].copy()
         p_bench = P[..., bench_slot, :].clone() if (HAS_TORCH and isinstance(P, torch.Tensor)) else P[..., bench_slot, :].copy()
         P[..., act_slot, :] = (1.0 - sw_gate_mon) * p_act + sw_gate_mon * p_bench
         P[..., bench_slot, :] = (1.0 - sw_gate_mon) * p_bench + sw_gate_mon * p_act
 
-        sw_gate_m2 = sw_gate[..., None, None]  # [B1, B2, 1, 1]
+        sw_gate_m2 = sw_gate[..., None, None]
         m_act = M_moves[..., act_slot, :, :].clone() if (HAS_TORCH and isinstance(M_moves, torch.Tensor)) else M_moves[..., act_slot, :, :].copy()
         m_bench = M_moves[..., bench_slot, :, :].clone() if (HAS_TORCH and isinstance(M_moves, torch.Tensor)) else M_moves[..., bench_slot, :, :].copy()
         M_moves[..., act_slot, :, :] = (1.0 - sw_gate_m2) * m_act + sw_gate_m2 * m_bench
         M_moves[..., bench_slot, :, :] = (1.0 - sw_gate_m2) * m_bench + sw_gate_m2 * m_act
 
-        # Newly switched-in Pokémon has ACTIVE_TURNS = 0.0
         P[..., act_slot, MonIdx.ACTIVE_TURNS] = P[..., act_slot, MonIdx.ACTIVE_TURNS] * (1.0 - sw_gate)
 
-    sw_p1a = (((c_p1a == CHOICE_SWITCH_BENCH1) | (c_p1a == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_p1b = (((c_p1b == CHOICE_SWITCH_BENCH1) | (c_p1b == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_p2a = (((c_p2a == CHOICE_SWITCH_BENCH1) | (c_p2a == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_p2b = (((c_p2b == CHOICE_SWITCH_BENCH1) | (c_p2b == CHOICE_SWITCH_BENCH2)) * 1.0)
+    sw_t1a = (((c_t1a == CHOICE_SWITCH_BENCH1) | (c_t1a == CHOICE_SWITCH_BENCH2)) * 1.0)
+    sw_t1b = (((c_t1b == CHOICE_SWITCH_BENCH1) | (c_t1b == CHOICE_SWITCH_BENCH2)) * 1.0)
+    sw_t2a = (((c_t2a == CHOICE_SWITCH_BENCH1) | (c_t2a == CHOICE_SWITCH_BENCH2)) * 1.0)
+    sw_t2b = (((c_t2b == CHOICE_SWITCH_BENCH1) | (c_t2b == CHOICE_SWITCH_BENCH2)) * 1.0)
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
-        switched_mask = torch.stack([sw_p1a, sw_p1b, sw_p2a, sw_p2b], dim=-1)
+        switched_mask = torch.stack([sw_t1a, sw_t1b, sw_t2a, sw_t2b], dim=-1)
     else:
-        switched_mask = np.stack([sw_p1a, sw_p1b, sw_p2a, sw_p2b], axis=-1).astype(np.float32)
+        switched_mask = np.stack([sw_t1a, sw_t1b, sw_t2a, sw_t2b], axis=-1).astype(np.float32)
 
-    # 3. Execute Speed-Sorted Switch-In Entry Abilities
     F, P = _execute_speed_sorted_entry_abilities(F, P, switched_mask, tables)
 
     return F, P, M_moves, switched_mask
@@ -583,38 +559,37 @@ def execute_barrier1_switches(
 def execute_barrier2_mega_evolution(
     F: TensorOrArray,
     P: TensorOrArray,
-    p1_choices: TensorOrArray,
-    p2_choices: TensorOrArray,
+    trainer_1_choices: TensorOrArray,
+    trainer_2_choices: TensorOrArray,
     tables: BilinearLookupTables,
 ) -> Tuple[TensorOrArray, TensorOrArray, TensorOrArray]:
+    """Execute Phase 2 (Barrier 2: Mega Evolution at Priority `+5.5`, Instantaneous Regulation M-C
+    5-Stat Transformation, Secondary Type Transformation, and Speed-Sorted Mega Entry Abilities).
     """
-    Execute Phase 2 (Barrier 2: Mega Evolution at Priority `+5.5`, Instantaneous Regulation M-C
-    5-Stat Transformation, and Speed-Sorted Mega Entry Abilities).
-    """
-    B1 = p1_choices.shape[0]
-    B2 = p2_choices.shape[0]
+    B1 = P.shape[0]
+    B2 = P.shape[1]
 
-    c_p1a = p1_choices[:, None, 0]
-    c_p1b = p1_choices[:, None, 1]
-    c_p2a = p2_choices[None, :, 0]
-    c_p2b = p2_choices[None, :, 1]
+    c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
+    c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
+    c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
+    c_t2b = trainer_2_choices[None, :, 1] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 1]
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
-        c_p1a = c_p1a.expand(B1, B2)
-        c_p1b = c_p1b.expand(B1, B2)
-        c_p2a = c_p2a.expand(B1, B2)
-        c_p2b = c_p2b.expand(B1, B2)
+        c_t1a = c_t1a.expand(B1, B2)
+        c_t1b = c_t1b.expand(B1, B2)
+        c_t2a = c_t2a.expand(B1, B2)
+        c_t2b = c_t2b.expand(B1, B2)
     else:
-        c_p1a = np.broadcast_to(c_p1a, (B1, B2))
-        c_p1b = np.broadcast_to(c_p1b, (B1, B2))
-        c_p2a = np.broadcast_to(c_p2a, (B1, B2))
-        c_p2b = np.broadcast_to(c_p2b, (B1, B2))
+        c_t1a = np.broadcast_to(c_t1a, (B1, B2))
+        c_t1b = np.broadcast_to(c_t1b, (B1, B2))
+        c_t2a = np.broadcast_to(c_t2a, (B1, B2))
+        c_t2b = np.broadcast_to(c_t2b, (B1, B2))
 
     slot_specs = (
-        (0, SLOT_P1A, c_p1a, FieldIdx.P1_MEGA_USED),
-        (1, SLOT_P1B, c_p1b, FieldIdx.P1_MEGA_USED),
-        (2, SLOT_P2A, c_p2a, FieldIdx.P2_MEGA_USED),
-        (3, SLOT_P2B, c_p2b, FieldIdx.P2_MEGA_USED),
+        (0, SLOT_TRAINER_1_A, c_t1a, FieldIdx.TRAINER_1_MEGA_USED),
+        (1, SLOT_TRAINER_1_B, c_t1b, FieldIdx.TRAINER_1_MEGA_USED),
+        (2, SLOT_TRAINER_2_A, c_t2a, FieldIdx.TRAINER_2_MEGA_USED),
+        (3, SLOT_TRAINER_2_B, c_t2b, FieldIdx.TRAINER_2_MEGA_USED),
     )
 
     mega_masks = []
@@ -652,52 +627,50 @@ def execute_barrier2_mega_evolution(
     else:
         mega_evolved_mask = np.stack(mega_masks, axis=-1).astype(np.float32)
 
-    # Execute Speed-Sorted Mega Entry Abilities
     F, P = _execute_speed_sorted_entry_abilities(F, P, mega_evolved_mask, tables)
 
     return F, P, mega_evolved_mask
 
 
 # =====================================================================
-# 6. BARRIER 3: PRIORITY BRACKET, EFFECTIVE SPEED & ±0.01 JITTER SORT
+# 6. BARRIER 3: PRIORITY BRACKET, EFFECTIVE SPEED & SPINNING-WHEEL TIE SORT
 # =====================================================================
 
 def execute_barrier3_turn_order_sort(
     F: TensorOrArray,
     P: TensorOrArray,
     M_moves: TensorOrArray,
-    p1_choices: TensorOrArray,
-    p2_choices: TensorOrArray,
+    trainer_1_choices: TensorOrArray,
+    trainer_2_choices: TensorOrArray,
     rng_seed: int = 42,
 ) -> Tuple[TensorOrArray, TensorOrArray, TensorOrArray, TensorOrArray, TensorOrArray, TensorOrArray, List[str]]:
-    """
-    Execute Phase 3 (Barrier 3: Effective Priority + Effective Speed + Seeded `±0.01` Tie-Break Jitter
+    """Execute Phase 3 (Barrier 3: Effective Priority + Effective Speed + Spinning-Wheel Tie-Break Jitter
     + `Speed_Tie_Alert` Detection) across the `[B1, B2]` joint action grid.
     """
-    B1 = p1_choices.shape[0]
-    B2 = p2_choices.shape[0]
+    B1 = P.shape[0]
+    B2 = P.shape[1]
 
-    c_p1a = p1_choices[:, None, 0]
-    c_p1b = p1_choices[:, None, 1]
-    c_p2a = p2_choices[None, :, 0]
-    c_p2b = p2_choices[None, :, 1]
+    c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
+    c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
+    c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
+    c_t2b = trainer_2_choices[None, :, 1] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 1]
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
-        c_p1a = c_p1a.expand(B1, B2)
-        c_p1b = c_p1b.expand(B1, B2)
-        c_p2a = c_p2a.expand(B1, B2)
-        c_p2b = c_p2b.expand(B1, B2)
-        choices_grid = torch.stack([c_p1a, c_p1b, c_p2a, c_p2b], dim=-1)
+        c_t1a = c_t1a.expand(B1, B2)
+        c_t1b = c_t1b.expand(B1, B2)
+        c_t2a = c_t2a.expand(B1, B2)
+        c_t2b = c_t2b.expand(B1, B2)
+        choices_grid = torch.stack([c_t1a, c_t1b, c_t2a, c_t2b], dim=-1)
     else:
-        c_p1a = np.broadcast_to(c_p1a, (B1, B2))
-        c_p1b = np.broadcast_to(c_p1b, (B1, B2))
-        c_p2a = np.broadcast_to(c_p2a, (B1, B2))
-        c_p2b = np.broadcast_to(c_p2b, (B1, B2))
-        choices_grid = np.stack([c_p1a, c_p1b, c_p2a, c_p2b], axis=-1)
+        c_t1a = np.broadcast_to(c_t1a, (B1, B2))
+        c_t1b = np.broadcast_to(c_t1b, (B1, B2))
+        c_t2a = np.broadcast_to(c_t2a, (B1, B2))
+        c_t2b = np.broadcast_to(c_t2b, (B1, B2))
+        choices_grid = np.stack([c_t1a, c_t1b, c_t2a, c_t2b], axis=-1)
 
     eff_speeds = compute_active_effective_speeds(F, P)  # [B1, B2, 4]
 
-    active_roster_slots = (SLOT_P1A, SLOT_P1B, SLOT_P2A, SLOT_P2B)
+    active_roster_slots = (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
     prio_list = []
 
     t_grassy = F[..., FieldIdx.TERRAIN_START + T_GRASSY]
@@ -707,7 +680,7 @@ def execute_barrier3_turn_order_sort(
         is_sw = ((c_slot >= CHOICE_SWITCH_BENCH1) * 1.0)
         move_idx = (c_slot % 12) % 4
 
-        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 52]
+        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 56]
         if HAS_TORCH and isinstance(P, torch.Tensor):
             m_oh = torch.nn.functional.one_hot(move_idx.long(), num_classes=4).to(torch.float32)
         else:
@@ -739,14 +712,15 @@ def execute_barrier3_turn_order_sort(
     alive_act = P[..., list(active_roster_slots), MonIdx.ALIVE_FLAG]
     not_sw_act = ((choices_grid < CHOICE_SWITCH_BENCH1) * 1.0) * alive_act
 
-    rng = np.random.RandomState(rng_seed)
-    raw_jitter = rng.uniform(-0.01, 0.01, size=(B1, B2, 4)).astype(np.float32)
-    for s_idx in range(4):
-        raw_jitter[..., s_idx] = np.where(
-            np.abs(raw_jitter[..., s_idx]) < 0.001,
-            0.002 * (s_idx + 1) * (1.0 if s_idx % 2 == 0 else -1.0),
-            raw_jitter[..., s_idx],
-        )
+    # Use Counter-Based Spinning-Wheel Jitter in [-0.01, +0.01] for timeline 0
+    w_start = counter_uniform_0_100_numpy(
+        (B1, B2, 4), rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=0, sub_draw=0
+    )
+    dart = counter_uniform_0_100_numpy(
+        (B1, B2, 4), rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=0, sub_draw=1
+    )
+    cyclic_u = np.mod(dart - w_start + 100.0, 100.0) / 100.0  # [0.0, 1.0)
+    raw_jitter = ((cyclic_u * 0.02) - 0.01).astype(np.float32)
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
         jitter_tensor = torch.from_numpy(raw_jitter).to(P.device)
@@ -756,7 +730,12 @@ def execute_barrier3_turn_order_sort(
         speed_tie_alert = np.zeros((B1, B2), dtype=np.float32)
 
     speed_tie_notes: List[str] = []
-    slot_labels = ("P1A(Slot0)", "P1B(Slot1)", "P2A(Slot4)", "P2B(Slot5)")
+    slot_labels = (
+        "trainer_1_a(Slot0)",
+        "trainer_1_b(Slot1)",
+        "trainer_2_a(Slot4)",
+        "trainer_2_b(Slot5)",
+    )
 
     for i in range(4):
         for j in range(i + 1, 4):
@@ -792,19 +771,15 @@ def execute_barrier3_turn_order_sort(
                     note = (
                         f"[SPEED_TIE_ALERT cell=({r_idx},{c_idx})] {slot_labels[i]} vs {slot_labels[j]} "
                         f"tied at Priority={prio_val:+.0f}, EffectiveSpeed={spd_val:.0f} | "
-                        f"Seeded Jitter ({slot_labels[i]}={jit_i:+.4f}, {slot_labels[j]}={jit_j:+.4f}) "
-                        f"-> {winner} wins tie-break (50/50 coinflip alert!)"
+                        f"Spinning-Wheel Jitter ({slot_labels[i]}={jit_i:+.4f}, {slot_labels[j]}={jit_j:+.4f}) "
+                        f"-> {winner} wins tie-break (50/50 coinflip per simulation thread)"
                     )
                     speed_tie_notes.append(note)
 
     tr_active = (F[..., FieldIdx.TRICK_ROOM_TURNS] > 0.0) * 1.0
-    tr_sign = (1.0 - 2.0 * tr_active)[..., None]
+    tr_sign = (1.0 - 2.0 * tr_active)[..., None]  # [B1, B2, 1]
 
-    sort_scores = (
-        10000.0 * eff_priorities
-        + tr_sign * eff_speeds
-        + jitter_tensor
-    )
+    sort_scores = (eff_priorities * 10000.0) + (tr_sign * eff_speeds) + jitter_tensor
     execution_order = _argsort_desc(sort_scores, axis=-1)
 
     return (
@@ -818,63 +793,122 @@ def execute_barrier3_turn_order_sort(
     )
 
 
+def compute_per_thread_execution_orders(
+    F_mc: TensorOrArray,
+    eff_speeds: TensorOrArray,
+    eff_priorities: TensorOrArray,
+    num_sim_threads: int,
+    rng_seed: int = 42,
+) -> TensorOrArray:
+    """Compute `[B1, B2, K, 4]` turn-order permutations where every simulation thread `k in 0..K-1`
+    spins an independent 50/50 wheel to break exact intra-bracket speed ties!
+    """
+    B1, B2 = eff_speeds.shape[0], eff_speeds.shape[1]
+    K = num_sim_threads
+
+    if HAS_TORCH and isinstance(eff_speeds, torch.Tensor):
+        dev = eff_speeds.device
+        tr_active = (F_mc[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).float()
+        tr_sign = (1.0 - 2.0 * tr_active).unsqueeze(-1)  # [B1, B2, K, 1]
+
+        w_start = counter_uniform_0_100_torch(
+            (B1, B2, K, 4), dev, rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=1, sub_draw=0
+        )
+        dart = counter_uniform_0_100_torch(
+            (B1, B2, K, 4), dev, rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=1, sub_draw=1
+        )
+        cyclic_u = torch.remainder(dart - w_start + 100.0, 100.0) / 100.0
+        jitter_k = (cyclic_u * 0.02) - 0.01
+
+        prio_k = eff_priorities.unsqueeze(2).expand(B1, B2, K, 4)
+        spe_k = eff_speeds.unsqueeze(2).expand(B1, B2, K, 4)
+        scores_k = (prio_k * 10000.0) + (tr_sign * spe_k) + jitter_k
+        return torch.argsort(scores_k, dim=-1, descending=True)
+
+    tr_active = (F_mc[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).astype(np.float32)
+    tr_sign = (1.0 - 2.0 * tr_active)[..., None]  # [B1, B2, K, 1]
+
+    w_start = counter_uniform_0_100_numpy(
+        (B1, B2, K, 4), rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=1, sub_draw=0
+    )
+    dart = counter_uniform_0_100_numpy(
+        (B1, B2, K, 4), rng_seed, int(RNGEventID.SPEED_TIE_JITTER), step_idx=1, sub_draw=1
+    )
+    cyclic_u = np.mod(dart - w_start + 100.0, 100.0) / 100.0
+    jitter_k = ((cyclic_u * 0.02) - 0.01).astype(np.float32)
+
+    prio_k = np.broadcast_to(eff_priorities[:, :, None, :], (B1, B2, K, 4))
+    spe_k = np.broadcast_to(eff_speeds[:, :, None, :], (B1, B2, K, 4))
+    scores_k = (prio_k * 10000.0) + (tr_sign * spe_k) + jitter_k
+    return np.argsort(-scores_k, axis=-1)
+
+
 # =====================================================================
-# 7. UNIFIED PRE-ATTACK ENGINE (PHASES 1–3)
+# 7. UNIFIED PRE-ATTACK PHASES ENTRYPOINT (BARRIERS 1–3)
 # =====================================================================
 
 def execute_pre_attack_phases(
     F_init: TensorOrArray,
     P_init: TensorOrArray,
     M_moves_init: TensorOrArray,
-    p1_choices: TensorOrArray,
-    p2_choices: TensorOrArray,
+    trainer_1_choices: TensorOrArray,
+    trainer_2_choices: TensorOrArray,
     tables: Optional[BilinearLookupTables] = None,
-    resolve_lead_entry_abilities: bool = False,
     rng_seed: int = 42,
+    resolve_lead_entry_abilities: bool = False,
 ) -> PreAttackPhaseResult:
+    """Execute Phases 1, 2, and 3 (Voluntary Switches -> Mega Evolution -> Speed/Priority Turn-Order Sort)
+    across a `[B1, B2]` joint action grid (`trainer_1` vs `trainer_2`).
     """
-    Execute Phases 1, 2, and 3 (Switches + Switch-In Abilities $\to$ Mega Evolution + Mega Abilities
-    $\to$ Effective Speed, Priority & Seeded Jitter Turn-Order Sort) simultaneously across a
-    `[B1, B2]` joint action grid.
-    """
+    is_torch = HAS_TORCH and isinstance(P_init, torch.Tensor)
     if tables is None:
-        if HAS_TORCH and isinstance(P_init, torch.Tensor):
-            tables = build_bilinear_lookup_tables(device=str(P_init.device))
-        else:
-            tables = build_bilinear_lookup_tables(device="numpy")
+        dev = P_init.device if is_torch else "cpu"
+        tables = build_bilinear_lookup_tables(device=dev)
 
-    B1 = p1_choices.shape[0]
-    B2 = p2_choices.shape[0]
+    B1 = int(trainer_1_choices.shape[0])
+    B2 = int(trainer_2_choices.shape[0] if trainer_2_choices.ndim == 2 else trainer_2_choices.shape[1])
 
     if F_init.ndim == 1:
-        if HAS_TORCH and isinstance(F_init, torch.Tensor):
+        if is_torch:
             F = F_init[None, None, :].expand(B1, B2, FIELD_DIM).clone()
-            P = P_init[None, None, :, :].expand(B1, B2, ROSTER_SLOTS, MON_DIM).clone()
-            M_moves = M_moves_init[None, None, :, :, :].expand(B1, B2, ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM).clone()
         else:
             F = np.broadcast_to(F_init[None, None, :], (B1, B2, FIELD_DIM)).copy()
+    else:
+        F = _clone(F_init)
+
+    if P_init.ndim == 2:
+        if is_torch:
+            P = P_init[None, None, :, :].expand(B1, B2, ROSTER_SLOTS, MON_DIM).clone()
+        else:
             P = np.broadcast_to(P_init[None, None, :, :], (B1, B2, ROSTER_SLOTS, MON_DIM)).copy()
+    else:
+        P = _clone(P_init)
+
+    if M_moves_init.ndim == 3:
+        if is_torch:
+            M_moves = M_moves_init[None, None, :, :, :].expand(
+                B1, B2, ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM
+            ).clone()
+        else:
             M_moves = np.broadcast_to(
                 M_moves_init[None, None, :, :, :], (B1, B2, ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM)
             ).copy()
     else:
-        F = _clone(F_init)
-        P = _clone(P_init)
         M_moves = _clone(M_moves_init)
 
     if resolve_lead_entry_abilities:
-        if HAS_TORCH and isinstance(P, torch.Tensor):
+        if is_torch:
             lead_trig = torch.ones((B1, B2, 4), dtype=torch.float32, device=P.device)
         else:
             lead_trig = np.ones((B1, B2, 4), dtype=np.float32)
         F, P = _execute_speed_sorted_entry_abilities(F, P, lead_trig, tables)
 
     F, P, M_moves, switched_mask = execute_barrier1_switches(
-        F, P, M_moves, p1_choices, p2_choices, tables
+        F, P, M_moves, trainer_1_choices, trainer_2_choices, tables
     )
 
     F, P, mega_evolved_mask = execute_barrier2_mega_evolution(
-        F, P, p1_choices, p2_choices, tables
+        F, P, trainer_1_choices, trainer_2_choices, tables
     )
 
     (
@@ -886,7 +920,7 @@ def execute_pre_attack_phases(
         speed_tie_alert,
         speed_tie_notes,
     ) = execute_barrier3_turn_order_sort(
-        F, P, M_moves, p1_choices, p2_choices, rng_seed=rng_seed
+        F, P, M_moves, trainer_1_choices, trainer_2_choices, rng_seed=rng_seed
     )
 
     return PreAttackPhaseResult(

@@ -176,6 +176,7 @@ class ItemID(IntEnum):
     LOADED_DICE = 19
     LIGHT_CLAY = 20
     TYPE_BOOST_ITEM = 21
+    SCOPE_LENS = 22
 
 
 class AbilityID(IntEnum):
@@ -232,6 +233,9 @@ class AbilityID(IntEnum):
     CLEAR_BODY = 48
     FLOWER_VEIL = 49
     EMERGENCY_EXIT = 50
+    SKILL_LINK = 51
+    JUSTIFIED = 52
+    SHIELD_DUST = 53
 
 
 class TargetType(IntEnum):

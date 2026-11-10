@@ -1,8 +1,20 @@
 # -*- coding: utf-8 -*-
-"""Regulation M-C Programmatic Showdown-to-Tensor Core (`src/engine/vgc_tensor_core/`)."""
+"""
+Coach Porygon VGC — Programmatic Showdown Tensor Core (`src/engine/vgc_tensor_core`)
+====================================================================================
 
+Exports the canonical `trainer_1`/`trainer_2` tensor schema (`FieldIdx[24]`, `MonIdx[84]`,
+`MoveIdx[56]`), bilinear lookup tables, on-the-fly DuckDB `ShowdownTensorCompiler`,
+`LogicalConstraintEngine` (`26x26` action pruner), `rng_engine` (Dual-Draw Spinning-Wheel
++ Counter-Based Hash Scrambling), and the 5-Phase `VgcTensorStateMachine`.
+"""
+
+from .attack_cascade import (
+    AttackCascadeResult,
+    CARTRIDGE_ROLLS,
+    execute_attack_cascade,
+)
 from .compiler import (
-    ABILITY_NAME_TO_ID,
     CHOICE_BASE_ALLY_START,
     CHOICE_BASE_OPP_A_START,
     CHOICE_BASE_OPP_B_START,
@@ -11,12 +23,42 @@ from .compiler import (
     CHOICE_MEGA_OPP_B_START,
     CHOICE_SWITCH_BENCH1,
     CHOICE_SWITCH_BENCH2,
-    ITEM_NAME_TO_ID,
+    CompiledBattleState,
     SIDE_ACTIONS,
     SLOT_CHOICES,
-    CompiledBattleState,
-    ShowdownTensorCompiler,
     SideActionMaskResult,
+    ShowdownTensorCompiler,
+)
+from .logic_engine import (
+    ConstraintResult,
+    LogicalConstraintEngine,
+    PrunedSideActionTensorMask,
+)
+from .phases_pre_attack import (
+    ACTIVE_SLOT_NAMES,
+    ACTIVE_SLOTS,
+    PreAttackPhaseResult,
+    compute_active_effective_speeds,
+    compute_per_thread_execution_orders,
+    execute_barrier1_switches,
+    execute_barrier2_mega_evolution,
+    execute_barrier3_turn_order_sort,
+    execute_pre_attack_phases,
+)
+from .replay_unroller import (
+    ReplayTurnExpectation,
+    ShowdownReplayUnroller,
+)
+from .rng_engine import (
+    CARTRIDGE_16_ROLLS,
+    CRIT_STAGE_THRESHOLDS_PCT,
+    RNGEventID,
+    counter_uniform_0_100_numpy,
+    counter_uniform_0_100_torch,
+    spin_wheel_crit_gate,
+    spin_wheel_damage_rolls_16,
+    spin_wheel_gate,
+    spin_wheel_multihit_count,
 )
 from .schema_and_tables import (
     AbilityID,
@@ -33,8 +75,8 @@ from .schema_and_tables import (
     HAS_TORCH,
     ItemID,
     MON_DIM,
-    MOVES_PER_MON,
     MOVE_DIM,
+    MOVES_PER_MON,
     MonIdx,
     MoveIdx,
     NUM_MOVE_CATEGORIES,
@@ -63,19 +105,45 @@ from .schema_and_tables import (
     compute_stab_multiplier,
     compute_terrain_move_multiplier,
     compute_type_effectiveness,
-    compute_weather_move_multiplier,
     overwrite_weather_onehot,
+)
+from .state_machine import (
+    EndOfTurnResult,
+    StepResult,
+    TurnSimulationStatistics,
+    VgcTensorStateMachine,
+    aggregate_simulation_statistics_torch,
+    compute_per_thread_board_utility_torch,
+    execute_end_of_turn,
+)
+from .state_translator import (
+    ShowdownStateTranslator,
+    SlotMetadata,
+    TeamManifest,
+    TurnCheckpoint,
+)
+from .telemetry_formatter import (
+    format_action_pruning_matrix,
+    format_cuda_device_header,
+    format_end_of_turn_dashboard,
+    format_full_turn_report,
+    format_monte_carlo_damage_matrix,
+    format_pre_attack_barrier_table,
 )
 
 __all__ = [
-    "ABILITY_NAME_TO_ID",
+    "ACTIVE_SLOTS",
+    "ACTIVE_SLOT_NAMES",
     "AbilityID",
+    "AttackCascadeResult",
     "BilinearLookupTables",
     "CANONICAL_CATEGORIES",
     "CANONICAL_STATUSES",
     "CANONICAL_TERRAINS",
     "CANONICAL_TYPES",
     "CANONICAL_WEATHERS",
+    "CARTRIDGE_16_ROLLS",
+    "CARTRIDGE_ROLLS",
     "CATEGORY_TO_IDX",
     "CHOICE_BASE_ALLY_START",
     "CHOICE_BASE_OPP_A_START",
@@ -85,13 +153,16 @@ __all__ = [
     "CHOICE_MEGA_OPP_B_START",
     "CHOICE_SWITCH_BENCH1",
     "CHOICE_SWITCH_BENCH2",
+    "CRIT_STAGE_THRESHOLDS_PCT",
     "CompiledBattleState",
+    "ConstraintResult",
+    "EndOfTurnResult",
     "FIELD_DIM",
     "FieldIdx",
     "FieldOpID",
     "HAS_TORCH",
-    "ITEM_NAME_TO_ID",
     "ItemID",
+    "LogicalConstraintEngine",
     "MON_DIM",
     "MOVES_PER_MON",
     "MOVE_DIM",
@@ -104,7 +175,11 @@ __all__ = [
     "NUM_WEATHERS",
     "OverrideDefStat",
     "OverrideOffStat",
+    "PreAttackPhaseResult",
+    "PrunedSideActionTensorMask",
+    "RNGEventID",
     "ROSTER_SLOTS",
+    "ReplayTurnExpectation",
     "SIDE_ACTIONS",
     "SLOT_CHOICES",
     "SLOT_TRAINER_1_A",
@@ -116,18 +191,46 @@ __all__ = [
     "SLOT_TRAINER_2_BENCH1",
     "SLOT_TRAINER_2_BENCH2",
     "STATUS_TO_IDX",
+    "ShowdownReplayUnroller",
+    "ShowdownStateTranslator",
     "ShowdownTensorCompiler",
     "SideActionMaskResult",
+    "SlotMetadata",
+    "StepResult",
     "TERRAIN_TO_IDX",
     "TYPE_TO_IDX",
     "TargetType",
+    "TeamManifest",
+    "TurnCheckpoint",
+    "TurnSimulationStatistics",
+    "VgcTensorStateMachine",
     "WEATHER_TO_IDX",
+    "aggregate_simulation_statistics_torch",
     "apply_switch_permutation",
     "build_bilinear_lookup_tables",
+    "compute_active_effective_speeds",
+    "compute_per_thread_board_utility_torch",
+    "compute_per_thread_execution_orders",
     "compute_stab_multiplier",
     "compute_terrain_move_multiplier",
     "compute_type_effectiveness",
-    "compute_weather_move_multiplier",
+    "counter_uniform_0_100_numpy",
+    "counter_uniform_0_100_torch",
+    "execute_attack_cascade",
+    "execute_barrier1_switches",
+    "execute_barrier2_mega_evolution",
+    "execute_barrier3_turn_order_sort",
+    "execute_end_of_turn",
+    "execute_pre_attack_phases",
+    "format_action_pruning_matrix",
+    "format_cuda_device_header",
+    "format_end_of_turn_dashboard",
+    "format_full_turn_report",
+    "format_monte_carlo_damage_matrix",
+    "format_pre_attack_barrier_table",
     "overwrite_weather_onehot",
+    "spin_wheel_crit_gate",
+    "spin_wheel_damage_rolls_16",
+    "spin_wheel_gate",
+    "spin_wheel_multihit_count",
 ]
-

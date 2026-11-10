@@ -344,9 +344,11 @@ class ShowdownTensorCompiler:
         tables: Optional[BilinearLookupTables] = None,
         registry: Optional[VGCDataRegistry] = None,
         repo: Optional[TournamentUsageRepository] = None,
+        device: Any = None,
+        backend: Optional[str] = None,
     ) -> None:
-        self.tables: BilinearLookupTables = tables or build_bilinear_lookup_tables()
-        self.backend: str = self.tables.backend
+        self.tables: BilinearLookupTables = tables or build_bilinear_lookup_tables(device=device)
+        self.backend: str = backend or self.tables.backend
         self.device: Any = self.tables.device
         self.registry: VGCDataRegistry = registry or get_registry()
         self.repo: TournamentUsageRepository = repo or get_tournament_repository()
