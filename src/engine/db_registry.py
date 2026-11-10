@@ -53,20 +53,7 @@ class VGCDataRegistry:
         if Path(moves_path).exists():
             self.con.execute(f"""
                 CREATE OR REPLACE VIEW moves AS 
-                SELECT 
-                    id,
-                    name,
-                    basePower,
-                    accuracy,
-                    priority,
-                    category,
-                    type,
-                    target,
-                    flags,
-                    secondary,
-                    boosts,
-                    drain,
-                    recoil
+                SELECT *
                 FROM read_ndjson('{moves_path}', union_by_name=True);
             """)
 
