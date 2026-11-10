@@ -145,6 +145,9 @@ class ParsedPokemon:
         }
     )
     status: Optional[str] = None
+    active_turns: int = 0
+    used_protect_last_turn: bool = False
+    last_move_used: Optional[str] = None
 
 
 @dataclass
@@ -156,6 +159,7 @@ class ParsedTeam:
         team_preview: List of 6 species shown during team preview.
         battle_roster: List of species brought to the battle (max 4 in VGC doubles).
         leads: Tuple of the 2 Pokémon sent out as leads.
+        active_slots: List of currently active species on the field (up to 2).
         pokemon_sets: Dictionary mapping species/nickname to ParsedPokemon sets.
     """
 
@@ -163,6 +167,7 @@ class ParsedTeam:
     team_preview: List[str] = field(default_factory=list)
     battle_roster: List[str] = field(default_factory=list)
     leads: Tuple[str, ...] = ()
+    active_slots: List[str] = field(default_factory=list)
     pokemon_sets: Dict[str, ParsedPokemon] = field(default_factory=dict)
 
     def get_pokemon(self, identifier: str) -> Optional[ParsedPokemon]:
@@ -289,6 +294,9 @@ class ParsedBattle:
     damage_observations: List[DamageObservation] = field(default_factory=list)
     weather: Optional[str] = None
     terrain: Optional[str] = None
+    trainer_1_tailwind: bool = False
+    trainer_2_tailwind: bool = False
+    trick_room: bool = False
     trainer_1_rating: Optional[Tuple[int, int]] = None
     trainer_2_rating: Optional[Tuple[int, int]] = None
 

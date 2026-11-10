@@ -23,7 +23,11 @@ from engine.parser.models import (
     StatSpread,
 )
 from engine.sp_validator import MAX_SINGLE_STAT_SP, MAX_TOTAL_SP
-from engine.stats_engine import STANDARD_IV, trunc
+from engine.state.state_compiler import (
+    STANDARD_IV,
+    compute_level_50_stats_from_base,
+    trunc,
+)
 
 from .tournament_db import (
     SpeciesUsageProfile,
@@ -92,32 +96,6 @@ class TeamInferenceReport:
     primary_sets: Dict[str, ParsedPokemon] = field(default_factory=dict)
     candidates_by_species: Dict[str, List[InferredSetCandidate]] = field(default_factory=dict)
     speed_bounds_by_species: Dict[str, Tuple[Optional[int], Optional[int]]] = field(default_factory=dict)
-
-
-def compute_level_50_stats_from_base(
-    base_stats: Dict[str, int],
-    spread: StatSpread,
-    nature: str = "Hardy",
-) -> Dict[str, int]:
-    """Compute exact Level 50 stats under Regulation M-C (mandatory 31 IVs, 66-SP system)."""
-    iv_half = STANDARD_IV // 2  # 15
-    sp_dict = spread.to_dict()
-    mods = NATURE_MODS.get(nature or "Hardy", {})
-
-    base_hp = int(base_stats.get("hp", 80))
-    hp_stat = 1 if base_hp == 1 else base_hp + int(sp_dict["hp"]) + iv_half + 60
-
-    result: Dict[str, int] = {"hp": hp_stat}
-    for stat_name in ("atk", "def", "spa", "spd", "spe"):
-        raw = int(base_stats.get(stat_name, 80)) + int(sp_dict[stat_name]) + iv_half + 5
-        mod = mods.get(stat_name, 1.0)
-        if mod > 1.0:
-            result[stat_name] = trunc(trunc(raw * 110, 16) / 100)
-        elif mod < 1.0:
-            result[stat_name] = trunc(trunc(raw * 90, 16) / 100)
-        else:
-            result[stat_name] = raw
-    return result
 
 
 def apply_stat_stage(stat_value: int, stage: int) -> int:

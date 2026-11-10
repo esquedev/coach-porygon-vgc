@@ -444,6 +444,19 @@ def parse_showdown_chat_log(
     # Turn action queue for speed inference
     turn_actions: List[Dict[str, Any]] = []
     last_move_used: Optional[Dict[str, Any]] = None
+    pending_switch_out_mon: Optional[str] = None
+    protect_moves = {
+        "Protect",
+        "Detect",
+        "Spiky Shield",
+        "King's Shield",
+        "Baneful Bunker",
+        "Silk Trap",
+        "Burning Bulwark",
+        "Wide Guard",
+        "Quick Guard",
+    }
+    pivot_moves = {"Flip Turn", "U-turn", "Volt Switch", "Parting Shot", "Baton Pass", "Chilly Reception", "Shed Tail"}
 
     # Name mapping: nickname / display name -> canonical species
     name_to_species: Dict[str, str] = {}
@@ -469,14 +482,74 @@ def parse_showdown_chat_log(
         if pkm:
             pkm.revealed_in_battle = True
 
+    def remove_from_active(mon_identifier: str, trainer_team: ParsedTeam) -> None:
+        pkm = trainer_team.get_pokemon(mon_identifier)
+        canonical = pkm.base_species or pkm.species if pkm else mon_identifier
+        for existing in list(trainer_team.active_slots):
+            existing_pkm = trainer_team.get_pokemon(existing)
+            if (
+                existing.lower() == mon_identifier.lower()
+                or existing.lower() == canonical.lower()
+                or (existing_pkm and existing_pkm == pkm)
+            ):
+                trainer_team.active_slots.remove(existing)
+        if pkm:
+            pkm.active_turns = 0
+            pkm.used_protect_last_turn = False
+            pkm.last_move_used = None
+            pkm.boosts = {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0, "accuracy": 0, "evasion": 0}
+        if mon_identifier in boosts:
+            boosts[mon_identifier] = {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0, "accuracy": 0, "evasion": 0}
+
+    def add_to_active(species_name: str, trainer_team: ParsedTeam) -> None:
+        nonlocal pending_switch_out_mon
+        pkm = trainer_team.get_pokemon(species_name)
+        slot_key = pkm.base_species or pkm.species if pkm else species_name
+        if slot_key not in trainer_team.active_slots:
+            if len(trainer_team.active_slots) >= 2 and pending_switch_out_mon:
+                remove_from_active(pending_switch_out_mon, trainer_team)
+                pending_switch_out_mon = None
+            if len(trainer_team.active_slots) < 2:
+                trainer_team.active_slots.append(slot_key)
+        if pkm:
+            pkm.active_turns = 0 if current_turn == 0 else 1
+            pkm.used_protect_last_turn = False
+            pkm.last_move_used = None
+
     for line in lines:
         # --- Turn Marker ---
         turn_match = re.match(r"^Turn\s+(\d+)", line)
         if turn_match:
             current_turn = int(turn_match.group(1))
             battle.turns_played = max(battle.turns_played, current_turn)
+            for team in (battle.trainer_1, battle.trainer_2):
+                for active_key in team.active_slots:
+                    pkm = team.get_pokemon(active_key)
+                    if pkm:
+                        pkm.used_protect_last_turn = bool(pkm.last_move_used in protect_moves)
+                        pkm.active_turns = pkm.active_turns + 1 if current_turn > 1 or pkm.active_turns == 0 else 1
             turn_actions.clear()
             last_move_used = None
+            pending_switch_out_mon = None
+            continue
+
+        # --- Explicit Switch-Out Lines ---
+        withdrew_match = re.match(r"^(.+?)\s+withdrew\s+(.+?)!", line)
+        if withdrew_match:
+            trainer_part = _clean_trainer_name(withdrew_match.group(1))
+            mon_part = withdrew_match.group(2).strip()
+            target_team = (
+                battle.trainer_1
+                if trainer_part.lower() == battle.trainer_1.trainer_name.lower()
+                else battle.trainer_2
+            )
+            remove_from_active(mon_part, target_team)
+            continue
+
+        comeback_match = re.match(r"^(.+?),\s+come back!", line)
+        if comeback_match:
+            mon_part = comeback_match.group(1).strip()
+            remove_from_active(mon_part, battle.trainer_1)
             continue
 
         # --- Leads and Switch-ins ---
@@ -493,6 +566,7 @@ def parse_showdown_chat_log(
                 spec = content
             register_pokemon(nick, spec, "trainer_1")
             mark_brought(spec, battle.trainer_1)
+            add_to_active(spec, battle.trainer_1)
             trainer_1_active.add(nick)
             if current_turn == 0 and len(battle.trainer_1.leads) < 2:
                 battle.trainer_1.leads = battle.trainer_1.leads + (spec,)
@@ -519,6 +593,7 @@ def parse_showdown_chat_log(
             trainer_id = "trainer_1" if target_team == battle.trainer_1 else "trainer_2"
             register_pokemon(nick, spec, trainer_id)
             mark_brought(spec, target_team)
+            add_to_active(spec, target_team)
 
             if trainer_id == "trainer_1":
                 trainer_1_active.add(nick)
@@ -538,10 +613,12 @@ def parse_showdown_chat_log(
             if mon_name in battle.trainer_1.team_preview or mon_name in battle.trainer_1.pokemon_sets:
                 register_pokemon(mon_name, mon_name, "trainer_1")
                 mark_brought(mon_name, battle.trainer_1)
+                add_to_active(mon_name, battle.trainer_1)
                 trainer_1_active.add(mon_name)
             else:
                 register_pokemon(mon_name, mon_name, "trainer_2")
                 mark_brought(mon_name, battle.trainer_2)
+                add_to_active(mon_name, battle.trainer_2)
                 trainer_2_active.add(mon_name)
             continue
 
@@ -634,6 +711,8 @@ def parse_showdown_chat_log(
             mon_nick = stat_boost_match.group(1).strip()
             stat_raw = stat_boost_match.group(2).strip().lower()
             direction = stat_boost_match.group(3).strip()
+            is_opposing_boost = line.startswith("The opposing ")
+            target_boost_team = battle.trainer_2 if is_opposing_boost else battle.trainer_1
 
             stat_key = {
                 "attack": "atk",
@@ -652,6 +731,9 @@ def parse_showdown_chat_log(
             if mon_nick not in boosts:
                 boosts[mon_nick] = {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0, "accuracy": 0, "evasion": 0}
             boosts[mon_nick][stat_key] = max(-6, min(6, boosts[mon_nick][stat_key] + delta))
+            pkm_boost = target_boost_team.get_pokemon(mon_nick)
+            if pkm_boost:
+                pkm_boost.boosts[stat_key] = boosts[mon_nick][stat_key]
             continue
 
         # --- Move Execution ---
@@ -665,8 +747,12 @@ def parse_showdown_chat_log(
             target_team = battle.trainer_2 if is_opposing else battle.trainer_1
 
             pkm = target_team.get_pokemon(mon_nick)
-            if pkm and move_name not in pkm.moves:
-                pkm.moves.append(move_name)
+            if pkm:
+                if move_name not in pkm.moves:
+                    pkm.moves.append(move_name)
+                pkm.last_move_used = move_name
+            if move_name in pivot_moves:
+                pending_switch_out_mon = mon_nick
 
             ability_val = pkm.ability if pkm else None
             # Check status category for prankster
@@ -742,6 +828,7 @@ def parse_showdown_chat_log(
             if pkm:
                 pkm.fainted = True
                 pkm.current_hp_pct = 0.0
+            remove_from_active(faint_nick, target_team)
             if faint_nick in trainer_1_active:
                 trainer_1_active.remove(faint_nick)
             if faint_nick in trainer_2_active:
@@ -749,15 +836,18 @@ def parse_showdown_chat_log(
             continue
 
         # --- Item Triggers (Red Card, Leftovers, etc.) ---
-        item_match = re.search(r"^(?:The opposing\s+)?(.+?)\s+held up its\s+(.+?)\s+against", line)
+        item_match = re.search(r"^(?:The opposing\s+)?(.+?)\s+held up its\s+(.+?)\s+against\s+(.+?)!", line)
         if item_match:
             mon_nick = item_match.group(1).strip()
             item_revealed = item_match.group(2).strip()
+            victim_raw = item_match.group(3).replace("the opposing ", "").strip()
             is_opposing = line.startswith("The opposing ")
             target_team = battle.trainer_2 if is_opposing else battle.trainer_1
             pkm = target_team.get_pokemon(mon_nick)
             if pkm and not pkm.item:
                 pkm.item = item_revealed
+            if item_revealed == "Red Card":
+                pending_switch_out_mon = victim_raw
             continue
 
         # --- Forfeit and Winner Resolution ---
@@ -786,4 +876,7 @@ def parse_showdown_chat_log(
 
     battle.weather = weather
     battle.terrain = terrain
+    battle.trainer_1_tailwind = trainer_1_tailwind
+    battle.trainer_2_tailwind = trainer_2_tailwind
+    battle.trick_room = trick_room
     return battle
