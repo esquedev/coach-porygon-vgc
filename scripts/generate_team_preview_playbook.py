@@ -88,6 +88,9 @@ def resolve_sprite_path(species: str, mega_form: Optional[str] = None) -> Option
             full_path = ROOT_DIR / rel
             if full_path.exists():
                 return full_path
+            reg_mc_path = ROOT_DIR / "assets" / "sprites" / "Reg_M-C" / Path(rel).name
+            if reg_mc_path.exists():
+                return reg_mc_path
     return None
 
 

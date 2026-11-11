@@ -1,16 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Milestone 4 Verification Suite: Vectorized Attack Cascade Engine
-================================================================
-
-Tests the 4-Step Vectorized Attack Cascade across dual CPU and PyTorch CUDA:
-1. Follow Me / Single-Target Redirection.
-2. KO Target Redirection XOR (redirecting to surviving partner).
-3. Focus Sash & Sturdy 1 HP clamping and item consumption.
-4. Life Orb recoil (-10% max HP) and move drain healing (+75% damage dealt).
-5. K=16 Monte Carlo discrete damage rolls and roll variance alert (0 < P(faint) < 1).
-6. Mid-turn voluntary pivots (U-turn) and forced switches (Dragon Tail).
-7. Benchmark: 10,000 cells (100x100) on CPU and CUDA with K=16 samples.
+Vectorized Attack Cascade Engine Verification Suite
+===================================================
 """
 
 from __future__ import annotations
@@ -21,12 +12,14 @@ import time
 from typing import Dict, Tuple
 import numpy as np
 
-# Ensure vgc_tensor_core is importable directly without engine/ dependencies
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+SRC_DIR = os.path.join(BASE_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     AbilityID,
     BilinearLookupTables,
     FIELD_DIM,
@@ -52,10 +45,10 @@ from vgc_tensor_core.schema_and_tables import (
     WEATHER_TO_IDX,
     build_bilinear_lookup_tables,
 )
-from vgc_tensor_core.phases_pre_attack import (
+from engine.vgc_tensor_core.phases_pre_attack import (
     execute_pre_attack_phases,
 )
-from vgc_tensor_core.attack_cascade import (
+from engine.vgc_tensor_core.attack_cascade import (
     AttackCascadeResult,
     execute_attack_cascade,
 )
@@ -432,7 +425,7 @@ def test_benchmarks() -> None:
 
 def main() -> None:
     print("================================================================================")
-    print("VGC TENSOR CORE — MILESTONE 4 TEST SUITE: VECTORIZED ATTACK CASCADE")
+    print("VGC TENSOR CORE TEST SUITE: VECTORIZED ATTACK CASCADE")
     print("================================================================================")
     tables = build_bilinear_lookup_tables(device="cpu")
 
@@ -444,7 +437,7 @@ def main() -> None:
     test_voluntary_pivot_execution(tables)
     test_benchmarks()
 
-    print("\nALL MILESTONE 4 UNIT TESTS PASSED SUCCESSFULLY!")
+    print("\nALL ATTACK CASCADE UNIT TESTS PASSED SUCCESSFULLY!")
     print("================================================================================")
 
 

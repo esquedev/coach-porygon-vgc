@@ -1,30 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Milestone 2 Verification Suite: Showdown-to-Tensor Compiler & 26x26 Matrix Action Pruner
-(vgc_tensor_core/tests/test_milestone2_compiler_and_pruner.py)
-
-Verifies:
-1. Showdown-to-Tensor Compilation (`[24]` Field, `[8, 80]` Roster, `[8, 4, 52]` Moves)
-   for the canonical Turn 1 scenario (Grimmsnarl + Garchomp vs Floette-Mega + Sneasler + Bench).
-2. Full 26x26 Action Matrix Geometry (0..11 Base Moves, 12..23 Mega Moves, 24..25 Switches).
-3. Cross-Slot Outer-Product Collision Masking (Simultaneous Double-Mega Lock `12:24, 12:24`
-   and Simultaneous Switch Crash `(24, 24)` / `(25, 25)`).
-4. Hard Mechanical Invariants translated from `legacy_doc/logic_engine.py`:
-   - Fake Out on `active_turns > 0` -> 0.0
-   - Priority move into grounded target under Psychic Terrain -> 0.0 (Airborne -> 1.0)
-   - Priority move vs opposing Armor Tail / Queenly Majesty -> 0.0
-   - Prankster Status move into Dark-type target -> 0.0
-   - Sound move into Soundproof, Status into Good as Gold, Fire into Flash Fire -> 0.0
-   - Sleep move into grounded target under Electric / Misty Terrain -> 0.0
-   - Taunt / Assault Vest blocking Status moves, Choice Lock / Encore locking move index -> 0.0
-5. Soft Tactical Prior Matrix (`[26, 26]`):
-   - Consecutive Protect probability decay (0.40 on 2nd use, 0.10 on >=3rd use)
-   - 4.0x Double Weakness (1.35x prior), 2.0x SE (1.20x prior), 0.25x resist (0.50x), 0.0x read (0.15x/0.20x)
-   - Weather Sure-Hit accuracy overrides (Hurricane in Rain, Blizzard in Snow, No Guard)
-6. Active-Grid Compression (`[N_valid, 2]`) & CPU/CUDA execution latency.
-
-Writes full verbose matrix logs to:
-    `vgc_tensor_core/tests/outputs/milestone2_test_output.txt`
+Compiler & Matrix Action Pruner Verification Suite
+(tests/vgc_tensor_core/test_compiler_and_pruner.py)
 """
 
 from pathlib import Path
@@ -36,8 +13,11 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from vgc_tensor_core.compiler import (
+from engine.vgc_tensor_core.compiler import (
     CHOICE_BASE_ALLY_START,
     CHOICE_BASE_OPP_A_START,
     CHOICE_BASE_OPP_B_START,
@@ -50,7 +30,7 @@ from vgc_tensor_core.compiler import (
     SLOT_CHOICES,
     ShowdownTensorCompiler,
 )
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     FIELD_DIM,
     HAS_TORCH,
     MON_DIM,
@@ -153,8 +133,8 @@ def _build_turn1_sample_rosters():
     ]
 
 
-class TestMilestone2CompilerAndPruner(unittest.TestCase):
-    """Exhaustive mathematical verification for Milestone 2 (`compiler.py`)."""
+class TestCompilerAndPruner(unittest.TestCase):
+    """Exhaustive mathematical verification for `compiler.py`."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -166,7 +146,7 @@ class TestMilestone2CompilerAndPruner(unittest.TestCase):
 
         cls.log_lines = []
         cls.log_lines.append("=" * 100)
-        cls.log_lines.append("MILESTONE 2 VERBOSE MATRIX TRACE — SHOWDOWN COMPILER & 26x26 ACTION PRUNER")
+        cls.log_lines.append("VERBOSE MATRIX TRACE — SHOWDOWN COMPILER & 26x26 ACTION PRUNER")
         cls.log_lines.append(f"Active Compute Backend : {cls.compiler.backend} (device={cls.compiler.device}) | GPU: {gpu_name}")
         cls.log_lines.append("=" * 100)
 
@@ -409,13 +389,13 @@ class TestMilestone2CompilerAndPruner(unittest.TestCase):
 def run_and_save_outputs() -> None:
     out_dir = Path(__file__).resolve().parent / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "milestone2_test_output.txt"
+    out_file = out_dir / "compiler_and_pruner_test_output.txt"
 
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMilestone2CompilerAndPruner)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestCompilerAndPruner)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    summary_lines = list(TestMilestone2CompilerAndPruner.log_lines)
+    summary_lines = list(TestCompilerAndPruner.log_lines)
     summary_lines.append("\n" + "=" * 100)
     summary_lines.append(
         f"TOTAL TESTS RUN: {result.testsRun} | FAILURES: {len(result.failures)} | ERRORS: {len(result.errors)}"

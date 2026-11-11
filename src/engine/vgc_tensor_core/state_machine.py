@@ -151,10 +151,12 @@ def _execute_end_of_turn_torch(
     P: "torch.Tensor",             # [B1, B2, K, 8, 84]
     M_moves: "torch.Tensor",       # [B1, B2, K, 8, 4, 56]
     tables: BilinearLookupTables,
+    auto_promote: bool = False,
 ) -> EndOfTurnResult:
     """Pure PyTorch implementation of Phase 5 (End-of-Turn resolution + bench promotions)."""
     F = F.clone()
     P = P.clone()
+    M_moves = M_moves.clone()
 
     device = P.device
     B1, B2, K = P.shape[0], P.shape[1], P.shape[2]
@@ -310,6 +312,35 @@ def _execute_end_of_turn_torch(
         active_hp_cur > 0.0, act_turns + 1.0, act_turns
     )
 
+    # 5.5 Auto-promotion of alive bench Pokémon into fainted active slots
+    if auto_promote:
+        for act_s, (b1_s, b2_s) in [
+            (0, (2, 3)),
+            (1, (2, 3)),
+            (4, (6, 7)),
+            (5, (6, 7)),
+        ]:
+            act_dead = P[:, :, :, act_s, MonIdx.HP_CUR] <= 0.0
+            b1_alive = P[:, :, :, b1_s, MonIdx.HP_CUR] > 0.0
+            b2_alive = P[:, :, :, b2_s, MonIdx.HP_CUR] > 0.0
+
+            promote_b1 = act_dead & b1_alive
+            promote_b2 = act_dead & (~b1_alive) & b2_alive
+
+            for prom_mask, bn_s in ((promote_b1, b1_s), (promote_b2, b2_s)):
+                if torch.any(prom_mask):
+                    act_p = P[:, :, :, act_s, :].clone()
+                    bn_p = P[:, :, :, bn_s, :].clone()
+                    P[:, :, :, act_s, :] = torch.where(prom_mask.unsqueeze(-1), bn_p, P[:, :, :, act_s, :])
+                    P[:, :, :, bn_s, :] = torch.where(prom_mask.unsqueeze(-1), act_p, P[:, :, :, bn_s, :])
+                    P[:, :, :, act_s, MonIdx.ACTIVE_TURNS] = torch.where(
+                        prom_mask, torch.zeros_like(P[:, :, :, act_s, MonIdx.ACTIVE_TURNS]), P[:, :, :, act_s, MonIdx.ACTIVE_TURNS]
+                    )
+                    act_m = M_moves[:, :, :, act_s, :, :].clone()
+                    bn_m = M_moves[:, :, :, bn_s, :, :].clone()
+                    M_moves[:, :, :, act_s, :, :] = torch.where(prom_mask.unsqueeze(-1).unsqueeze(-1), bn_m, M_moves[:, :, :, act_s, :, :])
+                    M_moves[:, :, :, bn_s, :, :] = torch.where(prom_mask.unsqueeze(-1).unsqueeze(-1), act_m, M_moves[:, :, :, bn_s, :, :])
+
     # 6. Match Termination & Empirical Survival / Faint Aggregation
     t1_dead_mask = (P[:, :, :, 0:4, MonIdx.HP_CUR] <= 0.0).float()
     trainer_1_fainted_count = torch.mean(torch.sum(t1_dead_mask, dim=3), dim=2)  # [B1, B2]
@@ -350,11 +381,15 @@ def execute_end_of_turn(
     M_cascade: TensorOrArray,
     tables: BilinearLookupTables,
     replacement_choices: Optional[TensorOrArray] = None,
+    auto_promote: bool = False,
 ) -> EndOfTurnResult:
     """Execute Phase 5 (End-of-Turn resolution) across `[B1, B2, K]` simulation threads."""
+    do_promote = auto_promote or (replacement_choices is not None)
     is_torch = HAS_TORCH and isinstance(P_cascade, torch.Tensor)
     if is_torch:
-        return _execute_end_of_turn_torch(F_cascade, P_cascade, M_cascade, tables)
+        return _execute_end_of_turn_torch(
+            F_cascade, P_cascade, M_cascade, tables, auto_promote=do_promote
+        )
 
     if HAS_TORCH:
         dev = torch.device("cpu")
@@ -364,6 +399,7 @@ def execute_end_of_turn(
             torch.from_numpy(np.asarray(P_cascade, dtype=np.float32)),
             torch.from_numpy(np.asarray(M_cascade, dtype=np.float32)),
             tables_t,
+            auto_promote=do_promote,
         )
         return EndOfTurnResult(
             F=res_t.F.numpy(),
@@ -533,19 +569,27 @@ class VgcTensorStateMachine:
         F: TensorOrArray,
         P: TensorOrArray,
         M_moves: TensorOrArray,
-        trainer_1_choices: TensorOrArray,
-        trainer_2_choices: TensorOrArray,
+        trainer_1_choices: Optional[TensorOrArray] = None,
+        trainer_2_choices: Optional[TensorOrArray] = None,
         num_mc_samples: int = 256,
         replacement_choices: Optional[TensorOrArray] = None,
         rng_seed: Optional[int] = 42,
         risk_aversion_lambda: Optional[float] = None,
         max_sim_chunk_size: int = 512,
+        **kwargs: Any,
     ) -> StepResult:
         """Execute a single VGC Doubles turn across `[B1, B2]` action pairs and `num_mc_samples` discrete RNG threads.
 
         Automatically chunks execution when `num_mc_samples > max_sim_chunk_size` so you can run
         thousands of simulations (`1024`, `2048`, `4096+`) per joint action pair with bounded VRAM!
         """
+        if trainer_1_choices is None:
+            trainer_1_choices = kwargs.get("p1_choices")
+        if trainer_2_choices is None:
+            trainer_2_choices = kwargs.get("p2_choices")
+        if trainer_1_choices is None or trainer_2_choices is None:
+            raise ValueError("Both trainer_1_choices and trainer_2_choices must be provided.")
+
         lam = self.risk_aversion_lambda if risk_aversion_lambda is None else float(risk_aversion_lambda)
         seed_base = int(rng_seed if rng_seed is not None else 42)
         K_total = int(max(1, num_mc_samples))

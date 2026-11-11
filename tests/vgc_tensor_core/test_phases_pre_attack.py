@@ -1,9 +1,10 @@
-"""
-VGC Tensor Core — Milestone 3 Verification Suite (`test_milestone3_phases_pre_attack.py`)
-=========================================================================================
+# -*- coding: utf-8 -*-
+r"""
+Pre-Attack Phases Verification Suite (`phases_pre_attack.py`)
+=============================================================
 
-This test script verifies every mathematical operator and mechanical barrier in Milestone 3
-(`vgc_tensor_core/phases_pre_attack.py`):
+This test script verifies every mathematical operator and mechanical barrier
+in `engine.vgc_tensor_core.phases_pre_attack`:
 1. **Barrier 1 (Voluntary Switches & Speed-Sorted Switch-In Weather War):**
    - Verifies that outgoing boosts (`8..14`) and volatiles (`58..66`) are zeroed via
      Hadamard multiplication with `switch_persist_mask`.
@@ -51,16 +52,19 @@ import numpy as np
 ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
+SRC_DIR = ROOT_DIR / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from vgc_tensor_core.compiler import (
+from engine.vgc_tensor_core.compiler import (
     CHOICE_SWITCH_BENCH1,
     CHOICE_SWITCH_BENCH2,
     ShowdownTensorCompiler,
 )
-from vgc_tensor_core.phases_pre_attack import (
+from engine.vgc_tensor_core.phases_pre_attack import (
     execute_pre_attack_phases,
 )
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     FieldIdx,
     HAS_TORCH,
     MonIdx,
@@ -87,8 +91,8 @@ def _to_list(val) -> list:
     return np.round(arr, 4).tolist()
 
 
-class TestMilestone3PhasesPreAttack(unittest.TestCase):
-    """Exhaustive, verbose verification for Milestone 3 (`vgc_tensor_core/phases_pre_attack.py`)."""
+class TestPhasesPreAttack(unittest.TestCase):
+    """Exhaustive, verbose verification for `vgc_tensor_core/phases_pre_attack.py`."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -104,7 +108,7 @@ class TestMilestone3PhasesPreAttack(unittest.TestCase):
 
         cls.log_lines: List[str] = []
         cls.log_lines.append("=" * 104)
-        cls.log_lines.append("MILESTONE 3 VERBOSE MATRIX TRACE — PHASES 1–3 (SWITCHES, MEGA EVOLUTION & SPEED/PRIORITY SORT)")
+        cls.log_lines.append("VERBOSE MATRIX TRACE — PHASES 1–3 (SWITCHES, MEGA EVOLUTION & SPEED/PRIORITY SORT)")
         cls.log_lines.append(f"Active Compute Backend : {cls.compiler.backend} (device={cls.compiler.device}) | GPU: {gpu_name}")
         cls.log_lines.append("=" * 104)
 
@@ -487,26 +491,26 @@ class TestMilestone3PhasesPreAttack(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMilestone3PhasesPreAttack)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestPhasesPreAttack)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    TestMilestone3PhasesPreAttack.log_lines.append("")
-    TestMilestone3PhasesPreAttack.log_lines.append("=" * 104)
-    TestMilestone3PhasesPreAttack.log_lines.append(
+    TestPhasesPreAttack.log_lines.append("")
+    TestPhasesPreAttack.log_lines.append("=" * 104)
+    TestPhasesPreAttack.log_lines.append(
         f"TOTAL TESTS RUN: {result.testsRun} | FAILURES: {len(result.failures)} | ERRORS: {len(result.errors)}"
     )
-    TestMilestone3PhasesPreAttack.log_lines.append(
+    TestPhasesPreAttack.log_lines.append(
         "STATUS: PASS (100% EXACT MATHEMATICAL PARITY)" if result.wasSuccessful() else "STATUS: FAIL"
     )
-    TestMilestone3PhasesPreAttack.log_lines.append("=" * 104)
+    TestPhasesPreAttack.log_lines.append("=" * 104)
 
-    full_trace = "\n".join(TestMilestone3PhasesPreAttack.log_lines)
+    full_trace = "\n".join(TestPhasesPreAttack.log_lines)
     print("\n" + full_trace)
 
     out_dir = Path(__file__).resolve().parent / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "milestone3_test_output.txt"
+    out_file = out_dir / "phases_pre_attack_test_output.txt"
     out_file.write_text(full_trace + "\n", encoding="utf-8")
 
     sys.exit(0 if result.wasSuccessful() else 1)

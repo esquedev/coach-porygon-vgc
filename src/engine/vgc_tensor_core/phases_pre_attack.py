@@ -223,6 +223,30 @@ def compute_active_effective_speeds(
     w_sand = F[..., FieldIdx.WEATHER_START + W_SAND][..., None]
     w_snow = F[..., FieldIdx.WEATHER_START + W_SNOW][..., None]
 
+    # Weather suppression (Cloud Nine) across all active slots
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        is_cloud_nine = torch.any(
+            (P_act[..., MonIdx.ALIVE_FLAG] > 0.5) & (P_act[..., MonIdx.ABILITY_ID] == float(AbilityID.CLOUD_NINE)),
+            dim=-1,
+            keepdim=True,
+        )
+        zero = torch.zeros_like(w_sun)
+        w_sun = torch.where(is_cloud_nine, zero, w_sun)
+        w_rain = torch.where(is_cloud_nine, zero, w_rain)
+        w_sand = torch.where(is_cloud_nine, zero, w_sand)
+        w_snow = torch.where(is_cloud_nine, zero, w_snow)
+    else:
+        is_cloud_nine = np.any(
+            (P_act[..., MonIdx.ALIVE_FLAG] > 0.5) & (P_act[..., MonIdx.ABILITY_ID] == float(AbilityID.CLOUD_NINE)),
+            axis=-1,
+            keepdims=True,
+        )
+        zero = np.zeros_like(w_sun)
+        w_sun = np.where(is_cloud_nine, zero, w_sun)
+        w_rain = np.where(is_cloud_nine, zero, w_rain)
+        w_sand = np.where(is_cloud_nine, zero, w_sand)
+        w_snow = np.where(is_cloud_nine, zero, w_snow)
+
     is_chlorophyll = ((abil_id == float(AbilityID.CHLOROPHYLL)) * 1.0) * w_sun
     is_swift_swim = ((abil_id == float(AbilityID.SWIFT_SWIM)) * 1.0) * w_rain
     is_sand_rush = ((abil_id == float(AbilityID.SAND_RUSH)) * 1.0) * w_sand
@@ -299,6 +323,24 @@ def _execute_speed_sorted_entry_abilities(
 
     T_w = tables.t_set_weather
     T_t = tables.t_set_terrain
+    if not (HAS_TORCH and isinstance(F, torch.Tensor)):
+        if hasattr(T_w, "detach"):
+            T_w = T_w.detach().cpu().numpy()
+        else:
+            T_w = np.asarray(T_w)
+        if hasattr(T_t, "detach"):
+            T_t = T_t.detach().cpu().numpy()
+        else:
+            T_t = np.asarray(T_t)
+    else:
+        if not isinstance(T_w, torch.Tensor):
+            T_w = torch.from_numpy(T_w).to(F.device)
+        else:
+            T_w = T_w.to(F.device)
+        if not isinstance(T_t, torch.Tensor):
+            T_t = torch.from_numpy(T_t).to(F.device)
+        else:
+            T_t = T_t.to(F.device)
 
     for step_idx in range(4):
         actor_k = entry_order[..., step_idx]
@@ -470,6 +512,12 @@ def execute_barrier1_switches(
     """Execute Phase 1 (Barrier 1: Voluntary Switches at Priority `+6` + Speed-Sorted Entry Abilities)
     across the `[B1, B2]` joint action grid.
     """
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
+
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
     c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
@@ -501,6 +549,16 @@ def execute_barrier1_switches(
     )
 
     persist_mask = tables.switch_persist_mask  # [84]
+    if not (HAS_TORCH and isinstance(P, torch.Tensor)):
+        if hasattr(persist_mask, "detach"):
+            persist_mask = persist_mask.detach().cpu().numpy()
+        else:
+            persist_mask = np.asarray(persist_mask)
+    else:
+        if not isinstance(persist_mask, torch.Tensor):
+            persist_mask = torch.from_numpy(persist_mask).to(P.device)
+        else:
+            persist_mask = persist_mask.to(P.device)
 
     for act_slot, bench_slot, c_grid, target_c in switch_specs:
         sw_gate = (
@@ -568,6 +626,12 @@ def execute_barrier2_mega_evolution(
     """
     B1 = P.shape[0]
     B2 = P.shape[1]
+
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
 
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
@@ -649,6 +713,12 @@ def execute_barrier3_turn_order_sort(
     """
     B1 = P.shape[0]
     B2 = P.shape[1]
+
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
 
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
@@ -867,6 +937,17 @@ def execute_pre_attack_phases(
 
     B1 = int(trainer_1_choices.shape[0])
     B2 = int(trainer_2_choices.shape[0] if trainer_2_choices.ndim == 2 else trainer_2_choices.shape[1])
+
+    if is_torch:
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P_init.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P_init.device)
+    else:
+        if hasattr(trainer_1_choices, "detach"):
+            trainer_1_choices = trainer_1_choices.detach().cpu().numpy()
+        if hasattr(trainer_2_choices, "detach"):
+            trainer_2_choices = trainer_2_choices.detach().cpu().numpy()
 
     if F_init.ndim == 1:
         if is_torch:

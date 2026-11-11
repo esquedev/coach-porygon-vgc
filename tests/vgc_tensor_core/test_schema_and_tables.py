@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Milestone 1 Verification Suite: Bilinear One-Hot Lookup Tables, Tensor Schema & GPU/CPU Benchmarks
-(vgc_tensor_core/tests/test_milestone1_schema_and_tables.py)
+Schema & Bilinear One-Hot Lookup Tables Verification Suite
+(tests/vgc_tensor_core/test_schema_and_tables.py)
 
 Verifies every mathematical operator, matrix dimension, bilinear one-hot contraction,
 single-type vs. dual-type identity, column-overwrite transition matrix, 8x8 switch
 permutation matrix, and 100x100 batch CPU vs. CUDA speed benchmarks defined in
-`vgc_tensor_core/schema_and_tables.py`.
-
-Verbose Mode: Logs the exact input vectors, operator matrices, intermediate step-by-step
-contraction vectors (e.g. `v_left @ M`), final scalar/tensor outputs, and hardware latency
-benchmarks across CPU and CUDA to:
-    `vgc_tensor_core/tests/outputs/milestone1_test_output.txt`
+`engine.vgc_tensor_core.schema_and_tables`.
 """
 
 from pathlib import Path
@@ -20,12 +15,15 @@ import time
 import unittest
 import numpy as np
 
-# Ensure repository root is on sys.path for standalone execution
+# Ensure repository root and src are on sys.path for standalone execution
 REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     BilinearLookupTables,
     CANONICAL_TERRAINS,
     CANONICAL_TYPES,
@@ -91,8 +89,8 @@ def _format_matrix(mat, row_labels=None, col_labels=None, indent="    ") -> str:
     return "\n".join(lines)
 
 
-class TestMilestone1SchemaAndTables(unittest.TestCase):
-    """Exhaustive, verbose mathematical verification for Milestone 1 (`schema_and_tables.py`)."""
+class TestSchemaAndTables(unittest.TestCase):
+    """Exhaustive, verbose mathematical verification for `schema_and_tables.py`."""
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -107,7 +105,7 @@ class TestMilestone1SchemaAndTables(unittest.TestCase):
 
         cls.log_lines = []
         cls.log_lines.append("=" * 96)
-        cls.log_lines.append("MILESTONE 1 VERBOSE MATRIX TRACE — VGC TENSOR CORE (SCHEMA & BILINEAR TABLES)")
+        cls.log_lines.append("VERBOSE MATRIX TRACE — VGC TENSOR CORE (SCHEMA & BILINEAR TABLES)")
         cls.log_lines.append(f"Active Compute Backend : {cls.tables.backend} (device={cls.tables.device}) | GPU: {gpu_name}")
         cls.log_lines.append("=" * 96)
 
@@ -130,7 +128,7 @@ class TestMilestone1SchemaAndTables(unittest.TestCase):
         self.assertEqual(ROSTER_SLOTS, 8)
         self.assertEqual(MON_DIM, 84)
         self.assertEqual(MOVES_PER_MON, 4)
-        self.assertEqual(MOVE_DIM, 52)
+        self.assertEqual(MOVE_DIM, 56)
 
         self.assertEqual(MonIdx.TYPE1_END - MonIdx.TYPE1_START, 18)
         self.assertEqual(MonIdx.TYPE2_END - MonIdx.TYPE2_START, 18)
@@ -429,16 +427,16 @@ class TestMilestone1SchemaAndTables(unittest.TestCase):
 
 
 def run_and_save_outputs() -> None:
-    """Execute the Milestone 1 test suite and persist full verbose matrix logs to disk."""
+    """Execute the Schema and Tables test suite and persist full verbose matrix logs to disk."""
     out_dir = Path(__file__).resolve().parent / "outputs"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_file = out_dir / "milestone1_test_output.txt"
+    out_file = out_dir / "schema_and_tables_test_output.txt"
 
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMilestone1SchemaAndTables)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestSchemaAndTables)
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)
 
-    summary_lines = list(TestMilestone1SchemaAndTables.log_lines)
+    summary_lines = list(TestSchemaAndTables.log_lines)
     summary_lines.append("\n" + "=" * 96)
     summary_lines.append(
         f"TOTAL TESTS RUN: {result.testsRun} | FAILURES: {len(result.failures)} | ERRORS: {len(result.errors)}"

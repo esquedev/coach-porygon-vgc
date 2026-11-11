@@ -225,6 +225,7 @@ class LogicalConstraintEngine:
             "priority": int(entry.get("priority") or 0),
             "is_sound": bool(flags.get("sound")) or (move_name in SOUND_MOVES),
             "status": entry.get("status"),
+            "is_charge": bool(flags.get("charge")),
         }
 
     def _compute_type_effectiveness(
@@ -368,6 +369,25 @@ class LogicalConstraintEngine:
         terrain = str(field_dict.get("terrain") or "").lower()
         move_data = self._lookup_move_data(move_name)
 
+        # Dynamic Cloud Nine weather suppression check
+        all_abilities = [user_ability, target_ability] + (opposing_abilities or [])
+        has_cloud_nine = any(str(ab).lower() in ("cloud nine", "cloudnine") for ab in all_abilities)
+        if has_cloud_nine:
+            weather = "clear"
+
+        # Dynamic Weather Ball typing adaptation
+        if move_name == "Weather Ball":
+            if weather == "sun":
+                move_data = dict(move_data, type="Fire")
+            elif weather == "rain":
+                move_data = dict(move_data, type="Water")
+            elif weather == "sand":
+                move_data = dict(move_data, type="Rock")
+            elif weather == "snow":
+                move_data = dict(move_data, type="Ice")
+            else:
+                move_data = dict(move_data, type="Normal")
+
         if protect_chain_count < 0:
             protect_chain_count = 0
         if was_protected_last_turn and protect_chain_count == 0:
@@ -400,6 +420,46 @@ class LogicalConstraintEngine:
                 reasons=[f"{move_name} fails physically when active turns ({active_turns}) > 1."],
                 recommended_prior_scale=0.0,
             )
+
+        # Two-turn charging move evaluation on Turn 1 (deals 0 damage on charge turn)
+        if move_data.get("is_charge"):
+            if move_name in ("Solar Beam", "Solar Blade"):
+                if weather != "sun":
+                    cloud_note = " (suppressed by Cloud Nine)" if has_cloud_nine else ""
+                    return self._make_result(
+                        is_mechanically_valid=True,
+                        risk_score=0.95,
+                        upside_potential=0.10,
+                        classification="High_Risk",
+                        reasons=[
+                            f"{move_name} requires a charging turn without Harsh Sunlight{cloud_note}; deals 0 damage on Turn 1."
+                        ],
+                        recommended_prior_scale=0.05,
+                    )
+            elif move_name == "Electro Shot":
+                if weather != "rain":
+                    cloud_note = " (suppressed by Cloud Nine)" if has_cloud_nine else ""
+                    return self._make_result(
+                        is_mechanically_valid=True,
+                        risk_score=0.90,
+                        upside_potential=0.20,
+                        classification="High_Risk",
+                        reasons=[
+                            f"Electro Shot requires a charging turn without Rain{cloud_note}; deals 0 damage on Turn 1."
+                        ],
+                        recommended_prior_scale=0.10,
+                    )
+            else:
+                return self._make_result(
+                    is_mechanically_valid=True,
+                    risk_score=0.90,
+                    upside_potential=0.25,
+                    classification="High_Risk",
+                    reasons=[
+                        f"{move_name} requires a charging turn on Turn 1; deals 0 damage on Turn 1."
+                    ],
+                    recommended_prior_scale=0.10,
+                )
 
         m_prio = self._resolve_move_priority(
             move_name=move_name,
@@ -609,6 +669,33 @@ class LogicalConstraintEngine:
             recommended_prior_scale=1.0,
         )
 
+    def evaluate_candidate_action(
+        self,
+        move_name: str,
+        user_species: str = "",
+        user_types: Optional[List[str]] = None,
+        user_ability: str = "",
+        target_species: Optional[str] = None,
+        target_types: Optional[List[str]] = None,
+        target_ability: str = "",
+        weather: Optional[str] = None,
+        opposing_abilities: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> ConstraintResult:
+        """Convenience wrapper for candidate action evaluation matching the symbolic constraint API."""
+        field_state = {"weather": weather} if weather else None
+        return self.evaluate_slot_action(
+            slot_species=user_species,
+            move_name=move_name,
+            target_species=target_species,
+            field_state=field_state,
+            user_ability=user_ability,
+            target_ability=target_ability,
+            target_types=target_types,
+            opposing_abilities=opposing_abilities,
+            **kwargs,
+        )
+
     # =========================================================================
     # VECTORIZED TENSOR MASK & ACTION PRUNER (26x26 PER TRAINER SIDE)
     # =========================================================================
@@ -654,6 +741,19 @@ class LogicalConstraintEngine:
         t_onehot = f_np[FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END]
         is_rain = float(w_onehot[WEATHER_TO_IDX["rain"]])
         is_snow = float(w_onehot[WEATHER_TO_IDX["snow"]])
+        is_sun = float(w_onehot[WEATHER_TO_IDX["sun"]])
+        is_sand = float(w_onehot[WEATHER_TO_IDX["sand"]])
+
+        # Dynamic Cloud Nine check across active slots
+        is_cloud_nine = any(
+            vec[MonIdx.ALIVE_FLAG] > 0.0 and int(round(float(vec[MonIdx.ABILITY_ID]))) == AbilityID.CLOUD_NINE
+            for vec in (user_vec, partner_vec, opp_a_vec, opp_b_vec)
+        )
+        if is_cloud_nine:
+            is_rain = 0.0
+            is_snow = 0.0
+            is_sun = 0.0
+            is_sand = 0.0
         is_psychic_terrain = float(t_onehot[TERRAIN_TO_IDX["psychic"]])
         is_grassy_terrain = float(t_onehot[TERRAIN_TO_IDX["grassy"]])
         is_elec_or_misty_terrain = float(
@@ -825,6 +925,17 @@ class LogicalConstraintEngine:
                         upside_val = 0.85 if protect_count == 1.0 else 0.90
                         prior_scale = 0.33 if protect_count == 1.0 else 0.11
 
+                    # Two-turn charging move evaluation (Turn 1: deals 0 damage if must charge)
+                    w_code = m_vec[MoveIdx.WEATHER_SURE_HIT]
+                    is_solar_charge = (w_code == 10.0) and (is_sun <= 0.5)
+                    is_electro_charge = (w_code == 20.0) and (is_rain <= 0.5)
+                    is_general_charge = (w_code == 30.0)
+                    must_charge = is_solar_charge or is_electro_charge or is_general_charge
+                    if must_charge:
+                        prior_scale = 0.05 if w_code == 10.0 else 0.10
+                        risk_val = 0.95 if w_code == 10.0 else 0.90
+                        upside_val = 0.10
+
                     acc_val = float(m_vec[MoveIdx.ACCURACY])
                     if eff_user_ab == AbilityID.NO_GUARD or tgt_ab == AbilityID.NO_GUARD:
                         acc_val = 1.0
@@ -835,7 +946,20 @@ class LogicalConstraintEngine:
                     acc_val = min(1.0, max(0.0, acc_val))
 
                     if not is_status:
-                        m_type_vec = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
+                        if w_code == 1.0:
+                            m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
+                            if is_sun > 0.5:
+                                m_type_vec[TYPE_TO_IDX["fire"]] = 1.0
+                            elif is_rain > 0.5:
+                                m_type_vec[TYPE_TO_IDX["water"]] = 1.0
+                            elif is_sand > 0.5:
+                                m_type_vec[TYPE_TO_IDX["rock"]] = 1.0
+                            elif is_snow > 0.5:
+                                m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
+                            else:
+                                m_type_vec[TYPE_TO_IDX["normal"]] = 1.0
+                        else:
+                            m_type_vec = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
                         eff1 = float(m_type_vec @ self._type_chart_np @ tgt_type1)
                         raw_eff2 = float(m_type_vec @ self._type_chart_np @ tgt_type2)
                         eff2 = raw_eff2 + (1.0 - float(np.sum(tgt_type2)))

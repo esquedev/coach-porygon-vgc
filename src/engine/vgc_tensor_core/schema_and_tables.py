@@ -236,6 +236,7 @@ class AbilityID(IntEnum):
     SKILL_LINK = 51
     JUSTIFIED = 52
     SHIELD_DUST = 53
+    CLOUD_NINE = 54
 
 
 class TargetType(IntEnum):
@@ -305,6 +306,16 @@ SLOT_TRAINER_2_B: int = 5
 SLOT_TRAINER_2_BENCH1: int = 6
 SLOT_TRAINER_2_BENCH2: int = 7
 
+# Backward-compatibility aliases
+SLOT_P1A: int = SLOT_TRAINER_1_A
+SLOT_P1B: int = SLOT_TRAINER_1_B
+SLOT_P1_BENCH1: int = SLOT_TRAINER_1_BENCH1
+SLOT_P1_BENCH2: int = SLOT_TRAINER_1_BENCH2
+SLOT_P2A: int = SLOT_TRAINER_2_A
+SLOT_P2B: int = SLOT_TRAINER_2_B
+SLOT_P2_BENCH1: int = SLOT_TRAINER_2_BENCH1
+SLOT_P2_BENCH2: int = SLOT_TRAINER_2_BENCH2
+
 
 # --- A. Global Field Tensor F: shape [..., 24] ---
 FIELD_DIM: int = 24
@@ -340,6 +351,18 @@ class FieldIdx:
     TRAINER_2_LIGHT_SCREEN_TURNS: int = 21
     TRAINER_2_AURORA_VEIL_TURNS: int = 22
     TRAINER_2_MEGA_USED: int = 23
+
+    # Backward compatibility aliases
+    P1_TAILWIND_TURNS: int = TRAINER_1_TAILWIND_TURNS
+    P1_REFLECT_TURNS: int = TRAINER_1_REFLECT_TURNS
+    P1_LIGHT_SCREEN_TURNS: int = TRAINER_1_LIGHT_SCREEN_TURNS
+    P1_AURORA_VEIL_TURNS: int = TRAINER_1_AURORA_VEIL_TURNS
+    P1_MEGA_USED: int = TRAINER_1_MEGA_USED
+    P2_TAILWIND_TURNS: int = TRAINER_2_TAILWIND_TURNS
+    P2_REFLECT_TURNS: int = TRAINER_2_REFLECT_TURNS
+    P2_LIGHT_SCREEN_TURNS: int = TRAINER_2_LIGHT_SCREEN_TURNS
+    P2_AURORA_VEIL_TURNS: int = TRAINER_2_AURORA_VEIL_TURNS
+    P2_MEGA_USED: int = TRAINER_2_MEGA_USED
 
 
 # --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 84] ---
@@ -480,7 +503,7 @@ class MoveIdx:
     FIELD_OP_ID: int = 47         # FieldOpID enum float
     FIRST_TURN_ONLY: int = 48     # 1.0 for Fake Out / First Impression / Mat Block
     IS_SOUND_MOVE: int = 49       # 1.0 when flags.sound == 1
-    WEATHER_SURE_HIT: int = 50    # 0.0 None, 2.0 Rain sure-hit, 4.0 Snow sure-hit
+    WEATHER_SURE_HIT: int = 50    # 0: Standard, 1: Weather Ball, 2: Rain sure-hit, 4: Snow sure-hit, 10: Sun-charge (Solar Beam/Blade), 20: Rain-charge (Electro Shot), 30: General charge
     GRASSY_PRIO_BOOST: int = 51   # 1.0 for Grassy Glide
 
     # 52..55 (4 floats): Multi-Hit & Stat Override Channels from DuckDB moves.jsonl

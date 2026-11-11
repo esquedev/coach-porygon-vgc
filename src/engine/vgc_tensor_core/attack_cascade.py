@@ -74,6 +74,7 @@ from .rng_engine import (
 from .schema_and_tables import (
     AbilityID,
     BilinearLookupTables,
+    build_bilinear_lookup_tables,
     FIELD_DIM,
     FieldIdx,
     FieldOpID,
@@ -246,6 +247,7 @@ def _execute_attack_cascade_torch(
     hits_landed_count = torch.zeros((B1, B2, 4), dtype=torch.float32, device=device)
     hits_attempted_count = torch.zeros((B1, B2, 4), dtype=torch.float32, device=device)
     crits_landed_count = torch.zeros((B1, B2, 4), dtype=torch.float32, device=device)
+    redirection_notes: List[str] = []
 
     for step_idx in range(4):
         actor_act_idx = exec_order_k[:, :, :, step_idx].long()  # [B1, B2, K] in {0, 1, 2, 3}
@@ -283,6 +285,52 @@ def _execute_attack_cascade_torch(
 
         move_type_idx = torch.argmax(chosen_move[:, :, :, MoveIdx.TYPE_START:MoveIdx.TYPE_END], dim=-1)
         cat_idx = torch.argmax(chosen_move[:, :, :, MoveIdx.CAT_START:MoveIdx.CAT_END], dim=-1)
+        base_power = chosen_move[:, :, :, MoveIdx.BASE_POWER]
+        w_sure = chosen_move[:, :, :, MoveIdx.WEATHER_SURE_HIT]
+
+        # Dynamic Cloud Nine check across all active slots
+        act_slots_idx = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
+        ab_act = P_mc[:, :, :, act_slots_idx, MonIdx.ABILITY_ID]
+        hp_act = P_mc[:, :, :, act_slots_idx, MonIdx.HP_CUR]
+        cloud_nine_active = torch.any((hp_act > 0.0) & (ab_act == float(AbilityID.CLOUD_NINE)), dim=-1)
+
+        w_raw = torch.argmax(F_mc[:, :, :, FieldIdx.WEATHER_START:FieldIdx.WEATHER_END], dim=-1)
+        w_idx = torch.where(cloud_nine_active, torch.zeros_like(w_raw), w_raw)
+
+        # Dynamic Weather Ball adaptation (Channel 50 code == 1.0)
+        is_weather_ball = w_sure == 1.0
+        if torch.any(is_weather_ball):
+            wb_type = torch.where(
+                w_idx == W_SUN,
+                torch.tensor(TYPE_TO_IDX["fire"], device=device),
+                torch.where(
+                    w_idx == W_RAIN,
+                    torch.tensor(TYPE_TO_IDX["water"], device=device),
+                    torch.where(
+                        w_idx == W_SAND,
+                        torch.tensor(TYPE_TO_IDX["rock"], device=device),
+                        torch.where(
+                            w_idx == W_SNOW,
+                            torch.tensor(TYPE_TO_IDX["ice"], device=device),
+                            torch.tensor(TYPE_TO_IDX["normal"], device=device),
+                        ),
+                    ),
+                ),
+            )
+            wb_bp = torch.where(w_idx != W_CLEAR, torch.full_like(base_power, 100.0), torch.full_like(base_power, 50.0))
+            move_type_idx = torch.where(is_weather_ball, wb_type, move_type_idx)
+            base_power = torch.where(is_weather_ball, wb_bp, base_power)
+
+        # Dynamic Two-Turn Charging Move Gates (Turn 1: deals 0 damage if must charge)
+        is_solar_charge = (w_sure == 10.0) & (w_idx != W_SUN)
+        is_electro_charge = (w_sure == 20.0) & (w_idx != W_RAIN)
+        is_general_charge = (w_sure == 30.0)
+        must_charge = is_solar_charge | is_electro_charge | is_general_charge
+        base_power = torch.where(must_charge, torch.zeros_like(base_power), base_power)
+
+        # Solar Beam / Blade base power halved in Rain, Sand, Snow when firing
+        is_solar_halved = (w_sure == 10.0) & ((w_idx == W_RAIN) | (w_idx == W_SAND) | (w_idx == W_SNOW))
+        base_power = torch.where(is_solar_halved & (~must_charge), base_power * 0.5, base_power)
 
         # ---------------------------------------------------------------------
         # A. DISCRETE STATUS IMMOBILIZATION GATES (SLEEP, FREEZE, PARALYSIS)
@@ -556,12 +604,17 @@ def _execute_attack_cascade_torch(
         has_opp_redir = (opp_redir_slot >= 0) & (target_code != 2) & (~is_spread)
         redir_clamped = torch.clamp(opp_redir_slot, min=0, max=7)
         redir_alive = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, redir_clamped.unsqueeze(-1)).squeeze(-1) > 0.0
+        if torch.any(has_opp_redir & redir_alive):
+            redirection_notes.append("Follow Me / Rage Powder redirection")
         single_tgt = torch.where(has_opp_redir & redir_alive, redir_clamped, decl_single)
 
         # KO Target Redirection XOR: if declared single foe fainted earlier in the turn, redirect to surviving partner
         single_tgt_alive = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, single_tgt.unsqueeze(-1)).squeeze(-1) > 0.0
         other_foe_alive = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, other_foe.unsqueeze(-1)).squeeze(-1) > 0.0
-        single_tgt = torch.where((~single_tgt_alive) & (target_code != 2) & other_foe_alive, other_foe, single_tgt)
+        is_ko_redir = (~single_tgt_alive) & (target_code != 2) & other_foe_alive & can_act
+        if torch.any(is_ko_redir):
+            redirection_notes.append("KO Target redirection XOR")
+        single_tgt = torch.where(is_ko_redir, other_foe, single_tgt)
 
         # Build up to 3 target slots per step:
         # Pass 0: single_tgt (for single-target) or opp_slot_a (for spread)
@@ -599,7 +652,6 @@ def _execute_attack_cascade_torch(
             # -----------------------------------------------------------------
             # G. POLLEN PUFF ALLY HEALING (+50% MAX HP WHEN TARGETING ALLY)
             # -----------------------------------------------------------------
-            base_power = chosen_move[:, :, :, MoveIdx.BASE_POWER]
             is_pollen_ally_heal = (
                 valid_target
                 & (tgt_slot == partner_slot)
@@ -624,8 +676,12 @@ def _execute_attack_cascade_torch(
             raw_acc = chosen_move[:, :, :, MoveIdx.ACCURACY]
             att_ab = p_actor[:, :, :, MonIdx.ABILITY_ID]
             tgt_ab = p_tgt[:, :, :, MonIdx.ABILITY_ID]
-            w_idx = torch.argmax(F_mc[:, :, :, FieldIdx.WEATHER_START:FieldIdx.WEATHER_END], dim=-1)
-            w_sure = chosen_move[:, :, :, MoveIdx.WEATHER_SURE_HIT]
+            # Dynamic Cloud Nine check across all active slots
+            ab_act = P_mc[:, :, :, act_slots_idx, MonIdx.ABILITY_ID]
+            hp_act = P_mc[:, :, :, act_slots_idx, MonIdx.HP_CUR]
+            cloud_nine_active = torch.any((hp_act > 0.0) & (ab_act == float(AbilityID.CLOUD_NINE)), dim=-1)
+            w_raw = torch.argmax(F_mc[:, :, :, FieldIdx.WEATHER_START:FieldIdx.WEATHER_END], dim=-1)
+            w_idx = torch.where(cloud_nine_active, torch.zeros_like(w_raw), w_raw)
 
             sure_hit = (
                 (raw_acc >= 1.005)
@@ -752,7 +808,8 @@ def _execute_attack_cascade_torch(
                 continue
 
             # Resolve discrete hit count per simulation thread (1..10)
-            exp_hits_code = chosen_move[:, :, :, MoveIdx.EXPECTED_HITS]
+            raw_exp_hits = chosen_move[:, :, :, MoveIdx.EXPECTED_HITS]
+            exp_hits_code = torch.where(raw_exp_hits > 0.0, raw_exp_hits, torch.ones_like(raw_exp_hits))
             has_dice = (act_item_active & (act_item == float(ItemID.LOADED_DICE))).float()
             has_slink = (att_ab == float(AbilityID.SKILL_LINK)).float()
             hit_counts = spin_wheel_multihit_count(
@@ -810,7 +867,11 @@ def _execute_attack_cascade_torch(
                 torch.where(att_ab == float(AbilityID.ADAPTABILITY), torch.full_like(base_power, 2.0), torch.full_like(base_power, 1.5)),
                 torch.ones_like(base_power),
             )
-            hh_mult = p_actor[:, :, :, MonIdx.HELPING_HAND_MULT]
+            hh_mult = torch.where(
+                p_actor[:, :, :, MonIdx.HELPING_HAND_MULT] > 0.0,
+                p_actor[:, :, :, MonIdx.HELPING_HAND_MULT],
+                torch.ones_like(base_power),
+            )
 
             # Crit stage calculation (base move stage + Scope Lens)
             crit_stage = chosen_move[:, :, :, MoveIdx.CRIT_STAGE] + torch.where(
@@ -1144,7 +1205,7 @@ def _execute_attack_cascade_torch(
         mean_damage_dealt=mean_damage_dealt,
         hit_rate_observed=hit_rate_observed,
         crit_rate_observed=crit_rate_observed,
-        redirection_events=[],
+        redirection_events=redirection_notes,
     )
 
 
@@ -1170,6 +1231,10 @@ def execute_attack_cascade(
     seed_val = int(rng_seed if rng_seed is not None else 42)
 
     if is_torch_input:
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices, dtype=np.int64)).to(P_init.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices, dtype=np.int64)).to(P_init.device)
         return _execute_attack_cascade_torch(
             F=pre_attack_res.F,
             P=pre_attack_res.P,

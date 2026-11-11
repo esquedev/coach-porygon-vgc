@@ -26,8 +26,11 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+SRC_DIR = os.path.join(BASE_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     FIELD_DIM,
     FieldIdx,
     HAS_TORCH,
@@ -40,8 +43,8 @@ from vgc_tensor_core.schema_and_tables import (
     ROSTER_SLOTS,
     build_bilinear_lookup_tables,
 )
-from vgc_tensor_core.state_machine import VgcTensorStateMachine
-from vgc_tensor_core.telemetry_formatter import format_cuda_device_header
+from engine.vgc_tensor_core.state_machine import VgcTensorStateMachine
+from engine.vgc_tensor_core.telemetry_formatter import format_cuda_device_header
 
 if HAS_TORCH:
     import torch

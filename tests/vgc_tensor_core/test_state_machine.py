@@ -1,16 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Milestone 5 Verification Suite: End-of-Turn & Unified State Machine
-===================================================================
-
-Tests:
-1. End-of-turn Status and Sandstorm chip damage.
-2. Grassy Terrain and Leftovers healing (with airborne exemption).
-3. Field & side condition turn counter decrements (Weather, Terrain, Tailwind, Trick Room).
-4. Protect streak consecutive counter reset logic.
-5. Compiler tactical prior auto-replacement heuristic for fainted slots.
-6. End-to-end Turn 1 full match execution via VgcTensorStateMachine.step().
-7. Performance benchmarks on CPU and PyTorch CUDA (RTX 3060).
+Unified State Machine Verification Suite
+========================================
 """
 
 from __future__ import annotations
@@ -24,8 +15,11 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+SRC_DIR = os.path.join(BASE_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     AbilityID,
     BilinearLookupTables,
     FIELD_DIM,
@@ -51,8 +45,8 @@ from vgc_tensor_core.schema_and_tables import (
     WEATHER_TO_IDX,
     build_bilinear_lookup_tables,
 )
-from vgc_tensor_core.compiler import ShowdownTensorCompiler
-from vgc_tensor_core.state_machine import (
+from engine.vgc_tensor_core.compiler import ShowdownTensorCompiler
+from engine.vgc_tensor_core.state_machine import (
     StepResult,
     VgcTensorStateMachine,
     execute_end_of_turn,
@@ -141,7 +135,7 @@ def test_end_of_turn_chip_damage(tables: BilinearLookupTables) -> None:
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
     M_b = np.expand_dims(np.expand_dims(np.expand_dims(M, 0), 0), 0)
 
-    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables)
+    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # P1A (Water/Fighting) takes Burn chip (-10 HP: floor(175/16)) AND Sand chip (-10 HP: floor(175/16))
     p1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_P1A])
@@ -175,7 +169,7 @@ def test_end_of_turn_healing(tables: BilinearLookupTables) -> None:
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
     M_b = np.expand_dims(np.expand_dims(np.expand_dims(M, 0), 0), 0)
 
-    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables)
+    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # P1A should heal Grassy (+10 HP) + Leftovers (+10 HP) = +20 HP -> 120 HP
     p1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_P1A])
@@ -206,7 +200,7 @@ def test_counter_decrements(tables: BilinearLookupTables) -> None:
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
     M_b = np.expand_dims(np.expand_dims(np.expand_dims(M, 0), 0), 0)
 
-    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables)
+    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # Weather had 1 turn left -> should decrement to 0 and reset to Clear (0)
     end_w_turns = float(eot_res.F[0, 0, 0, FieldIdx.WEATHER_TURNS])
@@ -241,7 +235,7 @@ def test_protect_streak_reset(tables: BilinearLookupTables) -> None:
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
     M_b = np.expand_dims(np.expand_dims(np.expand_dims(M, 0), 0), 0)
 
-    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables)
+    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # Slot 0 did NOT protect -> counter reset to 0.0
     p1a_counter = float(eot_res.P[0, 0, 0, SLOT_P1A, MonIdx.PROTECT_COUNTER])
@@ -273,7 +267,7 @@ def test_auto_replacement_heuristic(tables: BilinearLookupTables) -> None:
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
     M_b = np.expand_dims(np.expand_dims(np.expand_dims(M, 0), 0), 0)
 
-    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables)
+    eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # After replacement, Slot 0 should now hold Rillaboom (Spe 105, HP 207)
     slot0_hp = float(eot_res.P[0, 0, 0, SLOT_P1A, MonIdx.HP_CUR])
@@ -352,7 +346,7 @@ def test_benchmarks() -> None:
 
 def main() -> None:
     print("================================================================================")
-    print("VGC TENSOR CORE — MILESTONE 5 TEST SUITE: END-OF-TURN & UNIFIED STATE MACHINE")
+    print("VGC TENSOR CORE — TEST SUITE: END-OF-TURN & UNIFIED STATE MACHINE")
     print("================================================================================")
     tables = build_bilinear_lookup_tables(device="cpu")
 
@@ -364,7 +358,7 @@ def main() -> None:
     test_state_machine_full_step()
     test_benchmarks()
 
-    print("\nALL MILESTONE 5 UNIT TESTS PASSED SUCCESSFULLY!")
+    print("\nALL STATE MACHINE UNIT TESTS PASSED SUCCESSFULLY!")
     print("================================================================================")
 
 

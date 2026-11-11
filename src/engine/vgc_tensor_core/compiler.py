@@ -203,6 +203,8 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "flower veil": AbilityID.FLOWER_VEIL,
     "emergency exit": AbilityID.EMERGENCY_EXIT,
     "wimp out": AbilityID.EMERGENCY_EXIT,
+    "cloud nine": AbilityID.CLOUD_NINE,
+    "cloudnine": AbilityID.CLOUD_NINE,
 }
 
 
@@ -679,12 +681,21 @@ class ShowdownTensorCompiler:
         is_sound = 1.0 if flags.get("sound") else 0.0
         vec[MoveIdx.IS_SOUND_MOVE] = float(ovr.get("is_sound", is_sound))
 
-        weather_sure_hit = 0.0
+        weather_op = 0.0
         if move_id in ("thunder", "hurricane", "bleakwindstorm", "wildboltstorm", "sandsearstorm"):
-            weather_sure_hit = 2.0  # Rain sure-hit
+            weather_op = 2.0  # Rain sure-hit
         elif move_id == "blizzard":
-            weather_sure_hit = 4.0  # Snow sure-hit
-        vec[MoveIdx.WEATHER_SURE_HIT] = float(ovr.get("weather_sure_hit", weather_sure_hit))
+            weather_op = 4.0  # Snow sure-hit
+        elif move_id == "weatherball":
+            weather_op = 1.0  # Weather Ball adaptive
+        elif flags.get("charge"):
+            if move_id in ("solarbeam", "solarblade"):
+                weather_op = 10.0  # Skips charge in Sun
+            elif move_id == "electroshot":
+                weather_op = 20.0  # Skips charge in Rain
+            else:
+                weather_op = 30.0  # General 2-turn move (charges on Turn 1)
+        vec[MoveIdx.WEATHER_SURE_HIT] = float(ovr.get("weather_sure_hit", weather_op))
 
         vec[MoveIdx.GRASSY_PRIO_BOOST] = float(
             ovr.get("grassy_prio_boost", 1.0 if move_id == "grassyglide" else 0.0)
@@ -1031,6 +1042,165 @@ class ShowdownTensorCompiler:
 
         return p_vec, m_mat, mon.species, tuple(move_names)
 
+    def compile_pokemon_slot(self, mon_spec: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+        """Compile a single Pokémon specification dictionary into its 84-float Roster Vector (`MonIdx`)
+        and its [4, 56] Move Matrix (`MoveIdx`).
+        """
+        p_vec = np.zeros((MON_DIM,), dtype=np.float32)
+        m_mat = np.zeros((MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
+
+        if not mon_spec:
+            p_vec[MonIdx.STATUS_HEALTHY] = 1.0
+            p_vec[MonIdx.TYPE1_START] = 1.0
+            p_vec[MonIdx.HELPING_HAND_MULT] = 1.0
+            p_vec[MonIdx.CHOICE_LOCKED_MOVE] = -1.0
+            p_vec[MonIdx.LAST_MOVE_IDX] = -1.0
+            return p_vec, m_mat
+
+        hp_max = float(mon_spec.get("hp_max", 160.0))
+        hp_cur = float(mon_spec.get("hp_cur", hp_max))
+        p_vec[MonIdx.HP_CUR] = hp_cur
+        p_vec[MonIdx.HP_MAX] = max(1.0, hp_max)
+        p_vec[MonIdx.ALIVE_FLAG] = 1.0 if hp_cur > 0.0 else 0.0
+
+        stats = mon_spec.get("stats", {})
+        p_vec[MonIdx.STAT_ATK] = float(stats.get("atk", 120.0))
+        p_vec[MonIdx.STAT_DEF] = float(stats.get("def", 100.0))
+        p_vec[MonIdx.STAT_SPA] = float(stats.get("spa", 100.0))
+        p_vec[MonIdx.STAT_SPD] = float(stats.get("spd", 100.0))
+        p_vec[MonIdx.STAT_SPE] = float(stats.get("spe", 100.0))
+
+        boosts = mon_spec.get("boosts", {})
+        for b_i, b_k in enumerate(("atk", "def", "spa", "spd", "spe", "acc", "eva")):
+            p_vec[MonIdx.BOOST_START + b_i] = float(boosts.get(b_k, 0.0))
+
+        st_name = str(mon_spec.get("status", "Healthy")).lower()
+        st_idx = STATUS_TO_IDX.get(st_name, 0)
+        p_vec[MonIdx.STATUS_START + st_idx] = 1.0
+
+        types = mon_spec.get("types", ["Normal"])
+        t1_idx = TYPE_TO_IDX.get(str(types[0]).lower(), 0)
+        p_vec[MonIdx.TYPE1_START + t1_idx] = 1.0
+        if len(types) >= 2 and str(types[1]).lower() != str(types[0]).lower():
+            t2_idx = TYPE_TO_IDX.get(str(types[1]).lower(), 0)
+            p_vec[MonIdx.TYPE2_START + t2_idx] = 1.0
+
+        # Volatiles
+        p_vec[MonIdx.PROTECT_ACTIVE] = float(mon_spec.get("protect_active", 0.0))
+        p_vec[MonIdx.PROTECT_COUNTER] = float(mon_spec.get("protect_counter", 0.0))
+        p_vec[MonIdx.FLINCHED] = float(mon_spec.get("flinched", 0.0))
+        p_vec[MonIdx.ACTIVE_TURNS] = float(mon_spec.get("active_turns", 0.0))
+        p_vec[MonIdx.TAUNT_TURNS] = float(mon_spec.get("taunt_turns", 0.0))
+        p_vec[MonIdx.ENCORE_TURNS] = float(mon_spec.get("encore_turns", 0.0))
+        p_vec[MonIdx.SUBSTITUTE_HP] = float(mon_spec.get("substitute_hp", 0.0))
+        p_vec[MonIdx.HELPING_HAND_MULT] = float(mon_spec.get("helping_hand_mult", 1.0))
+
+        # Grounded, Item, Ability, Mega
+        item_str = str(mon_spec.get("item", "none")).lower()
+        ability_str = str(mon_spec.get("ability", "none")).lower()
+        item_id = ITEM_NAME_TO_ID.get(item_str, ItemID.NONE)
+        ability_id = ABILITY_NAME_TO_ID.get(ability_str, AbilityID.NONE)
+
+        is_flying = any(str(t).lower() == "flying" for t in types)
+        is_levitate = (ability_id == AbilityID.LEVITATE)
+        grounded_default = 0.0 if (is_flying or is_levitate) else 1.0
+        p_vec[MonIdx.GROUNDED_FLAG] = float(mon_spec.get("grounded", grounded_default))
+        p_vec[MonIdx.ITEM_ACTIVE] = float(mon_spec.get("item_active", 1.0 if item_id != ItemID.NONE else 0.0))
+        p_vec[MonIdx.ITEM_ID] = float(item_id)
+        p_vec[MonIdx.ABILITY_ID] = float(ability_id)
+        p_vec[MonIdx.UNBURDEN_ACTIVE] = float(mon_spec.get("unburden_active", 0.0))
+        p_vec[MonIdx.CHOICE_LOCKED_MOVE] = float(mon_spec.get("choice_locked_move", -1.0))
+        p_vec[MonIdx.LAST_MOVE_IDX] = float(mon_spec.get("last_move_idx", -1.0))
+        p_vec[MonIdx.TOXIC_COUNTER] = float(mon_spec.get("toxic_counter", 1.0))
+
+        can_mega_default = 1.0 if item_id == ItemID.MEGA_STONE else 0.0
+        p_vec[MonIdx.CAN_MEGA] = float(mon_spec.get("can_mega", can_mega_default))
+        p_vec[MonIdx.IS_MEGA] = float(mon_spec.get("is_mega", 0.0))
+
+        mega_stats = mon_spec.get("mega_stats", {})
+        p_vec[MonIdx.MEGA_ATK] = float(mega_stats.get("atk", mon_spec.get("mega_atk", p_vec[MonIdx.STAT_ATK])))
+        p_vec[MonIdx.MEGA_DEF] = float(mega_stats.get("def", mon_spec.get("mega_def", p_vec[MonIdx.STAT_DEF])))
+        p_vec[MonIdx.MEGA_SPA] = float(mega_stats.get("spa", mon_spec.get("mega_spa", p_vec[MonIdx.STAT_SPA])))
+        p_vec[MonIdx.MEGA_SPD] = float(mega_stats.get("spd", mon_spec.get("mega_spd", p_vec[MonIdx.STAT_SPD])))
+        p_vec[MonIdx.MEGA_SPE] = float(mega_stats.get("spe", mon_spec.get("mega_spe", p_vec[MonIdx.STAT_SPE])))
+        mega_ab_str = str(mon_spec.get("mega_ability", ability_str)).lower()
+        p_vec[MonIdx.MEGA_ABILITY_ID] = float(ABILITY_NAME_TO_ID.get(mega_ab_str, ability_id))
+
+        moves_list = mon_spec.get("moves", [])
+        for m_i in range(MOVES_PER_MON):
+            if m_i < len(moves_list):
+                m_mat[m_i] = self.compile_move_vector(moves_list[m_i])
+            else:
+                m_mat[m_i] = self.compile_move_vector("Protect")
+
+        return p_vec, m_mat
+
+    def compile_battle_state(
+        self,
+        roster_specs: List[Dict[str, Any]],
+        field_spec: Optional[Dict[str, Any]] = None,
+    ) -> CompiledBattleState:
+        """Compile a full 8-slot VGC battle state into aligned Field [24], Roster [8, 84],
+        and Moves [8, 4, 56] tensors on the active device.
+        """
+        f_spec = field_spec or {}
+        f_np = np.zeros((FIELD_DIM,), dtype=np.float32)
+
+        w_idx = WEATHER_TO_IDX.get(str(f_spec.get("weather", "clear")).lower(), 0)
+        f_np[FieldIdx.WEATHER_START + w_idx] = 1.0
+        f_np[FieldIdx.WEATHER_TURNS] = float(f_spec.get("weather_turns", 0.0))
+
+        t_idx = TERRAIN_TO_IDX.get(str(f_spec.get("terrain", "none")).lower(), 0)
+        f_np[FieldIdx.TERRAIN_START + t_idx] = 1.0
+        f_np[FieldIdx.TERRAIN_TURNS] = float(f_spec.get("terrain_turns", 0.0))
+
+        f_np[FieldIdx.TRICK_ROOM_TURNS] = float(f_spec.get("trick_room_turns", 0.0))
+        f_np[FieldIdx.GRAVITY_TURNS] = float(f_spec.get("gravity_turns", 0.0))
+
+        f_np[FieldIdx.TRAINER_1_TAILWIND_TURNS] = float(f_spec.get("trainer_1_tailwind_turns", f_spec.get("p1_tailwind_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_1_REFLECT_TURNS] = float(f_spec.get("trainer_1_reflect_turns", f_spec.get("p1_reflect_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_1_light_screen_turns", f_spec.get("p1_light_screen_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_1_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_1_aurora_veil_turns", f_spec.get("p1_aurora_veil_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_1_MEGA_USED] = float(f_spec.get("trainer_1_mega_used", f_spec.get("p1_mega_used", 0.0)))
+
+        f_np[FieldIdx.TRAINER_2_TAILWIND_TURNS] = float(f_spec.get("trainer_2_tailwind_turns", f_spec.get("p2_tailwind_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_2_REFLECT_TURNS] = float(f_spec.get("trainer_2_reflect_turns", f_spec.get("p2_reflect_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_2_light_screen_turns", f_spec.get("p2_light_screen_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_2_aurora_veil_turns", f_spec.get("p2_aurora_veil_turns", 0.0)))
+        f_np[FieldIdx.TRAINER_2_MEGA_USED] = float(f_spec.get("trainer_2_mega_used", f_spec.get("p2_mega_used", 0.0)))
+
+        p_np = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
+        m_np = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
+
+        species_list = []
+        moves_list_all = []
+        for s_idx in range(ROSTER_SLOTS):
+            spec = roster_specs[s_idx] if s_idx < len(roster_specs) else {}
+            p_np[s_idx], m_np[s_idx] = self.compile_pokemon_slot(spec)
+            species_list.append(str(spec.get("species", spec.get("name", ""))))
+            moves_list_all.append(tuple(str(m) for m in spec.get("moves", [])))
+
+        if self.backend == "torch" and torch is not None:
+            return CompiledBattleState(
+                field_tensor=torch.from_numpy(f_np).to(self.device),
+                roster_tensor=torch.from_numpy(p_np).to(self.device),
+                moves_tensor=torch.from_numpy(m_np).to(self.device),
+                backend="torch",
+                device=self.device,
+                slot_species=tuple(species_list),
+                slot_move_names=tuple(moves_list_all),
+            )
+
+        return CompiledBattleState(
+            field_tensor=f_np,
+            roster_tensor=p_np,
+            moves_tensor=m_np,
+            backend="numpy",
+            device="cpu",
+            slot_species=tuple(species_list),
+            slot_move_names=tuple(moves_list_all),
+        )
+
     # =========================================================================
     # 5. VECTORIZED 26x26 MATRIX ACTION PRUNER (`trainer_1` & `trainer_2`)
     # =========================================================================
@@ -1230,7 +1400,7 @@ class ShowdownTensorCompiler:
                     prior_scale = 1.0
 
                     if m_vec[MoveIdx.PROTECT_TYPE] == 1.0 and protect_count >= 1.0:
-                        prior_scale = 0.33 if protect_count == 1.0 else 0.11
+                        prior_scale = 0.40 if protect_count == 1.0 else 0.10
 
                     acc_val = float(m_vec[MoveIdx.ACCURACY])
                     if eff_user_ab == AbilityID.NO_GUARD or tgt_ab == AbilityID.NO_GUARD:
@@ -1256,7 +1426,7 @@ class ShowdownTensorCompiler:
                             prior_scale = 0.20
                         else:
                             if eff_total == 0.0:
-                                prior_scale = 0.15
+                                prior_scale = 0.20 if (m_type_vec[TYPE_TO_IDX["ground"]] > 0.5 and tgt_grounded <= 0.0) else 0.15
                             elif eff_total <= 0.25:
                                 prior_scale = 0.50
                             elif eff_total >= 4.0:
@@ -1286,13 +1456,20 @@ class ShowdownTensorCompiler:
         self,
         state: CompiledBattleState,
         trainer_id: str = "trainer_1",
+        side: Optional[str] = None,
+        **kwargs: Any,
     ) -> SideActionMaskResult:
         """Compute the full `26x26` Hard Validity Mask, Tactical Prior Matrix, and `[N_valid, 2]` coordinates.
 
         Args:
-            state: `CompiledBattleState` from `compile_turn_state`.
+            state: `CompiledBattleState` from `compile_turn_state` or `compile_battle_state`.
             trainer_id: `'trainer_1'` or `'trainer_2'`.
         """
+        if side is not None:
+            trainer_id = "trainer_1" if str(side).lower() in ("trainer_1", "p1") else "trainer_2"
+        elif "side" in kwargs:
+            trainer_id = "trainer_1" if str(kwargs["side"]).lower() in ("trainer_1", "p1") else "trainer_2"
+
         if trainer_id not in ("trainer_1", "trainer_2"):
             raise ValueError(
                 f"trainer_id must be 'trainer_1' or 'trainer_2', got '{trainer_id}'"
