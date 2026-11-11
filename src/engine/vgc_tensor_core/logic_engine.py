@@ -54,6 +54,7 @@ from .schema_and_tables import (
     MOVES_PER_MON,
     MonIdx,
     MoveIdx,
+    NUM_TYPES,
     SLOT_TRAINER_1_A,
     SLOT_TRAINER_1_B,
     SLOT_TRAINER_1_BENCH1,

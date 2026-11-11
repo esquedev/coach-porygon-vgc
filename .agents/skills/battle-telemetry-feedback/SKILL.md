@@ -87,5 +87,6 @@ PYTHONPATH=src:src/engine python3 scripts/generate_team_preview_playbook.py \
 Present a clean, high-impact summary to the user:
 1. **Match Result & Key Turning Point:** The single turn where game equity was won or lost.
 2. **Variance vs. Decision Audit:** Did the game come down to bad luck or a tactical leak?
-3. **Actionable Takeaway for LAIC:** What one specific habit or rule to remember for the next match.
+3. **Turn-by-Turn Formatting Mandate:** Always format turn-by-turn match audits and telemetry breakdowns using **native GitHub Flavored Markdown (GFM) tables** (`| Turn | Board State | Actions Executed | Tactical & Process Audit |`) with responsive cell-wrapping, or vertical Turn Cards. **Strictly never use fixed-width ASCII / Unicode box-drawing tables (`┌─┬─┐`) inside code blocks**, which wrap onto subsequent lines and break horizontal alignment on narrow or responsive client windows.
+4. **Actionable Takeaway for LAIC:** What one specific habit or rule to remember for the next match.
 

@@ -13,6 +13,7 @@ Antigravity operates strictly in one of two modes. Determine your active session
   - Execute the CLI advisor: `python3 -m engine.cli --paste <team> --log <log> --verbosity coach`.
   - Ingest Showdown battle logs and team pastes.
   - Formulate plain-English tactical insights, highlight opponent traps, and evaluate bad-luck risk floors.
+- **Presentation & Output Formatting Mandate:** Always format turn-by-turn match audits and telemetry breakdowns using **native GitHub Flavored Markdown (GFM) tables** (`| Turn | Board State | Actions Executed | Tactical & Process Audit |`) with responsive cell-wrapping, or vertical Turn Cards. **Strictly never use fixed-width ASCII / Unicode box-drawing tables (`┌─┬─┐`) inside code blocks**, which wrap onto subsequent lines and break horizontal alignment on narrow or responsive client windows.
 - **Escalation Protocol:** If codebase refactoring, engine modification, or test authorship is requested, refuse and prompt:
   `[ESCALATION REQUIRED]: Codebase modifications require Developer Mode. Please switch to [SESSION: DEV] to execute engineering tasks.`
 
