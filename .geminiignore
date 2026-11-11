@@ -17,3 +17,10 @@ dist/
 
 # Git internals
 .git/
+
+# Asset image binaries (shield from context clutter; access via assets/slug_map.json in skills)
+assets/**/*.png
+assets/**/*.jpg
+assets/command_center*.html
+assets/master_svg_catalog*
+assets/svg_manifest.json

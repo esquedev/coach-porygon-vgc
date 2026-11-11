@@ -146,6 +146,19 @@ def main(argv: Optional[list[str]] = None) -> int:
         print(f"{r.turn:<5} | {t1_act:<24} | {t2_act:<24} | {r.damage_dealt_to_trainer_2:<10.1f} | {r.damage_dealt_to_trainer_1:<10.1f} | {r.variance_events}")
     print("=" * 80)
 
+    # Auto-sync Team Preview Playbook with the updated telemetry CSV
+    try:
+        paste_file = Path(args.paste) if (args.paste and Path(args.paste).is_file()) else (REPO_ROOT / "data" / "teams" / "char_y_v3.txt")
+        if paste_file.is_file():
+            from generate_team_preview_playbook import refresh_playbook
+            team_stem = paste_file.stem
+            html_out = REPO_ROOT / "reports" / f"{team_stem}_playbook.html"
+            md_out = REPO_ROOT / "reports" / f"{team_stem}_cheatsheet.md"
+            refresh_playbook(paste_file, html_out, md_out, out_path)
+            print(f"[Auto-Sync] Refreshed Playbook '{html_out.name}' with live telemetry ({out_path.name}).")
+    except Exception as exc:
+        sys.stderr.write(f"Note: Playbook auto-sync skipped ({exc}).\n")
+
     return 0
 
 

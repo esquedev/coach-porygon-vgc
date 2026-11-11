@@ -70,7 +70,20 @@ batch_update_comments(
 
 ---
 
-### Step 4: Deliver the Coach Post-Mortem in Chat
+### Step 4: Auto-Sync the Team Preview Playbook
+After populating the turn comments in `data/telemetry/battles_telemetry.csv`, immediately refresh the interactive Team Preview Playbook so the new match record, empirical lead win rates, and coaching notes appear in the live report:
+
+```bash
+PYTHONPATH=src:src/engine python3 scripts/generate_team_preview_playbook.py \
+    --paste data/teams/char_y_v3.txt \
+    --telemetry data/telemetry/battles_telemetry.csv \
+    --out reports/char_y_v3_playbook.html \
+    --cheatsheet reports/char_y_v3_cheatsheet.md
+```
+
+---
+
+### Step 5: Deliver the Coach Post-Mortem in Chat
 Present a clean, high-impact summary to the user:
 1. **Match Result & Key Turning Point:** The single turn where game equity was won or lost.
 2. **Variance vs. Decision Audit:** Did the game come down to bad luck or a tactical leak?

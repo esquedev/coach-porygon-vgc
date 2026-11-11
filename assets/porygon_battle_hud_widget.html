@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Porygon VGC — Tactical HUD Widget</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-3px); }
+    }
+    .sprite-float {
+      animation: floatSlow 2.6s ease-in-out infinite;
+    }
+    input[type="range"] {
+      accent-color: #ec4899;
+    }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-2 select-none">
+  <div class="rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 shadow-sm">
+    <!-- Top Header Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 mb-3 border-b border-[var(--border)]">
+      <div class="flex items-center gap-2.5">
+        <div class="w-10 h-10 rounded-lg bg-pink-500/10 border border-pink-500/30 flex items-center justify-center p-1 sprite-float" id="header-porygon"></div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-bold tracking-tight">COACH PORYGON // REG M-C HUD</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">66-SP LOCK</span>
+          </div>
+          <p class="text-xs text-[var(--muted-foreground)]">Active Roster: <strong class="text-[var(--foreground)]">T24</strong> (172W–150L · 53.4%) vs <strong class="text-[var(--foreground)]">ST01</strong> (Nice Regional 1st)</p>
+        </div>
+      </div>
+
+      <!-- Mini Tab Switcher -->
+      <div class="flex items-center gap-1 bg-[var(--background)] p-1 rounded-lg border border-[var(--border)]">
+        <button onclick="switchWidgetTab('speed')" id="wtab-speed" class="px-2.5 py-1 rounded-md text-xs font-semibold bg-pink-500 text-white transition">Speed Ladder</button>
+        <button onclick="switchWidgetTab('sp')" id="wtab-sp" class="px-2.5 py-1 rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">66-SP Tuner</button>
+        <button onclick="switchWidgetTab('meta')" id="wtab-meta" class="px-2.5 py-1 rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">Mode 6 Meta</button>
+        <button onclick="switchWidgetTab('sprites')" id="wtab-sprites" class="px-2.5 py-1 rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition">Sprite Vault (17)</button>
+      </div>
+    </div>
+
+    <!-- TAB 1: LIVE SPEED LADDER (T24 vs ST01) -->
+    <div id="wpanel-speed" class="space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-[var(--background)] px-3 py-2 rounded-lg border border-[var(--border)]">
+        <span class="text-xs font-semibold text-[var(--muted-foreground)]">FIELD MODIFIERS (CLICK TO TOGGLE):</span>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button id="tog-unburden" onclick="toggleMod('unburden')" class="px-2.5 py-1 rounded text-xs font-semibold border border-purple-500/40 bg-purple-500/20 text-purple-400 transition">
+            ST01 Unburden (2x): ON
+          </button>
+          <button id="tog-rain" onclick="toggleMod('rain')" class="px-2.5 py-1 rounded text-xs font-semibold border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] transition">
+            ST01 Rain / Swift Swim (2x): OFF
+          </button>
+          <button id="tog-tw" onclick="toggleMod('tw')" class="px-2.5 py-1 rounded text-xs font-semibold border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] transition">
+            ST01 Tailwind (2x): OFF
+          </button>
+        </div>
+      </div>
+
+      <div id="speed-ladder-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+    </div>
+
+    <!-- TAB 2: QUICK 66-SP TUNER -->
+    <div id="wpanel-sp" class="hidden space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 bg-[var(--background)] px-3 py-2 rounded-lg border border-[var(--border)]">
+        <div class="flex items-center gap-2">
+          <div id="sp-poke-sprite" class="w-8 h-8"></div>
+          <select id="sp-poke-select" onchange="loadSpPreset()" class="bg-[var(--card)] text-[var(--foreground)] text-xs font-semibold px-2.5 py-1 rounded border border-[var(--border)]">
+            <option value="charizard">Charizard-Mega-Y (Timid)</option>
+            <option value="raichu">Raichu-Mega-X (Jolly)</option>
+            <option value="garchomp">Garchomp (Jolly)</option>
+            <option value="grimmsnarl">Grimmsnarl (Careful)</option>
+            <option value="kingambit">Kingambit (Adamant)</option>
+            <option value="milotic">Milotic (Calm)</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-[var(--muted-foreground)]">Remaining Pool:</span>
+          <span id="sp-remaining-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500 border border-emerald-500/30">0 / 66 SP</span>
+        </div>
+      </div>
+
+      <div id="sp-sliders-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5"></div>
+    </div>
+
+    <!-- TAB 3: MODE 6 MUNCHSTATS QUICK META -->
+    <div id="wpanel-meta" class="hidden space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-cyan-400">2027 Nice Regional Championships (482 Players)</span>
+        <span class="text-xs text-[var(--muted-foreground)]">Masters Division</span>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center gap-2">
+          <div class="w-7 h-7"><svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="14,10 24,6 26,22 16,20" fill="#f59e0b"/><polygon points="50,10 40,6 38,22 48,20" fill="#f59e0b"/><ellipse cx="32" cy="36" rx="13" ry="14" fill="#fbbf24"/><circle cx="22" cy="30" r="3" fill="#ef4444"/><circle cx="42" cy="30" r="3" fill="#ef4444"/><circle cx="27" cy="25" r="2" fill="#0f172a"/><circle cx="37" cy="25" r="2" fill="#0f172a"/></svg></div>
+          <div>
+            <div class="text-xs font-bold">Raichu-Mega-X</div>
+            <div class="text-xs text-amber-400 font-mono font-bold">38.2% Usage</div>
+          </div>
+        </div>
+        <div class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center gap-2">
+          <div class="w-7 h-7"><svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="22,8 12,4 18,18" fill="#e879f9"/><ellipse cx="32" cy="34" rx="12" ry="16" fill="#6b21a8"/><polygon points="10,32 20,28 18,38" fill="#e879f9"/><polygon points="54,32 44,28 46,38" fill="#e879f9"/><circle cx="27" cy="24" r="2.3" fill="#facc15"/><circle cx="37" cy="24" r="2.3" fill="#facc15"/></svg></div>
+          <div>
+            <div class="text-xs font-bold">Sneasler</div>
+            <div class="text-xs text-pink-400 font-mono font-bold">34.2% Usage</div>
+          </div>
+        </div>
+        <div class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center gap-2">
+          <div class="w-7 h-7"><svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="32,6 46,24 40,52 24,52 18,24" fill="#1e3a8a"/><polygon points="10,22 24,28 20,42 8,36" fill="#dc2626"/><polygon points="54,22 40,28 44,42 56,36" fill="#dc2626"/><ellipse cx="32" cy="36" rx="8" ry="11" fill="#dc2626"/></svg></div>
+          <div>
+            <div class="text-xs font-bold">Garchomp</div>
+            <div class="text-xs text-cyan-400 font-mono font-bold">31.1% Usage</div>
+          </div>
+        </div>
+        <div class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)] flex items-center gap-2">
+          <div class="w-7 h-7"><svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,48 24,14 40,14 48,48 38,48 35,28 29,28 26,48" fill="#94a3b8" stroke="#3b82f6" stroke-width="2"/><circle cx="29" cy="20" r="2" fill="#38bdf8"/><circle cx="35" cy="20" r="2" fill="#38bdf8"/></svg></div>
+          <div>
+            <div class="text-xs font-bold">Archaludon</div>
+            <div class="text-xs text-emerald-400 font-mono font-bold">29.5% Usage</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: SPRITE VAULT -->
+    <div id="wpanel-sprites" class="hidden space-y-2.5">
+      <div class="flex items-center justify-between">
+        <span class="text-xs text-[var(--muted-foreground)]">Custom vector sprites generated in <code class="text-pink-400">assets/sprites/*.svg</code> (click any card to inspect):</span>
+        <span id="sprite-inspect-label" class="text-xs font-semibold text-cyan-400">coach-porygon.svg</span>
+      </div>
+      <div id="sprite-vault-grid" class="grid grid-cols-6 sm:grid-cols-9 gap-1.5"></div>
+    </div>
+  </div>
+
+  <script>
+    const SVG_MAP = {
+      "porygon": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="32,8 48,20 42,38 22,38 16,20" fill="#ec4899" stroke="#f472b6" stroke-width="2"/><polygon points="22,38 42,38 46,54 18,54" fill="#06b6d4" stroke="#22d3ee" stroke-width="2"/><polygon points="10,24 20,28 18,40 8,34" fill="#06b6d4"/><polygon points="54,24 44,28 46,40 56,34" fill="#06b6d4"/><circle cx="26" cy="22" r="4" fill="#fef08a"/><circle cx="26" cy="22" r="1.8" fill="#0f172a"/><circle cx="38" cy="22" r="4" fill="#fef08a"/><circle cx="38" cy="22" r="1.8" fill="#0f172a"/><polygon points="28,28 36,28 32,36" fill="#22d3ee"/></svg>`,
+      "charizard": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="8,14 26,28 18,46 6,34" fill="#ea580c"/><polygon points="56,14 38,28 46,46 58,34" fill="#ea580c"/><ellipse cx="32" cy="38" rx="13" ry="15" fill="#f97316"/><ellipse cx="32" cy="40" rx="8" ry="10" fill="#fde047"/><polygon points="22,16 32,6 42,16 38,28 26,28" fill="#f97316"/><circle cx="28" cy="20" r="2.2" fill="#22d3ee"/><circle cx="36" cy="20" r="2.2" fill="#22d3ee"/></svg>`,
+      "raichu": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="14,10 24,6 26,22 16,20" fill="#f59e0b"/><polygon points="50,10 40,6 38,22 48,20" fill="#f59e0b"/><ellipse cx="32" cy="36" rx="13" ry="14" fill="#fbbf24"/><circle cx="22" cy="30" r="3" fill="#ef4444"/><circle cx="42" cy="30" r="3" fill="#ef4444"/><circle cx="27" cy="25" r="2" fill="#0f172a"/><circle cx="37" cy="25" r="2" fill="#0f172a"/><polyline points="44,44 56,36 50,28 60,20" fill="none" stroke="#fef08a" stroke-width="3"/></svg>`,
+      "garchomp": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="32,6 46,24 40,52 24,52 18,24" fill="#1e3a8a"/><polygon points="10,22 24,28 20,42 8,36" fill="#dc2626"/><polygon points="54,22 40,28 44,42 56,36" fill="#dc2626"/><polygon points="28,14 36,14 32,22" fill="#facc15"/><ellipse cx="32" cy="36" rx="8" ry="11" fill="#dc2626"/><circle cx="27" cy="22" r="2" fill="#facc15"/><circle cx="37" cy="22" r="2" fill="#facc15"/></svg>`,
+      "grimmsnarl": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,12 32,6 48,12 54,48 10,48" fill="#1e1b4b"/><ellipse cx="32" cy="34" rx="13" ry="15" fill="#10b981"/><polygon points="24,36 40,36 36,42 28,42" fill="#f43f5e"/><circle cx="26" cy="28" r="2.5" fill="#ef4444"/><circle cx="38" cy="28" r="2.5" fill="#ef4444"/></svg>`,
+      "kingambit": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="32,4 38,22 26,22" fill="#eab308"/><ellipse cx="32" cy="36" rx="14" ry="15" fill="#991b1b"/><rect x="20" y="34" width="24" height="5" fill="#eab308"/><circle cx="27" cy="26" r="2.2" fill="#fef08a"/><circle cx="37" cy="26" r="2.2" fill="#fef08a"/></svg>`,
+      "milotic": `<svg viewBox="0 0 64 64" class="w-full h-full"><path d="M20,48 Q14,24 32,14 Q48,24 42,48" fill="#fef3c7" stroke="#f43f5e" stroke-width="3"/><polygon points="24,14 14,28 22,30" fill="#fb7185"/><polygon points="40,14 50,28 42,30" fill="#fb7185"/><polygon points="28,48 36,48 44,58 20,58" fill="#38bdf8"/><circle cx="29" cy="20" r="2" fill="#e11d48"/><circle cx="35" cy="20" r="2" fill="#e11d48"/></svg>`,
+      "sneasler": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="22,8 12,4 18,18" fill="#e879f9"/><ellipse cx="32" cy="34" rx="12" ry="16" fill="#6b21a8"/><polygon points="10,32 20,28 18,38" fill="#e879f9"/><polygon points="54,32 44,28 46,38" fill="#e879f9"/><circle cx="27" cy="24" r="2.3" fill="#facc15"/><circle cx="37" cy="24" r="2.3" fill="#facc15"/></svg>`,
+      "basculegion": `<svg viewBox="0 0 64 64" class="w-full h-full"><path d="M12,34 Q32,16 52,34 Q32,52 12,34 Z" fill="#0f766e"/><path d="M22,22 Q32,8 44,18" fill="none" stroke="#f43f5e" stroke-width="4"/><circle cx="22" cy="32" r="2.5" fill="#fef08a"/></svg>`,
+      "archaludon": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,48 24,14 40,14 48,48 38,48 35,28 29,28 26,48" fill="#94a3b8" stroke="#3b82f6" stroke-width="2"/><circle cx="29" cy="20" r="2" fill="#38bdf8"/><circle cx="35" cy="20" r="2" fill="#38bdf8"/></svg>`,
+      "pelipper": `<svg viewBox="0 0 64 64" class="w-full h-full"><ellipse cx="32" cy="36" rx="16" ry="12" fill="#facc15"/><ellipse cx="32" cy="40" rx="12" ry="8" fill="#fef08a"/><polygon points="8,26 20,24 18,34" fill="#38bdf8"/><polygon points="56,26 44,24 46,34" fill="#38bdf8"/><circle cx="26" cy="22" r="2" fill="#0f172a"/><circle cx="38" cy="22" r="2" fill="#0f172a"/></svg>`,
+      "golisopod": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,16 32,8 48,16 54,44 32,54 10,44" fill="#475569" stroke="#94a3b8" stroke-width="2"/><polygon points="22,22 42,22 38,42 26,42" fill="#312e81"/><circle cx="27" cy="28" r="2.2" fill="#ef4444"/><circle cx="37" cy="28" r="2.2" fill="#ef4444"/></svg>`,
+      "gengar": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,12 24,22 40,22 48,12 52,46 12,46" fill="#581c87"/><circle cx="25" cy="28" r="3" fill="#ef4444"/><circle cx="39" cy="28" r="3" fill="#ef4444"/><rect x="22" y="36" width="20" height="5" rx="2" fill="#f8fafc"/></svg>`,
+      "incineroar": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="16,12 32,18 48,12 50,48 14,48" fill="#dc2626"/><polygon points="20,22 44,22 40,44 24,44" fill="#1f2937"/><ellipse cx="32" cy="44" rx="10" ry="4" fill="#f97316"/><circle cx="26" cy="26" r="2.2" fill="#facc15"/><circle cx="38" cy="26" r="2.2" fill="#facc15"/></svg>`,
+      "rillaboom": `<svg viewBox="0 0 64 64" class="w-full h-full"><ellipse cx="32" cy="24" rx="18" ry="14" fill="#15803d"/><ellipse cx="32" cy="38" rx="14" ry="12" fill="#78350f"/><rect x="20" y="46" width="24" height="8" rx="2" fill="#a16207"/><circle cx="27" cy="28" r="2" fill="#ef4444"/><circle cx="37" cy="28" r="2" fill="#ef4444"/></svg>`,
+      "primarina": `<svg viewBox="0 0 64 64" class="w-full h-full"><ellipse cx="32" cy="26" rx="14" ry="12" fill="#38bdf8"/><ellipse cx="32" cy="36" rx="12" ry="12" fill="#f8fafc"/><circle cx="22" cy="18" r="4" fill="#f472b6"/><circle cx="42" cy="18" r="4" fill="#f472b6"/><circle cx="28" cy="30" r="2" fill="#0284c7"/><circle cx="36" cy="30" r="2" fill="#0284c7"/></svg>`,
+      "vivillon": `<svg viewBox="0 0 64 64" class="w-full h-full"><polygon points="8,12 28,24 24,48 6,38" fill="#ec4899"/><polygon points="56,12 36,24 40,48 58,38" fill="#ec4899"/><rect x="29" y="18" width="6" height="28" rx="3" fill="#1e293b"/></svg>`
+    };
+
+    document.getElementById("header-porygon").innerHTML = SVG_MAP.porygon;
+
+    // Speed Tier State
+    const fieldMods = { unburden: true, rain: false, tw: false };
+    const speedPool = [
+      { name: "Sneasler", team: "ST01", baseSpe: 189, sprite: "sneasler", tag: "Unburden" },
+      { name: "Raichu-Mega-X", team: "T24", baseSpe: 178, sprite: "raichu", tag: "Fake Out" },
+      { name: "Garchomp", team: "T24", baseSpe: 169, sprite: "garchomp", tag: "Ground STAB" },
+      { name: "Charizard-Mega-Y", team: "T24", baseSpe: 167, sprite: "charizard", tag: "Drought" },
+      { name: "Basculegion", team: "ST01", baseSpe: 130, sprite: "basculegion", tag: "Swift Swim" },
+      { name: "Archaludon", team: "ST01", baseSpe: 137, sprite: "archaludon", tag: "Stamina" },
+      { name: "Milotic", team: "T24", baseSpe: 112, sprite: "milotic", tag: "Haze / Coil" },
+      { name: "Kingambit", team: "T24", baseSpe: 72, sprite: "kingambit", tag: "Sucker Punch" }
+    ];
+
+    function toggleMod(key) {
+      fieldMods[key] = !fieldMods[key];
+      const btn = document.getElementById("tog-" + key);
+      const labels = {
+        unburden: "ST01 Unburden (2x)",
+        rain: "ST01 Rain / Swift Swim (2x)",
+        tw: "ST01 Tailwind (2x)"
+      };
+      if (fieldMods[key]) {
+        btn.className = "px-2.5 py-1 rounded text-xs font-semibold border border-purple-500/40 bg-purple-500/20 text-purple-400 transition";
+        btn.textContent = labels[key] + ": ON";
+      } else {
+        btn.className = "px-2.5 py-1 rounded text-xs font-semibold border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)] transition";
+        btn.textContent = labels[key] + ": OFF";
+      }
+      renderSpeedLadder();
+    }
+
+    function renderSpeedLadder() {
+      const computed = speedPool.map(p => {
+        let spe = p.baseSpe;
+        if (p.name === "Sneasler" && fieldMods.unburden) spe *= 2;
+        if (p.name === "Basculegion" && fieldMods.rain) spe *= 2;
+        if (p.team === "ST01" && fieldMods.tw) spe *= 2;
+        return { ...p, effSpe: spe };
+      }).sort((a, b) => b.effSpe - a.effSpe);
+
+      const container = document.getElementById("speed-ladder-list");
+      container.innerHTML = computed.map((p, idx) => {
+        const isT24 = p.team === "T24";
+        const badgeCls = isT24
+          ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+          : "bg-rose-500/15 text-rose-400 border-rose-500/30";
+        return `
+          <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-[var(--muted-foreground)] w-4">#${idx + 1}</span>
+              <div class="w-7 h-7">${SVG_MAP[p.sprite]}</div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold">${p.name}</span>
+                  <span class="px-1.5 py-0.2 text-xs rounded border ${badgeCls}">${p.team}</span>
+                </div>
+                <span class="text-xs text-[var(--muted-foreground)]">${p.tag}</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xs font-mono font-bold ${p.effSpe > p.baseSpe ? 'text-amber-400' : ''}">${p.effSpe} Spe</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // 66-SP Tuner State
+    const T24_PRESETS = {
+      charizard: { sprite: "charizard", base: [78, 104, 78, 159, 115, 100], nat: [1, 0.9, 1, 1, 1, 1.1], sp: [0, 0, 2, 32, 0, 32] },
+      raichu:    { sprite: "raichu",    base: [60, 135, 95, 90, 100, 110], nat: [1, 1, 1, 0.9, 1, 1.1], sp: [0, 32, 2, 0, 0, 32] },
+      garchomp:  { sprite: "garchomp",  base: [108, 130, 95, 80, 85, 102], nat: [1, 1, 1, 0.9, 1, 1.1], sp: [0, 32, 0, 0, 2, 32] },
+      grimmsnarl:{ sprite: "grimmsnarl",base: [95, 120, 65, 95, 75, 60],   nat: [1, 1, 1, 0.9, 1.1, 1], sp: [32, 0, 18, 0, 16, 0] },
+      kingambit: { sprite: "kingambit", base: [100, 135, 120, 60, 85, 50], nat: [1, 1.1, 1, 0.9, 1, 1], sp: [32, 32, 0, 0, 2, 0] },
+      milotic:   { sprite: "milotic",   base: [95, 60, 79, 100, 125, 81],  nat: [1, 0.9, 1, 1, 1.1, 1], sp: [32, 0, 20, 0, 14, 0] }
+    };
+    const STAT_NAMES = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
+    let currentSp = [0, 0, 2, 32, 0, 32];
+    let currentKey = "charizard";
+
+    function calcLv50Stat(base, sp, natMult, isHp) {
+      if (isHp) return base + 75 + sp;
+      return Math.floor((base + 20 + sp) * natMult);
+    }
+
+    function loadSpPreset() {
+      currentKey = document.getElementById("sp-poke-select").value;
+      const preset = T24_PRESETS[currentKey];
+      currentSp = [...preset.sp];
+      document.getElementById("sp-poke-sprite").innerHTML = SVG_MAP[preset.sprite];
+      renderSpSliders();
+    }
+
+    function updateSpStat(idx, val) {
+      val = parseInt(val, 10);
+      const otherSum = currentSp.reduce((acc, v, i) => i === idx ? acc : acc + v, 0);
+      if (otherSum + val > 66) {
+        val = Math.max(0, 66 - otherSum);
+      }
+      currentSp[idx] = val;
+      renderSpSliders();
+    }
+
+    function renderSpSliders() {
+      const preset = T24_PRESETS[currentKey];
+      const used = currentSp.reduce((a, b) => a + b, 0);
+      const rem = 66 - used;
+      const badge = document.getElementById("sp-remaining-badge");
+      badge.textContent = `${used} / 66 SP (${rem} left)`;
+
+      const grid = document.getElementById("sp-sliders-grid");
+      grid.innerHTML = STAT_NAMES.map((statName, idx) => {
+        const finalVal = calcLv50Stat(preset.base[idx], currentSp[idx], preset.nat[idx], idx === 0);
+        return `
+          <div class="p-2 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold">${statName} <span class="text-[var(--muted-foreground)] font-normal">(${currentSp[idx]} SP)</span></span>
+              <span class="text-xs font-mono font-bold text-pink-400">${finalVal}</span>
+            </div>
+            <input type="range" min="0" max="32" value="${currentSp[idx]}" oninput="updateSpStat(${idx}, this.value)" class="w-full h-1.5 cursor-pointer" />
+          </div>
+        `;
+      }).join("");
+    }
+
+    // Sprite Vault
+    function renderSpriteVault() {
+      const entries = [
+        ["porygon", "porygon-coach.svg"],
+        ["charizard", "charizard-mega-y.svg"],
+        ["raichu", "raichu-mega-x.svg"],
+        ["garchomp", "garchomp.svg"],
+        ["grimmsnarl", "grimmsnarl.svg"],
+        ["kingambit", "kingambit.svg"],
+        ["milotic", "milotic.svg"],
+        ["sneasler", "sneasler.svg"],
+        ["basculegion", "basculegion.svg"],
+        ["archaludon", "archaludon.svg"],
+        ["pelipper", "pelipper.svg"],
+        ["golisopod", "golisopod-mega.svg"],
+        ["gengar", "gengar-mega.svg"],
+        ["incineroar", "incineroar.svg"],
+        ["rillaboom", "rillaboom.svg"],
+        ["primarina", "primarina.svg"],
+        ["vivillon", "vivillon.svg"]
+      ];
+      const grid = document.getElementById("sprite-vault-grid");
+      grid.innerHTML = entries.map(([key, filename]) => `
+        <button onclick="document.getElementById('sprite-inspect-label').textContent='assets/sprites/${filename}'" class="p-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-pink-500/50 flex flex-col items-center justify-center transition" title="${filename}">
+          <div class="w-8 h-8">${SVG_MAP[key]}</div>
+        </button>
+      `).join("");
+    }
+
+    function switchWidgetTab(tab) {
+      ["speed", "sp", "meta", "sprites"].forEach(t => {
+        const panel = document.getElementById("wpanel-" + t);
+        const btn = document.getElementById("wtab-" + t);
+        if (t === tab) {
+          panel.classList.remove("hidden");
+          btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold bg-pink-500 text-white transition";
+        } else {
+          panel.classList.add("hidden");
+          btn.className = "px-2.5 py-1 rounded-md text-xs font-semibold text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition";
+        }
+      });
+    }
+
+    renderSpeedLadder();
+    loadSpPreset();
+    renderSpriteVault();
+  </script>
+</body>
+</html>
