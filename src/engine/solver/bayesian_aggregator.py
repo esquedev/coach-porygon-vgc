@@ -42,6 +42,7 @@ from .game_theory import (
     _to_numpy,
     decode_joint_action,
     format_equilibrium_coach_report,
+    solve_bayesian_zero_sum_nash,
     solve_turn_equilibrium,
 )
 
@@ -284,9 +285,9 @@ class BayesianTurnAdvice:
         # STEP 1: INGESTION & STAT ENGINE
         # ---------------------------------------------------------------------
         lines.append("🔬 STEP 1: INGESTION & 66-SP REGULATION M-C STAT PIPELINE")
-        lines.append("  • Champions Stat Scaling (Level 50, mandatory 31 IVs, max 66 SP total, max 32 SP/stat):")
-        lines.append("      HP   = floor(((2 * Base_HP + 31 + floor(SP_HP / 4)) * 50) / 100) + 60")
-        lines.append("      Stat = floor((floor(((2 * Base_Stat + 31 + floor(SP_Stat / 4)) * 50) / 100) + 5) * Nature_Mult)")
+        lines.append("  • Champions Stat Scaling (Level 50, mandatory 31 IVs, max 66 SP total, max 32 SP/stat, 1:1 SP):")
+        lines.append("      HP   = Base_HP + SP_HP + 15 + 60")
+        lines.append("      Stat = floor((Base_Stat + SP_Stat + 15 + 5) * Nature_Mult)")
         lines.append("  • In-Memory DuckDB Registry (`VGCDataRegistry`):")
         lines.append("      - Mechanistic base data queried dynamically from `pokedex` and `moves` views.")
         lines.append("      - Regional tournament usage weights queried from `tournament_team_slots` and `tournament_usage`.")
@@ -597,33 +598,76 @@ class CoachTurnAdvisor:
                 top_k_recommendations=top_k_recommendations,
             )
 
-        # Compile first hypothesis to establish canonical trainer_1 pruned action space
-        first_ts, _, _ = hypotheses[0]
-        first_compiled = self.tensor_compiler.compile_turn_state(first_ts)
-        canon_mask_t1 = self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
-            first_compiled, trainer_id="trainer_1", min_prior_threshold=min_prior_threshold
+        # Compile all hypotheses and take the UNION of trainer_1 legal actions across all M hypotheses
+        compiled_list: List[CompiledBattleState] = []
+        t1_masks_list: List[PrunedSideActionTensorMask] = []
+        for ts_m, _, _ in hypotheses:
+            comp_m = self.tensor_compiler.compile_turn_state(ts_m)
+            compiled_list.append(comp_m)
+            t1_masks_list.append(
+                self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
+                    comp_m, trainer_id="trainer_1", min_prior_threshold=min_prior_threshold
+                )
+            )
+
+        first_compiled = compiled_list[0]
+        union_valid_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.valid_mask_26x26), dtype=np.float32) for m in t1_masks_list]
         )
-        t1_choices_np = np.asarray(_to_numpy(canon_mask_t1.pruned_choices), dtype=np.int64)
+        union_prior_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.prior_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        union_risk_26x26 = np.minimum.reduce(
+            [np.asarray(_to_numpy(m.risk_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        union_upside_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.upside_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        t1_choices_np = np.argwhere(union_valid_26x26 > 0.5).astype(np.int64)
+        if t1_choices_np.shape[0] == 0:
+            t1_choices_np = np.asarray(_to_numpy(t1_masks_list[0].pruned_choices), dtype=np.int64)
         B1 = int(t1_choices_np.shape[0])
 
+        if first_compiled.backend == "torch":
+            import torch
+
+            dev = first_compiled.roster_tensor.device
+            canon_mask_t1 = PrunedSideActionTensorMask(
+                trainer_id="trainer_1",
+                valid_mask_26x26=torch.from_numpy(union_valid_26x26).to(dev),
+                prior_matrix_26x26=torch.from_numpy(union_prior_26x26).to(dev),
+                risk_matrix_26x26=torch.from_numpy(union_risk_26x26).to(dev),
+                upside_matrix_26x26=torch.from_numpy(union_upside_26x26).to(dev),
+                pruned_choices=torch.from_numpy(t1_choices_np).to(dev),
+            )
+        else:
+            canon_mask_t1 = PrunedSideActionTensorMask(
+                trainer_id="trainer_1",
+                valid_mask_26x26=union_valid_26x26,
+                prior_matrix_26x26=union_prior_26x26,
+                risk_matrix_26x26=union_risk_26x26,
+                upside_matrix_26x26=union_upside_26x26,
+                pruned_choices=t1_choices_np,
+            )
+
         # Accumulators across M hypotheses for each trainer_1 action i in 0..B1-1
-        agg_nash_prob = np.zeros(B1, dtype=np.float64)
         agg_qre_prob = np.zeros(B1, dtype=np.float64)
-        agg_risk_nash = np.zeros(B1, dtype=np.float64)
         agg_risk_qre = np.zeros(B1, dtype=np.float64)
-        agg_mean_nash = np.zeros(B1, dtype=np.float64)
-        agg_cvar_nash = np.zeros(B1, dtype=np.float64)
-        agg_win_nash = np.zeros(B1, dtype=np.float64)
-        agg_faint_slots = np.zeros((B1, 8), dtype=np.float64)
 
         worst_counter_val = np.full(B1, np.inf, dtype=np.float64)
         worst_counter_desc = ["" for _ in range(B1)]
         survived_any_ieds = np.zeros(B1, dtype=bool)
 
         eval_list: List[OpponentHypothesisEvaluation] = []
+        u_risk_mats: List[np.ndarray] = []
+        u_mean_mats: List[np.ndarray] = []
+        u_cvar_mats: List[np.ndarray] = []
+        u_win_mats: List[np.ndarray] = []
+        faint_mats: List[np.ndarray] = []
+        weights_list: List[float] = []
 
         for m_idx, (ts_m, weight_m, label_m) in enumerate(hypotheses):
-            comp_m = self.tensor_compiler.compile_turn_state(ts_m)
+            comp_m = compiled_list[m_idx]
             mask_t2_m = self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
                 comp_m, trainer_id="trainer_2", min_prior_threshold=min_prior_threshold
             )
@@ -658,37 +702,53 @@ class CoachTurnAdvisor:
                 )
             )
 
-            # Map eq_m recommendations back by action_index i
+            u_risk_mats.append(np.asarray(_to_numpy(step_m.stats.risk_adjusted_utility), dtype=np.float64))
+            u_mean_mats.append(np.asarray(_to_numpy(step_m.stats.mean_utility), dtype=np.float64))
+            u_cvar_mats.append(np.asarray(_to_numpy(step_m.stats.cvar_10_utility), dtype=np.float64))
+            u_win_mats.append(np.asarray(_to_numpy(step_m.stats.win_turn_prob), dtype=np.float64))
+            faint_mats.append(np.asarray(_to_numpy(step_m.faint_prob), dtype=np.float64))
+            weights_list.append(float(weight_m))
+
             for rec in eq_m.recommendations:
                 i = rec.action_index
-                agg_nash_prob[i] += weight_m * rec.nash_probability
                 agg_qre_prob[i] += weight_m * rec.qre_probability
-                agg_risk_nash[i] += weight_m * rec.expected_risk_utility_vs_nash
                 agg_risk_qre[i] += weight_m * rec.expected_risk_utility_vs_qre
-                agg_mean_nash[i] += weight_m * rec.expected_mean_utility_vs_nash
-                agg_cvar_nash[i] += weight_m * rec.expected_cvar_10_vs_nash
-                agg_win_nash[i] += weight_m * rec.win_turn_prob_vs_nash
                 if rec.survived_ieds:
                     survived_any_ieds[i] = True
                 if rec.worst_case_counter_utility < worst_counter_val[i]:
                     worst_counter_val[i] = rec.worst_case_counter_utility
                     worst_counter_desc[i] = f"[H{m_idx + 1}] {rec.worst_case_counter_description}"
 
-            q_nash_m = eq_m.nash.trainer_2_strategy
-            faint_m = np.asarray(_to_numpy(step_m.faint_prob), dtype=np.float64)  # [B1, B2_m, 8]
-            agg_faint_slots += weight_m * np.einsum("j,ijs->is", q_nash_m, faint_m)
+        # Solve true Incomplete-Information Bayesian Zero-Sum Equilibrium across all M hypotheses
+        p_bayesian_nash, q_bayesian_list, _ = solve_bayesian_zero_sum_nash(
+            u_risk_mats, weights_list
+        )
 
-        # Build blended ActionRecommendation list
+        agg_risk_nash = np.zeros(B1, dtype=np.float64)
+        agg_mean_nash = np.zeros(B1, dtype=np.float64)
+        agg_cvar_nash = np.zeros(B1, dtype=np.float64)
+        agg_win_nash = np.zeros(B1, dtype=np.float64)
+        agg_faint_slots = np.zeros((B1, 8), dtype=np.float64)
+
+        for m_idx, weight_m in enumerate(weights_list):
+            q_m = q_bayesian_list[m_idx]
+            agg_risk_nash += weight_m * (u_risk_mats[m_idx] @ q_m)
+            agg_mean_nash += weight_m * (u_mean_mats[m_idx] @ q_m)
+            agg_cvar_nash += weight_m * (u_cvar_mats[m_idx] @ q_m)
+            agg_win_nash += weight_m * (u_win_mats[m_idx] @ q_m)
+            agg_faint_slots += weight_m * np.einsum("j,ijs->is", q_m, faint_mats[m_idx])
+
+        # Build blended ActionRecommendation list ranked by Bayesian Risk-Adjusted Utility
         blended_recs: List[ActionRecommendation] = []
         for i in range(B1):
             pair_i = (int(t1_choices_np[i, 0]), int(t1_choices_np[i, 1]))
             desc_i = decode_joint_action(first_compiled, "trainer_1", pair_i)
+            p_n = float(p_bayesian_nash[i])
             comp_score = (
-                0.55 * float(agg_risk_nash[i])
-                + 0.30 * float(agg_risk_qre[i])
-                + 0.15 * float(worst_counter_val[i])
-                + 0.25 * float(agg_nash_prob[i])
-                + (0.05 if survived_any_ieds[i] else -0.25)
+                float(agg_risk_nash[i])
+                + 1e-3 * p_n
+                + 1e-4 * float(agg_risk_qre[i])
+                + 1e-5 * float(worst_counter_val[i])
             )
             blended_recs.append(
                 ActionRecommendation(
@@ -696,7 +756,7 @@ class CoachTurnAdvisor:
                     choice_pair=pair_i,
                     description=desc_i,
                     survived_ieds=bool(survived_any_ieds[i]),
-                    nash_probability=float(agg_nash_prob[i]),
+                    nash_probability=p_n,
                     qre_probability=float(agg_qre_prob[i]),
                     expected_risk_utility_vs_nash=float(agg_risk_nash[i]),
                     expected_risk_utility_vs_qre=float(agg_risk_qre[i]),

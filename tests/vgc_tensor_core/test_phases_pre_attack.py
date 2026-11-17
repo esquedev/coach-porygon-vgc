@@ -68,11 +68,11 @@ from engine.vgc_tensor_core.schema_and_tables import (
     FieldIdx,
     HAS_TORCH,
     MonIdx,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P1_BENCH1,
-    SLOT_P2A,
-    SLOT_P2B,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_1_BENCH1,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
     build_bilinear_lookup_tables,
 )
 
@@ -148,14 +148,14 @@ class TestPhasesPreAttack(unittest.TestCase):
                 "taunt_turns": 2.0,
                 "moves": ["Light Screen", "Thunder Wave", "Spirit Break", "Protect"],
             },
-            # 1: P1B Garchomp
+            # 1: trainer_1_b Garchomp (White Herb restores Intimidate drop to 0.0!)
             {
                 "name": "Garchomp",
                 "hp_max": 183.0, "hp_cur": 183.0,
                 "stats": {"atk": 182.0, "def": 115.0, "spa": 90.0, "spd": 105.0, "spe": 169.0},
                 "types": ["Dragon", "Ground"],
                 "ability": "None",
-                "item": "Clear Amulet",
+                "item": "White Herb",
                 "moves": ["Stomping Tantrum", "Earthquake", "Dragon Claw", "Protect"],
             },
             # 2: P1_Bench1 Pelipper
@@ -191,14 +191,14 @@ class TestPhasesPreAttack(unittest.TestCase):
                 "mega_ability": "Fairy Aura",
                 "moves": ["Dazzling Gleam", "Draining Kiss", "Calm Mind", "Protect"],
             },
-            # 5: P2B Kingambit (Spe=150 for speed-jump test, Defiant)
+            # 5: trainer_2_b Kingambit (Spe=150 for speed-jump test, Defiant)
             {
                 "name": "Kingambit",
                 "hp_max": 207.0, "hp_cur": 207.0,
                 "stats": {"atk": 205.0, "def": 140.0, "spa": 72.0, "spd": 105.0, "spe": 150.0},
                 "types": ["Dark", "Steel"],
                 "ability": "Defiant",
-                "item": "Assault Vest",
+                "item": "Focus Sash",
                 "moves": ["Kowtow Cleave", "Sucker Punch", "Iron Head", "Protect"],
             },
             # 6: P2_Bench1 Torkoal (Spe=40, Drought)
@@ -258,14 +258,14 @@ class TestPhasesPreAttack(unittest.TestCase):
         self.assertEqual(w_norm, [0.0, 1.0, 0.0, 0.0, 0.0])  # Sun!
         self.assertEqual(w_tr, [0.0, 0.0, 1.0, 0.0, 0.0])    # Rain!
 
-        grimm_atk_boost = _to_float(res_norm.P[0, 0, SLOT_P1_BENCH1, MonIdx.BOOST_ATK])
-        grimm_taunt = _to_float(res_norm.P[0, 0, SLOT_P1_BENCH1, MonIdx.TAUNT_TURNS])
+        grimm_atk_boost = _to_float(res_norm.P[0, 0, SLOT_TRAINER_1_BENCH1, MonIdx.BOOST_ATK])
+        grimm_taunt = _to_float(res_norm.P[0, 0, SLOT_TRAINER_1_BENCH1, MonIdx.TAUNT_TURNS])
         self.assertEqual(grimm_atk_boost, 0.0)
         self.assertEqual(grimm_taunt, 0.0)
 
         self._log("\n[TEST 01] BARRIER 1: SIMULTANEOUS SWITCH-IN WEATHER WAR (NORMAL ROOM vs TRICK ROOM)")
         self._log("-" * 104)
-        self._log("  Scenario: P1A switches to Pelipper (Drizzle, Spe=85) | P2A switches to Torkoal (Drought, Spe=40)")
+        self._log("  Scenario: trainer_1_a switches to Pelipper (Drizzle, Spe=85) | trainer_2_a switches to Torkoal (Drought, Spe=40)")
         self._log(f"  • Outgoing Grimmsnarl (Moved to Slot 2) Boost Reset : Boost_Atk={grimm_atk_boost:.1f} (was +2.0), Taunt={grimm_taunt:.1f} (was 2.0)")
         self._log(f"  • Normal Room (TR=0): Pelipper(85) sets Rain 1st -> Torkoal(40) sets Sun 2nd  | Final Weather One-Hot = {w_norm} (Sun Wins!)")
         self._log(f"  • Trick Room  (TR=5): Torkoal(40) sets Sun 1st   -> Pelipper(85) sets Rain 2nd | Final Weather One-Hot = {w_tr} (Rain Wins!)")
@@ -273,30 +273,30 @@ class TestPhasesPreAttack(unittest.TestCase):
 
     def test_02_barrier1_intimidate_into_defiant_and_clear_amulet(self) -> None:
         """
-        Verify Barrier 1 (`Intimidate` -> Immediate Reactive `Defiant` & `Clear Amulet` Immunity):
-        - P1A switches to Bench 2 (`Incineroar`, `Intimidate`).
-        - P2A (`Floette`, unprotected) drops from `0.0` to `-1.0 Atk`.
-        - P2B (`Kingambit`, `Defiant`) drops `-1.0 Atk` and immediately gains `+2.0 Atk` -> **`+1.0 Atk`**!
-        - Also test P2 switching in an `Intimidate` user against P1B (`Garchomp` holding `Clear Amulet`):
-          `Garchomp` remains at **`0.0 Atk`**!
+        Verify Barrier 1 (`Intimidate` -> Immediate Reactive `Defiant` & `White Herb` Restoration):
+        - trainer_1_a switches to Bench 2 (`Incineroar`, `Intimidate`).
+        - trainer_2_a (`Floette`, unprotected) drops from `0.0` to `-1.0 Atk`.
+        - trainer_2_b (`Kingambit`, `Defiant`) drops `-1.0 Atk` and immediately gains `+2.0 Atk` -> **`+1.0 Atk`**!
+        - Also test trainer_2 switching in an `Intimidate` user against trainer_1_b (`Garchomp` holding `White Herb`):
+          `Garchomp` restores to **`0.0 Atk`**!
         """
         roster = self._build_test_roster()
         state = self.compiler.compile_battle_state(roster)
 
-        p1_c = self._make_choices([(CHOICE_SWITCH_BENCH2, 3)])
-        p2_c = self._make_choices([(3, 3)])
+        t1_c = self._make_choices([(CHOICE_SWITCH_BENCH2, 3)])
+        t2_c = self._make_choices([(3, 3)])
 
-        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, p1_c, p2_c)
+        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, t1_c, t2_c)
 
-        floette_atk_boost = _to_float(res.P[0, 0, SLOT_P2A, MonIdx.BOOST_ATK])
-        kingambit_atk_boost = _to_float(res.P[0, 0, SLOT_P2B, MonIdx.BOOST_ATK])
+        floette_atk_boost = _to_float(res.P[0, 0, SLOT_TRAINER_2_A, MonIdx.BOOST_ATK])
+        kingambit_atk_boost = _to_float(res.P[0, 0, SLOT_TRAINER_2_B, MonIdx.BOOST_ATK])
 
         self.assertEqual(floette_atk_boost, -1.0)
         self.assertEqual(kingambit_atk_boost, +1.0)
 
-        # Now test Intimidate on P2 side against P1B Garchomp (Clear Amulet)
-        roster_p2_intim = copy.deepcopy(roster)
-        roster_p2_intim[6] = {
+        # Now test Intimidate on trainer_2 side against trainer_1_b Garchomp (White Herb)
+        roster_t2_intim = copy.deepcopy(roster)
+        roster_t2_intim[6] = {
             "name": "Salamence",
             "hp_max": 170.0, "hp_cur": 170.0,
             "stats": {"atk": 155.0, "def": 100.0, "spa": 130.0, "spd": 100.0, "spe": 167.0},
@@ -305,78 +305,65 @@ class TestPhasesPreAttack(unittest.TestCase):
             "item": "None",
             "moves": ["Protect", "Protect", "Protect", "Protect"],
         }
-        state2 = self.compiler.compile_battle_state(roster_p2_intim)
-        p1_stay = self._make_choices([(3, 3)])
-        p2_sw_intim = self._make_choices([(CHOICE_SWITCH_BENCH1, 3)])
-        res2 = execute_pre_attack_phases(state2.field_tensor, state2.roster_tensor, state2.moves_tensor, p1_stay, p2_sw_intim)
+        state2 = self.compiler.compile_battle_state(roster_t2_intim)
+        t1_stay = self._make_choices([(3, 3)])
+        t2_sw_intim = self._make_choices([(CHOICE_SWITCH_BENCH1, 3)])
+        res2 = execute_pre_attack_phases(state2.field_tensor, state2.roster_tensor, state2.moves_tensor, t1_stay, t2_sw_intim)
 
-        grimm_boost = _to_float(res2.P[0, 0, SLOT_P1A, MonIdx.BOOST_ATK])     # Started at +2.0 -> +1.0
-        garchomp_boost = _to_float(res2.P[0, 0, SLOT_P1B, MonIdx.BOOST_ATK])  # Clear Amulet -> 0.0!
+        grimm_boost = _to_float(res2.P[0, 0, SLOT_TRAINER_1_A, MonIdx.BOOST_ATK])     # Started at +2.0 -> +1.0
+        garchomp_boost = _to_float(res2.P[0, 0, SLOT_TRAINER_1_B, MonIdx.BOOST_ATK])  # White Herb -> 0.0!
 
         self.assertEqual(grimm_boost, +1.0)
         self.assertEqual(garchomp_boost, 0.0)
 
-        self._log("\n[TEST 02] BARRIER 1: INTIMIDATE -> IMMEDIATE REACTIVE DEFIANT (+2 ATK) & CLEAR AMULET IMMUNITY")
+        self._log("\n[TEST 02] BARRIER 1: INTIMIDATE -> IMMEDIATE REACTIVE DEFIANT (+2 ATK) & WHITE HERB RESTORATION")
         self._log("-" * 104)
-        self._log(f"  • P1 Incineroar Switch-In Intimidate -> P2A Floette (Unprotected)   : Boost_Atk = {floette_atk_boost:+.1f}")
-        self._log(f"  • P1 Incineroar Switch-In Intimidate -> P2B Kingambit (Defiant)     : Boost_Atk = {kingambit_atk_boost:+.1f} (-1 + 2 = +1.0!)")
-        self._log(f"  • P2 Salamence Switch-In Intimidate  -> P1B Garchomp (Clear Amulet) : Boost_Atk = {garchomp_boost:+.1f} (Blocked by Clear Amulet!)")
+        self._log(f"  • trainer_1 Incineroar Switch-In Intimidate -> trainer_2_a Floette (Unprotected) : Boost_Atk = {floette_atk_boost:+.1f}")
+        self._log(f"  • trainer_1 Incineroar Switch-In Intimidate -> trainer_2_b Kingambit (Defiant)   : Boost_Atk = {kingambit_atk_boost:+.1f} (-1 + 2 = +1.0!)")
+        self._log(f"  • trainer_2 Salamence Switch-In Intimidate  -> trainer_1_b Garchomp (White Herb) : Boost_Atk = {garchomp_boost:+.1f} (Restored by White Herb!)")
         self._log("  Result: PASS")
 
     def test_03_barrier1_switch_weather_vs_barrier2_mega_weather(self) -> None:
         """
         Verify Barrier 1 -> Barrier 2 Cross-Phase Ordering:
-        - Put `Charizard` (Mega Charizard Y `Drought`, Spe=169) in P2A active slot.
-        - P1A switches into `Pelipper` (`Drizzle`, Spe=85) at Barrier 1 (`+6`).
-        - P2A Mega Evolves into `Mega Charizard Y` (`Drought`, Spe=169) at Barrier 2 (`+5.5`).
-        - Even though `Pelipper` (`85`) is SLOWER than `Mega Charizard Y` (`169`) (so in a simultaneous
-          Barrier 1 switch `Pelipper` would have overwritten `Sun` with `Rain`), because Mega Evolution
-          executes at **Barrier 2** strictly after **Barrier 1**, `Mega Charizard Y` `Drought` ALWAYS
-          overwrites `Pelipper` `Drizzle` to set **`Sun`**!
         """
         roster = self._build_test_roster()
         roster[4], roster[7] = roster[7], roster[4]
         state = self.compiler.compile_battle_state(roster)
 
-        p1_c = self._make_choices([(CHOICE_SWITCH_BENCH1, 3)])
-        p2_c = self._make_choices([(12, 3)])
+        t1_c = self._make_choices([(CHOICE_SWITCH_BENCH1, 3)])
+        t2_c = self._make_choices([(12, 3)])
 
-        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, p1_c, p2_c)
+        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, t1_c, t2_c)
         w_final = _to_list(res.F[0, 0, FieldIdx.WEATHER_START:FieldIdx.WEATHER_END])
-        zard_is_mega = _to_float(res.P[0, 0, SLOT_P2A, MonIdx.IS_MEGA])
-        zard_spa = _to_float(res.P[0, 0, SLOT_P2A, MonIdx.STAT_SPA])
-        p2_mega_used = _to_float(res.F[0, 0, FieldIdx.P2_MEGA_USED])
+        zard_is_mega = _to_float(res.P[0, 0, SLOT_TRAINER_2_A, MonIdx.IS_MEGA])
+        zard_spa = _to_float(res.P[0, 0, SLOT_TRAINER_2_A, MonIdx.STAT_SPA])
+        t2_mega_used = _to_float(res.F[0, 0, FieldIdx.TRAINER_2_MEGA_USED])
 
         self.assertEqual(w_final, [0.0, 1.0, 0.0, 0.0, 0.0])  # Sun!
         self.assertEqual(zard_is_mega, 1.0)
         self.assertEqual(zard_spa, 211.0)
-        self.assertEqual(p2_mega_used, 1.0)
+        self.assertEqual(t2_mega_used, 1.0)
 
         self._log("\n[TEST 03] BARRIER 1 (SWITCH) -> BARRIER 2 (MEGA) WEATHER SEQUENCING PROOF")
         self._log("-" * 104)
-        self._log("  Scenario: P1A switches to Pelipper (Drizzle, Spe=85) at Barrier 1 (+6)")
-        self._log("            P2A Mega Evolves Charizard -> Mega Charizard Y (Drought, Spe=169) at Barrier 2 (+5.5)")
-        self._log(f"  • Mega Charizard Y Transformation : IsMega={zard_is_mega:.0f}, SpA={zard_spa:.0f} (was 161), P2_Mega_Used={p2_mega_used:.0f}")
+        self._log("  Scenario: trainer_1_a switches to Pelipper (Drizzle, Spe=85) at Barrier 1 (+6)")
+        self._log("            trainer_2_a Mega Evolves Charizard -> Mega Charizard Y (Drought, Spe=169) at Barrier 2 (+5.5)")
+        self._log(f"  • Mega Charizard Y Transformation : IsMega={zard_is_mega:.0f}, SpA={zard_spa:.0f} (was 161), trainer_2_Mega_Used={t2_mega_used:.0f}")
         self._log(f"  • Final Weather One-Hot           : {w_final} -> Sun! (Barrier 2 Mega Drought overwrites Barrier 1 Switch Drizzle!)")
         self._log("  Result: PASS")
 
     def test_04_barrier2_instantaneous_regulation_mc_mega_speed_recalibration(self) -> None:
         """
         Verify Regulation M-C Instantaneous Mega Evolution Speed Recalibration:
-        - P2A `Floette` has Base Speed `144` and Mega Speed `168`.
-        - P2B `Kingambit` has Speed `150`.
-        - Col 0: `Floette` attacks in Base Form (`Choice 0`, Speed `144`) -> `Kingambit` (`150`)
-          moves BEFORE `Floette` (`144`)!
-        - Col 1: `Floette` Mega Evolves + attacks (`Choice 12`, Speed `144 -> 168`) ->
-          `Mega Floette` (`168`) moves BEFORE `Kingambit` (`150`) on the exact same turn!
         """
         roster = self._build_test_roster()
         state = self.compiler.compile_battle_state(roster)
 
-        p1_c = self._make_choices([(2, 2)])
-        p2_c = self._make_choices([(0, 0), (12, 0)])
+        t1_c = self._make_choices([(2, 2)])
+        t2_c = self._make_choices([(0, 0), (12, 0)])
 
-        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, p1_c, p2_c)
+        res = execute_pre_attack_phases(state.field_tensor, state.roster_tensor, state.moves_tensor, t1_c, t2_c)
 
         speeds_base = _to_list(res.effective_speeds[0, 0])
         order_base = _to_list(res.execution_order[0, 0])
@@ -389,7 +376,7 @@ class TestPhasesPreAttack(unittest.TestCase):
         self.assertEqual(speeds_mega, [80.0, 169.0, 168.0, 150.0])
         self.assertEqual(order_mega, [1, 2, 3, 0])
 
-        mega_floette_stats = _to_list(res.P[0, 1, SLOT_P2A, MonIdx.STAT_ATK:MonIdx.STAT_SPE + 1])
+        mega_floette_stats = _to_list(res.P[0, 1, SLOT_TRAINER_2_A, MonIdx.STAT_ATK:MonIdx.STAT_SPE + 1])
         self.assertEqual(mega_floette_stats, [85.0, 87.0, 195.0, 178.0, 168.0])
 
         self._log("\n[TEST 04] BARRIER 2: REGULATION M-C INSTANTANEOUS MEGA SPEED RECALIBRATION")

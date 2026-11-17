@@ -47,10 +47,10 @@ FIRST_TURN_ONLY_MOVES: Set[str] = {
 PROTECT_MOVES: Set[str] = {
     "Protect",
     "Detect",
+    "Endure",
     "Spiky Shield",
     "King's Shield",
     "Baneful Bunker",
-    "Silk Trap",
     "Burning Bulwark",
     "Wide Guard",
     "Quick Guard",
@@ -183,7 +183,7 @@ class LegalActionEnumerator:
         return actions
 
     def _filter_legal_moves(self, actor: CompiledPokemonState) -> List[CompiledMove]:
-        """Filter `actor.moves` by Turn-1, Choice lock, Encore, Assault Vest, and Taunt rules."""
+        """Filter `actor.moves` by Turn-1, Choice lock, Encore, and Taunt rules."""
         legal: List[CompiledMove] = []
 
         for move in actor.moves:
@@ -199,15 +199,11 @@ class LegalActionEnumerator:
             if move.name in FIRST_TURN_ONLY_MOVES and actor.active_turns > 1:
                 continue
 
-            # 4. Assault Vest blocks Status moves
-            if actor.item == "Assault Vest" and move.category == "Status":
-                continue
-
-            # 5. Taunt blocks Status moves
+            # 4. Taunt blocks Status moves
             if actor.taunt_turns > 0 and move.category == "Status":
                 continue
 
-            # 6. Consecutive Protect check (Wide Guard & Quick Guard do not decay in Gen 9)
+            # 5. Consecutive Protect check (Wide Guard & Quick Guard do not decay in Gen 9)
             if (
                 not self.allow_consecutive_protect
                 and actor.used_protect_last_turn

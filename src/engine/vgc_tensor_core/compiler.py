@@ -3,7 +3,7 @@
 
 Compiles any Pokémon Showdown move, roster slot, or `TurnState` (`trainer_1`
 and `trainer_2`) on the fly into aligned tensors (`Field` `[24]`, `Roster`
-`[8, 84]`, and `Moves` `[8, 4, 56]`) directly from the in-memory DuckDB
+`[8, 86]`, and `Moves` `[8, 4, 56]`) directly from the in-memory DuckDB
 `VGCDataRegistry` (`moves`, `pokedex`, `items`, `abilities` views) — with
 ZERO hardcoded move catalog.
 
@@ -105,14 +105,14 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "lifeorb": ItemID.LIFE_ORB,
     "sitrus berry": ItemID.SITRUS_BERRY,
     "sitrusberry": ItemID.SITRUS_BERRY,
-    "clear amulet": ItemID.CLEAR_AMULET,
-    "clearamulet": ItemID.CLEAR_AMULET,
+    "white herb": ItemID.WHITE_HERB,
+    "whiteherb": ItemID.WHITE_HERB,
     "covert cloak": ItemID.COVERT_CLOAK,
     "covertcloak": ItemID.COVERT_CLOAK,
-    "safety goggles": ItemID.SAFETY_GOGGLES,
-    "safetygoggles": ItemID.SAFETY_GOGGLES,
-    "assault vest": ItemID.ASSAULT_VEST,
-    "assaultvest": ItemID.ASSAULT_VEST,
+    "grassy seed": ItemID.GRASSY_SEED,
+    "grassyseed": ItemID.GRASSY_SEED,
+    "psychic seed": ItemID.PSYCHIC_SEED,
+    "psychicseed": ItemID.PSYCHIC_SEED,
     "choice scarf": ItemID.CHOICE_SCARF,
     "choicescarf": ItemID.CHOICE_SCARF,
     "choice band": ItemID.CHOICE_BAND,
@@ -121,15 +121,15 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "choicespecs": ItemID.CHOICE_SPECS,
     "eject button": ItemID.EJECT_BUTTON,
     "ejectbutton": ItemID.EJECT_BUTTON,
-    "eject pack": ItemID.EJECT_PACK,
-    "ejectpack": ItemID.EJECT_PACK,
+    "electric seed": ItemID.ELECTRIC_SEED,
+    "electricseed": ItemID.ELECTRIC_SEED,
     "red card": ItemID.RED_CARD,
     "redcard": ItemID.RED_CARD,
-    "booster energy": ItemID.BOOSTER_ENERGY,
-    "boosterenergy": ItemID.BOOSTER_ENERGY,
+    "misty seed": ItemID.MISTY_SEED,
+    "mistyseed": ItemID.MISTY_SEED,
     "leftovers": ItemID.LEFTOVERS,
-    "black sludge": ItemID.BLACK_SLUDGE,
-    "blacksludge": ItemID.BLACK_SLUDGE,
+    "lum berry": ItemID.LUM_BERRY,
+    "lumberry": ItemID.LUM_BERRY,
     "rocky helmet": ItemID.ROCKY_HELMET,
     "rockyhelmet": ItemID.ROCKY_HELMET,
     "loaded dice": ItemID.LOADED_DICE,
@@ -137,6 +137,59 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "light clay": ItemID.LIGHT_CLAY,
     "lightclay": ItemID.LIGHT_CLAY,
     "mega stone": ItemID.MEGA_STONE,
+    "megastone": ItemID.MEGA_STONE,
+    "mental herb": ItemID.MENTAL_HERB,
+    "mentalherb": ItemID.MENTAL_HERB,
+    "air balloon": ItemID.AIR_BALLOON,
+    "airballoon": ItemID.AIR_BALLOON,
+    "expert belt": ItemID.EXPERT_BELT,
+    "expertbelt": ItemID.EXPERT_BELT,
+    "wide lens": ItemID.WIDE_LENS,
+    "widelens": ItemID.WIDE_LENS,
+    "damp rock": ItemID.DAMP_ROCK,
+    "damprock": ItemID.DAMP_ROCK,
+    "heat rock": ItemID.HEAT_ROCK,
+    "heatrock": ItemID.HEAT_ROCK,
+    "smooth rock": ItemID.SMOOTH_ROCK,
+    "smoothrock": ItemID.SMOOTH_ROCK,
+    "icy rock": ItemID.ICY_ROCK,
+    "icyrock": ItemID.ICY_ROCK,
+    "chilan berry": ItemID.CHILAN_BERRY,
+    "chilanberry": ItemID.CHILAN_BERRY,
+    "occa berry": ItemID.OCCA_BERRY,
+    "occaberry": ItemID.OCCA_BERRY,
+    "passho berry": ItemID.PASSHO_BERRY,
+    "passhoberry": ItemID.PASSHO_BERRY,
+    "wacan berry": ItemID.WACAN_BERRY,
+    "wacanberry": ItemID.WACAN_BERRY,
+    "rindo berry": ItemID.RINDO_BERRY,
+    "rindoberry": ItemID.RINDO_BERRY,
+    "yache berry": ItemID.YACHE_BERRY,
+    "yacheberry": ItemID.YACHE_BERRY,
+    "chople berry": ItemID.CHOPLE_BERRY,
+    "chopleberry": ItemID.CHOPLE_BERRY,
+    "kebia berry": ItemID.KEBIA_BERRY,
+    "kebiaberry": ItemID.KEBIA_BERRY,
+    "shuca berry": ItemID.SHUCA_BERRY,
+    "shucaberry": ItemID.SHUCA_BERRY,
+    "coba berry": ItemID.COBA_BERRY,
+    "cobaberry": ItemID.COBA_BERRY,
+    "payapa berry": ItemID.PAYAPA_BERRY,
+    "payapaberry": ItemID.PAYAPA_BERRY,
+    "tanga berry": ItemID.TANGA_BERRY,
+    "tangaberry": ItemID.TANGA_BERRY,
+    "charti berry": ItemID.CHARTI_BERRY,
+    "chartiberry": ItemID.CHARTI_BERRY,
+    "kasib berry": ItemID.KASIB_BERRY,
+    "kasibberry": ItemID.KASIB_BERRY,
+    "haban berry": ItemID.HABAN_BERRY,
+    "habanberry": ItemID.HABAN_BERRY,
+    "colbur berry": ItemID.COLBUR_BERRY,
+    "colburberry": ItemID.COLBUR_BERRY,
+    "babiri berry": ItemID.BABIRI_BERRY,
+    "babiriberry": ItemID.BABIRI_BERRY,
+    "roseli berry": ItemID.ROSELI_BERRY,
+    "roseliberry": ItemID.ROSELI_BERRY,
 }
 for _tb_item in TYPE_BOOSTING_ITEMS:
     ITEM_NAME_TO_ID[_tb_item.lower()] = ItemID.TYPE_BOOST_ITEM
@@ -152,59 +205,138 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "drizzle": AbilityID.DRIZZLE,
     "drought": AbilityID.DROUGHT,
     "sand stream": AbilityID.SAND_STREAM,
+    "sandstream": AbilityID.SAND_STREAM,
     "snow warning": AbilityID.SNOW_WARNING,
+    "snowwarning": AbilityID.SNOW_WARNING,
     "electric surge": AbilityID.ELECTRIC_SURGE,
+    "electricsurge": AbilityID.ELECTRIC_SURGE,
     "grassy surge": AbilityID.GRASSY_SURGE,
+    "grassysurge": AbilityID.GRASSY_SURGE,
     "psychic surge": AbilityID.PSYCHIC_SURGE,
+    "psychicsurge": AbilityID.PSYCHIC_SURGE,
     "misty surge": AbilityID.MISTY_SURGE,
+    "mistysurge": AbilityID.MISTY_SURGE,
     "fairy aura": AbilityID.FAIRY_AURA,
-    "dark aura": AbilityID.DARK_AURA,
+    "fairyaura": AbilityID.FAIRY_AURA,
+    "stamina": AbilityID.STAMINA,
     "prankster": AbilityID.PRANKSTER,
     "unburden": AbilityID.UNBURDEN,
     "levitate": AbilityID.LEVITATE,
     "sturdy": AbilityID.STURDY,
     "inner focus": AbilityID.INNER_FOCUS,
+    "innerfocus": AbilityID.INNER_FOCUS,
     "multiscale": AbilityID.MULTISCALE,
+    "shadow shield": AbilityID.MULTISCALE,
     "guts": AbilityID.GUTS,
     "adaptability": AbilityID.ADAPTABILITY,
     "huge power": AbilityID.HUGE_POWER,
+    "hugepower": AbilityID.HUGE_POWER,
     "pure power": AbilityID.HUGE_POWER,
+    "purepower": AbilityID.HUGE_POWER,
     "solar power": AbilityID.SOLAR_POWER,
+    "solarpower": AbilityID.SOLAR_POWER,
     "swift swim": AbilityID.SWIFT_SWIM,
+    "swiftswim": AbilityID.SWIFT_SWIM,
     "chlorophyll": AbilityID.CHLOROPHYLL,
     "sand rush": AbilityID.SAND_RUSH,
+    "sandrush": AbilityID.SAND_RUSH,
     "slush rush": AbilityID.SLUSH_RUSH,
+    "slushrush": AbilityID.SLUSH_RUSH,
     "lightning rod": AbilityID.LIGHTNING_ROD,
-    "storm drain": AbilityID.STORM_DRAIN,
+    "lightningrod": AbilityID.LIGHTNING_ROD,
+    "blaze": AbilityID.BLAZE,
     "friend guard": AbilityID.FRIEND_GUARD,
+    "friendguard": AbilityID.FRIEND_GUARD,
     "hospitality": AbilityID.HOSPITALITY,
     "armor tail": AbilityID.ARMOR_TAIL,
+    "armortail": AbilityID.ARMOR_TAIL,
     "queenly majesty": AbilityID.QUEENLY_MAJESTY,
-    "dazzling": AbilityID.QUEENLY_MAJESTY,
+    "queenlymajesty": AbilityID.QUEENLY_MAJESTY,
     "good as gold": AbilityID.GOOD_AS_GOLD,
+    "goodasgold": AbilityID.GOOD_AS_GOLD,
     "soundproof": AbilityID.SOUNDPROOF,
     "flash fire": AbilityID.FLASH_FIRE,
+    "flashfire": AbilityID.FLASH_FIRE,
     "volt absorb": AbilityID.VOLT_ABSORB,
+    "voltabsorb": AbilityID.VOLT_ABSORB,
     "motor drive": AbilityID.MOTOR_DRIVE,
+    "motordrive": AbilityID.MOTOR_DRIVE,
     "water absorb": AbilityID.WATER_ABSORB,
+    "waterabsorb": AbilityID.WATER_ABSORB,
+    "dry skin": AbilityID.WATER_ABSORB,
+    "dryskin": AbilityID.WATER_ABSORB,
     "sap sipper": AbilityID.SAP_SIPPER,
+    "sapsipper": AbilityID.SAP_SIPPER,
     "earth eater": AbilityID.EARTH_EATER,
+    "eartheater": AbilityID.EARTH_EATER,
     "no guard": AbilityID.NO_GUARD,
+    "noguard": AbilityID.NO_GUARD,
     "scrappy": AbilityID.SCRAPPY,
-    "mind's eye": AbilityID.MINDS_EYE,
-    "minds eye": AbilityID.MINDS_EYE,
+    "pixilate": AbilityID.PIXILATE,
     "rock head": AbilityID.ROCK_HEAD,
+    "rockhead": AbilityID.ROCK_HEAD,
     "rough skin": AbilityID.ROUGH_SKIN,
+    "roughskin": AbilityID.ROUGH_SKIN,
     "iron barbs": AbilityID.ROUGH_SKIN,
+    "ironbarbs": AbilityID.ROUGH_SKIN,
     "poison touch": AbilityID.POISON_TOUCH,
+    "poisontouch": AbilityID.POISON_TOUCH,
     "clear body": AbilityID.CLEAR_BODY,
+    "clearbody": AbilityID.CLEAR_BODY,
     "white smoke": AbilityID.CLEAR_BODY,
+    "whitesmoke": AbilityID.CLEAR_BODY,
     "full metal body": AbilityID.CLEAR_BODY,
     "flower veil": AbilityID.FLOWER_VEIL,
+    "flowerveil": AbilityID.FLOWER_VEIL,
     "emergency exit": AbilityID.EMERGENCY_EXIT,
+    "emergencyexit": AbilityID.EMERGENCY_EXIT,
     "wimp out": AbilityID.EMERGENCY_EXIT,
+    "wimpout": AbilityID.EMERGENCY_EXIT,
     "cloud nine": AbilityID.CLOUD_NINE,
     "cloudnine": AbilityID.CLOUD_NINE,
+    "air lock": AbilityID.CLOUD_NINE,
+    "airlock": AbilityID.CLOUD_NINE,
+    "aerilate": AbilityID.AERILATE,
+    "refrigerate": AbilityID.REFRIGERATE,
+    "flame body": AbilityID.FLAME_BODY,
+    "flamebody": AbilityID.FLAME_BODY,
+    "cursed body": AbilityID.CURSED_BODY,
+    "cursedbody": AbilityID.CURSED_BODY,
+    "liquid voice": AbilityID.LIQUID_VOICE,
+    "liquidvoice": AbilityID.LIQUID_VOICE,
+    "toxic debris": AbilityID.TOXIC_DEBRIS,
+    "toxicdebris": AbilityID.TOXIC_DEBRIS,
+    "solid rock": AbilityID.SOLID_ROCK,
+    "solidrock": AbilityID.SOLID_ROCK,
+    "filter": AbilityID.SOLID_ROCK,
+    "mirror armor": AbilityID.MIRROR_ARMOR,
+    "mirrorarmor": AbilityID.MIRROR_ARMOR,
+    "speed boost": AbilityID.SPEED_BOOST,
+    "speedboost": AbilityID.SPEED_BOOST,
+    "infiltrator": AbilityID.INFILTRATOR,
+    "compound eyes": AbilityID.COMPOUND_EYES,
+    "compoundeyes": AbilityID.COMPOUND_EYES,
+    "regenerator": AbilityID.REGENERATOR,
+    "magic bounce": AbilityID.MAGIC_BOUNCE,
+    "magicbounce": AbilityID.MAGIC_BOUNCE,
+    "sharpness": AbilityID.SHARPNESS,
+    "gale wings": AbilityID.GALE_WINGS,
+    "galewings": AbilityID.GALE_WINGS,
+    "technician": AbilityID.TECHNICIAN,
+    "tough claws": AbilityID.TOUGH_CLAWS,
+    "toughclaws": AbilityID.TOUGH_CLAWS,
+    "sheer force": AbilityID.SHEER_FORCE,
+    "sheerforce": AbilityID.SHEER_FORCE,
+    "mold breaker": AbilityID.MOLD_BREAKER,
+    "moldbreaker": AbilityID.MOLD_BREAKER,
+    "quick feet": AbilityID.QUICK_FEET,
+    "quickfeet": AbilityID.QUICK_FEET,
+    "overcoat": AbilityID.OVERCOAT,
+    "torrent": AbilityID.TORRENT,
+    "overgrow": AbilityID.OVERGROW,
+    "swarm": AbilityID.SWARM,
+    "surge surfer": AbilityID.SURGE_SURFER,
+    "surgesurfer": AbilityID.SURGE_SURFER,
 }
 
 
@@ -640,8 +772,8 @@ class ShowdownTensorCompiler:
             "spikyshield",
             "kingsshield",
             "banefulbunker",
-            "silktrap",
             "burningbulwark",
+            "endure",
             "maxguard",
         ):
             vec[MoveIdx.PROTECT_TYPE] = 1.0
@@ -792,7 +924,7 @@ class ShowdownTensorCompiler:
         """Resolve `FieldOpID` programmatically from Showdown move attributes."""
         if move_id == "fakeout":
             return FieldOpID.FAKE_OUT
-        if move_id in ("suckerpunch", "thunderclap", "upperhand"):
+        if move_id in ("suckerpunch", "upperhand"):
             return FieldOpID.SUCKER_PUNCH
         if vol_status in ("followme", "ragepowder") or move_id in ("followme", "ragepowder"):
             return FieldOpID.FOLLOW_ME
@@ -930,6 +1062,8 @@ class ShowdownTensorCompiler:
             p_vec[MonIdx.HELPING_HAND_MULT] = 1.0
             p_vec[MonIdx.CHOICE_LOCKED_MOVE] = -1.0
             p_vec[MonIdx.LAST_MOVE_IDX] = -1.0
+            p_vec[MonIdx.MEGA_TYPE1] = -1.0
+            p_vec[MonIdx.MEGA_TYPE2] = -1.0
             return p_vec, m_mat, (mon.species if mon else "None"), ("Protect",) * 4
 
         p_vec[MonIdx.HP_CUR] = float(mon.current_hp)
@@ -1040,10 +1174,22 @@ class ShowdownTensorCompiler:
         mega_ab_lower = str(mon.mega_ability or mon.ability or "none").strip().lower()
         p_vec[MonIdx.MEGA_ABILITY_ID] = float(ABILITY_NAME_TO_ID.get(mega_ab_lower, ability_id))
 
+        if mon.mega_types and len(mon.mega_types) >= 1:
+            mt1_idx = TYPE_TO_IDX.get(str(mon.mega_types[0]).lower(), t1_idx)
+            p_vec[MonIdx.MEGA_TYPE1] = float(mt1_idx)
+            if len(mon.mega_types) >= 2 and str(mon.mega_types[1]).lower() != str(mon.mega_types[0]).lower():
+                mt2_idx = TYPE_TO_IDX.get(str(mon.mega_types[1]).lower(), -1)
+                p_vec[MonIdx.MEGA_TYPE2] = float(mt2_idx)
+            else:
+                p_vec[MonIdx.MEGA_TYPE2] = -1.0
+        else:
+            p_vec[MonIdx.MEGA_TYPE1] = -1.0
+            p_vec[MonIdx.MEGA_TYPE2] = -1.0
+
         return p_vec, m_mat, mon.species, tuple(move_names)
 
     def compile_pokemon_slot(self, mon_spec: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
-        """Compile a single Pokémon specification dictionary into its 84-float Roster Vector (`MonIdx`)
+        """Compile a single Pokémon specification dictionary into its 86-float Roster Vector (`MonIdx`)
         and its [4, 56] Move Matrix (`MoveIdx`).
         """
         p_vec = np.zeros((MON_DIM,), dtype=np.float32)
@@ -1055,6 +1201,8 @@ class ShowdownTensorCompiler:
             p_vec[MonIdx.HELPING_HAND_MULT] = 1.0
             p_vec[MonIdx.CHOICE_LOCKED_MOVE] = -1.0
             p_vec[MonIdx.LAST_MOVE_IDX] = -1.0
+            p_vec[MonIdx.MEGA_TYPE1] = -1.0
+            p_vec[MonIdx.MEGA_TYPE2] = -1.0
             return p_vec, m_mat
 
         hp_max = float(mon_spec.get("hp_max", 160.0))
@@ -1096,10 +1244,14 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.HELPING_HAND_MULT] = float(mon_spec.get("helping_hand_mult", 1.0))
 
         # Grounded, Item, Ability, Mega
-        item_str = str(mon_spec.get("item", "none")).lower()
-        ability_str = str(mon_spec.get("ability", "none")).lower()
-        item_id = ITEM_NAME_TO_ID.get(item_str, ItemID.NONE)
-        ability_id = ABILITY_NAME_TO_ID.get(ability_str, AbilityID.NONE)
+        item_raw = str(mon_spec.get("item", "none")).strip()
+        item_str = item_raw.lower()
+        ability_str = str(mon_spec.get("ability", "none")).strip().lower()
+        if item_raw in self.repo.mega_stone_to_species or item_raw.title() in self.repo.mega_stone_to_species:
+            item_id = ItemID.MEGA_STONE
+        else:
+            item_id = ITEM_NAME_TO_ID.get(item_str, ITEM_NAME_TO_ID.get(_to_id(item_str), ItemID.NONE))
+        ability_id = ABILITY_NAME_TO_ID.get(ability_str, ABILITY_NAME_TO_ID.get(_to_id(ability_str), AbilityID.NONE))
 
         is_flying = any(str(t).lower() == "flying" for t in types)
         is_levitate = (ability_id == AbilityID.LEVITATE)
@@ -1123,8 +1275,23 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.MEGA_SPA] = float(mega_stats.get("spa", mon_spec.get("mega_spa", p_vec[MonIdx.STAT_SPA])))
         p_vec[MonIdx.MEGA_SPD] = float(mega_stats.get("spd", mon_spec.get("mega_spd", p_vec[MonIdx.STAT_SPD])))
         p_vec[MonIdx.MEGA_SPE] = float(mega_stats.get("spe", mon_spec.get("mega_spe", p_vec[MonIdx.STAT_SPE])))
-        mega_ab_str = str(mon_spec.get("mega_ability", ability_str)).lower()
-        p_vec[MonIdx.MEGA_ABILITY_ID] = float(ABILITY_NAME_TO_ID.get(mega_ab_str, ability_id))
+        mega_ab_str = str(mon_spec.get("mega_ability", ability_str)).strip().lower()
+        p_vec[MonIdx.MEGA_ABILITY_ID] = float(
+            ABILITY_NAME_TO_ID.get(mega_ab_str, ABILITY_NAME_TO_ID.get(_to_id(mega_ab_str), ability_id))
+        )
+
+        mega_types = mon_spec.get("mega_types")
+        if mega_types and len(mega_types) >= 1:
+            mt1_idx = TYPE_TO_IDX.get(str(mega_types[0]).lower(), t1_idx)
+            p_vec[MonIdx.MEGA_TYPE1] = float(mt1_idx)
+            if len(mega_types) >= 2 and str(mega_types[1]).lower() != str(mega_types[0]).lower():
+                mt2_idx = TYPE_TO_IDX.get(str(mega_types[1]).lower(), -1)
+                p_vec[MonIdx.MEGA_TYPE2] = float(mt2_idx)
+            else:
+                p_vec[MonIdx.MEGA_TYPE2] = -1.0
+        else:
+            p_vec[MonIdx.MEGA_TYPE1] = float(mon_spec.get("mega_type1", -1.0))
+            p_vec[MonIdx.MEGA_TYPE2] = float(mon_spec.get("mega_type2", -1.0))
 
         moves_list = mon_spec.get("moves", [])
         for m_i in range(MOVES_PER_MON):
@@ -1157,17 +1324,17 @@ class ShowdownTensorCompiler:
         f_np[FieldIdx.TRICK_ROOM_TURNS] = float(f_spec.get("trick_room_turns", 0.0))
         f_np[FieldIdx.GRAVITY_TURNS] = float(f_spec.get("gravity_turns", 0.0))
 
-        f_np[FieldIdx.TRAINER_1_TAILWIND_TURNS] = float(f_spec.get("trainer_1_tailwind_turns", f_spec.get("p1_tailwind_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_1_REFLECT_TURNS] = float(f_spec.get("trainer_1_reflect_turns", f_spec.get("p1_reflect_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_1_light_screen_turns", f_spec.get("p1_light_screen_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_1_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_1_aurora_veil_turns", f_spec.get("p1_aurora_veil_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_1_MEGA_USED] = float(f_spec.get("trainer_1_mega_used", f_spec.get("p1_mega_used", 0.0)))
+        f_np[FieldIdx.TRAINER_1_TAILWIND_TURNS] = float(f_spec.get("trainer_1_tailwind_turns", 0.0))
+        f_np[FieldIdx.TRAINER_1_REFLECT_TURNS] = float(f_spec.get("trainer_1_reflect_turns", 0.0))
+        f_np[FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_1_light_screen_turns", 0.0))
+        f_np[FieldIdx.TRAINER_1_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_1_aurora_veil_turns", 0.0))
+        f_np[FieldIdx.TRAINER_1_MEGA_USED] = float(f_spec.get("trainer_1_mega_used", 0.0))
 
-        f_np[FieldIdx.TRAINER_2_TAILWIND_TURNS] = float(f_spec.get("trainer_2_tailwind_turns", f_spec.get("p2_tailwind_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_2_REFLECT_TURNS] = float(f_spec.get("trainer_2_reflect_turns", f_spec.get("p2_reflect_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_2_light_screen_turns", f_spec.get("p2_light_screen_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_2_aurora_veil_turns", f_spec.get("p2_aurora_veil_turns", 0.0)))
-        f_np[FieldIdx.TRAINER_2_MEGA_USED] = float(f_spec.get("trainer_2_mega_used", f_spec.get("p2_mega_used", 0.0)))
+        f_np[FieldIdx.TRAINER_2_TAILWIND_TURNS] = float(f_spec.get("trainer_2_tailwind_turns", 0.0))
+        f_np[FieldIdx.TRAINER_2_REFLECT_TURNS] = float(f_spec.get("trainer_2_reflect_turns", 0.0))
+        f_np[FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_2_light_screen_turns", 0.0))
+        f_np[FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_2_aurora_veil_turns", 0.0))
+        f_np[FieldIdx.TRAINER_2_MEGA_USED] = float(f_spec.get("trainer_2_mega_used", 0.0))
 
         p_np = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
         m_np = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
@@ -1248,14 +1415,6 @@ class ShowdownTensorCompiler:
         encore_active = 1.0 if user_vec[MonIdx.ENCORE_TURNS] > 0.0 else 0.0
         last_move_idx = int(round(user_vec[MonIdx.LAST_MOVE_IDX]))
         choice_lock_idx = int(round(user_vec[MonIdx.CHOICE_LOCKED_MOVE]))
-        has_assault_vest = (
-            1.0
-            if (
-                user_vec[MonIdx.ITEM_ACTIVE] > 0.0
-                and int(round(user_vec[MonIdx.ITEM_ID])) == ItemID.ASSAULT_VEST
-            )
-            else 0.0
-        )
         user_ab = int(round(user_vec[MonIdx.ABILITY_ID]))
         can_mega_gate = (
             1.0
@@ -1267,8 +1426,12 @@ class ShowdownTensorCompiler:
             else 0.0
         )
 
-        opp_a_ab = int(round(opp_a_vec[MonIdx.ABILITY_ID])) if opp_a_vec[MonIdx.ALIVE_FLAG] > 0.0 else 0
-        opp_b_ab = int(round(opp_b_vec[MonIdx.ABILITY_ID])) if opp_b_vec[MonIdx.ALIVE_FLAG] > 0.0 else 0
+        opp_a_alive = opp_a_vec[MonIdx.ALIVE_FLAG] > 0.0
+        opp_b_alive = opp_b_vec[MonIdx.ALIVE_FLAG] > 0.0
+        partner_alive = partner_vec[MonIdx.ALIVE_FLAG] > 0.0
+
+        opp_a_ab = int(round(opp_a_vec[MonIdx.ABILITY_ID])) if opp_a_alive else 0
+        opp_b_ab = int(round(opp_b_vec[MonIdx.ABILITY_ID])) if opp_b_alive else 0
         opp_blocks_prio = (
             1.0
             if (
@@ -1290,17 +1453,7 @@ class ShowdownTensorCompiler:
                 continue
             eff_user_ab = int(round(user_vec[MonIdx.MEGA_ABILITY_ID])) if mega_mode == 1 else user_ab
 
-            for tgt_bucket, tgt_vec in enumerate(target_slots):
-                tgt_alive = tgt_vec[MonIdx.ALIVE_FLAG]
-                if tgt_alive <= 0.0:
-                    continue
-
-                tgt_ab = int(round(tgt_vec[MonIdx.ABILITY_ID]))
-                tgt_grounded = 1.0 if (gravity_active > 0.0 or tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0) else 0.0
-                tgt_type1 = tgt_vec[MonIdx.TYPE1_START:MonIdx.TYPE1_END]
-                tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
-                tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
-
+            for tgt_bucket, raw_tgt_vec in enumerate(target_slots):
                 for m_idx in range(MOVES_PER_MON):
                     choice_idx = (mega_mode * 12) + (tgt_bucket * 4) + m_idx
                     m_vec = moves_4[m_idx]
@@ -1308,26 +1461,50 @@ class ShowdownTensorCompiler:
                     target_type = int(round(m_vec[MoveIdx.TARGET_TYPE]))
                     is_status = m_vec[MoveIdx.CAT_STATUS] > 0.5
 
-                    # 1. Target Bucket Routing Gate
+                    # 1. Target Bucket Routing & Target Alive Gate
                     if target_type in (
-                        TargetType.ALL_ADJACENT_FOES,
-                        TargetType.ALL_ADJACENT,
                         TargetType.SELF,
                         TargetType.ALLY_SIDE,
                         TargetType.GLOBAL_FIELD,
                     ):
                         if tgt_bucket != 0:
                             continue
-                    elif target_type == TargetType.ALLY:
-                        if tgt_bucket != 2:
+                        tgt_vec = user_vec
+                    elif target_type == TargetType.ALL_ADJACENT_FOES:
+                        if tgt_bucket != 0 or not (opp_a_alive or opp_b_alive):
                             continue
+                        tgt_vec = opp_a_vec if opp_a_alive else opp_b_vec
+                    elif target_type == TargetType.ALL_ADJACENT:
+                        if tgt_bucket != 0 or not (opp_a_alive or opp_b_alive or partner_alive):
+                            continue
+                        tgt_vec = (
+                            opp_a_vec
+                            if opp_a_alive
+                            else (opp_b_vec if opp_b_alive else partner_vec)
+                        )
+                    elif target_type == TargetType.ALLY:
+                        if tgt_bucket != 2 or not partner_alive:
+                            continue
+                        tgt_vec = partner_vec
+                    else:
+                        if raw_tgt_vec[MonIdx.ALIVE_FLAG] <= 0.0:
+                            continue
+                        tgt_vec = raw_tgt_vec
 
-                    # 2. Choice Lock / Encore / Taunt / Assault Vest Hard Gates
+                    tgt_ab = int(round(tgt_vec[MonIdx.ABILITY_ID]))
+                    tgt_grounded = (
+                        1.0 if (gravity_active > 0.0 or tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0) else 0.0
+                    )
+                    tgt_type1 = tgt_vec[MonIdx.TYPE1_START:MonIdx.TYPE1_END]
+                    tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
+                    tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
+
+                    # 2. Choice Lock / Encore / Taunt Hard Gates
                     if choice_lock_idx >= 0 and m_idx != choice_lock_idx:
                         continue
                     if encore_active > 0.0 and last_move_idx >= 0 and m_idx != last_move_idx:
                         continue
-                    if is_status and (taunt_active > 0.0 or has_assault_vest > 0.0):
+                    if is_status and taunt_active > 0.0:
                         continue
 
                     # 3. Turn-1 Gate (Fake Out / First Impression / Mat Block)
@@ -1337,6 +1514,12 @@ class ShowdownTensorCompiler:
                     # 4. Effective Priority Resolution
                     eff_prio = float(m_vec[MoveIdx.PRIORITY])
                     if eff_user_ab == AbilityID.PRANKSTER and is_status:
+                        eff_prio += 1.0
+                    elif (
+                        eff_user_ab == AbilityID.GALE_WINGS
+                        and m_vec[MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]] > 0.5
+                        and user_vec[MonIdx.HP_CUR] >= user_vec[MonIdx.HP_MAX]
+                    ):
                         eff_prio += 1.0
                     elif (
                         m_vec[MoveIdx.GRASSY_PRIO_BOOST] > 0.5
@@ -1466,9 +1649,9 @@ class ShowdownTensorCompiler:
             trainer_id: `'trainer_1'` or `'trainer_2'`.
         """
         if side is not None:
-            trainer_id = "trainer_1" if str(side).lower() in ("trainer_1", "p1") else "trainer_2"
+            trainer_id = str(side).lower()
         elif "side" in kwargs:
-            trainer_id = "trainer_1" if str(kwargs["side"]).lower() in ("trainer_1", "p1") else "trainer_2"
+            trainer_id = str(kwargs["side"]).lower()
 
         if trainer_id not in ("trainer_1", "trainer_2"):
             raise ValueError(

@@ -61,10 +61,8 @@ class ReplayTurnExpectation:
         **kwargs: Any,
     ) -> None:
         self.turn = turn
-        t1 = trainer_1_choices if trainer_1_choices is not None else kwargs.get("p1_choices", (0, 0))
-        t2 = trainer_2_choices if trainer_2_choices is not None else kwargs.get("p2_choices", (0, 0))
-        self.trainer_1_choices = tuple(t1)
-        self.trainer_2_choices = tuple(t2)
+        self.trainer_1_choices = tuple(trainer_1_choices if trainer_1_choices is not None else (0, 0))
+        self.trainer_2_choices = tuple(trainer_2_choices if trainer_2_choices is not None else (0, 0))
         self.expected_damages = expected_damages or {}
         self.expected_flinches = expected_flinches or []
         self.expected_terrains = expected_terrains
@@ -140,10 +138,6 @@ class ShowdownReplayUnroller:
             "trainer_1_b": SLOT_TRAINER_1_B,
             "trainer_2_a": SLOT_TRAINER_2_A,
             "trainer_2_b": SLOT_TRAINER_2_B,
-            "p1a": SLOT_TRAINER_1_A,
-            "p1b": SLOT_TRAINER_1_B,
-            "p2a": SLOT_TRAINER_2_A,
-            "p2b": SLOT_TRAINER_2_B,
         }
 
         for slot_str, (min_pct, max_pct) in expectation.expected_damages.items():

@@ -216,75 +216,79 @@ class TournamentArchetypeMatcher:
         for me in modes:
             score = me.composite_score
             members_species = [m.species.lower() for m in me.mode.members]
+            members_abilities = {m.ability.lower() for m in me.mode.members}
+            members_items = {m.item.lower() for m in me.mode.members}
+            members_types = {t.lower() for m in me.mode.members for t in m.types}
+            members_moves = {mv.lower() for m in me.mode.members for mv in m.moves}
 
             if archetype.archetype_id == "tailwind_spike_offense":
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "steel" in members_types:
                     score += 20.0
-                if "garchomp" in members_species:
+                if "garchomp" in members_species or "choice scarf" in members_items:
                     score += 18.0
-                if "grimmsnarl" in members_species:
+                if "grimmsnarl" in members_species or ("light screen" in members_moves or "wide guard" in members_moves):
                     score += 15.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "fake out" in members_moves:
                     score += 10.0
 
             elif archetype.archetype_id == "rain_balance":
-                if "charizard" in members_species:
+                if "charizard" in members_species or "drought" in members_abilities or "chlorophyll" in members_abilities:
                     score += 25.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "lightning rod" in members_abilities:
                     score += 22.0
-                if "milotic" in members_species:
+                if "milotic" in members_species or "stamina" in members_abilities or "drizzle" in members_abilities:
                     score += 12.0
-                if "grimmsnarl" in members_species:
+                if "grimmsnarl" in members_species or "garchomp" in members_species:
                     score += 10.0
 
             elif archetype.archetype_id == "sun_offense":
-                if "milotic" in members_species:
+                if "milotic" in members_species or "pelipper" in members_species or "drizzle" in members_abilities:
                     score += 25.0
-                if "garchomp" in members_species:
+                if "garchomp" in members_species or "rock slide" in members_moves:
                     score += 25.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "sneasler" in members_species:
                     score += 12.0
 
             elif archetype.archetype_id == "trick_room_psyspam":
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "dark" in members_types or "archaludon" in members_species:
                     score += 30.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "pelipper" in members_species:
                     score += 25.0
-                if "grimmsnarl" in members_species:
+                if "grimmsnarl" in members_species or "snarl" in members_moves or "wide guard" in members_moves:
                     score += 20.0
 
             elif archetype.archetype_id == "pivoting_balance":
-                if "milotic" in members_species:
+                if "milotic" in members_species or "competitive" in members_abilities or "white herb" in members_items:
                     score += 30.0
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "defiant" in members_abilities or "stamina" in members_abilities:
                     score += 30.0
-                if "charizard" in members_species:
+                if "charizard" in members_species or "drought" in members_abilities:
                     score += 18.0
 
             elif archetype.archetype_id == "dragon_steel_carry":
-                if "milotic" in members_species:
+                if "milotic" in members_species or "ice beam" in members_moves or "icy wind" in members_moves:
                     score += 25.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "nuzzle" in members_moves:
                     score += 20.0
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "archaludon" in members_species:
                     score += 18.0
 
             elif archetype.archetype_id == "sand_offense":
-                if "milotic" in members_species:
+                if "milotic" in members_species or "pelipper" in members_species or "drizzle" in members_abilities:
                     score += 30.0
-                if "garchomp" in members_species:
+                if "garchomp" in members_species or "sneasler" in members_species:
                     score += 22.0
-                if "grimmsnarl" in members_species:
+                if "grimmsnarl" in members_species or "archaludon" in members_species:
                     score += 20.0
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "venusaur" in members_species:
                     score += 15.0
 
             elif archetype.archetype_id == "snow_hyper_defense":
-                if "charizard" in members_species:
+                if "charizard" in members_species or "drought" in members_abilities:
                     score += 30.0
-                if "kingambit" in members_species:
+                if "kingambit" in members_species or "archaludon" in members_species or "sneasler" in members_species:
                     score += 25.0
-                if "raichu" in members_species:
+                if "raichu" in members_species or "pelipper" in members_species:
                     score += 15.0
 
             if score > best_mode_score:
@@ -306,34 +310,34 @@ class TournamentArchetypeMatcher:
 
         for le in valid_leads:
             l_score = le.initiative_score
-            p1 = le.lead.pokemon_1.species.lower()
-            p2 = le.lead.pokemon_2.species.lower()
-            pair = {p1, p2}
+            mon_1_sp = le.lead.pokemon_1.species.lower()
+            mon_2_sp = le.lead.pokemon_2.species.lower()
+            pair = {mon_1_sp, mon_2_sp}
 
             if archetype.archetype_id == "tailwind_spike_offense":
-                if "garchomp" in pair and "grimmsnarl" in pair:
-                    l_score += 60.0
+                if "garchomp" in pair and ("grimmsnarl" in pair or "raichu" in pair or "pelipper" in pair):
+                    l_score += 60.0 if "grimmsnarl" in pair else 45.0
             elif archetype.archetype_id == "rain_balance":
-                if "charizard" in pair and "raichu" in pair:
+                if "charizard" in pair and ("raichu" in pair or "venusaur" in pair):
                     l_score += 60.0
             elif archetype.archetype_id == "sun_offense":
-                if "garchomp" in pair and "milotic" in pair:
-                    l_score += 60.0
+                if "garchomp" in pair and ("milotic" in pair or "pelipper" in pair or "raichu" in pair):
+                    l_score += 60.0 if "milotic" in pair else 45.0
             elif archetype.archetype_id == "trick_room_psyspam":
-                if "raichu" in pair and "kingambit" in pair:
-                    l_score += 60.0
+                if "raichu" in pair and ("kingambit" in pair or "archaludon" in pair or "charizard" in pair):
+                    l_score += 60.0 if "kingambit" in pair else 45.0
             elif archetype.archetype_id == "pivoting_balance":
-                if "milotic" in pair and "charizard" in pair:
+                if "charizard" in pair and ("milotic" in pair or "sneasler" in pair):
                     l_score += 60.0
             elif archetype.archetype_id == "dragon_steel_carry":
-                if "milotic" in pair and "raichu" in pair:
-                    l_score += 60.0
+                if "raichu" in pair and ("milotic" in pair or "archaludon" in pair or "garchomp" in pair):
+                    l_score += 60.0 if "milotic" in pair else 45.0
             elif archetype.archetype_id == "sand_offense":
-                if "milotic" in pair and "grimmsnarl" in pair:
+                if ("milotic" in pair and "grimmsnarl" in pair) or ("pelipper" in pair and "archaludon" in pair):
                     l_score += 60.0
             elif archetype.archetype_id == "snow_hyper_defense":
-                if "charizard" in pair and "kingambit" in pair:
-                    l_score += 60.0
+                if "charizard" in pair and ("kingambit" in pair or "archaludon" in pair or "sneasler" in pair):
+                    l_score += 60.0 if "kingambit" in pair else 45.0
 
             if l_score > best_lead_score:
                 best_lead_score = l_score
@@ -345,8 +349,8 @@ class TournamentArchetypeMatcher:
         lead_slots = set(chosen_lead.slot_indices)
         backline = [m for m in chosen_mode.members if m.slot_index not in lead_slots]
 
-        p1 = chosen_lead.pokemon_1
-        p2 = chosen_lead.pokemon_2
+        lead_mon_1 = chosen_lead.pokemon_1
+        lead_mon_2 = chosen_lead.pokemon_2
         back_str = " + ".join(m.species for m in backline)
 
         # Build strictly verified Turn 1 move matrix (0% hallucination)
@@ -355,14 +359,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Whimsicott + (Glimmora OR Charizard-Mega-Y)"
             step_1 = "Check for Prankster Tailwind (Whimsicott) paired with Glimmora hazard lead or flying Mega sweeper."
             step_2 = f"Lock {chosen_mode.name}: Exclude slow weather setters; bring {back_str} in reserve to absorb poison/spread."
-            step_3 = f"Lead {p1.species} + {p2.species}: Immediate 231 Spe Scarf pressure + Prankster screen mitigation."
-            m1 = _select_verified_move(p1, ["Rock Slide", "Light Screen", "Fake Out"])
-            m2 = _select_verified_move(p2, ["Light Screen", "Rock Slide", "Parting Shot"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species}: Immediate Scarf pressure + screen/Fake Out mitigation."
+            m1 = _select_verified_move(lead_mon_1, ["Rock Slide", "Light Screen", "Fake Out"])
+            m2 = _select_verified_move(lead_mon_2, ["Light Screen", "Rock Slide", "Parting Shot", "Fake Out"])
             step_4_matrix = {
-                p1.species: f"{m1} (spread chip + 30% flinch on both opponent slots)",
-                p2.species: f"{m2} (cuts Glimmora/Charizard special damage by 33%)",
+                lead_mon_1.species: f"{m1} (spread chip + 30% flinch on both opponent slots)",
+                lead_mon_2.species: f"{m2} (cuts Glimmora/Charizard special damage by 33%)",
             }
-            turn_1_plan_a = f"{p1.species} clicks {m1}; {p2.species} clicks {m2}."
+            turn_1_plan_a = f"{lead_mon_1.species} clicks {m1}; {lead_mon_2.species} clicks {m2}."
             turn_1_plan_b = "If opponent hard-switches Glimmora into Charizard: Rock Slide hits Charizard for 4x OHKO on entry."
             win_con = "Weather their 4 turns of Tailwind behind Light Screen, then clean with Kingambit Sucker Punch + Iron Head."
             risk_factors = ["Double critical hit bypassing Light Screen", "Rock Slide 90% accuracy miss"]
@@ -372,14 +376,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Pelipper + Archaludon (+ Basculegion)"
             step_1 = "Identify Drizzle setter (Pelipper) and Electro Shot carry (Archaludon)."
             step_2 = f"Lock {chosen_mode.name}: Drought + Lightning Rod completely disables Rain's primary engine."
-            step_3 = f"Lead {p1.species} + {p2.species}: Keep {back_str} in reserve for defensive pivoting."
-            m1 = _select_verified_move(p1, ["Weather Ball", "Heat Wave", "Solar Beam", "Fake Out"])
-            m2 = _select_verified_move(p2, ["Fake Out", "Nuzzle", "Volt Switch", "Weather Ball"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species}: Keep {back_str} in reserve for defensive pivoting."
+            m1 = _select_verified_move(lead_mon_1, ["Weather Ball", "Heat Wave", "Solar Beam", "Fake Out"])
+            m2 = _select_verified_move(lead_mon_2, ["Fake Out", "Nuzzle", "Volt Switch", "Weather Ball"])
             step_4_matrix = {
-                p1.species: f"Mega Evolve (Drought overrides Rain) + {m1} into Archaludon",
-                p2.species: f"{m2} into Pelipper (Lightning Rod redirects any Electro Shot)",
+                lead_mon_1.species: f"Mega Evolve (Drought overrides Rain) + {m1} into Archaludon",
+                lead_mon_2.species: f"{m2} into Pelipper (Lightning Rod redirects any Electro Shot)",
             }
-            turn_1_plan_a = f"{p1.species} Mega Evolves to clear Rain and uses {m1}; {p2.species} uses {m2}."
+            turn_1_plan_a = f"{lead_mon_1.species} Mega Evolves to clear Rain and uses {m1}; {lead_mon_2.species} uses {m2}."
             turn_1_plan_b = "If Pelipper switches out to reset Rain later: pivot via Volt Switch / Parting Shot to reset Sun."
             win_con = "Keep Sun active so Archaludon is forced into a 2-turn charge and Water moves deal 50% damage."
             risk_factors = ["Manual Rain Dance on Pelipper", "Archaludon Body Press into backline Kingambit"]
@@ -389,14 +393,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Venusaur + (Charizard-Mega-Y OR Torkoal)"
             step_1 = "Spot Chlorophyll sweeper (Venusaur) + Drought activator."
             step_2 = f"Lock {chosen_mode.name}: Scarf Garchomp + Ice Beam Milotic + Nuzzle Raichu control speed."
-            step_3 = f"Lead {p1.species} + {p2.species} with {back_str} in reserve."
-            m1 = _select_verified_move(p1, ["Ice Beam", "Rock Slide", "Icy Wind"])
-            m2 = _select_verified_move(p2, ["Rock Slide", "Ice Beam", "Stomping Tantrum"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species} with {back_str} in reserve."
+            m1 = _select_verified_move(lead_mon_1, ["Ice Beam", "Rock Slide", "Icy Wind", "Hurricane"])
+            m2 = _select_verified_move(lead_mon_2, ["Rock Slide", "Ice Beam", "Stomping Tantrum", "Weather Ball"])
             step_4_matrix = {
-                p1.species: f"{m1} targeting Venusaur",
-                p2.species: f"{m2} targeting Charizard/Torkoal (4x super-effective on Charizard)",
+                lead_mon_1.species: f"{m1} targeting Venusaur",
+                lead_mon_2.species: f"{m2} targeting Charizard/Torkoal (4x super-effective on Charizard)",
             }
-            turn_1_plan_a = f"{p1.species} executes {m1} into Venusaur; {p2.species} executes {m2}."
+            turn_1_plan_a = f"{lead_mon_1.species} executes {m1} into Venusaur; {lead_mon_2.species} executes {m2}."
             turn_1_plan_b = "If Venusaur threatens Sleep Powder on Milotic: pivot into Raichu or Grimmsnarl for Fake Out/Light Screen."
             win_con = "Eliminate Charizard with Scarf Rock Slide and freeze/KO Venusaur with Ice Beam."
             risk_factors = ["Chlorophyll Sleep Powder 75% accuracy", "Opposing Scarf speed tie"]
@@ -406,14 +410,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Indeedee-F OR Farigiraf + (Delphox-Mega / Gardevoir-Mega / Hatterene)"
             step_1 = "Identify Psychic Surge (Indeedee-F) or Armor Tail (Farigiraf) blocking priority."
             step_2 = f"Lock {chosen_mode.name}: Raichu-Mega-X Electric Surge overwrites Psychic Terrain; Kingambit walls Psychic."
-            step_3 = f"Lead {p1.species} + {p2.species} with {back_str} in the back."
-            m1 = _select_verified_move(p1, ["Volt Tackle", "Nuzzle", "Kowtow Cleave"])
-            m2 = _select_verified_move(p2, ["Kowtow Cleave", "Iron Head", "Volt Tackle"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species} with {back_str} in the back."
+            m1 = _select_verified_move(lead_mon_1, ["Volt Tackle", "Nuzzle", "Kowtow Cleave", "Snarl"])
+            m2 = _select_verified_move(lead_mon_2, ["Kowtow Cleave", "Iron Head", "Volt Tackle", "Flash Cannon"])
             step_4_matrix = {
-                p1.species: f"Mega Evolve into Mega-X (Electric Surge deletes Psychic Terrain) + {m1}",
-                p2.species: f"{m2} targeting the Trick Room / Expanding Force carry",
+                lead_mon_1.species: f"Mega Evolve into Mega-X (Electric Surge deletes Psychic Terrain) + {m1}",
+                lead_mon_2.species: f"{m2} targeting the Trick Room / Expanding Force carry",
             }
-            turn_1_plan_a = f"{p1.species} Mega Evolves to overwrite Psychic Terrain and uses {m1}; {p2.species} uses {m2}."
+            turn_1_plan_a = f"{lead_mon_1.species} Mega Evolves to overwrite Psychic Terrain and uses {m1}; {lead_mon_2.species} uses {m2}."
             turn_1_plan_b = "If Trick Room goes up: stall turns with Kingambit Protect and Grimmsnarl Light Screen + Parting Shot."
             win_con = "Deny Psychic Terrain on Turn 1 so Kingambit Sucker Punch and Raichu Fake Out remain active."
             risk_factors = ["Dazzling Gleam / Mystical Fire coverage into Kingambit", "Mental Herb on Trick Room setter"]
@@ -423,12 +427,12 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Incineroar + Rillaboom (+ Sneasler / Gholdengo)"
             step_1 = "Spot Intimidate + Fake Out cycle core (Incineroar + Rillaboom)."
             step_2 = f"Lock {chosen_mode.name}: Punish Intimidate/Parting Shot automatically with Competitive Milotic + Defiant Kingambit."
-            step_3 = f"Lead {p1.species} + {p2.species}; hold {back_str} in reserve."
-            m1 = _select_verified_move(p1, ["Heat Wave", "Scald", "Protect"])
-            m2 = _select_verified_move(p2, ["Scald", "Ice Beam", "Heat Wave"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species}; hold {back_str} in reserve."
+            m1 = _select_verified_move(lead_mon_1, ["Heat Wave", "Scald", "Close Combat", "Protect"])
+            m2 = _select_verified_move(lead_mon_2, ["Scald", "Ice Beam", "Heat Wave", "Close Combat"])
             step_4_matrix = {
-                p1.species: f"{m1} (or Protect if Fake Out is telegraphed onto this slot)",
-                p2.species: f"{m2} (+2 Competitive SpA punishes Incineroar immediately)",
+                lead_mon_1.species: f"{m1} (or Protect if Fake Out is telegraphed onto this slot)",
+                lead_mon_2.species: f"{m2} (+2 Competitive SpA / White Herb Unburden punishes Incineroar immediately)",
             }
             turn_1_plan_a = f"Trigger +2 Competitive on Milotic from opposing Intimidate; execute {m1} + {m2}."
             turn_1_plan_b = "If Rillaboom stays in to Wood Hammer Milotic: hard switch Milotic to Charizard or Kingambit while firing Heat Wave."
@@ -440,14 +444,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Salamence-Mega + Gholdengo (+ Kingambit)"
             step_1 = "Identify Aerilate physical/mixed Mega Salamence paired with Gholdengo Make It Rain."
             step_2 = f"Lock {chosen_mode.name}: Milotic Ice Beam + Raichu Nuzzle neutralize Salamence; Fire/Dark handles Gholdengo."
-            step_3 = f"Lead {p1.species} + {p2.species} with {back_str} in reserve."
-            m1 = _select_verified_move(p1, ["Fake Out", "Nuzzle", "Ice Beam"])
-            m2 = _select_verified_move(p2, ["Ice Beam", "Icy Wind", "Nuzzle"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species} with {back_str} in reserve."
+            m1 = _select_verified_move(lead_mon_1, ["Fake Out", "Nuzzle", "Ice Beam", "Rock Slide"])
+            m2 = _select_verified_move(lead_mon_2, ["Ice Beam", "Icy Wind", "Nuzzle", "Draco Meteor"])
             step_4_matrix = {
-                p1.species: f"{m1} to disrupt Salamence or paralyze Gholdengo",
-                p2.species: f"{m2} targeting Salamence (4x Ice weakness)",
+                lead_mon_1.species: f"{m1} to disrupt Salamence or paralyze Gholdengo",
+                lead_mon_2.species: f"{m2} targeting Salamence (4x Ice weakness)",
             }
-            turn_1_plan_a = f"{p1.species} uses {m1}; {p2.species} uses {m2} into Salamence-Mega."
+            turn_1_plan_a = f"{lead_mon_1.species} uses {m1}; {lead_mon_2.species} uses {m2} into Salamence-Mega."
             turn_1_plan_b = "If Salamence Protects Turn 1: Nuzzle or Icy Wind the partner slot to maintain speed advantage."
             win_con = "Remove Salamence-Mega with 4x Ice Beam, then clean Gholdengo with Charizard/Garchomp/Kingambit."
             risk_factors = ["Aerilate Double-Edge critical hit", "Nasty Plot Gholdengo behind Fake Out"]
@@ -457,14 +461,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Tyranitar-Mega + Excadrill"
             step_1 = "Spot Sand Stream setter (Tyranitar) + Sand Rush sweeper (Excadrill)."
             step_2 = f"Lock {chosen_mode.name}: Reflect + Scald + Scarf Garchomp shut down physical rock/ground spam."
-            step_3 = f"Lead {p1.species} + {p2.species} with {back_str} in the back."
-            m1 = _select_verified_move(p1, ["Scald", "Reflect", "Stomping Tantrum"])
-            m2 = _select_verified_move(p2, ["Reflect", "Parting Shot", "Scald"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species} with {back_str} in the back."
+            m1 = _select_verified_move(lead_mon_1, ["Scald", "Reflect", "Stomping Tantrum", "Weather Ball"])
+            m2 = _select_verified_move(lead_mon_2, ["Reflect", "Parting Shot", "Scald", "Body Press"])
             step_4_matrix = {
-                p1.species: f"{m1} targeting Excadrill or Tyranitar (super-effective Water + 30% burn)",
-                p2.species: f"{m2} (cuts physical Rock Slide / Earthquake damage by 33%)",
+                lead_mon_1.species: f"{m1} targeting Excadrill or Tyranitar (super-effective Water + 30% burn)",
+                lead_mon_2.species: f"{m2} (cuts physical Rock Slide / Earthquake damage by 33%)",
             }
-            turn_1_plan_a = f"{p1.species} uses {m1}; {p2.species} sets {m2} to wall Sand Rush Excadrill."
+            turn_1_plan_a = f"{lead_mon_1.species} uses {m1}; {lead_mon_2.species} sets {m2} to wall Sand Rush Excadrill."
             turn_1_plan_b = "Pivot Grimmsnarl via Parting Shot into Garchomp to clean weakened Sand sweepers with Stomping Tantrum."
             win_con = "Establish Reflect on Turn 1 and burn/KO Excadrill with Milotic Scald."
             risk_factors = ["Double Rock Slide flinch (9% combined probability)", "Swords Dance on Excadrill"]
@@ -474,14 +478,14 @@ class TournamentArchetypeMatcher:
             if_cond = "IF Opponent has Ninetales-Alola + (Abomasnow-Mega OR Baxcalibur)"
             step_1 = "Identify Snow Warning setter attempting Turn 1 Aurora Veil."
             step_2 = f"Lock {chosen_mode.name}: Charizard Drought overwrites Snow (causing Aurora Veil to fail!) + Kingambit Iron Head."
-            step_3 = f"Lead {p1.species} + {p2.species} with {back_str} in reserve."
-            m1 = _select_verified_move(p1, ["Heat Wave", "Weather Ball", "Iron Head"])
-            m2 = _select_verified_move(p2, ["Iron Head", "Heat Wave", "Kowtow Cleave"])
+            step_3 = f"Lead {lead_mon_1.species} + {lead_mon_2.species} with {back_str} in reserve."
+            m1 = _select_verified_move(lead_mon_1, ["Heat Wave", "Weather Ball", "Iron Head", "Flash Cannon"])
+            m2 = _select_verified_move(lead_mon_2, ["Iron Head", "Heat Wave", "Kowtow Cleave", "Close Combat"])
             step_4_matrix = {
-                p1.species: f"Mega Evolve (Drought clears Snow at Priority +5.5 before Veil!) + {m1}",
-                p2.species: f"{m2} targeting Ninetales-Alola or Abomasnow",
+                lead_mon_1.species: f"Mega Evolve (Drought clears Snow at Priority +5.5 before Veil!) + {m1}",
+                lead_mon_2.species: f"{m2} targeting Ninetales-Alola or Abomasnow",
             }
-            turn_1_plan_a = f"Mega Evolve {p1.species} to cancel Snow (Aurora Veil fails!) and click {m1}; {p2.species} clicks {m2}."
+            turn_1_plan_a = f"Mega Evolve {lead_mon_1.species} to cancel Snow (Aurora Veil fails!) and click {m1}; {lead_mon_2.species} clicks {m2}."
             turn_1_plan_b = "If opponent switches Ninetales out to reset Snow later: preserve Kingambit Iron Head for the re-entry."
             win_con = "Drought activates at Priority +5.5 on Mega Evolution, denying Aurora Veil and melting Ice types with Heat Wave."
             risk_factors = ["Baxcalibur Glaive Rush / High Horsepower", "Manual Hail/Chilly Reception"]

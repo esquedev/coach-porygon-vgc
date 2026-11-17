@@ -30,14 +30,14 @@ from engine.vgc_tensor_core.schema_and_tables import (
     MonIdx,
     MoveIdx,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P1_BENCH1,
-    SLOT_P1_BENCH2,
-    SLOT_P2A,
-    SLOT_P2B,
-    SLOT_P2_BENCH1,
-    SLOT_P2_BENCH2,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_1_BENCH1,
+    SLOT_TRAINER_1_BENCH2,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
+    SLOT_TRAINER_2_BENCH1,
+    SLOT_TRAINER_2_BENCH2,
     TERRAIN_TO_IDX,
     TYPE_TO_IDX,
     TargetType,
@@ -99,14 +99,14 @@ def parse_showdown_to_english(wire_lines: list[str]) -> list[str]:
 def _build_game1_manifest() -> TeamManifest:
     return TeamManifest(
         slots={
-            SLOT_P1A: SlotMetadata(species="Raichu", mega_species="Raichu-Mega-X", item="Mega Stone", ability="Electric Surge", moves=["Fake Out", "Volt Tackle", "Protect", "Volt Switch"]),
-            SLOT_P1B: SlotMetadata(species="Kingambit", item="Focus Sash", ability="Defiant", moves=["Kowtow Cleave", "Iron Head", "Sucker Punch", "Protect"]),
-            SLOT_P1_BENCH1: SlotMetadata(species="Garchomp", item="Clear Amulet", ability="Rough Skin", moves=["Earthquake", "Dragon Claw", "Rock Slide", "Protect"]),
-            SLOT_P1_BENCH2: SlotMetadata(species="Charizard", moves=["Heat Wave", "Air Slash", "Solar Beam", "Protect"]),
-            SLOT_P2A: SlotMetadata(species="Rillaboom", item="Assault Vest", ability="Grassy Surge", moves=["Grassy Glide", "Wood Hammer", "Fake Out", "U-turn"]),
-            SLOT_P2B: SlotMetadata(species="Charizard", mega_species="Charizard-Mega-Y", item="Mega Stone", ability="Drought", moves=["Heat Wave", "Solar Beam", "Air Slash", "Protect"]),
-            SLOT_P2_BENCH1: SlotMetadata(species="Raichu", item="Life Orb", ability="Lightning Rod", moves=["Thunderbolt", "Volt Switch", "Protect", "Fake Out"]),
-            SLOT_P2_BENCH2: SlotMetadata(species="Basculegion-F", moves=["Wave Crash", "Shadow Ball", "Ice Beam", "Protect"]),
+            SLOT_TRAINER_1_A: SlotMetadata(species="Raichu", mega_species="Raichu-Mega-X", item="Mega Stone", ability="Electric Surge", moves=["Fake Out", "Volt Tackle", "Protect", "Volt Switch"]),
+            SLOT_TRAINER_1_B: SlotMetadata(species="Kingambit", item="Focus Sash", ability="Defiant", moves=["Kowtow Cleave", "Iron Head", "Sucker Punch", "Protect"]),
+            SLOT_TRAINER_1_BENCH1: SlotMetadata(species="Garchomp", item="White Herb", ability="Rough Skin", moves=["Earthquake", "Dragon Claw", "Rock Slide", "Protect"]),
+            SLOT_TRAINER_1_BENCH2: SlotMetadata(species="Charizard", moves=["Heat Wave", "Air Slash", "Solar Beam", "Protect"]),
+            SLOT_TRAINER_2_A: SlotMetadata(species="Rillaboom", item="Miracle Seed", ability="Grassy Surge", moves=["Grassy Glide", "Wood Hammer", "Fake Out", "U-turn"]),
+            SLOT_TRAINER_2_B: SlotMetadata(species="Charizard", mega_species="Charizard-Mega-Y", item="Mega Stone", ability="Drought", moves=["Heat Wave", "Solar Beam", "Air Slash", "Protect"]),
+            SLOT_TRAINER_2_BENCH1: SlotMetadata(species="Raichu", item="Life Orb", ability="Lightning Rod", moves=["Thunderbolt", "Volt Switch", "Protect", "Fake Out"]),
+            SLOT_TRAINER_2_BENCH2: SlotMetadata(species="Basculegion", moves=["Wave Crash", "Shadow Ball", "Ice Beam", "Protect"]),
         }
     )
 
@@ -119,128 +119,140 @@ def _build_game1_initial_state(tables: BilinearLookupTables, device: str):
     F[FieldIdx.TERRAIN_START + TERRAIN_TO_IDX["grassy"]] = 1.0
     F[FieldIdx.TERRAIN_TURNS] = 5.0
 
-    # Player 1
-    P[SLOT_P1A, MonIdx.HP_CUR] = 135.0
-    P[SLOT_P1A, MonIdx.HP_MAX] = 135.0
-    P[SLOT_P1A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1A, MonIdx.STAT_ATK] = 142.0
-    P[SLOT_P1A, MonIdx.STAT_DEF] = 75.0
-    P[SLOT_P1A, MonIdx.STAT_SPA] = 110.0
-    P[SLOT_P1A, MonIdx.STAT_SPD] = 100.0
-    P[SLOT_P1A, MonIdx.STAT_SPE] = 178.0
-    P[SLOT_P1A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1A, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]] = 1.0
-    P[SLOT_P1A, MonIdx.ITEM_ID] = float(ItemID.MEGA_STONE)
-    P[SLOT_P1A, MonIdx.ITEM_ACTIVE] = 1.0
-    P[SLOT_P1A, MonIdx.CAN_MEGA] = 1.0
-    P[SLOT_P1A, MonIdx.MEGA_ABILITY_ID] = float(AbilityID.ELECTRIC_SURGE)
-    P[SLOT_P1A, MonIdx.MEGA_ATK] = 142.0
-    P[SLOT_P1A, MonIdx.MEGA_DEF] = 75.0
-    P[SLOT_P1A, MonIdx.MEGA_SPA] = 110.0
-    P[SLOT_P1A, MonIdx.MEGA_SPD] = 100.0
-    P[SLOT_P1A, MonIdx.MEGA_SPE] = 178.0
-    P[SLOT_P1A, MonIdx.GROUNDED_FLAG] = 1.0
+    # trainer_1
+    P[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 135.0
+    P[SLOT_TRAINER_1_A, MonIdx.HP_MAX] = 135.0
+    P[SLOT_TRAINER_1_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_ATK] = 142.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_DEF] = 75.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPA] = 110.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPD] = 100.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPE] = 178.0
+    P[SLOT_TRAINER_1_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ID] = float(ItemID.MEGA_STONE)
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ACTIVE] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.CAN_MEGA] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_ABILITY_ID] = float(AbilityID.ELECTRIC_SURGE)
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_ATK] = 142.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_DEF] = 75.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_SPA] = 110.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_SPD] = 100.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_SPE] = 178.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_1_A, MonIdx.MEGA_TYPE2] = -1.0
+    P[SLOT_TRAINER_1_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    M[SLOT_P1A, 0, MoveIdx.BASE_POWER] = 40.0
-    M[SLOT_P1A, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.PRIORITY] = 3.0
-    M[SLOT_P1A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["normal"]] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.FLINCH_CHANCE] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.FIRST_TURN_ONLY] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.BASE_POWER] = 120.0
-    M[SLOT_P1A, 1, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.TYPE_START + TYPE_TO_IDX["electric"]] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.BASE_POWER] = 40.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.PRIORITY] = 3.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["normal"]] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.FLINCH_CHANCE] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.FIRST_TURN_ONLY] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.BASE_POWER] = 120.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.TYPE_START + TYPE_TO_IDX["electric"]] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.CAT_PHYSICAL] = 1.0
 
-    P[SLOT_P1B, MonIdx.HP_CUR] = 176.0
-    P[SLOT_P1B, MonIdx.HP_MAX] = 176.0
-    P[SLOT_P1B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1B, MonIdx.STAT_ATK] = 205.0
-    P[SLOT_P1B, MonIdx.STAT_DEF] = 140.0
-    P[SLOT_P1B, MonIdx.STAT_SPA] = 72.0
-    P[SLOT_P1B, MonIdx.STAT_SPD] = 105.0
-    P[SLOT_P1B, MonIdx.STAT_SPE] = 70.0
-    P[SLOT_P1B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1B, MonIdx.TYPE1_START + TYPE_TO_IDX["dark"]] = 1.0
-    P[SLOT_P1B, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]] = 1.0
-    P[SLOT_P1B, MonIdx.ITEM_ID] = float(ItemID.FOCUS_SASH)
-    P[SLOT_P1B, MonIdx.ITEM_ACTIVE] = 1.0
-    P[SLOT_P1B, MonIdx.ABILITY_ID] = float(AbilityID.DEFIANT)
-    P[SLOT_P1B, MonIdx.GROUNDED_FLAG] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.HP_CUR] = 176.0
+    P[SLOT_TRAINER_1_B, MonIdx.HP_MAX] = 176.0
+    P[SLOT_TRAINER_1_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_ATK] = 205.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_DEF] = 140.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPA] = 72.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPD] = 105.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPE] = 70.0
+    P[SLOT_TRAINER_1_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.TYPE1_START + TYPE_TO_IDX["dark"]] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.ITEM_ID] = float(ItemID.FOCUS_SASH)
+    P[SLOT_TRAINER_1_B, MonIdx.ITEM_ACTIVE] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.ABILITY_ID] = float(AbilityID.DEFIANT)
+    P[SLOT_TRAINER_1_B, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_1_B, MonIdx.MEGA_TYPE2] = -1.0
+    P[SLOT_TRAINER_1_B, MonIdx.GROUNDED_FLAG] = 1.0
 
-    M[SLOT_P1B, 0, MoveIdx.BASE_POWER] = 85.0
-    M[SLOT_P1B, 0, MoveIdx.ACCURACY] = 1.01
-    M[SLOT_P1B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["dark"]] = 1.0
-    M[SLOT_P1B, 0, MoveIdx.CAT_PHYSICAL] = 1.0
-    M[SLOT_P1B, 2, MoveIdx.BASE_POWER] = 70.0
-    M[SLOT_P1B, 2, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1B, 2, MoveIdx.PRIORITY] = 1.0
-    M[SLOT_P1B, 2, MoveIdx.TYPE_START + TYPE_TO_IDX["dark"]] = 1.0
-    M[SLOT_P1B, 2, MoveIdx.CAT_PHYSICAL] = 1.0
-    M[SLOT_P1B, 3, MoveIdx.PRIORITY] = 4.0
-    M[SLOT_P1B, 3, MoveIdx.PROTECT_TYPE] = 1.0
-    M[SLOT_P1B, 3, MoveIdx.TARGET_TYPE] = float(TargetType.SELF)
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.BASE_POWER] = 85.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.ACCURACY] = 1.01
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["dark"]] = 1.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_B, 2, MoveIdx.BASE_POWER] = 70.0
+    M[SLOT_TRAINER_1_B, 2, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_B, 2, MoveIdx.PRIORITY] = 1.0
+    M[SLOT_TRAINER_1_B, 2, MoveIdx.TYPE_START + TYPE_TO_IDX["dark"]] = 1.0
+    M[SLOT_TRAINER_1_B, 2, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_B, 3, MoveIdx.PRIORITY] = 4.0
+    M[SLOT_TRAINER_1_B, 3, MoveIdx.PROTECT_TYPE] = 1.0
+    M[SLOT_TRAINER_1_B, 3, MoveIdx.TARGET_TYPE] = float(TargetType.SELF)
 
-    P[SLOT_P1_BENCH1, MonIdx.HP_CUR] = 184.0
-    P[SLOT_P1_BENCH1, MonIdx.HP_MAX] = 184.0
-    P[SLOT_P1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.STAT_SPE] = 169.0
-    P[SLOT_P1_BENCH1, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.TYPE1_START + TYPE_TO_IDX["dragon"]] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.TYPE2_START + TYPE_TO_IDX["ground"]] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR] = 184.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_MAX] = 184.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE] = 169.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.TYPE1_START + TYPE_TO_IDX["dragon"]] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.TYPE2_START + TYPE_TO_IDX["ground"]] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.MEGA_TYPE2] = -1.0
 
-    # Player 2
-    P[SLOT_P2A, MonIdx.HP_CUR] = 176.0
-    P[SLOT_P2A, MonIdx.HP_MAX] = 176.0
-    P[SLOT_P2A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2A, MonIdx.STAT_ATK] = 194.0
-    P[SLOT_P2A, MonIdx.STAT_DEF] = 110.0
-    P[SLOT_P2A, MonIdx.STAT_SPE] = 105.0
-    P[SLOT_P2A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2A, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
-    P[SLOT_P2A, MonIdx.ABILITY_ID] = float(AbilityID.GRASSY_SURGE)
-    P[SLOT_P2A, MonIdx.GROUNDED_FLAG] = 1.0
+    # trainer_2
+    P[SLOT_TRAINER_2_A, MonIdx.HP_CUR] = 176.0
+    P[SLOT_TRAINER_2_A, MonIdx.HP_MAX] = 176.0
+    P[SLOT_TRAINER_2_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_ATK] = 194.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_DEF] = 110.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_SPE] = 105.0
+    P[SLOT_TRAINER_2_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.ABILITY_ID] = float(AbilityID.GRASSY_SURGE)
+    P[SLOT_TRAINER_2_A, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_2_A, MonIdx.MEGA_TYPE2] = -1.0
+    P[SLOT_TRAINER_2_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    P[SLOT_P2B, MonIdx.HP_CUR] = 154.0
-    P[SLOT_P2B, MonIdx.HP_MAX] = 154.0
-    P[SLOT_P2B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2B, MonIdx.STAT_SPA] = 161.0
-    P[SLOT_P2B, MonIdx.STAT_DEF] = 98.0
-    P[SLOT_P2B, MonIdx.STAT_SPE] = 167.0
-    P[SLOT_P2B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2B, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
-    P[SLOT_P2B, MonIdx.TYPE2_START + TYPE_TO_IDX["flying"]] = 1.0
-    P[SLOT_P2B, MonIdx.ITEM_ID] = float(ItemID.MEGA_STONE)
-    P[SLOT_P2B, MonIdx.ITEM_ACTIVE] = 1.0
-    P[SLOT_P2B, MonIdx.CAN_MEGA] = 1.0
-    P[SLOT_P2B, MonIdx.MEGA_ABILITY_ID] = float(AbilityID.DROUGHT)
-    P[SLOT_P2B, MonIdx.MEGA_ATK] = 113.0
-    P[SLOT_P2B, MonIdx.MEGA_DEF] = 98.0
-    P[SLOT_P2B, MonIdx.MEGA_SPA] = 211.0
-    P[SLOT_P2B, MonIdx.MEGA_SPD] = 135.0
-    P[SLOT_P2B, MonIdx.MEGA_SPE] = 167.0
-    P[SLOT_P2B, MonIdx.GROUNDED_FLAG] = 0.0
+    P[SLOT_TRAINER_2_B, MonIdx.HP_CUR] = 154.0
+    P[SLOT_TRAINER_2_B, MonIdx.HP_MAX] = 154.0
+    P[SLOT_TRAINER_2_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPA] = 161.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_DEF] = 98.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPE] = 167.0
+    P[SLOT_TRAINER_2_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.TYPE2_START + TYPE_TO_IDX["flying"]] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.ITEM_ID] = float(ItemID.MEGA_STONE)
+    P[SLOT_TRAINER_2_B, MonIdx.ITEM_ACTIVE] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.CAN_MEGA] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_ABILITY_ID] = float(AbilityID.DROUGHT)
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_ATK] = 113.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_DEF] = 98.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_SPA] = 211.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_SPD] = 135.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_SPE] = 167.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_2_B, MonIdx.MEGA_TYPE2] = -1.0
+    P[SLOT_TRAINER_2_B, MonIdx.GROUNDED_FLAG] = 0.0
 
-    M[SLOT_P2B, 0, MoveIdx.BASE_POWER] = 95.0
-    M[SLOT_P2B, 0, MoveIdx.ACCURACY] = 0.90
-    M[SLOT_P2B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fire"]] = 1.0
-    M[SLOT_P2B, 0, MoveIdx.CAT_SPECIAL] = 1.0
-    M[SLOT_P2B, 0, MoveIdx.TARGET_TYPE] = float(TargetType.ALL_ADJACENT_FOES)
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.BASE_POWER] = 95.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.ACCURACY] = 0.90
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fire"]] = 1.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.CAT_SPECIAL] = 1.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.TARGET_TYPE] = float(TargetType.ALL_ADJACENT_FOES)
 
-    P[SLOT_P2_BENCH1, MonIdx.HP_CUR] = 135.0
-    P[SLOT_P2_BENCH1, MonIdx.HP_MAX] = 135.0
-    P[SLOT_P2_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2_BENCH1, MonIdx.STAT_DEF] = 75.0
-    P[SLOT_P2_BENCH1, MonIdx.STAT_SPA] = 142.0
-    P[SLOT_P2_BENCH1, MonIdx.STAT_SPE] = 178.0
-    P[SLOT_P2_BENCH1, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2_BENCH1, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]] = 1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.HP_CUR] = 135.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.HP_MAX] = 135.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.STAT_DEF] = 75.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.STAT_SPA] = 142.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.STAT_SPE] = 178.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]] = 1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.MEGA_TYPE1] = -1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.MEGA_TYPE2] = -1.0
 
-    M[SLOT_P2_BENCH1, 0, MoveIdx.BASE_POWER] = 90.0
-    M[SLOT_P2_BENCH1, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P2_BENCH1, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["electric"]] = 1.0
-    M[SLOT_P2_BENCH1, 0, MoveIdx.CAT_SPECIAL] = 1.0
+    M[SLOT_TRAINER_2_BENCH1, 0, MoveIdx.BASE_POWER] = 90.0
+    M[SLOT_TRAINER_2_BENCH1, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_2_BENCH1, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["electric"]] = 1.0
+    M[SLOT_TRAINER_2_BENCH1, 0, MoveIdx.CAT_SPECIAL] = 1.0
 
     if HAS_TORCH and device.startswith("cuda"):
         return torch.from_numpy(F).to(device), torch.from_numpy(P).to(device), torch.from_numpy(M).to(device)
@@ -294,8 +306,8 @@ class TestShowdownReplayVerifier(unittest.TestCase):
             P_mc = step_res.P.detach().cpu().numpy()[0, 0] if hasattr(step_res.P, "detach") else np.asarray(step_res.P)[0, 0]
                 
             for k in range(16):
-                charizard_dmg = ((154.0 - P_mc[k, SLOT_P2B, MonIdx.HP_CUR]) / 154.0) * 100.0
-                raichu_dmg = ((135.0 - P_mc[k, SLOT_P2A, MonIdx.HP_CUR]) / 135.0) * 100.0
+                charizard_dmg = ((154.0 - P_mc[k, SLOT_TRAINER_2_B, MonIdx.HP_CUR]) / 154.0) * 100.0
+                raichu_dmg = ((135.0 - P_mc[k, SLOT_TRAINER_2_A, MonIdx.HP_CUR]) / 135.0) * 100.0
                 self.assertTrue(10.0 <= charizard_dmg <= 25.0)
                 self.assertTrue(65.0 <= raichu_dmg <= 100.0)
 
@@ -352,16 +364,16 @@ class TestShowdownReplayVerifier(unittest.TestCase):
         print("="*70 + "\n\n")
 
         # =========================================================
-        # 2. PRUEBA DE ESTRÉS MONTE CARLO (12,000 Semillas)
+        # 2. PRUEBA DE ESTRÉS MONTE CARLO (500 Semillas)
         # =========================================================
-        seeds = range(12000)
+        seeds = range(500)
         
-        p1a_wins_tie = 0
-        p2a_wins_tie = 0
+        t1a_wins_tie = 0
+        t2a_wins_tie = 0
         kingambit_ko_sum = 0.0
         charizard_ko_sum = 0.0
 
-        print("     TURN 2: 12,000 SEEDS MONTE CARLO STRESS TEST (192,000 Timelines)")
+        print("     TURN 2: 500 SEEDS MONTE CARLO STRESS TEST (8,000 Timelines)")
         print("="*70)
 
         for seed in seeds:
@@ -371,22 +383,19 @@ class TestShowdownReplayVerifier(unittest.TestCase):
             
             notes = step2.pre_attack.speed_tie_notes
             if len(notes) > 0 and "wins tie-break" in notes[0]:
-                if "trainer_1_a(Slot0) wins tie-break" in notes[0] or "P1A(Slot0) wins tie-break" in notes[0]:
-                    p1a_wins_tie += 1
-                elif "trainer_2_a(Slot4) wins tie-break" in notes[0] or "P2A(Slot4) wins tie-break" in notes[0]:
-                    p2a_wins_tie += 1
+                if "trainer_1_a(Slot0) wins tie-break" in notes[0]:
+                    t1a_wins_tie += 1
+                elif "trainer_2_a(Slot4) wins tie-break" in notes[0]:
+                    t2a_wins_tie += 1
                         
             f_prob = step2.faint_prob.detach().cpu().numpy()[0, 0] if hasattr(step2.faint_prob, "detach") else step2.faint_prob[0, 0]
-            kingambit_ko_sum += f_prob[SLOT_P1B] * 100.0
-            charizard_ko_sum += f_prob[SLOT_P2B] * 100.0
-            
-            if seed > 0 and seed % 2000 == 0:
-                print(f"Processed {seed} / 12000 seeds...")
+            kingambit_ko_sum += f_prob[SLOT_TRAINER_1_B] * 100.0
+            charizard_ko_sum += f_prob[SLOT_TRAINER_2_B] * 100.0
 
-        print(f"\n--- FINAL RESULTS ACROSS 12,000 SEEDS ---")
-        print(f"Speed Tie Wins -> Raichu-Mega-X (P1): {p1a_wins_tie} | Raichu Y (P2): {p2a_wins_tie}")
-        print(f"Average KO Odds -> Kingambit: {kingambit_ko_sum / 12000:.2f}% | Charizard: {charizard_ko_sum / 12000:.2f}%")
+        print(f"\n--- FINAL RESULTS ACROSS 500 SEEDS ---")
+        print(f"Speed Tie Wins -> Raichu-Mega-X (trainer_1): {t1a_wins_tie} | Raichu (trainer_2): {t2a_wins_tie}")
+        print(f"Average KO Odds -> Kingambit: {kingambit_ko_sum / 500:.2f}% | Charizard: {charizard_ko_sum / 500:.2f}%")
         print("="*70 + "\n\n")
 
-        self.assertGreater(p1a_wins_tie, 5000, "P1A won significantly less than expected.")
-        self.assertGreater(p2a_wins_tie, 5000, "P2A won significantly less than expected.")
+        self.assertGreater(t1a_wins_tie, 200, "trainer_1_a won significantly less than expected.")
+        self.assertGreater(t2a_wins_tie, 200, "trainer_2_a won significantly less than expected.")

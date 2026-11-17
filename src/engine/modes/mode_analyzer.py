@@ -14,7 +14,7 @@ import itertools
 from typing import Dict, List, Optional, Set, Tuple
 
 from engine.db_registry import VGCDataRegistry, get_registry
-from engine.game_rules import NATURE_MODS, TYPE_CHART
+from engine.game_rules import NATURE_MODS, TYPE_CHART, compute_champions_level_50_stats
 from engine.parser.models import ParsedPokemon
 from engine.parser.showdown_parser import parse_showdown_paste
 
@@ -184,23 +184,15 @@ class TeamModeAnalyzer:
                         if m_type:
                             offensive_types.add(m_type)
 
-            # Calculate Level 50 speed tier (Regulation M-C formula)
-            base_spe = base_stats.get("spe", 100)
-            spe_sp = mon.spread.spe if mon.spread else 0
-            nature_mod = NATURE_MODS.get(mon.nature, {}).get("spe", 1.0)
-            raw_spe = int((2 * base_spe + 31 + int(spe_sp // 4)) * 50 / 100) + 5
-            calc_spe = int(raw_spe * nature_mod)
+            # Calculate Level 50 stats via canonical 1:1 Champions SP formula (Regulation M-C)
+            sp_dict = mon.spread.to_dict() if mon.spread else None
+            effective_stats = compute_champions_level_50_stats(
+                base_stats=base_stats,
+                sp_dict=sp_dict,
+                nature=mon.nature or "Hardy",
+            )
             if item.lower() == "choice scarf":
-                calc_spe = int(calc_spe * 1.5)
-
-            effective_stats = {
-                "hp": int((2 * base_stats.get("hp", 100) + 31 + int((mon.spread.hp if mon.spread else 0) // 4)) * 50 / 100) + 60,
-                "atk": int(((2 * base_stats.get("atk", 100) + 31 + int((mon.spread.atk if mon.spread else 0) // 4)) * 50 / 100 + 5) * NATURE_MODS.get(mon.nature, {}).get("atk", 1.0)),
-                "def": int(((2 * base_stats.get("def", 100) + 31 + int((mon.spread.def_ if mon.spread else 0) // 4)) * 50 / 100 + 5) * NATURE_MODS.get(mon.nature, {}).get("def", 1.0)),
-                "spa": int(((2 * base_stats.get("spa", 100) + 31 + int((mon.spread.spa if mon.spread else 0) // 4)) * 50 / 100 + 5) * NATURE_MODS.get(mon.nature, {}).get("spa", 1.0)),
-                "spd": int(((2 * base_stats.get("spd", 100) + 31 + int((mon.spread.spd if mon.spread else 0) // 4)) * 50 / 100 + 5) * NATURE_MODS.get(mon.nature, {}).get("spd", 1.0)),
-                "spe": calc_spe,
-            }
+                effective_stats["spe"] = int(effective_stats["spe"] * 1.5)
 
             members.append(
                 TeamMemberData(
@@ -394,39 +386,39 @@ class TeamModeAnalyzer:
 
     def evaluate_lead(self, lead: LeadPair) -> LeadEvaluation:
         """Evaluates Turn 1 initiative, strictly decoupling Screens from Pivoting."""
-        p1 = lead.pokemon_1
-        p2 = lead.pokemon_2
-        all_moves = [(p1.species, m) for m in p1.moves] + [(p2.species, m) for m in p2.moves]
+        mon_1 = lead.pokemon_1
+        mon_2 = lead.pokemon_2
+        all_moves = [(mon_1.species, m) for m in mon_1.moves] + [(mon_2.species, m) for m in mon_2.moves]
 
         has_fake_out = any(m.lower() == "fake out" for _, m in all_moves)
         has_screens = any(m.lower() in SCREEN_MOVES for _, m in all_moves)
         has_pivot = any(m.lower() in PIVOT_MOVES for _, m in all_moves)
         has_screens_or_pivot = has_screens or has_pivot
         has_scarf_or_tailwind = (
-            p1.item.lower() == "choice scarf"
-            or p2.item.lower() == "choice scarf"
+            mon_1.item.lower() == "choice scarf"
+            or mon_2.item.lower() == "choice scarf"
             or any(m.lower() == "tailwind" for _, m in all_moves)
         )
         has_priority = any(m.lower() in PRIORITY_ATTACK_MOVES for _, m in all_moves)
 
-        spe1 = p1.effective_stats.get("spe", 100)
-        spe2 = p2.effective_stats.get("spe", 100)
+        spe1 = mon_1.effective_stats.get("spe", 100)
+        spe2 = mon_2.effective_stats.get("spe", 100)
         speed_tiers = (max(spe1, spe2), min(spe1, spe2))
 
         shared_weaknesses: List[str] = []
         for atk_type in ALL_TYPES:
             mult1 = 1.0
-            for def_type in p1.types:
+            for def_type in mon_1.types:
                 mult1 *= TYPE_CHART.get(atk_type, {}).get(def_type, 1.0)
             mult2 = 1.0
-            for def_type in p2.types:
+            for def_type in mon_2.types:
                 mult2 *= TYPE_CHART.get(atk_type, {}).get(def_type, 1.0)
             if mult1 >= 2.0 and mult2 >= 2.0:
                 shared_weaknesses.append(atk_type)
 
-        # Build strictly verified tool labels from actual moves/items on p1 and p2
+        # Build strictly verified tool labels from actual moves/items on mon_1 and mon_2
         verified_tools: List[str] = []
-        for mon in (p1, p2):
+        for mon in (mon_1, mon_2):
             if mon.item.lower() == "choice scarf":
                 verified_tools.append(f"Choice Scarf ({mon.species})")
             for mv in mon.moves:

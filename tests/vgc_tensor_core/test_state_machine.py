@@ -32,14 +32,14 @@ from engine.vgc_tensor_core.schema_and_tables import (
     MonIdx,
     MoveIdx,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P1_BENCH1,
-    SLOT_P1_BENCH2,
-    SLOT_P2A,
-    SLOT_P2B,
-    SLOT_P2_BENCH1,
-    SLOT_P2_BENCH2,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_1_BENCH1,
+    SLOT_TRAINER_1_BENCH2,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
+    SLOT_TRAINER_2_BENCH1,
+    SLOT_TRAINER_2_BENCH2,
     TERRAIN_TO_IDX,
     TYPE_TO_IDX,
     WEATHER_TO_IDX,
@@ -64,54 +64,54 @@ def _build_test_roster() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     P = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
     M = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
 
-    # Slot 0 (P1A): Urshifu (Water/Fighting)
-    P[SLOT_P1A, MonIdx.HP_CUR] = 175.0
-    P[SLOT_P1A, MonIdx.HP_MAX] = 175.0
-    P[SLOT_P1A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1A, MonIdx.STAT_ATK] = 182.0
-    P[SLOT_P1A, MonIdx.STAT_DEF] = 120.0
-    P[SLOT_P1A, MonIdx.STAT_SPE] = 149.0
-    P[SLOT_P1A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1A, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]] = 1.0
-    P[SLOT_P1A, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 0 (trainer_1_a): Sneasler (Water/Fighting)
+    P[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 175.0
+    P[SLOT_TRAINER_1_A, MonIdx.HP_MAX] = 175.0
+    P[SLOT_TRAINER_1_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_ATK] = 182.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_DEF] = 120.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPE] = 149.0
+    P[SLOT_TRAINER_1_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    M[SLOT_P1A, 0, MoveIdx.BASE_POWER] = 120.0
-    M[SLOT_P1A, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fighting"]] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.BASE_POWER] = 120.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fighting"]] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
 
-    # Slot 1 (P1B): Flutter Mane (Fairy/Ghost - Airborne/Levitate)
-    P[SLOT_P1B, MonIdx.HP_CUR] = 135.0
-    P[SLOT_P1B, MonIdx.HP_MAX] = 135.0
-    P[SLOT_P1B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1B, MonIdx.STAT_SPE] = 205.0
-    P[SLOT_P1B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1B, MonIdx.TYPE1_START + TYPE_TO_IDX["fairy"]] = 1.0
-    P[SLOT_P1B, MonIdx.GROUNDED_FLAG] = 0.0  # AIRBORNE!
+    # Slot 1 (trainer_1_b): Mismagius (Fairy/Ghost - Airborne/Levitate)
+    P[SLOT_TRAINER_1_B, MonIdx.HP_CUR] = 135.0
+    P[SLOT_TRAINER_1_B, MonIdx.HP_MAX] = 135.0
+    P[SLOT_TRAINER_1_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPE] = 205.0
+    P[SLOT_TRAINER_1_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.TYPE1_START + TYPE_TO_IDX["fairy"]] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.GROUNDED_FLAG] = 0.0  # AIRBORNE!
 
-    # Slot 2 (P1 Bench 1): Rillaboom
-    P[SLOT_P1_BENCH1, MonIdx.HP_CUR] = 207.0
-    P[SLOT_P1_BENCH1, MonIdx.HP_MAX] = 207.0
-    P[SLOT_P1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.STAT_SPE] = 105.0
+    # Slot 2 (trainer_1_bench1): Rillaboom
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR] = 207.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_MAX] = 207.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE] = 105.0
 
-    # Slot 4 (P2A): Incineroar (Fire/Dark)
-    P[SLOT_P2A, MonIdx.HP_CUR] = 202.0
-    P[SLOT_P2A, MonIdx.HP_MAX] = 202.0
-    P[SLOT_P2A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2A, MonIdx.STAT_SPE] = 80.0
-    P[SLOT_P2A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2A, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
-    P[SLOT_P2A, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 4 (trainer_2_a): Incineroar (Fire/Dark)
+    P[SLOT_TRAINER_2_A, MonIdx.HP_CUR] = 202.0
+    P[SLOT_TRAINER_2_A, MonIdx.HP_MAX] = 202.0
+    P[SLOT_TRAINER_2_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_SPE] = 80.0
+    P[SLOT_TRAINER_2_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    # Slot 5 (P2B): Ogerpon (Grass/Fire)
-    P[SLOT_P2B, MonIdx.HP_CUR] = 155.0
-    P[SLOT_P2B, MonIdx.HP_MAX] = 155.0
-    P[SLOT_P2B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2B, MonIdx.STAT_SPE] = 162.0
-    P[SLOT_P2B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2B, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
-    P[SLOT_P2B, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 5 (trainer_2_b): Venusaur (Grass/Fire)
+    P[SLOT_TRAINER_2_B, MonIdx.HP_CUR] = 155.0
+    P[SLOT_TRAINER_2_B, MonIdx.HP_MAX] = 155.0
+    P[SLOT_TRAINER_2_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPE] = 162.0
+    P[SLOT_TRAINER_2_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.GROUNDED_FLAG] = 1.0
 
     return F, P, M
 
@@ -121,10 +121,10 @@ def test_end_of_turn_chip_damage(tables: BilinearLookupTables) -> None:
     print("  [TEST 1] Testing End-of-Turn Chip Damage (Burn & Sandstorm)...")
     F, P, M = _build_test_roster()
 
-    # P1A has Burn
-    P[SLOT_P1A, MonIdx.STATUS_HEALTHY] = 0.0
-    P[SLOT_P1A, MonIdx.STATUS_BURN] = 1.0
-    p1a_init_hp = float(P[SLOT_P1A, MonIdx.HP_CUR])  # 175.0
+    # trainer_1_a has Burn
+    P[SLOT_TRAINER_1_A, MonIdx.STATUS_HEALTHY] = 0.0
+    P[SLOT_TRAINER_1_A, MonIdx.STATUS_BURN] = 1.0
+    t1a_init_hp = float(P[SLOT_TRAINER_1_A, MonIdx.HP_CUR])  # 175.0
 
     # Set Sandstorm weather
     F[FieldIdx.WEATHER_START] = 0.0
@@ -137,14 +137,14 @@ def test_end_of_turn_chip_damage(tables: BilinearLookupTables) -> None:
 
     eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
-    # P1A (Water/Fighting) takes Burn chip (-10 HP: floor(175/16)) AND Sand chip (-10 HP: floor(175/16))
-    p1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_P1A])
+    # trainer_1_a (Water/Fighting) takes Burn chip (-10 HP: floor(175/16)) AND Sand chip (-10 HP: floor(175/16))
+    t1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_TRAINER_1_A])
     expected_burn_chip = np.floor(175.0 / 16.0)
     expected_sand_chip = np.floor(175.0 / 16.0)
-    expected_hp = p1a_init_hp - expected_burn_chip - expected_sand_chip
+    expected_hp = t1a_init_hp - expected_burn_chip - expected_sand_chip
 
-    assert p1a_end_hp == expected_hp, f"Expected P1A HP {expected_hp}, got {p1a_end_hp}"
-    print(f"    -> PASS: P1A took Burn (-{expected_burn_chip}) and Sand (-{expected_sand_chip}) chip (HP: {p1a_init_hp} -> {p1a_end_hp}).")
+    assert t1a_end_hp == expected_hp, f"Expected trainer_1_a HP {expected_hp}, got {t1a_end_hp}"
+    print(f"    -> PASS: trainer_1_a took Burn (-{expected_burn_chip}) and Sand (-{expected_sand_chip}) chip (HP: {t1a_init_hp} -> {t1a_end_hp}).")
 
 
 def test_end_of_turn_healing(tables: BilinearLookupTables) -> None:
@@ -157,13 +157,13 @@ def test_end_of_turn_healing(tables: BilinearLookupTables) -> None:
     F[FieldIdx.TERRAIN_START + TERRAIN_TO_IDX["grassy"]] = 1.0
     F[FieldIdx.TERRAIN_TURNS] = 5.0
 
-    # P1A (Grounded) damaged at 100 HP, holding Leftovers
-    P[SLOT_P1A, MonIdx.HP_CUR] = 100.0
-    P[SLOT_P1A, MonIdx.ITEM_ID] = ItemID.LEFTOVERS
-    P[SLOT_P1A, MonIdx.ITEM_ACTIVE] = 1.0
+    # trainer_1_a (Grounded) damaged at 100 HP, holding Leftovers
+    P[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 100.0
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ID] = ItemID.LEFTOVERS
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ACTIVE] = 1.0
 
-    # P1B (Airborne, GROUNDED_FLAG == 0.0) damaged at 80 HP, NO Leftovers
-    P[SLOT_P1B, MonIdx.HP_CUR] = 80.0
+    # trainer_1_b (Airborne, GROUNDED_FLAG == 0.0) damaged at 80 HP, NO Leftovers
+    P[SLOT_TRAINER_1_B, MonIdx.HP_CUR] = 80.0
 
     F_b = np.expand_dims(np.expand_dims(np.expand_dims(F, 0), 0), 0)
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
@@ -171,17 +171,17 @@ def test_end_of_turn_healing(tables: BilinearLookupTables) -> None:
 
     eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
-    # P1A should heal Grassy (+10 HP) + Leftovers (+10 HP) = +20 HP -> 120 HP
-    p1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_P1A])
+    # trainer_1_a should heal Grassy (+10 HP) + Leftovers (+10 HP) = +20 HP -> 120 HP
+    t1a_end_hp = float(eot_res.mean_hp[0, 0, SLOT_TRAINER_1_A])
     expected_grassy_heal = np.floor(175.0 / 16.0)
     expected_leftovers_heal = np.floor(175.0 / 16.0)
-    expected_p1a = 100.0 + expected_grassy_heal + expected_leftovers_heal
-    assert p1a_end_hp == expected_p1a, f"Expected P1A HP {expected_p1a}, got {p1a_end_hp}"
+    expected_t1a = 100.0 + expected_grassy_heal + expected_leftovers_heal
+    assert t1a_end_hp == expected_t1a, f"Expected trainer_1_a HP {expected_t1a}, got {t1a_end_hp}"
 
-    # P1B (Airborne) should receive ZERO Grassy Terrain healing -> stays at 80 HP!
-    p1b_end_hp = float(eot_res.mean_hp[0, 0, SLOT_P1B])
-    assert p1b_end_hp == 80.0, f"Expected Airborne P1B HP to remain 80.0, got {p1b_end_hp}"
-    print(f"    -> PASS: Grounded P1A healed +{expected_p1a - 100.0} HP; Airborne P1B correctly received 0 heal.")
+    # trainer_1_b (Airborne) should receive ZERO Grassy Terrain healing -> stays at 80 HP!
+    t1b_end_hp = float(eot_res.mean_hp[0, 0, SLOT_TRAINER_1_B])
+    assert t1b_end_hp == 80.0, f"Expected Airborne trainer_1_b HP to remain 80.0, got {t1b_end_hp}"
+    print(f"    -> PASS: Grounded trainer_1_a healed +{expected_t1a - 100.0} HP; Airborne trainer_1_b correctly received 0 heal.")
 
 
 def test_counter_decrements(tables: BilinearLookupTables) -> None:
@@ -194,7 +194,7 @@ def test_counter_decrements(tables: BilinearLookupTables) -> None:
     F[FieldIdx.WEATHER_START + WEATHER_TO_IDX["sun"]] = 1.0
 
     F[FieldIdx.TERRAIN_TURNS] = 2.0  # Terrain has 2 turns left
-    F[FieldIdx.P1_TAILWIND_TURNS] = 3.0
+    F[FieldIdx.TRAINER_1_TAILWIND_TURNS] = 3.0
 
     F_b = np.expand_dims(np.expand_dims(np.expand_dims(F, 0), 0), 0)
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
@@ -213,7 +213,7 @@ def test_counter_decrements(tables: BilinearLookupTables) -> None:
     assert end_t_turns == 1.0, f"Expected terrain turns 1.0, got {end_t_turns}"
 
     # Tailwind had 3 turns left -> should decrement to 2
-    end_tw_turns = float(eot_res.F[0, 0, 0, FieldIdx.P1_TAILWIND_TURNS])
+    end_tw_turns = float(eot_res.F[0, 0, 0, FieldIdx.TRAINER_1_TAILWIND_TURNS])
     assert end_tw_turns == 2.0, f"Expected tailwind turns 2.0, got {end_tw_turns}"
     print("    -> PASS: Weather reset to Clear; Terrain & Tailwind counters decremented by 1.")
 
@@ -224,12 +224,12 @@ def test_protect_streak_reset(tables: BilinearLookupTables) -> None:
     F, P, M = _build_test_roster()
 
     # Slot 0 used Protect last turn (PROTECT_COUNTER == 1.0), but did NOT protect this turn (PROTECT_ACTIVE == 0.0)
-    P[SLOT_P1A, MonIdx.PROTECT_COUNTER] = 1.0
-    P[SLOT_P1A, MonIdx.PROTECT_ACTIVE] = 0.0
+    P[SLOT_TRAINER_1_A, MonIdx.PROTECT_COUNTER] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.PROTECT_ACTIVE] = 0.0
 
     # Slot 4 DID protect this turn (PROTECT_ACTIVE == 1.0, PROTECT_COUNTER == 1.0)
-    P[SLOT_P2A, MonIdx.PROTECT_COUNTER] = 1.0
-    P[SLOT_P2A, MonIdx.PROTECT_ACTIVE] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.PROTECT_COUNTER] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.PROTECT_ACTIVE] = 1.0
 
     F_b = np.expand_dims(np.expand_dims(np.expand_dims(F, 0), 0), 0)
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
@@ -238,14 +238,14 @@ def test_protect_streak_reset(tables: BilinearLookupTables) -> None:
     eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # Slot 0 did NOT protect -> counter reset to 0.0
-    p1a_counter = float(eot_res.P[0, 0, 0, SLOT_P1A, MonIdx.PROTECT_COUNTER])
-    assert p1a_counter == 0.0, f"Expected P1A protect counter reset to 0.0, got {p1a_counter}"
+    t1a_counter = float(eot_res.P[0, 0, 0, SLOT_TRAINER_1_A, MonIdx.PROTECT_COUNTER])
+    assert t1a_counter == 0.0, f"Expected trainer_1_a protect counter reset to 0.0, got {t1a_counter}"
 
     # Slot 4 DID protect -> counter preserved at 1.0, volatile flag reset to 0.0
-    p2a_counter = float(eot_res.P[0, 0, 0, SLOT_P2A, MonIdx.PROTECT_COUNTER])
-    p2a_active = float(eot_res.P[0, 0, 0, SLOT_P2A, MonIdx.PROTECT_ACTIVE])
-    assert p2a_counter == 1.0, f"Expected P2A protect counter to remain 1.0, got {p2a_counter}"
-    assert p2a_active == 0.0, f"Expected P2A volatile protect flag reset to 0.0, got {p2a_active}"
+    t2a_counter = float(eot_res.P[0, 0, 0, SLOT_TRAINER_2_A, MonIdx.PROTECT_COUNTER])
+    t2a_active = float(eot_res.P[0, 0, 0, SLOT_TRAINER_2_A, MonIdx.PROTECT_ACTIVE])
+    assert t2a_counter == 1.0, f"Expected trainer_2_a protect counter to remain 1.0, got {t2a_counter}"
+    assert t2a_active == 0.0, f"Expected trainer_2_a volatile protect flag reset to 0.0, got {t2a_active}"
     print("    -> PASS: Protect streak reset for non-protecting slot; preserved for protecting slot.")
 
 
@@ -254,14 +254,14 @@ def test_auto_replacement_heuristic(tables: BilinearLookupTables) -> None:
     print("  [TEST 5] Testing Compiler Tactical Prior Auto-Replacement Heuristic...")
     F, P, M = _build_test_roster()
 
-    # P1A fainted during the turn (HP_CUR == 0.0, ALIVE_FLAG == 0.0)
-    P[SLOT_P1A, MonIdx.HP_CUR] = 0.0
-    P[SLOT_P1A, MonIdx.ALIVE_FLAG] = 0.0
+    # trainer_1_a fainted during the turn (HP_CUR == 0.0, ALIVE_FLAG == 0.0)
+    P[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 0.0
+    P[SLOT_TRAINER_1_A, MonIdx.ALIVE_FLAG] = 0.0
 
     # Bench 1 (Rillaboom) is alive with Spe 105
-    P[SLOT_P1_BENCH1, MonIdx.HP_CUR] = 207.0
-    P[SLOT_P1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.STAT_SPE] = 105.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR] = 207.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE] = 105.0
 
     F_b = np.expand_dims(np.expand_dims(np.expand_dims(F, 0), 0), 0)
     P_b = np.expand_dims(np.expand_dims(np.expand_dims(P, 0), 0), 0)
@@ -270,8 +270,8 @@ def test_auto_replacement_heuristic(tables: BilinearLookupTables) -> None:
     eot_res = execute_end_of_turn(F_b, P_b, M_b, tables, auto_promote=True)
 
     # After replacement, Slot 0 should now hold Rillaboom (Spe 105, HP 207)
-    slot0_hp = float(eot_res.P[0, 0, 0, SLOT_P1A, MonIdx.HP_CUR])
-    slot0_spe = float(eot_res.P[0, 0, 0, SLOT_P1A, MonIdx.STAT_SPE])
+    slot0_hp = float(eot_res.P[0, 0, 0, SLOT_TRAINER_1_A, MonIdx.HP_CUR])
+    slot0_spe = float(eot_res.P[0, 0, 0, SLOT_TRAINER_1_A, MonIdx.STAT_SPE])
 
     assert slot0_hp == 207.0, f"Expected promoted Rillaboom (HP 207) in Slot 0, got {slot0_hp}"
     assert slot0_spe == 105.0, f"Expected promoted Rillaboom (Spe 105) in Slot 0, got {slot0_spe}"
@@ -284,15 +284,15 @@ def test_state_machine_full_step() -> None:
     sm = VgcTensorStateMachine(backend="numpy")
     F, P, M = _build_test_roster()
 
-    p1_choices = np.zeros((1, 2), dtype=np.int64)  # P1A Close Combat -> Opp A, P1B Move 0 -> Opp A
-    p2_choices = np.zeros((1, 2), dtype=np.int64)  # P2A Move 0 -> Opp A, P2B Follow Me
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     step_res: StepResult = sm.step(
         F=F,
         P=P,
         M_moves=M,
-        p1_choices=p1_choices,
-        p2_choices=p2_choices,
+        trainer_1_choices=t1_choices,
+        trainer_2_choices=t2_choices,
         num_mc_samples=16,
     )
 

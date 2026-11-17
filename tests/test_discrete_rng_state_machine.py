@@ -23,12 +23,20 @@ from engine.parser import parse_showdown_paste
 from engine.parser.models import ParsedBattle, ParsedTeam
 from engine.state import TurnStateCompiler
 from engine.vgc_tensor_core import (
+    AbilityID,
+    ItemID,
     LogicalConstraintEngine,
+    MonIdx,
     RNGEventID,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
     SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
     ShowdownTensorCompiler,
+    TYPE_TO_IDX,
     VgcTensorStateMachine,
     counter_uniform_0_100_numpy,
+    execute_pre_attack_phases,
     format_action_pruning_matrix,
     format_full_turn_report,
     spin_wheel_crit_gate,
@@ -295,6 +303,172 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
         report = format_full_turn_report(step_res, cell_b1=0, cell_b2=0)
         self.assertIn("DISCRETE-RNG ATTACK CASCADE", report)
         self.assertIn("CVaR_10(Worst10%)", report)
+
+    def test_white_herb_and_unburden_on_intimidate_and_close_combat(self) -> None:
+        """Verify White Herb restores negative stat drops and triggers Unburden (2x Speed)."""
+        import torch
+
+        rosters = [
+            # Slot 0 (trainer_1_a): Sneasler @ White Herb (Unburden, Spe=189)
+            {
+                "species": "Sneasler",
+                "hp_max": 155.0,
+                "hp_cur": 155.0,
+                "stats": {"atk": 182.0, "def": 80.0, "spa": 60.0, "spd": 100.0, "spe": 189.0},
+                "types": ["Fighting", "Poison"],
+                "ability": "Unburden",
+                "item": "White Herb",
+                "moves": ["Close Combat", "Dire Claw", "Fake Out", "Protect"],
+            },
+            # Slot 1 (trainer_1_b): Archaludon (Stamina)
+            {
+                "species": "Archaludon",
+                "hp_max": 197.0,
+                "hp_cur": 197.0,
+                "stats": {"atk": 112.0, "def": 150.0, "spa": 170.0, "spd": 85.0, "spe": 105.0},
+                "types": ["Steel", "Dragon"],
+                "ability": "Stamina",
+                "item": "Leftovers",
+                "moves": ["Electro Shot", "Flash Cannon", "Body Press", "Protect"],
+            },
+            {}, {},
+            # Slot 4 (trainer_2_a): Incineroar (Intimidate)
+            {
+                "species": "Incineroar",
+                "hp_max": 202.0,
+                "hp_cur": 202.0,
+                "stats": {"atk": 135.0, "def": 115.0, "spa": 90.0, "spd": 130.0, "spe": 80.0},
+                "types": ["Fire", "Dark"],
+                "ability": "Intimidate",
+                "item": "Sitrus Berry",
+                "moves": ["Flare Blitz", "Parting Shot", "Fake Out", "Protect"],
+            },
+            # Slot 5 (trainer_2_b): Pelipper (Drizzle)
+            {
+                "species": "Pelipper",
+                "hp_max": 167.0,
+                "hp_cur": 167.0,
+                "stats": {"atk": 63.0, "def": 120.0, "spa": 161.0, "spd": 90.0, "spe": 85.0},
+                "types": ["Water", "Flying"],
+                "ability": "Drizzle",
+                "item": "Focus Sash",
+                "moves": ["Weather Ball", "Hurricane", "Wide Guard", "Protect"],
+            },
+            {}, {},
+        ]
+        state = self.tensor_compiler.compile_battle_state(rosters)
+        t1_c = torch.tensor([[3, 3]], dtype=torch.long)
+        t2_c = torch.tensor([[3, 3]], dtype=torch.long)
+
+        # Lead entry abilities: Incineroar Intimidates Sneasler -> White Herb restores Atk to 0.0 and triggers Unburden!
+        pre_res = execute_pre_attack_phases(
+            state.field_tensor,
+            state.roster_tensor,
+            state.moves_tensor,
+            t1_c,
+            t2_c,
+            tables=self.tensor_compiler.tables,
+            resolve_lead_entry_abilities=True,
+        )
+        sneasler_atk_boost = float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.BOOST_ATK].item())
+        sneasler_item_act = float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.ITEM_ACTIVE].item())
+        sneasler_unb = float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.UNBURDEN_ACTIVE].item())
+        sneasler_eff_spe = float(pre_res.effective_speeds[0, 0, 0].item())
+
+        self.assertEqual(sneasler_atk_boost, 0.0)
+        self.assertEqual(sneasler_item_act, 0.0)
+        self.assertEqual(sneasler_unb, 1.0)
+        self.assertEqual(sneasler_eff_spe, 378.0)  # 189 * 2 = 378!
+
+    def test_fainted_opp_a_target_bucket_routing_and_mega_type_change(self) -> None:
+        """Verify spread/self/field moves stay legal when Opp A is fainted and Mega Type transformation works."""
+        import torch
+
+        rosters = [
+            # Slot 0 (trainer_1_a): Charizard @ Charizardite X (Fire/Flying -> Fire/Dragon, Grounded 0 -> 1)
+            {
+                "species": "Charizard",
+                "hp_max": 153.0,
+                "hp_cur": 153.0,
+                "stats": {"atk": 104.0, "def": 98.0, "spa": 161.0, "spd": 105.0, "spe": 167.0},
+                "types": ["Fire", "Flying"],
+                "ability": "Blaze",
+                "item": "Charizardite X",
+                "can_mega": 1.0,
+                "mega_stats": {"atk": 182.0, "def": 131.0, "spa": 150.0, "spd": 105.0, "spe": 167.0},
+                "mega_ability": "Tough Claws",
+                "mega_types": ["Fire", "Dragon"],
+                "moves": ["Heat Wave", "Tailwind", "Dragon Claw", "Protect"],
+            },
+            # Slot 1 (trainer_1_b): Garchomp
+            {
+                "species": "Garchomp",
+                "hp_max": 183.0,
+                "hp_cur": 183.0,
+                "stats": {"atk": 182.0, "def": 115.0, "spa": 90.0, "spd": 105.0, "spe": 169.0},
+                "types": ["Dragon", "Ground"],
+                "ability": "Rough Skin",
+                "item": "Life Orb",
+                "moves": ["Earthquake", "Dragon Claw", "Rock Slide", "Protect"],
+            },
+            {}, {},
+            # Slot 4 (trainer_2_a): FAINTED Opponent Slot A!
+            {
+                "species": "Incineroar",
+                "hp_max": 202.0,
+                "hp_cur": 0.0,
+                "types": ["Fire", "Dark"],
+                "moves": ["Protect"],
+            },
+            # Slot 5 (trainer_2_b): Alive Opponent Slot B (Rillaboom)
+            {
+                "species": "Rillaboom",
+                "hp_max": 207.0,
+                "hp_cur": 207.0,
+                "stats": {"atk": 194.0, "def": 110.0, "spa": 65.0, "spd": 90.0, "spe": 105.0},
+                "types": ["Grass"],
+                "ability": "Grassy Surge",
+                "item": "Miracle Seed",
+                "moves": ["Wood Hammer", "Grassy Glide", "Fake Out", "Protect"],
+            },
+            {}, {},
+        ]
+        state = self.tensor_compiler.compile_battle_state(rosters)
+
+        # Even though Opp A (Slot 4) is fainted, Charizard's Heat Wave (0), Tailwind (1), and Protect (3)
+        # on bucket 0 (0..3 and Mega 12..15) MUST remain valid!
+        masks_compiler = self.tensor_compiler.compute_26x26_side_action_masks(state, trainer_id="trainer_1")
+        valid_a = masks_compiler.slot_a_valid_mask.detach().cpu().numpy()
+        self.assertEqual(float(valid_a[0]), 1.0)   # Heat Wave (ALL_ADJACENT_FOES)
+        self.assertEqual(float(valid_a[1]), 1.0)   # Tailwind (ALLY_SIDE)
+        self.assertEqual(float(valid_a[2]), 0.0)   # Dragon Claw -> Fainted Opp A (blocked!)
+        self.assertEqual(float(valid_a[6]), 1.0)   # Dragon Claw -> Alive Opp B (valid!)
+        self.assertEqual(float(valid_a[3]), 1.0)   # Protect (SELF)
+        self.assertEqual(float(valid_a[12]), 1.0)  # Mega + Heat Wave
+
+        # Also verify Mega Charizard X transforms TYPE2 from Flying to Dragon and becomes Grounded (1.0)
+        t1_c = torch.tensor([[12, 3]], dtype=torch.long)
+        t2_c = torch.tensor([[0, 3]], dtype=torch.long)
+        pre_res = execute_pre_attack_phases(
+            state.field_tensor,
+            state.roster_tensor,
+            state.moves_tensor,
+            t1_c,
+            t2_c,
+            tables=self.tensor_compiler.tables,
+        )
+        self.assertEqual(
+            float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.TYPE2_START + TYPE_TO_IDX["dragon"]].item()),
+            1.0,
+        )
+        self.assertEqual(
+            float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.TYPE2_START + TYPE_TO_IDX["flying"]].item()),
+            0.0,
+        )
+        self.assertEqual(
+            float(pre_res.P[0, 0, SLOT_TRAINER_1_A, MonIdx.GROUNDED_FLAG].item()),
+            1.0,
+        )
 
 
 if __name__ == "__main__":

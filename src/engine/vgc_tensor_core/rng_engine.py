@@ -106,26 +106,32 @@ def counter_uniform_0_100_numpy(
     step_idx: int = 0,
     hit_idx: int = 0,
     sub_draw: int = 0,
+    turn_idx: int = 0,
+    actor_slot: int = 0,
+    target_slot: int = 0,
 ) -> np.ndarray:
     """Generate a tensor of uniform random floats in `[0.0, 100.0)` using counter-based hashing.
 
     Every element `(b1, b2, k, ...)` receives a unique counter coordinate mixed with
-    `(seed, event_id, step_idx, hit_idx, sub_draw)` so draws are reproducible and decorrelated.
+    `(seed, event_id, step_idx, hit_idx, sub_draw, turn_idx, actor_slot, target_slot)` so draws are reproducible and decorrelated.
     """
     total = int(np.prod(shape))
     flat_idx = np.arange(total, dtype=np.uint64).reshape(shape)
     with np.errstate(over="ignore"):
         key = (
-            np.uint64(seed & 0xFFFFFFFFFFFFFFFF)
-            ^ (np.uint64(event_id + 1) * np.uint64(0x517CC1B727220A95))
-            ^ (np.uint64(step_idx + 1) * np.uint64(0x9E3779B97F4A7C15))
-            ^ (np.uint64(hit_idx + 1) * np.uint64(0xBF58476D1CE4E5B9))
-            ^ (np.uint64(sub_draw + 1) * np.uint64(0x94D049BB133111EB))
-        )
+            np.uint64(seed & 0x7FFFFFFFFFFFFFFF)
+            ^ (np.uint64(event_id + 1) * np.uint64(5871781006564002453))
+            ^ (np.uint64(step_idx + 1) * np.uint64(2685821657736338717))
+            ^ (np.uint64(hit_idx + 1) * np.uint64(4101842887655102017))
+            ^ (np.uint64(sub_draw + 1) * np.uint64(7364136223846793005))
+            ^ (np.uint64(turn_idx) * np.uint64(6364136223846793005))
+            ^ (np.uint64(actor_slot) * np.uint64(1442695040888963407))
+            ^ (np.uint64(target_slot) * np.uint64(22695477))
+        ) & np.uint64(0x7FFFFFFFFFFFFFFF)
         hashed = _splitmix64_numpy(flat_idx ^ key)
     # Extract top 53 bits to [0.0, 100.0)
-    u01 = (hashed >> np.uint64(11)).astype(np.float64) * (1.0 / float(1 << 53))
-    return (u01 * 100.0).astype(np.float32)
+    u01 = ((hashed >> np.uint64(11)) & np.uint64(0x1FFFFFFFFFFFFF)).astype(np.float64) * (1.0 / float(1 << 53))
+    return np.clip((u01 * 100.0).astype(np.float32), 0.0, 99.9999)
 
 
 def counter_uniform_0_100_torch(
@@ -136,16 +142,22 @@ def counter_uniform_0_100_torch(
     step_idx: int = 0,
     hit_idx: int = 0,
     sub_draw: int = 0,
+    turn_idx: int = 0,
+    actor_slot: int = 0,
+    target_slot: int = 0,
 ) -> "torch.Tensor":
     """Generate a PyTorch tensor of uniform random floats in `[0.0, 100.0)` on GPU/CPU."""
     total = int(np.prod(shape))
     flat_idx = torch.arange(total, dtype=torch.int64, device=device).view(shape)
     key = (
-        int(seed)
+        (int(seed) & 0x7FFFFFFFFFFFFFFF)
         ^ ((int(event_id) + 1) * 5871781006564002453)
         ^ ((int(step_idx) + 1) * 2685821657736338717)
         ^ ((int(hit_idx) + 1) * 4101842887655102017)
         ^ ((int(sub_draw) + 1) * 7364136223846793005)
+        ^ (int(turn_idx) * 6364136223846793005)
+        ^ (int(actor_slot) * 1442695040888963407)
+        ^ (int(target_slot) * 22695477)
     ) & 0x7FFFFFFFFFFFFFFF
     hashed = _splitmix64_torch(flat_idx ^ key)
     # Mask positive 53-bit integer and scale to [0.0, 100.0)
@@ -160,28 +172,36 @@ def spin_wheel_gate(
     event_id: int,
     step_idx: int = 0,
     hit_idx: int = 0,
+    turn_idx: int = 0,
+    actor_slot: int = 0,
+    target_slot: int = 0,
 ) -> TensorOrArray:
-    """Evaluate a discrete probability check via the Dual-Draw Spinning-Wheel on `[0, 100)`.
-
-    Args:
-        threshold_pct: Tensor/ndarray of event success probabilities in `[0.0, 100.0]`
-            (values `>= 100.0` always succeed; values `<= 0.0` always fail).
-        seed: Base simulation RNG seed.
-        event_id: `RNGEventID` stream selector.
-        step_idx: Turn order step index (`0..3`).
-        hit_idx: Multi-hit index (`0..9`).
-
-    Returns:
-        Boolean mask (`bool` Tensor or ndarray) of the same shape as `threshold_pct`,
-        where `True` means the discrete event triggered in that simulation thread.
-    """
+    """Evaluate a discrete probability check via the Dual-Draw Spinning-Wheel on `[0, 100)`."""
     if HAS_TORCH and isinstance(threshold_pct, torch.Tensor):
         shape = tuple(threshold_pct.shape)
         window_start = counter_uniform_0_100_torch(
-            shape, threshold_pct.device, seed, event_id, step_idx, hit_idx, sub_draw=0
+            shape,
+            threshold_pct.device,
+            seed,
+            event_id,
+            step_idx,
+            hit_idx,
+            sub_draw=0,
+            turn_idx=turn_idx,
+            actor_slot=actor_slot,
+            target_slot=target_slot,
         )
         dart = counter_uniform_0_100_torch(
-            shape, threshold_pct.device, seed, event_id, step_idx, hit_idx, sub_draw=1
+            shape,
+            threshold_pct.device,
+            seed,
+            event_id,
+            step_idx,
+            hit_idx,
+            sub_draw=1,
+            turn_idx=turn_idx,
+            actor_slot=actor_slot,
+            target_slot=target_slot,
         )
         cyclic_dist = torch.remainder(dart - window_start + 100.0, 100.0)
         return (threshold_pct >= 100.0) | ((threshold_pct > 0.0) & (cyclic_dist < threshold_pct))
@@ -189,10 +209,26 @@ def spin_wheel_gate(
     arr_thresh = np.asarray(threshold_pct, dtype=np.float32)
     shape = arr_thresh.shape
     window_start = counter_uniform_0_100_numpy(
-        shape, seed, event_id, step_idx, hit_idx, sub_draw=0
+        shape,
+        seed,
+        event_id,
+        step_idx,
+        hit_idx,
+        sub_draw=0,
+        turn_idx=turn_idx,
+        actor_slot=actor_slot,
+        target_slot=target_slot,
     )
     dart = counter_uniform_0_100_numpy(
-        shape, seed, event_id, step_idx, hit_idx, sub_draw=1
+        shape,
+        seed,
+        event_id,
+        step_idx,
+        hit_idx,
+        sub_draw=1,
+        turn_idx=turn_idx,
+        actor_slot=actor_slot,
+        target_slot=target_slot,
     )
     cyclic_dist = np.mod(dart - window_start + 100.0, 100.0)
     return (arr_thresh >= 100.0) | ((arr_thresh > 0.0) & (cyclic_dist < arr_thresh))

@@ -27,6 +27,7 @@ from engine.solver import (
     decode_joint_action,
     format_equilibrium_coach_report,
     run_iterated_dominance_elimination,
+    solve_bayesian_zero_sum_nash,
     solve_quantal_response,
     solve_turn_equilibrium,
     solve_zero_sum_nash,
@@ -139,6 +140,25 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         self.assertAlmostEqual(float(nash_mix.trainer_2_strategy[1]), 0.375, delta=0.015)
         self.assertAlmostEqual(nash_mix.game_value, 0.875, delta=0.015)
         self.assertLess(nash_mix.exploitability_gap, 0.02)
+
+    def test_incomplete_information_bayesian_zero_sum_nash(self) -> None:
+        """Verify Incomplete-Information Bayesian Zero-Sum Nash solver across M opponent types."""
+        # Suppose trainer_1 has 3 actions:
+        # - Action 0 beats Type 1 (+2) but loses to Type 2 (-2)
+        # - Action 1 loses to Type 1 (-2) but beats Type 2 (+2)
+        # - Action 2 is a safe hedge that gets +0.5 against both Type 1 and Type 2!
+        # Note: In each individual hypothesis m, Action 2 (+0.5) is strictly inferior to Action 0 (for Type 1)
+        # or Action 1 (for Type 2), so post-hoc blending of per-hypothesis Nash strategies would put 0% on Action 2
+        # and achieve expected value 0.0!
+        # In the true Incomplete-Information Bayesian Zero-Sum game (50/50 prior), trainer_1 plays Action 2 (100%)
+        # and achieves value +0.50!
+        U_m1 = np.array([[2.0], [-2.0], [0.5]], dtype=np.float64)
+        U_m2 = np.array([[-2.0], [2.0], [0.5]], dtype=np.float64)
+        p, q_list, v_star = solve_bayesian_zero_sum_nash([U_m1, U_m2], [0.5, 0.5])
+
+        self.assertAlmostEqual(float(p[2]), 1.0, places=5)
+        self.assertAlmostEqual(float(v_star), 0.5, places=5)
+        self.assertEqual(len(q_list), 2)
 
     def test_quantal_response_equilibrium(self) -> None:
         """Verify Logit QRE produces valid probability distributions favoring higher payoffs."""

@@ -128,6 +128,8 @@ def extract_turn_telemetry(
 
     last_active_attacker: Optional[str] = None
     last_attacker_is_t2 = False
+    last_withdrawn_t1: Optional[str] = None
+    last_withdrawn_t2: Optional[str] = None
 
     cur_weather = "None"
     cur_terrain = "None"
@@ -173,30 +175,60 @@ def extract_turn_telemetry(
 
         entry = get_turn_entry(current_turn if current_turn > 0 else 1)
 
-        # Weather / Terrain announcements
+        # Weather / Terrain announcements & expirations
         if "The sunlight turned harsh" in line:
             cur_weather = "Sun"
+            entry["weather"] = cur_weather
         elif "started to rain" in line or "Rain continues" in line:
             cur_weather = "Rain"
+            entry["weather"] = cur_weather
         elif "sandstorm kicked up" in line:
             cur_weather = "Sand"
+            entry["weather"] = cur_weather
+        elif "started to snow" in line or "Snow continues" in line:
+            cur_weather = "Snow"
+            entry["weather"] = cur_weather
+        elif (
+            "The sunlight faded" in line
+            or "The rain stopped" in line
+            or "The sandstorm subsided" in line
+            or "The snow stopped" in line
+        ):
+            cur_weather = "None"
+            entry["weather"] = cur_weather
         elif "Grass grew to cover the battlefield" in line:
             cur_terrain = "Grassy"
+            entry["terrain"] = cur_terrain
         elif "surged across the battlefield" in line:
             cur_terrain = "Electric"
+            entry["terrain"] = cur_terrain
         elif "Mist swirled" in line:
             cur_terrain = "Misty"
+            entry["terrain"] = cur_terrain
+        elif "weirdness" in line:
+            cur_terrain = "Psychic"
+            entry["terrain"] = cur_terrain
+        elif "disappeared from the battlefield" in line:
+            cur_terrain = "None"
+            entry["terrain"] = cur_terrain
 
         # Field Conditions
-        if "Tailwind blew from behind your team" in line:
+        if "Tailwind blew from behind your team" in line or f"Tailwind blew from behind {trainer_1_name}" in line:
             t1_tailwind = True
-        elif "Tailwind blew from behind the opposing team" in line:
+        elif "Tailwind blew from behind the opposing team" in line or f"Tailwind blew from behind {trainer_2_name}" in line:
             t2_tailwind = True
         elif "The tailwind petered out" in line:
-            t1_tailwind = False
-            t2_tailwind = False
+            if "opposing" in line:
+                t2_tailwind = False
+            elif "your team" in line:
+                t1_tailwind = False
+            else:
+                t1_tailwind = False
+                t2_tailwind = False
         elif "twisted the dimensions" in line:
             trick_room = not trick_room
+        elif "twisted dimensions returned to normal" in line:
+            trick_room = False
         elif "Light Screen" in line and "rose" in line:
             if "opposing" in line:
                 t2_screens.add("Light Screen")
@@ -207,6 +239,29 @@ def extract_turn_telemetry(
                 t2_screens.add("Reflect")
             else:
                 t1_screens.add("Reflect")
+        elif "wore off!" in line:
+            if "Light Screen" in line:
+                t1_screens.discard("Light Screen")
+                t2_screens.discard("Light Screen")
+            if "Reflect" in line:
+                t1_screens.discard("Reflect")
+                t2_screens.discard("Reflect")
+
+        # Track withdrawals so we replace the exact active slot
+        m_withdrew = re.match(r"^(.+?)\s+withdrew\s+(.+?)!", line)
+        if m_withdrew:
+            tr_w = m_withdrew.group(1).strip().replace("☆", "")
+            mon_w = m_withdrew.group(2).split("(")[-1].replace(")", "").strip()
+            if tr_w.lower() == trainer_1_name.lower():
+                last_withdrawn_t1 = mon_w
+            else:
+                last_withdrawn_t2 = mon_w
+            continue
+
+        m_comeback = re.match(r"^(.+?),\s+come back!", line)
+        if m_comeback:
+            last_withdrawn_t1 = m_comeback.group(1).split("(")[-1].replace(")", "").strip()
+            continue
 
         # Switches during battle
         m_switch = re.match(r"^(.+?)\s+sent out\s+(.+?)!", line)
@@ -215,15 +270,36 @@ def extract_turn_telemetry(
             mon = m_switch.group(2).split("(")[-1].replace(")", "").strip()
             is_t1 = trainer_p.lower() == trainer_1_name.lower()
             if is_t1:
+                if last_withdrawn_t1 and last_withdrawn_t1 in t1_active:
+                    t1_active[t1_active.index(last_withdrawn_t1)] = mon
+                    last_withdrawn_t1 = None
+                else:
+                    if len(t1_active) >= 2:
+                        t1_active.pop(0)
+                    t1_active.append(mon)
+                entry["t1_moves"].append(f"Switch -> {mon}")
+            else:
+                if last_withdrawn_t2 and last_withdrawn_t2 in t2_active:
+                    t2_active[t2_active.index(last_withdrawn_t2)] = mon
+                    last_withdrawn_t2 = None
+                else:
+                    if len(t2_active) >= 2:
+                        t2_active.pop(0)
+                    t2_active.append(mon)
+                entry["t2_moves"].append(f"Switch -> {mon}")
+            continue
+
+        m_go_mid = re.match(r"^Go!\s+(.+?)!", line)
+        if m_go_mid and current_turn > 0:
+            mon = m_go_mid.group(1).split("(")[-1].replace(")", "").strip()
+            if last_withdrawn_t1 and last_withdrawn_t1 in t1_active:
+                t1_active[t1_active.index(last_withdrawn_t1)] = mon
+                last_withdrawn_t1 = None
+            else:
                 if len(t1_active) >= 2:
                     t1_active.pop(0)
                 t1_active.append(mon)
-                entry["t1_moves"].append(f"Switch -> {mon}")
-            else:
-                if len(t2_active) >= 2:
-                    t2_active.pop(0)
-                t2_active.append(mon)
-                entry["t2_moves"].append(f"Switch -> {mon}")
+            entry["t1_moves"].append(f"Switch -> {mon}")
             continue
 
         # Move execution
@@ -260,6 +336,10 @@ def extract_turn_telemetry(
             fainted_mon = m_faint.group(1).strip()
             is_opp_faint = line.startswith("The opposing ")
             team_label = "trainer_2" if is_opp_faint else "trainer_1"
+            if is_opp_faint:
+                last_withdrawn_t2 = fainted_mon
+            else:
+                last_withdrawn_t1 = fainted_mon
             entry["faints"].append(f"{team_label}: {fainted_mon}")
             continue
 

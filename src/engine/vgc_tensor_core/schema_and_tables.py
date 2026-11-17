@@ -152,35 +152,84 @@ CATEGORY_TO_IDX: Dict[str, int] = {c.lower(): i for i, c in enumerate(CANONICAL_
 
 
 class ItemID(IntEnum):
-    """Canonical Numeric Item Identifiers for Branchless Matrix Gates."""
+    """Canonical Numeric Item Identifiers for Branchless Matrix Gates (Regulation M-C Grounded)."""
 
     NONE = 0
     FOCUS_SASH = 1
     LIFE_ORB = 2
     SITRUS_BERRY = 3
-    CLEAR_AMULET = 4
+    WHITE_HERB = 4
     COVERT_CLOAK = 5
-    SAFETY_GOGGLES = 6
-    ASSAULT_VEST = 7
+    GRASSY_SEED = 6
+    PSYCHIC_SEED = 7
     CHOICE_SCARF = 8
     CHOICE_BAND = 9
     CHOICE_SPECS = 10
     EJECT_BUTTON = 11
-    EJECT_PACK = 12
+    ELECTRIC_SEED = 12
     RED_CARD = 13
-    BOOSTER_ENERGY = 14
+    MISTY_SEED = 14
     LEFTOVERS = 15
-    BLACK_SLUDGE = 16
+    LUM_BERRY = 16
     ROCKY_HELMET = 17
     MEGA_STONE = 18
     LOADED_DICE = 19
     LIGHT_CLAY = 20
     TYPE_BOOST_ITEM = 21
     SCOPE_LENS = 22
+    MENTAL_HERB = 23
+    AIR_BALLOON = 24
+    EXPERT_BELT = 25
+    WIDE_LENS = 26
+    DAMP_ROCK = 27
+    HEAT_ROCK = 28
+    SMOOTH_ROCK = 29
+    ICY_ROCK = 30
+    CHOPLE_BERRY = 31
+    COLBUR_BERRY = 32
+    OCCA_BERRY = 33
+    PASSHO_BERRY = 34
+    YACHE_BERRY = 35
+    SHUCA_BERRY = 36
+    BABIRI_BERRY = 37
+    HABAN_BERRY = 38
+    ROSELI_BERRY = 39
+    WACAN_BERRY = 40
+    RINDO_BERRY = 41
+    CHARTI_BERRY = 42
+    KASIB_BERRY = 43
+    PAYAPA_BERRY = 44
+    COBA_BERRY = 45
+    KEBIA_BERRY = 46
+    TANGA_BERRY = 47
+    CHILAN_BERRY = 48
+
+
+# Mapping from ItemID type-resist berries to their resisted type index in CANONICAL_TYPES
+RESIST_BERRY_TO_TYPE_IDX: Dict[int, int] = {
+    int(ItemID.CHILAN_BERRY): TYPE_TO_IDX["normal"],
+    int(ItemID.OCCA_BERRY): TYPE_TO_IDX["fire"],
+    int(ItemID.PASSHO_BERRY): TYPE_TO_IDX["water"],
+    int(ItemID.RINDO_BERRY): TYPE_TO_IDX["grass"],
+    int(ItemID.WACAN_BERRY): TYPE_TO_IDX["electric"],
+    int(ItemID.YACHE_BERRY): TYPE_TO_IDX["ice"],
+    int(ItemID.CHOPLE_BERRY): TYPE_TO_IDX["fighting"],
+    int(ItemID.KEBIA_BERRY): TYPE_TO_IDX["poison"],
+    int(ItemID.SHUCA_BERRY): TYPE_TO_IDX["ground"],
+    int(ItemID.COBA_BERRY): TYPE_TO_IDX["flying"],
+    int(ItemID.PAYAPA_BERRY): TYPE_TO_IDX["psychic"],
+    int(ItemID.TANGA_BERRY): TYPE_TO_IDX["bug"],
+    int(ItemID.CHARTI_BERRY): TYPE_TO_IDX["rock"],
+    int(ItemID.KASIB_BERRY): TYPE_TO_IDX["ghost"],
+    int(ItemID.HABAN_BERRY): TYPE_TO_IDX["dragon"],
+    int(ItemID.COLBUR_BERRY): TYPE_TO_IDX["dark"],
+    int(ItemID.BABIRI_BERRY): TYPE_TO_IDX["steel"],
+    int(ItemID.ROSELI_BERRY): TYPE_TO_IDX["fairy"],
+}
 
 
 class AbilityID(IntEnum):
-    """Canonical Numeric Ability Identifiers for Branchless Matrix Gates."""
+    """Canonical Numeric Ability Identifiers for Branchless Matrix Gates (Regulation M-C Grounded)."""
 
     NONE = 0
     INTIMIDATE = 1
@@ -195,7 +244,7 @@ class AbilityID(IntEnum):
     PSYCHIC_SURGE = 10
     MISTY_SURGE = 11
     FAIRY_AURA = 12
-    DARK_AURA = 13
+    STAMINA = 13
     PRANKSTER = 14
     UNBURDEN = 15
     LEVITATE = 16
@@ -211,7 +260,7 @@ class AbilityID(IntEnum):
     SAND_RUSH = 26
     SLUSH_RUSH = 27
     LIGHTNING_ROD = 28
-    STORM_DRAIN = 29
+    BLAZE = 29
     FRIEND_GUARD = 30
     HOSPITALITY = 31
     ARMOR_TAIL = 32
@@ -226,7 +275,7 @@ class AbilityID(IntEnum):
     EARTH_EATER = 41
     NO_GUARD = 42
     SCRAPPY = 43
-    MINDS_EYE = 44
+    PIXILATE = 44
     ROCK_HEAD = 45
     ROUGH_SKIN = 46
     POISON_TOUCH = 47
@@ -237,6 +286,31 @@ class AbilityID(IntEnum):
     JUSTIFIED = 52
     SHIELD_DUST = 53
     CLOUD_NINE = 54
+    FLAME_BODY = 55
+    CURSED_BODY = 56
+    LIQUID_VOICE = 57
+    TOXIC_DEBRIS = 58
+    SOLID_ROCK = 59
+    MIRROR_ARMOR = 60
+    SPEED_BOOST = 61
+    INFILTRATOR = 62
+    COMPOUND_EYES = 63
+    REGENERATOR = 64
+    MAGIC_BOUNCE = 65
+    SHARPNESS = 66
+    GALE_WINGS = 67
+    TECHNICIAN = 68
+    TOUGH_CLAWS = 69
+    SHEER_FORCE = 70
+    MOLD_BREAKER = 71
+    QUICK_FEET = 72
+    OVERCOAT = 73
+    TORRENT = 74
+    OVERGROW = 75
+    SWARM = 76
+    AERILATE = 77
+    REFRIGERATE = 78
+    SURGE_SURFER = 79
 
 
 class TargetType(IntEnum):
@@ -306,16 +380,6 @@ SLOT_TRAINER_2_B: int = 5
 SLOT_TRAINER_2_BENCH1: int = 6
 SLOT_TRAINER_2_BENCH2: int = 7
 
-# Backward-compatibility aliases
-SLOT_P1A: int = SLOT_TRAINER_1_A
-SLOT_P1B: int = SLOT_TRAINER_1_B
-SLOT_P1_BENCH1: int = SLOT_TRAINER_1_BENCH1
-SLOT_P1_BENCH2: int = SLOT_TRAINER_1_BENCH2
-SLOT_P2A: int = SLOT_TRAINER_2_A
-SLOT_P2B: int = SLOT_TRAINER_2_B
-SLOT_P2_BENCH1: int = SLOT_TRAINER_2_BENCH1
-SLOT_P2_BENCH2: int = SLOT_TRAINER_2_BENCH2
-
 
 # --- A. Global Field Tensor F: shape [..., 24] ---
 FIELD_DIM: int = 24
@@ -352,25 +416,13 @@ class FieldIdx:
     TRAINER_2_AURORA_VEIL_TURNS: int = 22
     TRAINER_2_MEGA_USED: int = 23
 
-    # Backward compatibility aliases
-    P1_TAILWIND_TURNS: int = TRAINER_1_TAILWIND_TURNS
-    P1_REFLECT_TURNS: int = TRAINER_1_REFLECT_TURNS
-    P1_LIGHT_SCREEN_TURNS: int = TRAINER_1_LIGHT_SCREEN_TURNS
-    P1_AURORA_VEIL_TURNS: int = TRAINER_1_AURORA_VEIL_TURNS
-    P1_MEGA_USED: int = TRAINER_1_MEGA_USED
-    P2_TAILWIND_TURNS: int = TRAINER_2_TAILWIND_TURNS
-    P2_REFLECT_TURNS: int = TRAINER_2_REFLECT_TURNS
-    P2_LIGHT_SCREEN_TURNS: int = TRAINER_2_LIGHT_SCREEN_TURNS
-    P2_AURORA_VEIL_TURNS: int = TRAINER_2_AURORA_VEIL_TURNS
-    P2_MEGA_USED: int = TRAINER_2_MEGA_USED
 
-
-# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 84] ---
-MON_DIM: int = 84
+# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 86] ---
+MON_DIM: int = 86
 
 
 class MonIdx:
-    """Exact indices for the 84-Float Per-Pokémon Feature Vector `[..., 8, 84]`."""
+    """Exact indices for the 86-Float Per-Pokémon Feature Vector `[..., 8, 86]`."""
 
     # 0..2 (3 floats): HP Channels
     HP_CUR: int = 0
@@ -430,7 +482,7 @@ class MonIdx:
     HELPING_HAND_MULT: int = 67
     VOLATILE_END: int = 68
 
-    # 68..83 (16 floats): Equipment, Ability, Grounded, Choice Lock & In-Place Mega Evolution 5-Stat Payload
+    # 68..85 (18 floats): Equipment, Ability, Grounded, Choice Lock & In-Place Mega Evolution Payload
     GROUNDED_FLAG: int = 68
     ITEM_ACTIVE: int = 69
     ITEM_ID: int = 70
@@ -449,6 +501,8 @@ class MonIdx:
     MEGA_SPE: int = 82
     MEGA_STAT_END: int = 83
     MEGA_ABILITY_ID: int = 83
+    MEGA_TYPE1: int = 84          # Type index 0..17 for Mega primary type (or -1.0 if unchanged)
+    MEGA_TYPE2: int = 85          # Type index 0..17 for Mega secondary type (or -1.0 if single-type)
 
 
 # --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 56] ---
@@ -607,6 +661,7 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
     switch_persist_np[MonIdx.BOOST_START:MonIdx.BOOST_END] = 0.0
     switch_persist_np[MonIdx.VOLATILE_START:MonIdx.VOLATILE_END] = 0.0
     switch_persist_np[MonIdx.HELPING_HAND_MULT] = 1.0
+    switch_persist_np[MonIdx.UNBURDEN_ACTIVE] = 0.0
 
     if HAS_TORCH and torch is not None:
         if device is None:

@@ -32,14 +32,14 @@ from engine.vgc_tensor_core.schema_and_tables import (
     MonIdx,
     MoveIdx,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P1_BENCH1,
-    SLOT_P1_BENCH2,
-    SLOT_P2A,
-    SLOT_P2B,
-    SLOT_P2_BENCH1,
-    SLOT_P2_BENCH2,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_1_BENCH1,
+    SLOT_TRAINER_1_BENCH2,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
+    SLOT_TRAINER_2_BENCH1,
+    SLOT_TRAINER_2_BENCH2,
     TargetType,
     TYPE_TO_IDX,
     WEATHER_TO_IDX,
@@ -65,111 +65,111 @@ def _build_test_roster() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     P = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
     M = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
 
-    # Slot 0 (P1A): Urshifu-Rapid-Strike (Water/Fighting)
-    P[SLOT_P1A, MonIdx.HP_CUR] = 175.0
-    P[SLOT_P1A, MonIdx.HP_MAX] = 175.0
-    P[SLOT_P1A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1A, MonIdx.STAT_ATK] = 182.0
-    P[SLOT_P1A, MonIdx.STAT_DEF] = 120.0
-    P[SLOT_P1A, MonIdx.STAT_SPA] = 74.0
-    P[SLOT_P1A, MonIdx.STAT_SPD] = 80.0
-    P[SLOT_P1A, MonIdx.STAT_SPE] = 149.0
-    P[SLOT_P1A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1A, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]] = 1.0
-    P[SLOT_P1A, MonIdx.TYPE2_START + TYPE_TO_IDX["fighting"]] = 1.0
-    P[SLOT_P1A, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 0 (trainer_1_a): Sneasler / Fighting Attacker (Water/Fighting)
+    P[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 175.0
+    P[SLOT_TRAINER_1_A, MonIdx.HP_MAX] = 175.0
+    P[SLOT_TRAINER_1_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_ATK] = 182.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_DEF] = 120.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPA] = 74.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPD] = 80.0
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_SPE] = 149.0
+    P[SLOT_TRAINER_1_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.TYPE2_START + TYPE_TO_IDX["fighting"]] = 1.0
+    P[SLOT_TRAINER_1_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    # P1A Move 0: Close Combat (Fighting Physical, BP 120, Prio 0, Single Foe)
-    M[SLOT_P1A, 0, MoveIdx.BASE_POWER] = 120.0
-    M[SLOT_P1A, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.PRIORITY] = 0.0
-    M[SLOT_P1A, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
-    M[SLOT_P1A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fighting"]] = 1.0
-    M[SLOT_P1A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
+    # trainer_1_a Move 0: Close Combat (Fighting Physical, BP 120, Prio 0, Single Foe)
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.BASE_POWER] = 120.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.PRIORITY] = 0.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fighting"]] = 1.0
+    M[SLOT_TRAINER_1_A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
 
-    # P1A Move 1: U-turn (Bug Physical, BP 70, Pivot)
-    M[SLOT_P1A, 1, MoveIdx.BASE_POWER] = 70.0
-    M[SLOT_P1A, 1, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.PRIORITY] = 0.0
-    M[SLOT_P1A, 1, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
-    M[SLOT_P1A, 1, MoveIdx.TYPE_START + TYPE_TO_IDX["bug"]] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.CAT_PHYSICAL] = 1.0
-    M[SLOT_P1A, 1, MoveIdx.SWITCH_MODE] = 1.0  # Voluntary Pivot
+    # trainer_1_a Move 1: U-turn (Bug Physical, BP 70, Pivot)
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.BASE_POWER] = 70.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.PRIORITY] = 0.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.TYPE_START + TYPE_TO_IDX["bug"]] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_1_A, 1, MoveIdx.SWITCH_MODE] = 1.0  # Voluntary Pivot
 
-    # Slot 1 (P1B): Flutter Mane / Whimsicott (Fairy Support)
-    P[SLOT_P1B, MonIdx.HP_CUR] = 135.0
-    P[SLOT_P1B, MonIdx.HP_MAX] = 135.0
-    P[SLOT_P1B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1B, MonIdx.STAT_ATK] = 67.0
-    P[SLOT_P1B, MonIdx.STAT_DEF] = 75.0
-    P[SLOT_P1B, MonIdx.STAT_SPA] = 187.0
-    P[SLOT_P1B, MonIdx.STAT_SPD] = 155.0
-    P[SLOT_P1B, MonIdx.STAT_SPE] = 205.0
-    P[SLOT_P1B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P1B, MonIdx.TYPE1_START + TYPE_TO_IDX["fairy"]] = 1.0
-    P[SLOT_P1B, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 1 (trainer_1_b): Whimsicott (Fairy Support)
+    P[SLOT_TRAINER_1_B, MonIdx.HP_CUR] = 135.0
+    P[SLOT_TRAINER_1_B, MonIdx.HP_MAX] = 135.0
+    P[SLOT_TRAINER_1_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_ATK] = 67.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_DEF] = 75.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPA] = 187.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPD] = 155.0
+    P[SLOT_TRAINER_1_B, MonIdx.STAT_SPE] = 205.0
+    P[SLOT_TRAINER_1_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.TYPE1_START + TYPE_TO_IDX["fairy"]] = 1.0
+    P[SLOT_TRAINER_1_B, MonIdx.GROUNDED_FLAG] = 1.0
 
-    # P1B Move 0: Draining Kiss (Fairy Special, BP 50, Drain -0.75)
-    M[SLOT_P1B, 0, MoveIdx.BASE_POWER] = 50.0
-    M[SLOT_P1B, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P1B, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
-    M[SLOT_P1B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fairy"]] = 1.0
-    M[SLOT_P1B, 0, MoveIdx.CAT_SPECIAL] = 1.0
-    M[SLOT_P1B, 0, MoveIdx.RECOIL_PCT] = -0.75  # 75% Drain
+    # trainer_1_b Move 0: Draining Kiss (Fairy Special, BP 50, Drain -0.75)
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.BASE_POWER] = 50.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fairy"]] = 1.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.CAT_SPECIAL] = 1.0
+    M[SLOT_TRAINER_1_B, 0, MoveIdx.RECOIL_PCT] = -0.75  # 75% Drain
 
-    # Slot 2 (P1 Bench 1): Rillaboom
-    P[SLOT_P1_BENCH1, MonIdx.HP_CUR] = 207.0
-    P[SLOT_P1_BENCH1, MonIdx.HP_MAX] = 207.0
-    P[SLOT_P1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P1_BENCH1, MonIdx.STAT_SPE] = 105.0
+    # Slot 2 (trainer_1_bench1): Rillaboom
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR] = 207.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.HP_MAX] = 207.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE] = 105.0
 
-    # Slot 4 (P2A): Incineroar (Fire/Dark)
-    P[SLOT_P2A, MonIdx.HP_CUR] = 202.0
-    P[SLOT_P2A, MonIdx.HP_MAX] = 202.0
-    P[SLOT_P2A, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2A, MonIdx.STAT_ATK] = 135.0
-    P[SLOT_P2A, MonIdx.STAT_DEF] = 110.0
-    P[SLOT_P2A, MonIdx.STAT_SPA] = 90.0
-    P[SLOT_P2A, MonIdx.STAT_SPD] = 110.0
-    P[SLOT_P2A, MonIdx.STAT_SPE] = 80.0
-    P[SLOT_P2A, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2A, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
-    P[SLOT_P2A, MonIdx.TYPE2_START + TYPE_TO_IDX["dark"]] = 1.0
-    P[SLOT_P2A, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 4 (trainer_2_a): Incineroar (Fire/Dark)
+    P[SLOT_TRAINER_2_A, MonIdx.HP_CUR] = 202.0
+    P[SLOT_TRAINER_2_A, MonIdx.HP_MAX] = 202.0
+    P[SLOT_TRAINER_2_A, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_ATK] = 135.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_DEF] = 110.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_SPA] = 90.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_SPD] = 110.0
+    P[SLOT_TRAINER_2_A, MonIdx.STAT_SPE] = 80.0
+    P[SLOT_TRAINER_2_A, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.TYPE2_START + TYPE_TO_IDX["dark"]] = 1.0
+    P[SLOT_TRAINER_2_A, MonIdx.GROUNDED_FLAG] = 1.0
 
-    # P2A Move 0: Flare Blitz (Fire Physical, BP 120, Recoil 0.33)
-    M[SLOT_P2A, 0, MoveIdx.BASE_POWER] = 120.0
-    M[SLOT_P2A, 0, MoveIdx.ACCURACY] = 1.0
-    M[SLOT_P2A, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
-    M[SLOT_P2A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fire"]] = 1.0
-    M[SLOT_P2A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
-    M[SLOT_P2A, 0, MoveIdx.RECOIL_PCT] = 0.33
+    # trainer_2_a Move 0: Flare Blitz (Fire Physical, BP 120, Recoil 0.33)
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.BASE_POWER] = 120.0
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.ACCURACY] = 1.0
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.TARGET_TYPE] = TargetType.SINGLE_FOE
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.TYPE_START + TYPE_TO_IDX["fire"]] = 1.0
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.CAT_PHYSICAL] = 1.0
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.RECOIL_PCT] = 0.33
 
-    # Slot 5 (P2B): Ogerpon-Hearthflame (Grass/Fire)
-    P[SLOT_P2B, MonIdx.HP_CUR] = 155.0
-    P[SLOT_P2B, MonIdx.HP_MAX] = 155.0
-    P[SLOT_P2B, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2B, MonIdx.STAT_ATK] = 172.0
-    P[SLOT_P2B, MonIdx.STAT_DEF] = 104.0
-    P[SLOT_P2B, MonIdx.STAT_SPA] = 72.0
-    P[SLOT_P2B, MonIdx.STAT_SPD] = 116.0
-    P[SLOT_P2B, MonIdx.STAT_SPE] = 162.0
-    P[SLOT_P2B, MonIdx.STATUS_HEALTHY] = 1.0
-    P[SLOT_P2B, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
-    P[SLOT_P2B, MonIdx.TYPE2_START + TYPE_TO_IDX["fire"]] = 1.0
-    P[SLOT_P2B, MonIdx.GROUNDED_FLAG] = 1.0
+    # Slot 5 (trainer_2_b): Clefable / Follow Me User (Grass/Fire)
+    P[SLOT_TRAINER_2_B, MonIdx.HP_CUR] = 155.0
+    P[SLOT_TRAINER_2_B, MonIdx.HP_MAX] = 155.0
+    P[SLOT_TRAINER_2_B, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_ATK] = 172.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_DEF] = 104.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPA] = 72.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPD] = 116.0
+    P[SLOT_TRAINER_2_B, MonIdx.STAT_SPE] = 162.0
+    P[SLOT_TRAINER_2_B, MonIdx.STATUS_HEALTHY] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.TYPE2_START + TYPE_TO_IDX["fire"]] = 1.0
+    P[SLOT_TRAINER_2_B, MonIdx.GROUNDED_FLAG] = 1.0
 
-    # P2B Move 0: Follow Me (+2 prio)
-    M[SLOT_P2B, 0, MoveIdx.BASE_POWER] = 0.0
-    M[SLOT_P2B, 0, MoveIdx.PRIORITY] = 2.0
-    M[SLOT_P2B, 0, MoveIdx.TARGET_TYPE] = TargetType.SELF
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 15.0  # Follow Me
+    # trainer_2_b Move 0: Follow Me (+2 prio)
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.BASE_POWER] = 0.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.PRIORITY] = 2.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.TARGET_TYPE] = TargetType.SELF
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 15.0  # Follow Me
 
-    # Slot 6 (P2 Bench 1): Chien-Pao
-    P[SLOT_P2_BENCH1, MonIdx.HP_CUR] = 155.0
-    P[SLOT_P2_BENCH1, MonIdx.HP_MAX] = 155.0
-    P[SLOT_P2_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
-    P[SLOT_P2_BENCH1, MonIdx.STAT_SPE] = 187.0
+    # Slot 6 (trainer_2_bench1): Weavile
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.HP_CUR] = 155.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.HP_MAX] = 155.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.ALIVE_FLAG] = 1.0
+    P[SLOT_TRAINER_2_BENCH1, MonIdx.STAT_SPE] = 187.0
 
     return F, P, M
 
@@ -179,30 +179,30 @@ def test_follow_me_redirection(tables: BilinearLookupTables) -> None:
     print("  [TEST 0] Testing Follow Me Single-Target Redirection...")
     F, P, M = _build_test_roster()
 
-    # Remove Flare Blitz recoil on P2A so it doesn't chip itself when attacking
-    M[SLOT_P2A, 0, MoveIdx.RECOIL_PCT] = 0.0
+    # Remove Flare Blitz recoil on trainer_2_a so it doesn't chip itself when attacking
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.RECOIL_PCT] = 0.0
 
-    # P2B uses Follow Me (FIELD_OP_ID == 15.0, priority +2)
-    # P1A targets P2A (Opp A) with Close Combat
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p1_choices[0, 0] = 0  # P1A -> Opp A (P2A)
-    p1_choices[0, 1] = 4  # P1B -> Opp B (P2B)
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    # trainer_2_b uses Follow Me (FIELD_OP_ID == 15.0, priority +2)
+    # trainer_1_a targets trainer_2_a (Opp A) with Close Combat
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices[0, 0] = 0  # trainer_1_a -> Opp A (trainer_2_a)
+    t1_choices[0, 1] = 4  # trainer_1_b -> Opp B (trainer_2_b)
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    # P2A should take ZERO damage because P1A was redirected to P2B
-    p2a_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_P2A])
-    p2b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_P2B])
+    # trainer_2_a should take ZERO damage because trainer_1_a was redirected to trainer_2_b
+    t2a_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_2_A])
+    t2b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_2_B])
 
-    assert p2a_mean_hp == 202.0, f"Expected P2A to take 0 damage due to Follow Me, got HP {p2a_mean_hp}"
-    assert p2b_mean_hp < 155.0, f"Expected P2B to take redirected damage from Follow Me, got HP {p2b_mean_hp}"
-    print(f"    -> PASS: Follow Me successfully redirected attack away from P2A (HP: 202.0) into P2B (HP: {p2b_mean_hp:.1f}).")
+    assert t2a_mean_hp == 202.0, f"Expected trainer_2_a to take 0 damage due to Follow Me, got HP {t2a_mean_hp}"
+    assert t2b_mean_hp < 155.0, f"Expected trainer_2_b to take redirected damage from Follow Me, got HP {t2b_mean_hp}"
+    print(f"    -> PASS: Follow Me successfully redirected attack away from trainer_2_a (HP: 202.0) into trainer_2_b (HP: {t2b_mean_hp:.1f}).")
 
 
 def test_focus_sash_and_sturdy_clamp(tables: BilinearLookupTables) -> None:
@@ -210,36 +210,36 @@ def test_focus_sash_and_sturdy_clamp(tables: BilinearLookupTables) -> None:
     print("  [TEST 1] Testing Focus Sash & Sturdy 1 HP Clamping...")
     F, P, M = _build_test_roster()
 
-    # Give P2A (Incineroar) Focus Sash at 100% HP, and remove Flare Blitz recoil so it survives its own attack
-    P[SLOT_P2A, MonIdx.ITEM_ID] = ItemID.FOCUS_SASH
-    P[SLOT_P2A, MonIdx.ITEM_ACTIVE] = 1.0
-    M[SLOT_P2A, 0, MoveIdx.RECOIL_PCT] = 0.0
-    # Disable Follow Me on P2B so P1A hits P2A directly
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 0.0
+    # Give trainer_2_a (Incineroar) Focus Sash at 100% HP, and remove Flare Blitz recoil so it survives its own attack
+    P[SLOT_TRAINER_2_A, MonIdx.ITEM_ID] = ItemID.FOCUS_SASH
+    P[SLOT_TRAINER_2_A, MonIdx.ITEM_ACTIVE] = 1.0
+    M[SLOT_TRAINER_2_A, 0, MoveIdx.RECOIL_PCT] = 0.0
+    # Disable Follow Me on trainer_2_b so trainer_1_a hits trainer_2_a directly
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 0.0
 
-    # Give P1A (Urshifu) immense Attack to guarantee overkill
-    P[SLOT_P1A, MonIdx.STAT_ATK] = 500.0
+    # Give trainer_1_a immense Attack to guarantee overkill
+    P[SLOT_TRAINER_1_A, MonIdx.STAT_ATK] = 500.0
 
-    # Actions: P1A uses Close Combat -> Opp A (Incineroar). P1B attacks Opp B (so P2A only takes 1 hit)
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p1_choices[0, 0] = 0  # P1A -> Opp A
-    p1_choices[0, 1] = 4  # P1B -> Opp B (choice 4 is Move 0 -> Opp B)
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    # Actions: trainer_1_a uses Close Combat -> Opp A (Incineroar). trainer_1_b attacks Opp B
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices[0, 0] = 0  # trainer_1_a -> Opp A
+    t1_choices[0, 1] = 4  # trainer_1_b -> Opp B
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    # Check P2A HP across samples
-    mean_hp_p2a = float(cascade_res.mean_hp[0, 0, SLOT_P2A])
-    sash_active = float(cascade_res.P[0, 0, 0, SLOT_P2A, MonIdx.ITEM_ACTIVE])
+    # Check trainer_2_a HP across samples
+    mean_hp_t2a = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_2_A])
+    sash_active = float(cascade_res.P[0, 0, 0, SLOT_TRAINER_2_A, MonIdx.ITEM_ACTIVE])
 
-    assert mean_hp_p2a == 1.0, f"Expected Focus Sash to clamp HP to 1.0, got {mean_hp_p2a}"
+    assert mean_hp_t2a == 1.0, f"Expected Focus Sash to clamp HP to 1.0, got {mean_hp_t2a}"
     assert sash_active == 0.0, f"Expected Focus Sash to be consumed (ITEM_ACTIVE=0.0), got {sash_active}"
-    assert cascade_res.faint_prob[0, 0, SLOT_P2A] == 0.0, "Expected faint probability 0.0 with Sash"
+    assert cascade_res.faint_prob[0, 0, SLOT_TRAINER_2_A] == 0.0, "Expected faint probability 0.0 with Sash"
     print("    -> PASS: Focus Sash clamped lethal damage to 1 HP and consumed item.")
 
 
@@ -248,36 +248,36 @@ def test_ko_target_redirection_xor(tables: BilinearLookupTables) -> None:
     print("  [TEST 2] Testing KO Target Redirection XOR...")
     F, P, M = _build_test_roster()
 
-    # Set P2A to 10 HP so P1B (faster slot) KOs it in Step 0
-    P[SLOT_P2A, MonIdx.HP_CUR] = 10.0
+    # Set trainer_2_a to 10 HP so trainer_1_b (faster slot) KOs it in Step 0
+    P[SLOT_TRAINER_2_A, MonIdx.HP_CUR] = 10.0
 
-    # Disable Follow Me on P2B for this test so single-target attacks hit declared targets
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 0.0
+    # Disable Follow Me on trainer_2_b for this test so single-target attacks hit declared targets
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 0.0
 
-    # P1B (Spe 205) attacks Opp A with Move 0 (Draining Kiss)
-    # P1A (Spe 149) ALSO attacks Opp A with Move 0 (Close Combat)
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p1_choices[0, 0] = 0  # P1A -> Opp A
-    p1_choices[0, 1] = 0  # P1B -> Opp A
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    # trainer_1_b (Spe 205) attacks Opp A with Move 0 (Draining Kiss)
+    # trainer_1_a (Spe 149) ALSO attacks Opp A with Move 0 (Close Combat)
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices[0, 0] = 0  # trainer_1_a -> Opp A
+    t1_choices[0, 1] = 0  # trainer_1_b -> Opp A
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    # P2A should be dead
-    p2a_faint = float(cascade_res.faint_prob[0, 0, SLOT_P2A])
-    assert p2a_faint == 1.0, f"Expected P2A to faint, got faint_prob={p2a_faint}"
+    # trainer_2_a should be dead
+    t2a_faint = float(cascade_res.faint_prob[0, 0, SLOT_TRAINER_2_A])
+    assert t2a_faint == 1.0, f"Expected trainer_2_a to faint, got faint_prob={t2a_faint}"
 
-    # P2B should have taken damage from P1A's redirected Close Combat!
-    p2b_initial_hp = 155.0
-    p2b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_P2B])
-    assert p2b_mean_hp < p2b_initial_hp, f"Expected P2B to take redirected damage, got HP {p2b_mean_hp}"
+    # trainer_2_b should have taken damage from trainer_1_a's redirected Close Combat!
+    t2b_initial_hp = 155.0
+    t2b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_2_B])
+    assert t2b_mean_hp < t2b_initial_hp, f"Expected trainer_2_b to take redirected damage, got HP {t2b_mean_hp}"
     assert len(cascade_res.redirection_events) > 0, "Expected redirection event log entry"
-    print(f"    -> PASS: KO Redirection redirected attack to P2B (HP: {p2b_initial_hp} -> {p2b_mean_hp:.1f}).")
+    print(f"    -> PASS: KO Redirection redirected attack to trainer_2_b (HP: {t2b_initial_hp} -> {t2b_mean_hp:.1f}).")
 
 
 def test_life_orb_and_drain_moves(tables: BilinearLookupTables) -> None:
@@ -285,34 +285,34 @@ def test_life_orb_and_drain_moves(tables: BilinearLookupTables) -> None:
     print("  [TEST 3] Testing Life Orb Recoil and Move Drain Healing...")
     F, P, M = _build_test_roster()
 
-    # Give P1A Life Orb
-    P[SLOT_P1A, MonIdx.ITEM_ID] = ItemID.LIFE_ORB
-    P[SLOT_P1A, MonIdx.ITEM_ACTIVE] = 1.0
-    p1a_initial_hp = float(P[SLOT_P1A, MonIdx.HP_CUR])  # 175
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
+    # Give trainer_1_a Life Orb
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ID] = ItemID.LIFE_ORB
+    P[SLOT_TRAINER_1_A, MonIdx.ITEM_ACTIVE] = 1.0
+    t1a_initial_hp = float(P[SLOT_TRAINER_1_A, MonIdx.HP_CUR])  # 175
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
 
-    # Damaged P1B at 50 HP (out of 135) to test Draining Kiss heal
-    P[SLOT_P1B, MonIdx.HP_CUR] = 50.0
+    # Damaged trainer_1_b at 50 HP (out of 135) to test Draining Kiss heal
+    P[SLOT_TRAINER_1_B, MonIdx.HP_CUR] = 50.0
 
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    # P1A should take 10% recoil (17 HP) -> 158 HP
-    p1a_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_P1A])
+    # trainer_1_a should take 10% recoil (17 HP) -> 158 HP
+    t1a_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_1_A])
     expected_lo_recoil = np.floor(175.0 * 0.10)
-    assert p1a_mean_hp == (p1a_initial_hp - expected_lo_recoil), f"Expected P1A HP {p1a_initial_hp - expected_lo_recoil}, got {p1a_mean_hp}"
+    assert t1a_mean_hp == (t1a_initial_hp - expected_lo_recoil), f"Expected trainer_1_a HP {t1a_initial_hp - expected_lo_recoil}, got {t1a_mean_hp}"
 
-    # P1B used Draining Kiss -> healed HP should be > 50.0
-    p1b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_P1B])
-    assert p1b_mean_hp > 50.0, f"Expected P1B to heal from Draining Kiss, got HP {p1b_mean_hp}"
-    print(f"    -> PASS: Life Orb recoil applied (-{expected_lo_recoil} HP) and Drain healed (+{p1b_mean_hp - 50.0:.1f} HP).")
+    # trainer_1_b used Draining Kiss -> healed HP should be > 50.0
+    t1b_mean_hp = float(cascade_res.mean_hp[0, 0, SLOT_TRAINER_1_B])
+    assert t1b_mean_hp > 50.0, f"Expected trainer_1_b to heal from Draining Kiss, got HP {t1b_mean_hp}"
+    print(f"    -> PASS: Life Orb recoil applied (-{expected_lo_recoil} HP) and Drain healed (+{t1b_mean_hp - 50.0:.1f} HP).")
 
 
 def test_monte_carlo_roll_variance_alert(tables: BilinearLookupTables) -> None:
@@ -320,29 +320,27 @@ def test_monte_carlo_roll_variance_alert(tables: BilinearLookupTables) -> None:
     print("  [TEST 4] Testing Monte Carlo Roll Variance Alert...")
     F, P, M = _build_test_roster()
 
-    # Find the exact damage range of Close Combat from P1A into P2A
-    # At neutral, CC does ~150-180 damage to Incineroar.
-    # Min damage of CC is 224, Max is 266. Set HP to 245.0 so exactly 8 rolls KO and 8 rolls survive!
-    P[SLOT_P2A, MonIdx.HP_CUR] = 245.0
-    P[SLOT_P2A, MonIdx.HP_MAX] = 245.0
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
+    # Min damage of CC is 224, Max is 266. Set HP to 245.0 so rolls straddle KO threshold!
+    P[SLOT_TRAINER_2_A, MonIdx.HP_CUR] = 245.0
+    P[SLOT_TRAINER_2_A, MonIdx.HP_MAX] = 245.0
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
 
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p1_choices[0, 0] = 0  # P1A -> Opp A (P2A)
-    p1_choices[0, 1] = 4  # P1B -> Opp B (P2B)
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices[0, 0] = 0  # trainer_1_a -> Opp A (trainer_2_a)
+    t1_choices[0, 1] = 4  # trainer_1_b -> Opp B (trainer_2_b)
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    faint_prob = float(cascade_res.faint_prob[0, 0, SLOT_P2A])
-    var_alert = float(cascade_res.roll_variance_alert[0, 0, SLOT_P2A])
+    faint_prob = float(cascade_res.faint_prob[0, 0, SLOT_TRAINER_2_A])
+    var_alert = float(cascade_res.roll_variance_alert[0, 0, SLOT_TRAINER_2_A])
 
-    print(f"    Empirical Faint Probability for P2A across 16 rolls: {faint_prob * 100.0:.1f}%")
+    print(f"    Empirical Faint Probability for trainer_2_a across 16 rolls: {faint_prob * 100.0:.1f}%")
     assert 0.0 < faint_prob < 1.0, f"Expected roll-dependent survival (0 < p < 1), got {faint_prob}"
     assert var_alert == 1.0, f"Expected roll_variance_alert == 1.0, got {var_alert}"
     print("    -> PASS: Roll variance alert successfully triggered on straddled damage threshold.")
@@ -353,28 +351,28 @@ def test_voluntary_pivot_execution(tables: BilinearLookupTables) -> None:
     print("  [TEST 5] Testing Mid-Turn Voluntary Pivot (U-turn)...")
     F, P, M = _build_test_roster()
 
-    # P1A chooses Move 1 (U-turn) -> Opp A (choice 1)
-    M[SLOT_P2B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
-    p1_choices = np.zeros((1, 2), dtype=np.int64)
-    p1_choices[0, 0] = 1  # Move 1 (U-turn -> Opp A)
-    p1_choices[0, 1] = 4  # Move 0 -> Opp B
-    p2_choices = np.zeros((1, 2), dtype=np.int64)
+    # trainer_1_a chooses Move 1 (U-turn) -> Opp A (choice 1)
+    M[SLOT_TRAINER_2_B, 0, MoveIdx.FIELD_OP_ID] = 0.0  # Disable Follow Me
+    t1_choices = np.zeros((1, 2), dtype=np.int64)
+    t1_choices[0, 0] = 1  # Move 1 (U-turn -> Opp A)
+    t1_choices[0, 1] = 4  # Move 0 -> Opp B
+    t2_choices = np.zeros((1, 2), dtype=np.int64)
 
     F_batch = np.expand_dims(np.expand_dims(F, 0), 0)
     P_batch = np.expand_dims(np.expand_dims(P, 0), 0)
     M_batch = np.expand_dims(np.expand_dims(M, 0), 0)
 
-    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, p1_choices, p2_choices, tables)
-    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, p1_choices, p2_choices, pre_res, tables, num_mc_samples=16)
+    pre_res = execute_pre_attack_phases(F_batch, P_batch, M_batch, t1_choices, t2_choices, tables)
+    cascade_res = execute_attack_cascade(F_batch, P_batch, M_batch, t1_choices, t2_choices, pre_res, tables, num_mc_samples=16)
 
-    # After U-turn, Slot 0 (P1A) should now hold Rillaboom (Spe 105, HP 207)
-    # and Slot 2 (Bench 1) should hold Urshifu (Spe 149, HP 175)
-    slot0_spe = float(cascade_res.P[0, 0, 0, SLOT_P1A, MonIdx.STAT_SPE])
-    bench1_spe = float(cascade_res.P[0, 0, 0, SLOT_P1_BENCH1, MonIdx.STAT_SPE])
+    # After U-turn, Slot 0 (trainer_1_a) should now hold Rillaboom (Spe 105, HP 207)
+    # and Slot 2 (Bench 1) should hold Sneasler (Spe 149, HP 175)
+    slot0_spe = float(cascade_res.P[0, 0, 0, SLOT_TRAINER_1_A, MonIdx.STAT_SPE])
+    bench1_spe = float(cascade_res.P[0, 0, 0, SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE])
 
     assert slot0_spe == 105.0, f"Expected Rillaboom (Spe 105) in Slot 0, got {slot0_spe}"
-    assert bench1_spe == 149.0, f"Expected Urshifu (Spe 149) in Bench 1, got {bench1_spe}"
-    print("    -> PASS: U-turn swapped Urshifu to Bench and promoted Rillaboom.")
+    assert bench1_spe == 149.0, f"Expected Sneasler (Spe 149) in Bench 1, got {bench1_spe}"
+    print("    -> PASS: U-turn swapped Sneasler to Bench and promoted Rillaboom.")
 
 
 def test_benchmarks() -> None:

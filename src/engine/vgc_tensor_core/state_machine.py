@@ -44,6 +44,7 @@ from .phases_pre_attack import (
     execute_pre_attack_phases,
 )
 from .schema_and_tables import (
+    AbilityID,
     BilinearLookupTables,
     FIELD_DIM,
     FieldIdx,
@@ -166,8 +167,12 @@ def _execute_end_of_turn_torch(
     active_hp_max = P[:, :, :, active_slot_tensor, MonIdx.HP_MAX]
     active_alive = active_hp_cur > 0.0
 
-    # 1. Weather residual damage (Sandstorm: 1/16 max HP to non-Rock/Ground/Steel without Safety Goggles)
-    is_sand = (F[:, :, :, FieldIdx.WEATHER_START + W_SAND] > 0.5).unsqueeze(-1)
+    # 1. Weather residual damage (Sandstorm: 1/16 max HP to non-Rock/Ground/Steel without Overcoat;
+    #    Sun + Solar Power: 1/8 max HP)
+    active_abil = P[:, :, :, active_slot_tensor, MonIdx.ABILITY_ID]
+    cloud_nine_active = torch.any(active_alive & (active_abil == float(AbilityID.CLOUD_NINE)), dim=-1, keepdim=True)
+    is_sand = (F[:, :, :, FieldIdx.WEATHER_START + W_SAND] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
+    is_sun = (F[:, :, :, FieldIdx.WEATHER_START + W_SUN] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
     t1 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE1_START:MonIdx.TYPE1_END], dim=-1)
     t2 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1)
     has_t2 = torch.sum(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1) > 0.5
@@ -177,20 +182,22 @@ def _execute_end_of_turn_torch(
         (t1 == rock_idx) | (t1 == ground_idx) | (t1 == steel_idx)
         | (has_t2 & ((t2 == rock_idx) | (t2 == ground_idx) | (t2 == steel_idx)))
     )
-    has_goggles = (
-        (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5)
-        & (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID] == float(ItemID.SAFETY_GOGGLES))
-    )
-    is_sand_immune = sand_immune_types | has_goggles
+    has_overcoat = active_abil == float(AbilityID.OVERCOAT)
+    is_sand_immune = sand_immune_types | has_overcoat
 
     sand_chip = torch.where(
         is_sand & active_alive & (~is_sand_immune),
         torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
         torch.zeros_like(active_hp_cur),
     )
-    active_hp_cur = torch.clamp(active_hp_cur - sand_chip, min=0.0)
+    solar_power_chip = torch.where(
+        is_sun & active_alive & (active_abil == float(AbilityID.SOLAR_POWER)),
+        torch.clamp(torch.floor(active_hp_max / 8.0), min=1.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    active_hp_cur = torch.clamp(active_hp_cur - sand_chip - solar_power_chip, min=0.0)
 
-    # 2.Terrain & Item Healing (Grassy Terrain +1/16 grounded, Leftovers +1/16, Black Sludge +1/16 Poison)
+    # 2. Terrain & Item Healing (Grassy Terrain +1/16 grounded, Leftovers +1/16)
     is_grassy = (F[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY] > 0.5).unsqueeze(-1)
     is_grounded = P[:, :, :, active_slot_tensor, MonIdx.GROUNDED_FLAG] > 0.5
     grassy_heal = torch.where(
@@ -201,9 +208,7 @@ def _execute_end_of_turn_torch(
 
     item_act = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5
     item_id = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID]
-    has_lefties = item_act & (
-        (item_id == float(ItemID.LEFTOVERS)) | (item_id == float(ItemID.BLACK_SLUDGE))
-    )
+    has_lefties = item_act & (item_id == float(ItemID.LEFTOVERS))
     lefties_heal = torch.where(
         has_lefties & (active_hp_cur > 0.0) & (active_hp_cur < active_hp_max),
         torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
@@ -311,6 +316,16 @@ def _execute_end_of_turn_torch(
     P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS] = torch.where(
         active_hp_cur > 0.0, act_turns + 1.0, act_turns
     )
+
+    # Speed Boost (+1 Spe at End of Turn for alive active Pokémon)
+    has_speed_boost = (active_hp_cur > 0.0) & (active_abil == float(AbilityID.SPEED_BOOST))
+    if torch.any(has_speed_boost):
+        cur_spe_b = P[:, :, :, active_slot_tensor, MonIdx.BOOST_SPE]
+        P[:, :, :, active_slot_tensor, MonIdx.BOOST_SPE] = torch.clamp(
+            cur_spe_b + torch.where(has_speed_boost, torch.ones_like(cur_spe_b), torch.zeros_like(cur_spe_b)),
+            min=-6.0,
+            max=6.0,
+        )
 
     # 5.5 Auto-promotion of alive bench Pokémon into fainted active slots
     if auto_promote:
@@ -583,10 +598,6 @@ class VgcTensorStateMachine:
         Automatically chunks execution when `num_mc_samples > max_sim_chunk_size` so you can run
         thousands of simulations (`1024`, `2048`, `4096+`) per joint action pair with bounded VRAM!
         """
-        if trainer_1_choices is None:
-            trainer_1_choices = kwargs.get("p1_choices")
-        if trainer_2_choices is None:
-            trainer_2_choices = kwargs.get("p2_choices")
         if trainer_1_choices is None or trainer_2_choices is None:
             raise ValueError("Both trainer_1_choices and trainer_2_choices must be provided.")
 

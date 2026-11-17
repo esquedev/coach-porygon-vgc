@@ -146,8 +146,8 @@ def run_50k_invariant_fuzzer(
             F=F_tensor,
             P=P_tensor,
             M_moves=M_tensor,
-            p1_choices=p1_c_tensor,
-            p2_choices=p2_c_tensor,
+            trainer_1_choices=p1_c_tensor,
+            trainer_2_choices=p2_c_tensor,
             num_mc_samples=num_mc_samples,
         )
 

@@ -77,7 +77,7 @@ if HAS_TORCH:
 else:
     TensorOrArray = np.ndarray
 
-PRIORITY_BLOCKING_ABILITIES = {"Armor Tail", "Queenly Majesty", "Dazzling"}
+PRIORITY_BLOCKING_ABILITIES = {"Armor Tail", "Queenly Majesty"}
 SOUND_MOVES = {
     "Hyper Voice",
     "Parting Shot",
@@ -98,15 +98,15 @@ PROTECT_MOVES = {
     "Spiky Shield",
     "King's Shield",
     "Baneful Bunker",
-    "Silk Trap",
     "Burning Bulwark",
+    "Endure",
     "Wide Guard",
     "Quick Guard",
 }
 STATUS_ABSORBING_ABILITIES = {"Good as Gold"}
-FIRE_ABSORBING_ABILITIES = {"Flash Fire", "Well-Baked Body"}
+FIRE_ABSORBING_ABILITIES = {"Flash Fire"}
 ELECTRIC_ABSORBING_ABILITIES = {"Lightning Rod", "Motor Drive", "Volt Absorb"}
-WATER_ABSORBING_ABILITIES = {"Water Absorb", "Storm Drain", "Dry Skin"}
+WATER_ABSORBING_ABILITIES = {"Water Absorb", "Dry Skin"}
 GRASS_ABSORBING_ABILITIES = {"Sap Sipper"}
 GROUND_ABSORBING_ABILITIES = {"Levitate", "Earth Eater"}
 
@@ -589,7 +589,7 @@ class LogicalConstraintEngine:
         # 5. Type effectiveness breakdown
         if target_species and m_cat != "Status":
             resolved_types = self._resolve_target_types(target_species, target_types)
-            scrappy = user_ability in ("Scrappy", "Mind's Eye")
+            scrappy = user_ability == "Scrappy"
             eff = self._compute_type_effectiveness(
                 m_type,
                 resolved_types,
@@ -768,14 +768,6 @@ class LogicalConstraintEngine:
         encore_active = 1.0 if user_vec[MonIdx.ENCORE_TURNS] > 0.0 else 0.0
         last_move_idx = int(round(float(user_vec[MonIdx.LAST_MOVE_IDX])))
         choice_lock_idx = int(round(float(user_vec[MonIdx.CHOICE_LOCKED_MOVE])))
-        has_assault_vest = (
-            1.0
-            if (
-                user_vec[MonIdx.ITEM_ACTIVE] > 0.0
-                and int(round(float(user_vec[MonIdx.ITEM_ID]))) == ItemID.ASSAULT_VEST
-            )
-            else 0.0
-        )
         user_ab = int(round(float(user_vec[MonIdx.ABILITY_ID])))
         can_mega_gate = (
             1.0
@@ -787,8 +779,12 @@ class LogicalConstraintEngine:
             else 0.0
         )
 
-        opp_a_ab = int(round(float(opp_a_vec[MonIdx.ABILITY_ID]))) if opp_a_vec[MonIdx.ALIVE_FLAG] > 0.0 else 0
-        opp_b_ab = int(round(float(opp_b_vec[MonIdx.ABILITY_ID]))) if opp_b_vec[MonIdx.ALIVE_FLAG] > 0.0 else 0
+        opp_a_alive = opp_a_vec[MonIdx.ALIVE_FLAG] > 0.0
+        opp_b_alive = opp_b_vec[MonIdx.ALIVE_FLAG] > 0.0
+        partner_alive = partner_vec[MonIdx.ALIVE_FLAG] > 0.0
+
+        opp_a_ab = int(round(float(opp_a_vec[MonIdx.ABILITY_ID]))) if opp_a_alive else 0
+        opp_b_ab = int(round(float(opp_b_vec[MonIdx.ABILITY_ID]))) if opp_b_alive else 0
         opp_blocks_prio = (
             1.0
             if (
@@ -805,16 +801,7 @@ class LogicalConstraintEngine:
                 continue
             eff_user_ab = int(round(float(user_vec[MonIdx.MEGA_ABILITY_ID]))) if mega_mode == 1 else user_ab
 
-            for tgt_bucket, tgt_vec in enumerate(target_slots):
-                if tgt_vec[MonIdx.ALIVE_FLAG] <= 0.0:
-                    continue
-
-                tgt_ab = int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
-                tgt_grounded = 1.0 if (gravity_active > 0.0 or tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0) else 0.0
-                tgt_type1 = tgt_vec[MonIdx.TYPE1_START:MonIdx.TYPE1_END]
-                tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
-                tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
-
+            for tgt_bucket, raw_tgt_vec in enumerate(target_slots):
                 for m_idx in range(MOVES_PER_MON):
                     choice_idx = (mega_mode * 12) + (tgt_bucket * 4) + m_idx
                     m_vec = moves_4[m_idx]
@@ -829,26 +816,50 @@ class LogicalConstraintEngine:
                     target_type = int(round(float(m_vec[MoveIdx.TARGET_TYPE])))
                     is_status = m_vec[MoveIdx.CAT_STATUS] > 0.5
 
-                    # 1. Target Bucket Routing Gate
+                    # 1. Target Bucket Routing & Target Alive Gate
                     if target_type in (
-                        TargetType.ALL_ADJACENT_FOES,
-                        TargetType.ALL_ADJACENT,
                         TargetType.SELF,
                         TargetType.ALLY_SIDE,
                         TargetType.GLOBAL_FIELD,
                     ):
                         if tgt_bucket != 0:
                             continue
-                    elif target_type == TargetType.ALLY:
-                        if tgt_bucket != 2:
+                        tgt_vec = user_vec
+                    elif target_type == TargetType.ALL_ADJACENT_FOES:
+                        if tgt_bucket != 0 or not (opp_a_alive or opp_b_alive):
                             continue
+                        tgt_vec = opp_a_vec if opp_a_alive else opp_b_vec
+                    elif target_type == TargetType.ALL_ADJACENT:
+                        if tgt_bucket != 0 or not (opp_a_alive or opp_b_alive or partner_alive):
+                            continue
+                        tgt_vec = (
+                            opp_a_vec
+                            if opp_a_alive
+                            else (opp_b_vec if opp_b_alive else partner_vec)
+                        )
+                    elif target_type == TargetType.ALLY:
+                        if tgt_bucket != 2 or not partner_alive:
+                            continue
+                        tgt_vec = partner_vec
+                    else:
+                        if raw_tgt_vec[MonIdx.ALIVE_FLAG] <= 0.0:
+                            continue
+                        tgt_vec = raw_tgt_vec
 
-                    # 2. Choice Lock / Encore / Taunt / Assault Vest Hard Gates
+                    tgt_ab = int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
+                    tgt_grounded = (
+                        1.0 if (gravity_active > 0.0 or tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0) else 0.0
+                    )
+                    tgt_type1 = tgt_vec[MonIdx.TYPE1_START:MonIdx.TYPE1_END]
+                    tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
+                    tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
+
+                    # 2. Choice Lock / Encore / Taunt Hard Gates
                     if choice_lock_idx >= 0 and m_idx != choice_lock_idx:
                         continue
                     if encore_active > 0.0 and last_move_idx >= 0 and m_idx != last_move_idx:
                         continue
-                    if is_status and (taunt_active > 0.0 or has_assault_vest > 0.0):
+                    if is_status and taunt_active > 0.0:
                         continue
 
                     # 3. Turn-1 Gate (Fake Out / First Impression / Mat Block)
@@ -858,6 +869,12 @@ class LogicalConstraintEngine:
                     # 4. Effective Priority Resolution
                     eff_prio = float(m_vec[MoveIdx.PRIORITY])
                     if eff_user_ab == AbilityID.PRANKSTER and is_status:
+                        eff_prio += 1.0
+                    elif (
+                        eff_user_ab == AbilityID.GALE_WINGS
+                        and m_vec[MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]] > 0.5
+                        and user_vec[MonIdx.HP_CUR] >= user_vec[MonIdx.HP_MAX]
+                    ):
                         eff_prio += 1.0
                     elif (
                         m_vec[MoveIdx.GRASSY_PRIO_BOOST] > 0.5

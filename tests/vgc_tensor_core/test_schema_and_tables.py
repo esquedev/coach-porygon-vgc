@@ -39,8 +39,8 @@ from engine.vgc_tensor_core.schema_and_tables import (
     NUM_TYPES,
     NUM_WEATHERS,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1_BENCH1,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_BENCH1,
     TERRAIN_TO_IDX,
     TYPE_TO_IDX,
     WEATHER_TO_IDX,
@@ -126,7 +126,7 @@ class TestSchemaAndTables(unittest.TestCase):
         """Verify exact tensor dimensions and ensure zero overlapping feature channels."""
         self.assertEqual(FIELD_DIM, 24)
         self.assertEqual(ROSTER_SLOTS, 8)
-        self.assertEqual(MON_DIM, 84)
+        self.assertEqual(MON_DIM, 86)
         self.assertEqual(MOVES_PER_MON, 4)
         self.assertEqual(MOVE_DIM, 56)
 
@@ -135,6 +135,7 @@ class TestSchemaAndTables(unittest.TestCase):
         self.assertEqual(MonIdx.TYPE1_END, MonIdx.TYPE2_START)
         self.assertEqual(MonIdx.TYPE2_END, MonIdx.VOLATILE_START)
         self.assertEqual(MonIdx.MEGA_ABILITY_ID, 83)
+        self.assertEqual(MonIdx.MEGA_TYPE2, 85)
 
         self._log("\n[TEST 01] TENSOR DIMENSIONS & MEMORY LAYOUT VERIFICATION")
         self._log("-" * 96)
@@ -331,12 +332,12 @@ class TestSchemaAndTables(unittest.TestCase):
         p_mat = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
         m_mat = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
 
-        p_mat[SLOT_P1A, MonIdx.HP_CUR] = 183.0
-        p_mat[SLOT_P1A, MonIdx.STAT_SPE] = 169.0
-        p_mat[SLOT_P1_BENCH1, MonIdx.HP_CUR] = 202.0
-        p_mat[SLOT_P1_BENCH1, MonIdx.STAT_SPE] = 80.0
-        m_mat[SLOT_P1A, 0, MoveIdx.BASE_POWER] = 75.0
-        m_mat[SLOT_P1_BENCH1, 0, MoveIdx.BASE_POWER] = 120.0
+        p_mat[SLOT_TRAINER_1_A, MonIdx.HP_CUR] = 183.0
+        p_mat[SLOT_TRAINER_1_A, MonIdx.STAT_SPE] = 169.0
+        p_mat[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR] = 202.0
+        p_mat[SLOT_TRAINER_1_BENCH1, MonIdx.STAT_SPE] = 80.0
+        m_mat[SLOT_TRAINER_1_A, 0, MoveIdx.BASE_POWER] = 75.0
+        m_mat[SLOT_TRAINER_1_BENCH1, 0, MoveIdx.BASE_POWER] = 120.0
 
         if self.tables.backend == "torch":
             import torch
@@ -345,13 +346,13 @@ class TestSchemaAndTables(unittest.TestCase):
         else:
             p_in, m_in = p_mat, m_mat
 
-        perm_0_2 = self.tables.p_switch_perms[SLOT_P1A, SLOT_P1_BENCH1]
-        p_out, m_out = apply_switch_permutation(p_in, m_in, SLOT_P1A, SLOT_P1_BENCH1, self.tables)
+        perm_0_2 = self.tables.p_switch_perms[SLOT_TRAINER_1_A, SLOT_TRAINER_1_BENCH1]
+        p_out, m_out = apply_switch_permutation(p_in, m_in, SLOT_TRAINER_1_A, SLOT_TRAINER_1_BENCH1, self.tables)
 
-        self.assertAlmostEqual(_to_float(p_out[SLOT_P1A, MonIdx.HP_CUR]), 202.0, places=5)
-        self.assertAlmostEqual(_to_float(p_out[SLOT_P1_BENCH1, MonIdx.HP_CUR]), 183.0, places=5)
-        self.assertAlmostEqual(_to_float(m_out[SLOT_P1A, 0, MoveIdx.BASE_POWER]), 120.0, places=5)
-        self.assertAlmostEqual(_to_float(m_out[SLOT_P1_BENCH1, 0, MoveIdx.BASE_POWER]), 75.0, places=5)
+        self.assertAlmostEqual(_to_float(p_out[SLOT_TRAINER_1_A, MonIdx.HP_CUR]), 202.0, places=5)
+        self.assertAlmostEqual(_to_float(p_out[SLOT_TRAINER_1_BENCH1, MonIdx.HP_CUR]), 183.0, places=5)
+        self.assertAlmostEqual(_to_float(m_out[SLOT_TRAINER_1_A, 0, MoveIdx.BASE_POWER]), 120.0, places=5)
+        self.assertAlmostEqual(_to_float(m_out[SLOT_TRAINER_1_BENCH1, 0, MoveIdx.BASE_POWER]), 75.0, places=5)
 
         slot_names = ["P1A(0)", "P1B(1)", "P1_B1(2)", "P1_B2(3)", "P2A(4)", "P2B(5)", "P2_B1(6)", "P2_B2(7)"]
         self._log("\n[TEST 07] 8x8 SWITCH PERMUTATION MATRIX (P_new = P_perm[0, 2] @ P_old)")

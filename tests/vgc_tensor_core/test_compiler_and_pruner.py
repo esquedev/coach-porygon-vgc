@@ -39,10 +39,10 @@ from engine.vgc_tensor_core.schema_and_tables import (
     MonIdx,
     MoveIdx,
     ROSTER_SLOTS,
-    SLOT_P1A,
-    SLOT_P1B,
-    SLOT_P2A,
-    SLOT_P2B,
+    SLOT_TRAINER_1_A,
+    SLOT_TRAINER_1_B,
+    SLOT_TRAINER_2_A,
+    SLOT_TRAINER_2_B,
 )
 
 
@@ -123,11 +123,11 @@ def _build_turn1_sample_rosters():
             "can_mega": 1.0, "mega_spe": 167.0, "mega_ability": "Drought",
             "moves": ["Heat Wave", "Hurricane", "Tailwind", "Protect"],
         },
-        # Slot 7 (P2 Bench 2): Kingambit (Fainted: hp_cur = 0 to test dead-bench switch pruning!)
+        # Slot 7 (trainer_2_bench2): Kingambit (Fainted: hp_cur = 0 to test dead-bench switch pruning!)
         {
             "species": "Kingambit", "hp_max": 207, "hp_cur": 0,
             "stats": {"atk": 205, "def": 140, "spa": 60, "spd": 105, "spe": 70},
-            "types": ["Dark", "Steel"], "ability": "Defiant", "item": "Assault Vest",
+            "types": ["Dark", "Steel"], "ability": "Defiant", "item": "Focus Sash",
             "moves": ["Iron Head", "Sucker Punch", "Close Combat", "Protect"],
         },
     ]
@@ -168,9 +168,9 @@ class TestCompilerAndPruner(unittest.TestCase):
         self.assertEqual(m_np.shape, (ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM))
 
         # Check Grimmsnarl (Slot 0) & Floette (Slot 4)
-        self.assertEqual(float(p_np[SLOT_P1A, MonIdx.HP_CUR]), 202.0)
-        self.assertEqual(float(p_np[SLOT_P2A, MonIdx.CAN_MEGA]), 1.0)
-        self.assertEqual(float(p_np[SLOT_P2A, MonIdx.MEGA_SPE]), 168.0)
+        self.assertEqual(float(p_np[SLOT_TRAINER_1_A, MonIdx.HP_CUR]), 202.0)
+        self.assertEqual(float(p_np[SLOT_TRAINER_2_A, MonIdx.CAN_MEGA]), 1.0)
+        self.assertEqual(float(p_np[SLOT_TRAINER_2_A, MonIdx.MEGA_SPE]), 168.0)
         self.assertEqual(float(p_np[7, MonIdx.ALIVE_FLAG]), 0.0)  # Fainted Kingambit
 
         self._log("\n[TEST 01] COMPILED BATTLE STATE TENSORS (TURN 1: GRIMMSNARL+GARCHOMP vs FLOETTE-MEGA+SNEASLER)")
@@ -194,46 +194,46 @@ class TestCompilerAndPruner(unittest.TestCase):
         - P2 Bench 2 (Kingambit) is fainted -> Switch choice 25 is 0.0!
         """
         state = self.compiler.compile_battle_state(_build_turn1_sample_rosters())
-        p1_masks = self.compiler.compute_26x26_side_action_masks(state, side="p1")
-        p2_masks = self.compiler.compute_26x26_side_action_masks(state, side="p2")
+        t1_masks = self.compiler.compute_26x26_side_action_masks(state, trainer_id="trainer_1")
+        t2_masks = self.compiler.compute_26x26_side_action_masks(state, trainer_id="trainer_2")
 
-        p1_a = _to_np(p1_masks.slot_a_valid_mask)
-        p1_b = _to_np(p1_masks.slot_b_valid_mask)
-        p2_a = _to_np(p2_masks.slot_a_valid_mask)
-        p2_b = _to_np(p2_masks.slot_b_valid_mask)
+        t1_a = _to_np(t1_masks.slot_a_valid_mask)
+        t1_b = _to_np(t1_masks.slot_b_valid_mask)
+        t2_a = _to_np(t2_masks.slot_a_valid_mask)
+        t2_b = _to_np(t2_masks.slot_b_valid_mask)
 
-        # P1 Mega slots (12..23) must be strictly 0.0
-        self.assertEqual(float(np.sum(p1_a[12:24])), 0.0)
-        self.assertEqual(float(np.sum(p1_b[12:24])), 0.0)
+        # trainer_1 Mega slots (12..23) must be strictly 0.0
+        self.assertEqual(float(np.sum(t1_a[12:24])), 0.0)
+        self.assertEqual(float(np.sum(t1_b[12:24])), 0.0)
 
-        # P2A (Floette with Floettite) MUST have valid Mega choices in 12..23
-        self.assertGreater(float(np.sum(p2_a[12:24])), 0.0)
-        # P2B (Sneasler with Focus Sash) has NO Mega choices in 12..23
-        self.assertEqual(float(np.sum(p2_b[12:24])), 0.0)
+        # trainer_2_a (Floette with Floettite) MUST have valid Mega choices in 12..23
+        self.assertGreater(float(np.sum(t2_a[12:24])), 0.0)
+        # trainer_2_b (Sneasler with Focus Sash) has NO Mega choices in 12..23
+        self.assertEqual(float(np.sum(t2_b[12:24])), 0.0)
 
-        # P2 Bench 2 (Kingambit) is fainted -> Choice 25 must be 0.0 for both P2A and P2B
-        self.assertEqual(float(p2_a[CHOICE_SWITCH_BENCH2]), 0.0)
-        self.assertEqual(float(p2_b[CHOICE_SWITCH_BENCH2]), 0.0)
-        self.assertEqual(float(p2_a[CHOICE_SWITCH_BENCH1]), 1.0)
+        # trainer_2 Bench 2 (Kingambit) is fainted -> Choice 25 must be 0.0 for both trainer_2_a and trainer_2_b
+        self.assertEqual(float(t2_a[CHOICE_SWITCH_BENCH2]), 0.0)
+        self.assertEqual(float(t2_b[CHOICE_SWITCH_BENCH2]), 0.0)
+        self.assertEqual(float(t2_a[CHOICE_SWITCH_BENCH1]), 1.0)
 
-        # Check Switch Crash (24, 24) and (25, 25) on P1 Joint Validity Matrix
-        p1_joint = _to_np(p1_masks.joint_valid_mask)
-        self.assertEqual(float(p1_joint[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH1]), 0.0)
-        self.assertEqual(float(p1_joint[CHOICE_SWITCH_BENCH2, CHOICE_SWITCH_BENCH2]), 0.0)
-        self.assertEqual(float(p1_joint[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH2]), 1.0)
+        # Check Switch Crash (24, 24) and (25, 25) on trainer_1 Joint Validity Matrix
+        t1_joint = _to_np(t1_masks.joint_valid_mask)
+        self.assertEqual(float(t1_joint[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH1]), 0.0)
+        self.assertEqual(float(t1_joint[CHOICE_SWITCH_BENCH2, CHOICE_SWITCH_BENCH2]), 0.0)
+        self.assertEqual(float(t1_joint[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH2]), 1.0)
 
         self._log("\n[TEST 02] 26x26 ACTION MATRIX & CROSS-SLOT COLLISION PRUNING")
         self._log("-" * 100)
         self._log(f"  Choice Index Legend (0..25): {list(enumerate(CHOICE_LABELS))}")
-        self._log(f"  P1A (Grimmsnarl) Valid[26] : {p1_a.astype(int).tolist()} (Sum={int(p1_a.sum())}/26)")
-        self._log(f"  P1B (Garchomp)   Valid[26] : {p1_b.astype(int).tolist()} (Sum={int(p1_b.sum())}/26)")
-        self._log(f"  P1 Joint Valid Actions     : {p1_masks.num_valid_actions} / {SIDE_ACTIONS} (Pruned {SIDE_ACTIONS - p1_masks.num_valid_actions} invalid pairs!)")
-        self._log(f"  P2A (Floette+Mega)Valid[26]: {p2_a.astype(int).tolist()} (Sum={int(p2_a.sum())}/26 - includes Mega 12..23!)")
-        self._log(f"  P2B (Sneasler)   Valid[26] : {p2_b.astype(int).tolist()} (Sum={int(p2_b.sum())}/26 - Bench2 KO -> Sw25=0!)")
-        self._log(f"  P2 Joint Valid Actions     : {p2_masks.num_valid_actions} / {SIDE_ACTIONS} (Pruned {SIDE_ACTIONS - p2_masks.num_valid_actions} invalid pairs!)")
+        self._log(f"  trainer_1_a (Grimmsnarl) Valid[26] : {t1_a.astype(int).tolist()} (Sum={int(t1_a.sum())}/26)")
+        self._log(f"  trainer_1_b (Garchomp)   Valid[26] : {t1_b.astype(int).tolist()} (Sum={int(t1_b.sum())}/26)")
+        self._log(f"  trainer_1 Joint Valid Actions      : {t1_masks.num_valid_actions} / {SIDE_ACTIONS} (Pruned {SIDE_ACTIONS - t1_masks.num_valid_actions} invalid pairs!)")
+        self._log(f"  trainer_2_a (Floette+Mega)Valid[26]: {t2_a.astype(int).tolist()} (Sum={int(t2_a.sum())}/26 - includes Mega 12..23!)")
+        self._log(f"  trainer_2_b (Sneasler)   Valid[26] : {t2_b.astype(int).tolist()} (Sum={int(t2_b.sum())}/26 - Bench2 KO -> Sw25=0!)")
+        self._log(f"  trainer_2 Joint Valid Actions      : {t2_masks.num_valid_actions} / {SIDE_ACTIONS} (Pruned {SIDE_ACTIONS - t2_masks.num_valid_actions} invalid pairs!)")
         self._log(
-            f"  Total Active Joint Grid    : {p1_masks.num_valid_actions} x {p2_masks.num_valid_actions} = "
-            f"{p1_masks.num_valid_actions * p2_masks.num_valid_actions} legal universes (out of 676x676 = 456,976 raw cells!)"
+            f"  Total Active Joint Grid    : {t1_masks.num_valid_actions} x {t2_masks.num_valid_actions} = "
+            f"{t1_masks.num_valid_actions * t2_masks.num_valid_actions} legal universes (out of 676x676 = 456,976 raw cells!)"
         )
         self._log("  Result: PASS")
 
@@ -244,14 +244,14 @@ class TestCompilerAndPruner(unittest.TestCase):
         Matrix zeroes out the entire 12:24 x 12:24 block so both cannot Mega Evolve simultaneously!
         """
         rosters = _build_turn1_sample_rosters()
-        # Swap Charizard (Slot 6, holding Charizardite Y) into P2B (Slot 5) alongside Floette (Slot 4)
+        # Swap Charizard (Slot 6, holding Charizardite Y) into trainer_2_b (Slot 5) alongside Floette (Slot 4)
         rosters[5], rosters[6] = rosters[6], rosters[5]
         state = self.compiler.compile_battle_state(rosters)
-        p2_masks = self.compiler.compute_26x26_side_action_masks(state, side="p2")
+        t2_masks = self.compiler.compute_26x26_side_action_masks(state, trainer_id="trainer_2")
 
-        v_a = _to_np(p2_masks.slot_a_valid_mask)
-        v_b = _to_np(p2_masks.slot_b_valid_mask)
-        joint = _to_np(p2_masks.joint_valid_mask)
+        v_a = _to_np(t2_masks.slot_a_valid_mask)
+        v_b = _to_np(t2_masks.slot_b_valid_mask)
+        joint = _to_np(t2_masks.joint_valid_mask)
 
         # Both slots individually can Mega Evolve
         self.assertGreater(float(np.sum(v_a[12:24])), 0.0)
@@ -292,41 +292,41 @@ class TestCompilerAndPruner(unittest.TestCase):
         state_psy = self.compiler.compile_battle_state(
             rosters, field_spec={"terrain": "Psychic", "terrain_turns": 5.0}
         )
-        p1_masks = self.compiler.compute_26x26_side_action_masks(state_psy, side="p1")
-        p2_masks = self.compiler.compute_26x26_side_action_masks(state_psy, side="p2")
+        t1_masks = self.compiler.compute_26x26_side_action_masks(state_psy, trainer_id="trainer_1")
+        t2_masks = self.compiler.compute_26x26_side_action_masks(state_psy, trainer_id="trainer_2")
 
-        p1_a_valid = _to_np(p1_masks.slot_a_valid_mask)
-        p2_b_valid = _to_np(p2_masks.slot_b_valid_mask)
+        t1_a_valid = _to_np(t1_masks.slot_a_valid_mask)
+        t2_b_valid = _to_np(t2_masks.slot_b_valid_mask)
 
         # 1. Sneasler Fake Out (Move 2) on active_turns=1.0 -> 0.0 on OppA (idx 2), OppB (idx 6), Ally (idx 10)
-        self.assertEqual(float(p2_b_valid[2]), 0.0)
-        self.assertEqual(float(p2_b_valid[6]), 0.0)
+        self.assertEqual(float(t2_b_valid[2]), 0.0)
+        self.assertEqual(float(t2_b_valid[6]), 0.0)
 
         # 2 & 3. Grimmsnarl (Prankster) Thunder Wave (Move 3, priority +1):
-        #    - Into P2A (Grounded + Dark-type under Psychic Terrain, choice idx 3) -> 0.0!
-        #    - Into P2B (Airborne + Non-Dark under Psychic Terrain, choice idx 7) -> 1.0!
-        self.assertEqual(float(p1_a_valid[3]), 0.0)
-        self.assertEqual(float(p1_a_valid[7]), 1.0)
+        #    - Into trainer_2_a (Grounded + Dark-type under Psychic Terrain, choice idx 3) -> 0.0!
+        #    - Into trainer_2_b (Airborne + Non-Dark under Psychic Terrain, choice idx 7) -> 1.0!
+        self.assertEqual(float(t1_a_valid[3]), 0.0)
+        self.assertEqual(float(t1_a_valid[7]), 1.0)
 
         # 4. Armor Tail / Good as Gold / Soundproof / Flash Fire / Electric Terrain Sleep
         rosters_2 = _build_turn1_sample_rosters()
         rosters_2[0]["moves"] = ["Spore", "Hyper Voice", "Flare Blitz", "Fake Out"]
         rosters_2[0]["ability"] = "None"
-        rosters_2[4]["ability"] = "Good as Gold"   # Blocks Status (Spore) on P2A
-        rosters_2[5]["ability"] = "Soundproof"     # Blocks Hyper Voice on P2B
+        rosters_2[4]["ability"] = "Good as Gold"   # Blocks Status (Spore) on trainer_2_a
+        rosters_2[5]["ability"] = "Soundproof"     # Blocks Hyper Voice on trainer_2_b
         state_2 = self.compiler.compile_battle_state(
             rosters_2, field_spec={"terrain": "Electric", "terrain_turns": 5.0}
         )
-        m2 = _to_np(self.compiler.compute_26x26_side_action_masks(state_2, side="p1").slot_a_valid_mask)
-        # Spore (Move 0) blocked on both P2A (Good as Gold + Electric Terrain, idx 0) and P2B (Electric Terrain, idx 4)
+        m2 = _to_np(self.compiler.compute_26x26_side_action_masks(state_2, trainer_id="trainer_1").slot_a_valid_mask)
+        # Spore (Move 0) blocked on both trainer_2_a (Good as Gold + Electric Terrain, idx 0) and trainer_2_b (Electric Terrain, idx 4)
         self.assertEqual(float(m2[0]), 0.0)
         self.assertEqual(float(m2[4]), 0.0)
 
         self._log("\n[TEST 04] HARD PHYSICAL INVARIANTS (MATRIX PRUNER PARITY WITH LOGIC_ENGINE.PY)")
         self._log("-" * 100)
-        self._log(f"  • Sneasler Fake Out on active_turns=1.0 (Choices 2, 6)    : {p2_b_valid[2]:.1f}, {p2_b_valid[6]:.1f} (Blocked!)")
-        self._log(f"  • Prankster Thunder Wave -> Grounded/Dark P2A (Choice 3)  : {p1_a_valid[3]:.1f} (Blocked by Psychic Terrain & Dark!)")
-        self._log(f"  • Prankster Thunder Wave -> Airborne P2B (Choice 7)       : {p1_a_valid[7]:.1f} (Exempt & Valid!)")
+        self._log(f"  • Sneasler Fake Out on active_turns=1.0 (Choices 2, 6)    : {t2_b_valid[2]:.1f}, {t2_b_valid[6]:.1f} (Blocked!)")
+        self._log(f"  • Prankster Thunder Wave -> Grounded/Dark T2A (Choice 3)  : {t1_a_valid[3]:.1f} (Blocked by Psychic Terrain & Dark!)")
+        self._log(f"  • Prankster Thunder Wave -> Airborne T2B (Choice 7)       : {t1_a_valid[7]:.1f} (Exempt & Valid!)")
         self._log(f"  • Spore under Electric Terrain / Good as Gold (Choices 0,4): {m2[0]:.1f}, {m2[4]:.1f} (Blocked!)")
         self._log("  Result: PASS")
 
@@ -337,21 +337,21 @@ class TestCompilerAndPruner(unittest.TestCase):
         - Super Effective 2.0x -> 1.20 prior; 0.0x Ground into Flying -> 0.20 hard-read prior
         """
         rosters = _build_turn1_sample_rosters()
-        # Set P2A to Flying-type (Charizard) so Garchomp's Stomping Tantrum (Move 0, Ground) hits 0.0x into P2A (Choice 0)
-        # and hits 2.0x SE into Sneasler (P2B, Poison/Fighting, Choice 4)!
-        rosters[4] = dict(rosters[6])  # Charizard in P2A (Airborne)
+        # Set trainer_2_a to Flying-type (Charizard) so Garchomp's Stomping Tantrum (Move 0, Ground) hits 0.0x into trainer_2_a (Choice 0)
+        # and hits 2.0x SE into Sneasler (trainer_2_b, Poison/Fighting, Choice 4)!
+        rosters[4] = dict(rosters[6])  # Charizard in trainer_2_a (Airborne)
         rosters[1]["protect_counter"] = 1.0  # Garchomp used Protect last turn!
 
         state = self.compiler.compile_battle_state(rosters)
-        p1_masks = self.compiler.compute_26x26_side_action_masks(state, side="p1")
-        garchomp_priors = _to_np(p1_masks.slot_b_prior_vec)
-        garchomp_valid = _to_np(p1_masks.slot_b_valid_mask)
+        t1_masks = self.compiler.compute_26x26_side_action_masks(state, trainer_id="trainer_1")
+        garchomp_priors = _to_np(t1_masks.slot_b_prior_vec)
+        garchomp_valid = _to_np(t1_masks.slot_b_valid_mask)
 
-        # Garchomp Move 0 (Stomping Tantrum) -> P2A (Charizard, Airborne, Choice 0): Valid=1.0, Prior=0.20 (Hard read!)
+        # Garchomp Move 0 (Stomping Tantrum) -> trainer_2_a (Charizard, Airborne, Choice 0): Valid=1.0, Prior=0.20 (Hard read!)
         self.assertEqual(float(garchomp_valid[0]), 1.0)
         self.assertAlmostEqual(float(garchomp_priors[0]), 0.20, places=4)
 
-        # Garchomp Move 0 (Stomping Tantrum) -> P2B (Sneasler, 2.0x SE, Choice 4): Valid=1.0, Prior=1.20!
+        # Garchomp Move 0 (Stomping Tantrum) -> trainer_2_b (Sneasler, 2.0x SE, Choice 4): Valid=1.0, Prior=1.20!
         self.assertEqual(float(garchomp_valid[4]), 1.0)
         self.assertAlmostEqual(float(garchomp_priors[4]), 1.20, places=4)
 
@@ -373,12 +373,12 @@ class TestCompilerAndPruner(unittest.TestCase):
         t0 = time.perf_counter()
         for _ in range(50):
             st = self.compiler.compile_battle_state(rosters)
-            m_p1 = self.compiler.compute_26x26_side_action_masks(st, side="p1")
-            m_p2 = self.compiler.compute_26x26_side_action_masks(st, side="p2")
+            m_t1 = self.compiler.compute_26x26_side_action_masks(st, trainer_id="trainer_1")
+            m_t2 = self.compiler.compute_26x26_side_action_masks(st, trainer_id="trainer_2")
         elapsed_ms = ((time.perf_counter() - t0) / 50.0) * 1000.0
 
-        self.assertGreater(m_p1.num_valid_actions, 0)
-        self.assertGreater(m_p2.num_valid_actions, 0)
+        self.assertGreater(m_t1.num_valid_actions, 0)
+        self.assertGreater(m_t2.num_valid_actions, 0)
 
         self._log("\n[TEST 06] COMPILER + 26x26 MATRIX PRUNER LATENCY BENCHMARK")
         self._log("-" * 100)

@@ -16,7 +16,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from engine.db_registry import VGCDataRegistry, get_registry
-from engine.game_rules import NATURE_MODS, TYPE_CHART
+from engine.game_rules import (
+    NATURE_MODS,
+    STANDARD_IV,
+    TYPE_CHART,
+    compute_champions_level_50_stats,
+    trunc,
+)
 from engine.inference.tournament_db import (
     TournamentUsageRepository,
     get_tournament_repository,
@@ -36,20 +42,7 @@ from .models import (
     TurnState,
 )
 
-# Champions requires every Pokémon to use 31 IVs. The Level 50 formula folds
-# the IV contribution into its constants: 31 // 2 = 15, plus 60 for HP and 5
-# for other stats.
-STANDARD_IV: int = 31
-
 CHOICE_ITEMS: Set[str] = {"Choice Band", "Choice Specs", "Choice Scarf"}
-
-
-def trunc(n: float, bits: int = 0) -> int:
-    """Truncate float to integer with optional bit masking."""
-    res = int(n)
-    if bits:
-        res = res & ((1 << bits) - 1)
-    return res
 
 
 def compute_level_50_stats_from_base(
@@ -57,25 +50,8 @@ def compute_level_50_stats_from_base(
     spread: StatSpread,
     nature: str = "Hardy",
 ) -> Dict[str, int]:
-    """Compute exact Level 50 stats under Regulation M-C (mandatory 31 IVs, 66-SP system)."""
-    iv_half = STANDARD_IV // 2  # 15
-    sp_dict = spread.to_dict()
-    mods = NATURE_MODS.get(nature or "Hardy", {})
-
-    base_hp = int(base_stats.get("hp", 80))
-    hp_stat = 1 if base_hp == 1 else base_hp + int(sp_dict["hp"]) + iv_half + 60
-
-    result: Dict[str, int] = {"hp": hp_stat}
-    for stat_name in ("atk", "def", "spa", "spd", "spe"):
-        raw = int(base_stats.get(stat_name, 80)) + int(sp_dict[stat_name]) + iv_half + 5
-        mod = mods.get(stat_name, 1.0)
-        if mod > 1.0:
-            result[stat_name] = trunc(trunc(raw * 110, 16) / 100)
-        elif mod < 1.0:
-            result[stat_name] = trunc(trunc(raw * 90, 16) / 100)
-        else:
-            result[stat_name] = raw
-    return result
+    """Compute exact Level 50 stats under Regulation M-C (mandatory 31 IVs, 1:1 66-SP system)."""
+    return compute_champions_level_50_stats(base_stats, spread.to_dict(), nature)
 
 
 def calculate_level_50_stats(
@@ -166,6 +142,9 @@ class TurnStateCompiler:
             team=battle.trainer_1,
             opposing_team=battle.trainer_2,
             tailwind_active=battle.trainer_1_tailwind,
+            reflect_active=getattr(battle, "trainer_1_reflect", False),
+            light_screen_active=getattr(battle, "trainer_1_light_screen", False),
+            aurora_veil_active=getattr(battle, "trainer_1_aurora_veil", False),
             bench_override=trainer_1_bench_override,
         )
         trainer_2_side = self._compile_trainer_side(
@@ -173,6 +152,9 @@ class TurnStateCompiler:
             team=battle.trainer_2,
             opposing_team=battle.trainer_1,
             tailwind_active=battle.trainer_2_tailwind,
+            reflect_active=getattr(battle, "trainer_2_reflect", False),
+            light_screen_active=getattr(battle, "trainer_2_light_screen", False),
+            aurora_veil_active=getattr(battle, "trainer_2_aurora_veil", False),
             bench_override=trainer_2_bench_override,
         )
 
@@ -209,6 +191,9 @@ class TurnStateCompiler:
         team: ParsedTeam,
         opposing_team: ParsedTeam,
         tailwind_active: bool = False,
+        reflect_active: bool = False,
+        light_screen_active: bool = False,
+        aurora_veil_active: bool = False,
         bench_override: Optional[Sequence[str]] = None,
     ) -> TrainerSideState:
         """Compile a `ParsedTeam` into a `TrainerSideState` with 2 active and up to 2 bench slots."""
@@ -320,6 +305,9 @@ class TurnStateCompiler:
             full_team=compiled_map,
             mega_used=mega_already_used,
             tailwind_active=tailwind_active,
+            reflect_active=reflect_active,
+            light_screen_active=light_screen_active,
+            aurora_veil_active=aurora_veil_active,
         )
 
     def _lookup_compiled(
@@ -566,6 +554,8 @@ class TurnStateCompiler:
             used_protect_last_turn=pkm.used_protect_last_turn,
             last_move_used=pkm.last_move_used,
             locked_move=locked_move,
+            taunt_turns=getattr(pkm, "taunt_turns", 0),
+            encore_move=getattr(pkm, "encore_move", None),
         )
 
     def compile_move(self, move_name: str) -> Optional[CompiledMove]:

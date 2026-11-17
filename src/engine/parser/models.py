@@ -148,6 +148,8 @@ class ParsedPokemon:
     active_turns: int = 0
     used_protect_last_turn: bool = False
     last_move_used: Optional[str] = None
+    taunt_turns: int = 0
+    encore_move: Optional[str] = None
 
 
 @dataclass
@@ -296,6 +298,12 @@ class ParsedBattle:
     terrain: Optional[str] = None
     trainer_1_tailwind: bool = False
     trainer_2_tailwind: bool = False
+    trainer_1_reflect: bool = False
+    trainer_2_reflect: bool = False
+    trainer_1_light_screen: bool = False
+    trainer_2_light_screen: bool = False
+    trainer_1_aurora_veil: bool = False
+    trainer_2_aurora_veil: bool = False
     trick_room: bool = False
     trainer_1_rating: Optional[Tuple[int, int]] = None
     trainer_2_rating: Optional[Tuple[int, int]] = None
