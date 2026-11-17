@@ -109,6 +109,35 @@ class TestBattleTelemetry(unittest.TestCase):
         self.assertEqual(t3.turn, 3)
         self.assertEqual(t3.winner, "trainer_1")
 
+    def test_tactical_triggers_extraction(self) -> None:
+        """Verify extraction of Mega Evolution, White Herb, Intimidate, and Defiant triggers."""
+        log = """
+☆trainer_1 and ☆trainer_2 joined
+Format: [Gen 9 Champions] VGC 2026 Reg M-C
+Battle started between trainer_1 and trainer_2!
+Go! Charizard!
+Go! Sneasler!
+trainer_2 sent out Incineroar!
+trainer_2 sent out Ogerpon!
+The opposing Incineroar's Intimidate cuts Sneasler's Attack!
+Sneasler's White Herb restored its status!
+Turn 1
+Charizard Mega Evolved into Mega Charizard Y!
+Charizard used Heat Wave!
+(The opposing Incineroar lost 30% of its health!)
+(The opposing Ogerpon lost 80% of its health!)
+The opposing Incineroar used Knock Off!
+(Charizard lost 40% of its health!)
+trainer_2 forfeited.
+trainer_1 won the battle!
+"""
+        records = extract_turn_telemetry(log, pov_trainer="trainer_1")
+        self.assertEqual(len(records), 1)
+        r = records[0]
+        self.assertIn("White Herb on Sneasler", r.variance_events)
+        self.assertIn("Intimidate by Incineroar", r.variance_events)
+        self.assertIn("Mega Evolution (Charizard Y)", r.variance_events)
+
     def test_csv_save_and_comment_injection(self) -> None:
         """Verify saving to CSV, appending records, and updating the comment column."""
         records = extract_turn_telemetry(SAMPLE_CHAT_LOG, pov_trainer="trainer_1")
@@ -149,6 +178,21 @@ class TestBattleTelemetry(unittest.TestCase):
                 self.assertEqual(reader[0]["comment"], "Great Fake Out read into Whimsicott to deny Tailwind.")
                 self.assertIn("Critical hit on Raichu", reader[1]["comment"])
                 self.assertIn("Opponent forfeited", reader[2]["comment"])
+
+    def test_bo3_next_link_uses_canonical_match_slug(self) -> None:
+        """Ensure Bo3 footer `Next: [Game 2 of 3](.../battle-...)` does not hijack match_id."""
+        bo3_log = (
+            "Game 1 of [a best-of-3](https://play.pokemonshowdown.com/"
+            "game-bestof3-gen9championsvgc2026regmcbo3-12345)\n"
+            + SAMPLE_CHAT_LOG
+            + "\nNext: [Game 2 of 3](https://play.pokemonshowdown.com/"
+            "battle-gen9championsvgc2026regmcbo3-9999999999)\n"
+        )
+        records = extract_turn_telemetry(bo3_log, pov_trainer="trainer_1")
+        self.assertEqual(len(records), 3)
+        match_id = records[0].match_id
+        self.assertRegex(match_id, r"^match-[0-9a-f]{12}$")
+        self.assertNotIn("9999999999", match_id)
 
 
 if __name__ == "__main__":

@@ -11,8 +11,16 @@ description: >-
 This skill automates the full post-match coaching pipeline:
 1. Extracting turn-by-turn cartridge telemetry into `data/telemetry/battles_telemetry.csv`.
 2. Running the game-theoretic turn advisor (`engine.cli`) to evaluate Nash equilibrium lines, regret, and downside risk ($CVaR_{0.10}$).
-3. Injecting structured coaching comments into the CSV's `comment` column.
-4. Delivering an executive post-mortem to the player with concrete tournament takeaways.
+3. Injecting structured coaching comments with standardized tags into the CSV's `comment` column:
+   - `[LEAD_EVAL]`: Turn 1 bring assessment against opponent's preview.
+   - `[MEGA_DECISION]`: Timing and species selection for Mega Evolution (Priority +5.5).
+   - `[SPEED_INITIATIVE]`: Weather speed doubling, Tailwind, Unburden, or Trick Room control.
+   - `[ITEM_TRIGGER]`: White Herb, Focus Sash, Sitrus Berry, or Leftovers activation.
+   - `[WEATHER_TERRAIN]`: Sun vs. Rain control, Electric Terrain deployment.
+   - `[VARIANCE_AUDIT]`: Distinguishing cartridge RNG (crits, flinches, low damage rolls) from misplays.
+   - `[NASH_REGRET]`: Regret calculation on lines deviating from the risk-resilient Nash equilibrium.
+4. Auto-syncing the interactive Team Preview Playbook (`reports/char_y_v3_playbook.html`) and markdown cheatsheet.
+5. Delivering an executive post-mortem to the player with concrete tournament takeaways.
 
 ---
 
@@ -28,7 +36,7 @@ python3 scripts/dump_battle_telemetry.py \
     --output data/telemetry/battles_telemetry.csv
 ```
 
-*Note: This generates or appends records to `data/telemetry/battles_telemetry.csv`, automatically recording the `match_id`, active Pokémon slots, moves executed, damage percentages, faints, field conditions, and variance events.*
+*Note: This generates or appends records to `data/telemetry/battles_telemetry.csv`, automatically recording the `match_id`, active Pokémon slots, moves executed, damage percentages, faints, field conditions, tactical triggers, and variance events. Timestamps are strictly grounded in the local machine system time (`datetime.now()`) to align with player session clocks rather than remote server UTC.*
 
 ---
 
@@ -45,15 +53,16 @@ python3 -m engine.cli \
 ---
 
 ### Step 3: Populate Tactical Comments into Telemetry CSV
-Using Python and `engine.telemetry.batch_update_comments`, populate the `comment` column for critical turns in `data/telemetry/battles_telemetry.csv`:
+Using Python and `engine.telemetry.batch_update_comments`, populate the `comment` column for critical turns in `data/telemetry/battles_telemetry.csv` using standardized tags:
 
 ```python
 from engine.telemetry import batch_update_comments
 
 comments = {
-    1: "Lead phase: Fake Out stopped Tailwind setup. Good tempo control.",
-    2: "Variance alert: Glimmora landed a 4.1% critical hit through screen.",
-    3: "Turning point: Switched into Kingambit on predicted Sludge Bomb (0x immunity).",
+    1: "[LEAD_EVAL] Fake Out stopped Tailwind setup. Solid tempo control against Kyogre + Tornadus.",
+    2: "[VARIANCE_AUDIT] Opponent landed a 4.1% critical hit through screen.",
+    3: "[MEGA_DECISION] Mega Evolved Charizard Y into Rain to reset Sun and secure OHKO with Weather Ball.",
+    4: "[ITEM_TRIGGER] White Herb restored Intimidate drop, immediately activating Sneasler's Unburden.",
 }
 
 batch_update_comments(
@@ -62,11 +71,6 @@ batch_update_comments(
     comments_by_turn=comments,
 )
 ```
-
-#### Comment Guidelines:
-- **Turn 1 (Lead Assessment):** Was the lead selection optimal against the opponent's bring?
-- **Turning Points:** Did the player execute a dominant Nash line, a safe $CVaR$ line, or a dominated gamble?
-- **Variance Diagnostics:** Distinguish between genuine cartridge bad luck (a $< 10\%$ crit, flinch, or damage roll) and strategic blunders.
 
 ---
 

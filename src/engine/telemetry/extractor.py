@@ -12,7 +12,7 @@ from __future__ import annotations
 import csv
 from dataclasses import asdict, dataclass
 import hashlib
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -51,11 +51,18 @@ class TurnTelemetryRecord:
 
 
 def _generate_match_id(raw_log: str) -> str:
-    """Generate or extract a canonical match ID from the battle log."""
-    m = re.search(r"battle-([a-zA-Z0-9_\-]+)", raw_log)
-    if m:
-        return f"battle-{m.group(1)}"
-    # Generate 12-char SHA-256 fingerprint from cleaned log
+    """Generate a canonical `match-<12-hex>` SHA-256 fingerprint from the battle log.
+
+    Always hashes the normalized battle log rather than scraping URLs such as
+    ``Next: [Game 2 of 3](.../battle-...)``, which would otherwise mislabel the
+    current game with the next game's Showdown room slug.
+
+    Parameters:
+        raw_log: Raw Pokémon Showdown battle log text.
+
+    Returns:
+        Deterministic 12-character hex match identifier prefixed with ``match-``.
+    """
     cleaned = re.sub(r"\s+", "", raw_log)
     h = hashlib.sha256(cleaned.encode("utf-8")).hexdigest()[:12]
     return f"match-{h}"
@@ -83,7 +90,7 @@ def extract_turn_telemetry(
     )
 
     match_id = _generate_match_id(raw_log)
-    iso_now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    iso_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     trainer_1_name = battle.trainer_1.trainer_name or "trainer_1"
     trainer_2_name = battle.trainer_2.trainer_name or "trainer_2"
@@ -256,7 +263,7 @@ def extract_turn_telemetry(
             entry["faints"].append(f"{team_label}: {fainted_mon}")
             continue
 
-        # RNG Variance Events
+        # RNG Variance & Tactical Triggers
         if "A critical hit!" in line:
             entry["variance"].append("Critical Hit")
         elif "flinched" in line:
@@ -269,6 +276,32 @@ def extract_turn_telemetry(
             entry["variance"].append("Frozen Solid")
         elif "avoided the attack!" in line or "missed!" in line:
             entry["variance"].append("Attack Missed")
+        elif "Mega Evolved" in line:
+            m_mega = re.search(r"^(?:The opposing\s+)?(.+?)\s+Mega Evolved into (?:Mega\s+)?(.+?)!", line)
+            if m_mega:
+                entry["variance"].append(f"Mega Evolution ({m_mega.group(2).strip()})")
+            else:
+                entry["variance"].append("Mega Evolution")
+        elif "White Herb" in line and ("restored" in line or "activated" in line):
+            m_wh = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+White Herb", line)
+            mon = m_wh.group(1).strip() if m_wh else "target"
+            entry["variance"].append(f"White Herb on {mon}")
+        elif "Focus Sash" in line and "hung on" in line:
+            m_sash = re.search(r"^(?:The opposing\s+)?(.+?)\s+hung on using its Focus Sash", line)
+            mon = m_sash.group(1).strip() if m_sash else "target"
+            entry["variance"].append(f"Focus Sash on {mon}")
+        elif "Intimidate" in line and ("cuts" in line or "lowered" in line):
+            m_intim = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+Intimidate", line)
+            mon = m_intim.group(1).strip() if m_intim else "target"
+            entry["variance"].append(f"Intimidate by {mon}")
+        elif "Defiant" in line and "sharply raised" in line:
+            entry["variance"].append("Defiant +2 Atk")
+        elif "Stamina" in line and "raised" in line:
+            entry["variance"].append("Stamina +1 Def")
+        elif "became the center of attention!" in line:
+            m_redir = re.search(r"^(?:The opposing\s+)?(.+?)\s+became the center of attention", line)
+            mon = m_redir.group(1).strip() if m_redir else "target"
+            entry["variance"].append(f"Redirection ({mon})")
 
     # Build final TurnTelemetryRecord list sorted by turn
     records: List[TurnTelemetryRecord] = []
