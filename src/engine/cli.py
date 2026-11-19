@@ -62,6 +62,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Your Pokémon Showdown username (POV trainer). If omitted, inferred automatically.",
     )
     parser.add_argument(
+        "--turn",
+        "-t",
+        type=int,
+        default=None,
+        help="Evaluate board state at the start of turn N. If omitted on a completed log, automatically rewinds to the final playable turn.",
+    )
+    parser.add_argument(
         "--sims",
         "-s",
         type=int,
@@ -143,7 +150,21 @@ def main(argv: Optional[list[str]] = None) -> int:
         chat_log,
         pov_trainer=args.pov,
         user_team_paste=team_paste,
+        max_turn=args.turn,
     )
+
+    if args.turn is None and battle.turns_played >= 1 and (
+        battle.winner is not None
+        or not battle.trainer_1.active_slots
+        or not battle.trainer_2.active_slots
+    ):
+        rewind_turn = battle.turns_played
+        battle = parse_showdown_chat_log(
+            chat_log,
+            pov_trainer=args.pov,
+            user_team_paste=team_paste,
+            max_turn=rewind_turn,
+        )
 
     advisor = CoachTurnAdvisor(
         backend=args.backend,

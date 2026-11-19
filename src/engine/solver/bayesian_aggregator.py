@@ -429,6 +429,8 @@ class CoachTurnAdvisor:
         risk_aversion_lambda: float = 0.25,
         rationality_beta: float = 4.0,
     ) -> None:
+        self.backend = backend
+        self.risk_aversion_lambda = float(risk_aversion_lambda)
         self.state_compiler = TurnStateCompiler()
         self.inferencer = OpponentSetInferencer(repo=self.state_compiler.repo)
         self.tensor_compiler = ShowdownTensorCompiler(
@@ -442,6 +444,32 @@ class CoachTurnAdvisor:
             risk_aversion_lambda=risk_aversion_lambda,
         )
         self.rationality_beta = float(rationality_beta)
+
+    def _cleanup_cuda_cache(self) -> None:
+        """Release unoccupied cached PyTorch CUDA memory if running on torch backend."""
+        if self.backend == "torch":
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+
+    def _switch_to_numpy_fallback(self) -> None:
+        """Switch compiler and state machine to CPU numpy backend after a CUDA OOM event."""
+        self._cleanup_cuda_cache()
+        self.backend = "numpy"
+        self.tensor_compiler = ShowdownTensorCompiler(
+            registry=self.state_compiler.registry,
+            backend="numpy",
+            device=None,
+        )
+        self.state_machine = VgcTensorStateMachine(
+            backend="numpy",
+            device=None,
+            risk_aversion_lambda=self.risk_aversion_lambda,
+        )
 
     def generate_opponent_hypotheses(
         self,
@@ -537,13 +565,29 @@ class CoachTurnAdvisor:
         top_k_recommendations: int = 10,
     ) -> BayesianTurnAdvice:
         """Run single-state discrete-RNG simulation and equilibrium solving on a `TurnState`."""
-        compiled = self.tensor_compiler.compile_turn_state(turn_state)
-        mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
-            compiled_state=compiled,
-            num_simulations=num_simulations,
-            min_prior_threshold=min_prior_threshold,
-            rng_seed=rng_seed,
-        )
+        try:
+            compiled = self.tensor_compiler.compile_turn_state(turn_state)
+            mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
+                compiled_state=compiled,
+                num_simulations=num_simulations,
+                min_prior_threshold=min_prior_threshold,
+                rng_seed=rng_seed,
+            )
+        except RuntimeError as exc:
+            if "out of memory" in str(exc).lower() and self.backend == "torch":
+                self._switch_to_numpy_fallback()
+                compiled = self.tensor_compiler.compile_turn_state(turn_state)
+                mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
+                    compiled_state=compiled,
+                    num_simulations=num_simulations,
+                    min_prior_threshold=min_prior_threshold,
+                    rng_seed=rng_seed,
+                )
+            else:
+                raise
+        finally:
+            self._cleanup_cuda_cache()
+
         eq_res = solve_turn_equilibrium(
             compiled_state=compiled,
             mask_trainer_1=mask_t1,
@@ -671,15 +715,30 @@ class CoachTurnAdvisor:
             mask_t2_m = self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
                 comp_m, trainer_id="trainer_2", min_prior_threshold=min_prior_threshold
             )
-            step_m = self.state_machine.step(
-                F=comp_m.field_tensor,
-                P=comp_m.roster_tensor,
-                M_moves=comp_m.moves_tensor,
-                trainer_1_choices=canon_mask_t1.pruned_choices,
-                trainer_2_choices=mask_t2_m.pruned_choices,
-                num_mc_samples=num_simulations,
-                rng_seed=rng_seed + m_idx * 1009,
-            )
+            try:
+                step_m = self.state_machine.step(
+                    F=comp_m.field_tensor,
+                    P=comp_m.roster_tensor,
+                    M_moves=comp_m.moves_tensor,
+                    trainer_1_choices=canon_mask_t1.pruned_choices,
+                    trainer_2_choices=mask_t2_m.pruned_choices,
+                    num_mc_samples=num_simulations,
+                    rng_seed=rng_seed + m_idx * 1009,
+                )
+            except RuntimeError as exc:
+                if "out of memory" in str(exc).lower() and self.backend == "torch":
+                    self._switch_to_numpy_fallback()
+                    return self.advise_battle(
+                        battle=battle,
+                        max_hypotheses=max_hypotheses,
+                        num_simulations=num_simulations,
+                        min_prior_threshold=min_prior_threshold,
+                        rng_seed=rng_seed,
+                        top_k_recommendations=top_k_recommendations,
+                    )
+                raise
+            finally:
+                self._cleanup_cuda_cache()
             eq_m = solve_turn_equilibrium(
                 compiled_state=comp_m,
                 mask_trainer_1=canon_mask_t1,

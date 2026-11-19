@@ -544,6 +544,42 @@ lucillajade's rating: 1163 → 1135
         self.assertEqual(chz.spread.spe, 24)
         self.assertIn("Scorching Sands", chz.moves)
 
+    def test_max_turn_slicing_and_canonical_duckdb_mega_species(self):
+        """Verify CLI-01 max_turn boundary slicing and DuckDB requiredItem Mega species resolution."""
+        battle_t2 = parse_showdown_chat_log(
+            self.bo1_chat_log,
+            pov_trainer="Lupiticus",
+            max_turn=2,
+        )
+        self.assertEqual(battle_t2.turns_played, 2)
+        self.assertIsNone(battle_t2.winner)
+        self.assertEqual(set(battle_t2.trainer_1.active_slots), {"Charizard", "Arcanine-Hisui"})
+        self.assertEqual(set(battle_t2.trainer_2.active_slots), {"Starmie", "Rillaboom"})
+        # Turn 1 Protect should mark used_protect_last_turn=True at the start of Turn 2
+        chz_t2 = battle_t2.trainer_1.get_pokemon("Charizard")
+        self.assertIsNotNone(chz_t2)
+        self.assertTrue(chz_t2.used_protect_last_turn)
+        # Starmie Mega Evolved on Turn 1 with Starminite -> Starmie-Mega in DuckDB
+        starmie_t2 = battle_t2.trainer_2.get_pokemon("Starmie")
+        self.assertIsNotNone(starmie_t2)
+        self.assertTrue(starmie_t2.is_mega)
+        self.assertEqual(starmie_t2.species, "Starmie-Mega")
+
+    def test_auto_pov_inference_when_pov_listed_second(self):
+        """Verify TEL-01 auto-inference when Battle started lists opponent first and POV player second."""
+        inverted_log = self.bo1_chat_log.replace(
+            "☆Lupiticus and ☆khoihandsome joined",
+            "☆khoihandsome and ☆Lupiticus joined",
+        ).replace(
+            "Battle started between Lupiticus and khoihandsome!",
+            "Battle started between khoihandsome and Lupiticus!",
+        )
+        battle = parse_showdown_chat_log(inverted_log)
+        self.assertEqual(battle.trainer_1.trainer_name, "Lupiticus")
+        self.assertEqual(battle.trainer_2.trainer_name, "khoihandsome")
+        self.assertEqual(battle.trainer_1.leads, ("Charizard", "Arcanine-Hisui"))
+        self.assertEqual(battle.trainer_2.leads, ("Starmie", "Rillaboom"))
+
 
 if __name__ == "__main__":
     unittest.main()

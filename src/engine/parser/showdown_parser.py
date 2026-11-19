@@ -38,7 +38,6 @@ DEFAULT_MOVE_PRIORITIES: Dict[str, int] = {
     "King's Shield": 4,
     "Spiky Shield": 4,
     "Baneful Bunker": 4,
-    "Burning Bulwark": 4,
     # +3
     "Fake Out": 3,
     "Quick Guard": 3,
@@ -85,6 +84,79 @@ DEFAULT_MOVE_PRIORITIES: Dict[str, int] = {
 _CACHED_MOVE_PRIORITIES: Optional[Dict[str, int]] = None
 _CACHED_STATUS_MOVES: Optional[Set[str]] = None
 _CACHED_MEGA_STONES: Optional[Set[str]] = None
+_CACHED_STONE_TO_MEGA: Optional[Dict[str, str]] = None
+_CACHED_BASE_TO_MEGA: Optional[Dict[str, str]] = None
+_CACHED_PIVOT_MOVES: Optional[Set[str]] = None
+_CACHED_PROTECT_MOVES: Optional[Set[str]] = None
+
+
+def _load_duckdb_parser_catalogs() -> Tuple[Dict[str, str], Dict[str, str], Set[str], Set[str]]:
+    """Load Mega Stone mappings, pivot moves, and stalling/protect moves from DuckDB `VGCDataRegistry`."""
+    global _CACHED_STONE_TO_MEGA, _CACHED_BASE_TO_MEGA, _CACHED_PIVOT_MOVES, _CACHED_PROTECT_MOVES
+    if (
+        _CACHED_STONE_TO_MEGA is not None
+        and _CACHED_BASE_TO_MEGA is not None
+        and _CACHED_PIVOT_MOVES is not None
+        and _CACHED_PROTECT_MOVES is not None
+    ):
+        return _CACHED_STONE_TO_MEGA, _CACHED_BASE_TO_MEGA, _CACHED_PIVOT_MOVES, _CACHED_PROTECT_MOVES
+
+    stone_to_mega: Dict[str, str] = {}
+    base_to_mega: Dict[str, str] = {}
+    pivot_moves: Set[str] = {
+        "Baton Pass",
+        "Chilly Reception",
+        "Flip Turn",
+        "Parting Shot",
+        "Revival Blessing",
+        "Shed Tail",
+        "U-turn",
+        "Volt Switch",
+    }
+    protect_moves: Set[str] = {
+        "Baneful Bunker",
+        "Detect",
+        "Endure",
+        "King's Shield",
+        "Protect",
+        "Quick Guard",
+        "Spiky Shield",
+        "Wide Guard",
+    }
+    try:
+        from engine.db_registry import get_registry
+
+        reg = get_registry()
+        for row in reg.query(
+            "SELECT name, baseSpecies, requiredItem FROM pokedex WHERE requiredItem IS NOT NULL;"
+        ):
+            m_name = str(row.get("name") or "").strip()
+            b_name = str(row.get("baseSpecies") or "").strip()
+            r_item = str(row.get("requiredItem") or "").strip()
+            if m_name and r_item:
+                stone_to_mega[r_item.lower()] = m_name
+            if m_name and b_name and b_name.lower() not in base_to_mega:
+                base_to_mega[b_name.lower()] = m_name
+
+        for row in reg.query("SELECT name FROM moves WHERE selfSwitch IS NOT NULL;"):
+            mv = str(row.get("name") or "").strip()
+            if mv:
+                pivot_moves.add(mv)
+
+        for row in reg.query(
+            "SELECT name FROM moves WHERE stallingMove = true OR (priority = 3 AND target = 'allySide');"
+        ):
+            mv = str(row.get("name") or "").strip()
+            if mv:
+                protect_moves.add(mv)
+    except Exception:
+        pass
+
+    _CACHED_STONE_TO_MEGA = stone_to_mega
+    _CACHED_BASE_TO_MEGA = base_to_mega
+    _CACHED_PIVOT_MOVES = pivot_moves
+    _CACHED_PROTECT_MOVES = protect_moves
+    return stone_to_mega, base_to_mega, pivot_moves, protect_moves
 
 
 def _load_move_priorities() -> Dict[str, int]:
@@ -366,15 +438,18 @@ def parse_showdown_chat_log(
     pov_trainer: Optional[str] = None,
     user_team_paste: Optional[str] = None,
     format_hint: str = "auto",
+    max_turn: Optional[int] = None,
 ) -> ParsedBattle:
     """Parse a client Showdown chat log into a fully typed ParsedBattle model.
 
     Args:
         log_text: Complete text copy-pasted from Showdown spectator or client chat.
         pov_trainer: Display name of the user / POV player. Mapped to trainer_1.
-                     If omitted, the first joined trainer is designated trainer_1.
+                     If omitted, inferred from `Go! <Mon>!` lines or `user_team_paste`.
         user_team_paste: Optional team export paste for trainer_1 to ensure 100% exact stats.
         format_hint: Format override or 'auto' to detect from header.
+        max_turn: Optional turn number N at whose decision boundary parsing halts
+                  (capturing the exact board state at the start of Turn N).
 
     Returns:
         ParsedBattle instance containing trainer_1, trainer_2, turns, and empirical telemetry.
@@ -428,9 +503,52 @@ def parse_showdown_chat_log(
             else:
                 trainer_1_name = detected_trainers[0]
                 trainer_2_name = detected_trainers[1] if len(detected_trainers) > 1 else "trainer_2"
+        elif len(detected_trainers) >= 2:
+            # TEL-01: Auto-infer which trainer is POV (trainer_1) when pov_trainer is omitted
+            t0, t1 = detected_trainers[0], detected_trainers[1]
+            has_go_lines = any(re.match(r"^Go!\s+.+?!", ln) for ln in lines)
+            sent_out_trainers = {
+                _clean_trainer_name(m_s.group(1)).lower()
+                for ln in lines
+                for m_s in [re.match(r"^(.+?)\s+sent out\s+.+?!", ln)]
+                if m_s
+            }
+            if has_go_lines and t0.lower() in sent_out_trainers and t1.lower() not in sent_out_trainers:
+                # t0 used '<Trainer> sent out ...!' while t1 used 'Go! ...!', so t1 is POV trainer_1
+                trainer_1_name = t1
+                trainer_2_name = t0
+            elif user_team_paste:
+                paste_species = {
+                    (p.base_species or p.species).lower()
+                    for p in parse_showdown_paste(user_team_paste).values()
+                }
+                preview_map: Dict[str, Set[str]] = {}
+                for idx_l, ln in enumerate(lines):
+                    m_prev = re.search(r"^(.+?)'s team:\s*(.*)", ln)
+                    if m_prev:
+                        tr_k = _clean_trainer_name(m_prev.group(1)).lower()
+                        r_str = m_prev.group(2).strip()
+                        if not r_str and idx_l + 1 < len(lines):
+                            r_str = lines[idx_l + 1]
+                        preview_map[tr_k] = {
+                            p.strip().split("-Mega")[0].lower()
+                            for p in r_str.split("/")
+                            if p.strip()
+                        }
+                overlap_0 = len(paste_species & preview_map.get(t0.lower(), set()))
+                overlap_1 = len(paste_species & preview_map.get(t1.lower(), set()))
+                if overlap_1 > overlap_0:
+                    trainer_1_name = t1
+                    trainer_2_name = t0
+                else:
+                    trainer_1_name = t0
+                    trainer_2_name = t1
+            else:
+                trainer_1_name = t0
+                trainer_2_name = t1
         else:
             trainer_1_name = detected_trainers[0]
-            trainer_2_name = detected_trainers[1] if len(detected_trainers) > 1 else "trainer_2"
+            trainer_2_name = "trainer_2"
     else:
         trainer_1_name = _clean_trainer_name(pov_trainer) if pov_trainer else "trainer_1"
         trainer_2_name = "trainer_2"
@@ -511,18 +629,7 @@ def parse_showdown_chat_log(
     turn_actions: List[Dict[str, Any]] = []
     last_move_used: Optional[Dict[str, Any]] = None
     pending_switch_out_mon: Optional[str] = None
-    protect_moves = {
-        "Protect",
-        "Detect",
-        "Endure",
-        "Spiky Shield",
-        "King's Shield",
-        "Baneful Bunker",
-        "Burning Bulwark",
-        "Wide Guard",
-        "Quick Guard",
-    }
-    pivot_moves = {"Flip Turn", "U-turn", "Volt Switch", "Parting Shot", "Baton Pass", "Chilly Reception", "Shed Tail"}
+    stone_to_mega, _, pivot_moves, protect_moves = _load_duckdb_parser_catalogs()
 
     # Name mapping: nickname / display name -> canonical species
     name_to_species: Dict[str, str] = {}
@@ -603,6 +710,8 @@ def parse_showdown_chat_log(
             turn_actions.clear()
             last_move_used = None
             pending_switch_out_mon = None
+            if max_turn is not None and current_turn >= int(max_turn):
+                break
             continue
 
         # --- Explicit Switch-Out Lines ---
@@ -704,7 +813,11 @@ def parse_showdown_chat_log(
             pkm = target_team.get_pokemon(mon_nick)
             if pkm:
                 pkm.is_mega = True
-                pkm.species = mega_species
+                stone_key = (pkm.mega_stone or pkm.item or "").strip().lower()
+                if stone_key and stone_key in stone_to_mega:
+                    pkm.species = stone_to_mega[stone_key]
+                else:
+                    pkm.species = mega_species
             continue
 
         # Mega Stone activation

@@ -263,6 +263,103 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         )
         self.assertIn("MATHEMATICAL & PROCESS AUDIT", eq_report_sci)
 
+    def test_cli_turn_slicing_and_completed_log_auto_rewind(self) -> None:
+        """Verify CLI-01: engine.cli supports --turn and auto-rewinds completed logs to final playable turn."""
+        from engine.cli import main as cli_main
+
+        completed_log = """
+☆trainer_1 and ☆trainer_2 joined
+Format: [Gen 9 Champions] VGC 2026 Reg M-C
+trainer_1's team:Charizard / Rillaboom / Garchomp / Kingambit / Pelipper / Archaludon
+trainer_2's team:Garchomp / Kingambit / Charizard / Rillaboom / Pelipper / Archaludon
+Battle started between trainer_1 and trainer_2!
+Go! Charizard!
+Go! Rillaboom!
+trainer_2 sent out Garchomp!
+trainer_2 sent out Kingambit!
+Turn 1
+Charizard used Protect!
+Rillaboom used Fake Out!
+(The opposing Garchomp lost 12% of its health!)
+The opposing Garchomp flinched and couldn't move!
+The opposing Kingambit used Kowtow Cleave!
+(Rillaboom lost 45% of its health!)
+Turn 2
+Charizard used Heat Wave!
+(The opposing Garchomp lost 88% of its health!)
+(The opposing Kingambit lost 100% of its health!)
+The opposing Garchomp fainted!
+The opposing Kingambit fainted!
+trainer_1 won the battle!
+"""
+        rc_auto = cli_main([
+            "--paste", ADVISOR_TEAM_PASTE,
+            "--log", completed_log,
+            "--backend", "numpy",
+            "--sims", "16",
+            "--hypotheses", "1",
+            "--verbosity", "coach",
+        ])
+        self.assertEqual(rc_auto, 0)
+
+        rc_turn1 = cli_main([
+            "--paste", ADVISOR_TEAM_PASTE,
+            "--log", completed_log,
+            "--turn", "1",
+            "--backend", "numpy",
+            "--sims", "16",
+            "--hypotheses", "1",
+            "--verbosity", "standard",
+        ])
+        self.assertEqual(rc_turn1, 0)
+
+    def test_cuda_oom_graceful_numpy_fallback(self) -> None:
+        """Verify ENG-01: CoachTurnAdvisor gracefully falls back to numpy backend on CUDA OutOfMemoryError."""
+        from unittest.mock import patch
+
+        t1_sets = parse_showdown_paste(ADVISOR_TEAM_PASTE)
+        t2_sets = {
+            "Garchomp": ParsedPokemon(species="Garchomp", base_species="Garchomp"),
+            "Kingambit": ParsedPokemon(species="Kingambit", base_species="Kingambit"),
+        }
+        battle = ParsedBattle()
+        battle.trainer_1 = ParsedTeam(
+            trainer_name="trainer_1",
+            team_preview=list(t1_sets.keys()),
+            battle_roster=["Charizard", "Rillaboom", "Garchomp", "Kingambit"],
+            leads=("Charizard", "Rillaboom"),
+            active_slots=["Charizard", "Rillaboom"],
+            pokemon_sets=t1_sets,
+        )
+        battle.trainer_2 = ParsedTeam(
+            trainer_name="trainer_2",
+            team_preview=list(t2_sets.keys()),
+            battle_roster=["Garchomp", "Kingambit"],
+            leads=("Garchomp", "Kingambit"),
+            active_slots=["Garchomp", "Kingambit"],
+            pokemon_sets=t2_sets,
+        )
+
+        advisor = CoachTurnAdvisor(backend="torch")
+        orig_sim = advisor.state_machine.simulate_pruned_turn
+        call_count = {"n": 0}
+
+        def oom_once(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
+            return advisor.state_machine.simulate_pruned_turn(*args, **kwargs)
+
+        with patch.object(advisor.state_machine, "simulate_pruned_turn", side_effect=oom_once):
+            advice = advisor.advise_battle(
+                battle=battle,
+                max_hypotheses=1,
+                num_simulations=16,
+                min_prior_threshold=0.80,
+            )
+        self.assertEqual(advisor.backend, "numpy")
+        self.assertGreaterEqual(len(advice.recommendations), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

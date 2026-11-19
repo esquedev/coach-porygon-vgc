@@ -17,7 +17,10 @@ from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from engine.parser.showdown_parser import parse_showdown_chat_log
+from engine.parser.showdown_parser import (
+    _load_duckdb_parser_catalogs,
+    parse_showdown_chat_log,
+)
 
 
 @dataclass
@@ -68,6 +71,22 @@ def _generate_match_id(raw_log: str) -> str:
     return f"match-{h}"
 
 
+def _parse_nick_and_species(raw_mon: str) -> Tuple[str, str]:
+    """Extract `(nickname, species)` from Showdown strings like `'Hazard (Charizard)'`."""
+    cleaned = raw_mon.strip()
+    m = re.match(r"^(.+?)\s*\((.+?)\)$", cleaned)
+    if m:
+        return m.group(1).strip(), m.group(2).strip()
+    return cleaned, cleaned
+
+
+def _base_species_key(species: str) -> str:
+    """Return lowercase base species stripped of Mega and gender suffixes."""
+    base = species.split("-Mega")[0].strip()
+    base = re.sub(r"-[MF]$", "", base)
+    return base.lower()
+
+
 def extract_turn_telemetry(
     raw_log: str,
     pov_trainer: Optional[str] = None,
@@ -88,6 +107,7 @@ def extract_turn_telemetry(
         pov_trainer=pov_trainer,
         user_team_paste=user_team_paste,
     )
+    stone_to_mega, base_to_mega, _, _ = _load_duckdb_parser_catalogs()
 
     match_id = _generate_match_id(raw_log)
     iso_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -96,40 +116,157 @@ def extract_turn_telemetry(
     trainer_2_name = battle.trainer_2.trainer_name or "trainer_2"
     winner_name = battle.winner or "Ongoing"
 
-    # Split log by turns to extract turn-specific moves and damage
     lines = [line.strip() for line in raw_log.splitlines() if line.strip()]
 
-    # Tracking state
+    # 2-Slot Active State Machine per side (TEL-02, TEL-03)
+    t1_slots: List[str] = ["", ""]
+    t2_slots: List[str] = ["", ""]
+    t1_open_queue: List[int] = []
+    t2_open_queue: List[int] = []
+    t1_aliases: Dict[str, int] = {}
+    t2_aliases: Dict[str, int] = {}
+    t1_nick_to_spec: Dict[str, str] = {}
+    t2_nick_to_spec: Dict[str, str] = {}
+    t1_pending_stone: Dict[str, str] = {}
+    t2_pending_stone: Dict[str, str] = {}
+
+    for sp_key, pkm_obj in battle.trainer_1.pokemon_sets.items():
+        t1_nick_to_spec[sp_key.lower()] = pkm_obj.species
+        if pkm_obj.nickname:
+            t1_nick_to_spec[pkm_obj.nickname.lower()] = pkm_obj.species
+        if pkm_obj.mega_stone:
+            t1_pending_stone[sp_key.lower()] = pkm_obj.mega_stone
+            if pkm_obj.nickname:
+                t1_pending_stone[pkm_obj.nickname.lower()] = pkm_obj.mega_stone
+
+    for sp_key, pkm_obj in battle.trainer_2.pokemon_sets.items():
+        t2_nick_to_spec[sp_key.lower()] = pkm_obj.species
+        if pkm_obj.nickname:
+            t2_nick_to_spec[pkm_obj.nickname.lower()] = pkm_obj.species
+        if pkm_obj.mega_stone:
+            t2_pending_stone[sp_key.lower()] = pkm_obj.mega_stone
+            if pkm_obj.nickname:
+                t2_pending_stone[pkm_obj.nickname.lower()] = pkm_obj.mega_stone
+
+    def _register_slot_aliases(
+        idx: int,
+        nick: str,
+        spec: str,
+        aliases: Dict[str, int],
+        nick_to_spec: Dict[str, str],
+    ) -> None:
+        nick_to_spec[nick.lower()] = spec
+        nick_to_spec[spec.lower()] = spec
+        aliases[nick.lower()] = idx
+        aliases[spec.lower()] = idx
+        aliases[spec.split("-Mega")[0].lower()] = idx
+        aliases[_base_species_key(spec)] = idx
+
+    def _find_slot_index(
+        ident: str,
+        slots: List[str],
+        aliases: Dict[str, int],
+        nick_to_spec: Dict[str, str],
+    ) -> Optional[int]:
+        nick, spec = _parse_nick_and_species(ident)
+        candidates = [
+            ident.strip().lower(),
+            nick.lower(),
+            spec.lower(),
+            spec.split("-Mega")[0].lower(),
+            _base_species_key(spec),
+        ]
+        if nick.lower() in nick_to_spec:
+            mapped_sp = nick_to_spec[nick.lower()]
+            candidates.extend([
+                mapped_sp.lower(),
+                mapped_sp.split("-Mega")[0].lower(),
+                _base_species_key(mapped_sp),
+            ])
+        for cand in candidates:
+            if cand in aliases:
+                idx = aliases[cand]
+                if 0 <= idx < 2 and slots[idx]:
+                    # Verify slot still holds this family or alias
+                    cur = slots[idx]
+                    if (
+                        cur.lower() == cand
+                        or cur.split("-Mega")[0].lower() == cand
+                        or _base_species_key(cur) == cand
+                        or aliases.get(nick.lower()) == idx
+                    ):
+                        return idx
+        for idx in (0, 1):
+            cur = slots[idx]
+            if not cur:
+                continue
+            if (
+                cur.lower() in candidates
+                or cur.split("-Mega")[0].lower() in candidates
+                or _base_species_key(cur) in candidates
+            ):
+                return idx
+        return None
+
+    def _vacate_slot(
+        ident: str,
+        slots: List[str],
+        open_queue: List[int],
+        aliases: Dict[str, int],
+        nick_to_spec: Dict[str, str],
+        clear_immediately: bool = False,
+    ) -> Optional[int]:
+        idx = _find_slot_index(ident, slots, aliases, nick_to_spec)
+        if idx is not None:
+            if idx not in open_queue:
+                open_queue.append(idx)
+            if clear_immediately:
+                slots[idx] = ""
+        return idx
+
+    def _assign_slot(
+        raw_mon: str,
+        slots: List[str],
+        open_queue: List[int],
+        aliases: Dict[str, int],
+        nick_to_spec: Dict[str, str],
+    ) -> str:
+        nick, spec = _parse_nick_and_species(raw_mon)
+        # Check if already occupying a slot (e.g. duplicate Turn 0 lead initialization)
+        existing_idx = _find_slot_index(raw_mon, slots, aliases, nick_to_spec)
+        if existing_idx is not None and existing_idx not in open_queue:
+            slots[existing_idx] = spec
+            _register_slot_aliases(existing_idx, nick, spec, aliases, nick_to_spec)
+            return spec
+
+        if open_queue:
+            idx = open_queue.pop(0)
+        elif not slots[0]:
+            idx = 0
+        elif not slots[1]:
+            idx = 1
+        else:
+            idx = 0
+
+        # Purge stale aliases pointing to idx
+        for k_al, v_idx in list(aliases.items()):
+            if v_idx == idx:
+                del aliases[k_al]
+
+        slots[idx] = spec
+        _register_slot_aliases(idx, nick, spec, aliases, nick_to_spec)
+        return spec
+
+    # Initialize leads from parsed battle if available
+    if battle.trainer_1.leads:
+        for lead_sp in battle.trainer_1.leads[:2]:
+            _assign_slot(lead_sp, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
+    if battle.trainer_2.leads:
+        for lead_sp in battle.trainer_2.leads[:2]:
+            _assign_slot(lead_sp, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec)
+
     current_turn = 0
-    t1_active: List[str] = list(battle.trainer_1.leads) if battle.trainer_1.leads else []
-    t2_active: List[str] = list(battle.trainer_2.leads) if battle.trainer_2.leads else []
-
-    # Map of turn_num -> dict of aggregated events
     turn_data: Dict[int, Dict[str, Any]] = {}
-
-    def get_turn_entry(t_num: int) -> Dict[str, Any]:
-        if t_num not in turn_data:
-            turn_data[t_num] = {
-                "t1_active_1": t1_active[0] if len(t1_active) > 0 else "",
-                "t1_active_2": t1_active[1] if len(t1_active) > 1 else "",
-                "t2_active_1": t2_active[0] if len(t2_active) > 0 else "",
-                "t2_active_2": t2_active[1] if len(t2_active) > 1 else "",
-                "t1_moves": [],
-                "t2_moves": [],
-                "dmg_to_t2": 0.0,
-                "dmg_to_t1": 0.0,
-                "faints": [],
-                "variance": [],
-                "weather": "None",
-                "terrain": "None",
-                "field_conditions": [],
-            }
-        return turn_data[t_num]
-
-    last_active_attacker: Optional[str] = None
-    last_attacker_is_t2 = False
-    last_withdrawn_t1: Optional[str] = None
-    last_withdrawn_t2: Optional[str] = None
 
     cur_weather = "None"
     cur_terrain = "None"
@@ -138,168 +275,364 @@ def extract_turn_telemetry(
     trick_room = False
     t1_screens: Set[str] = set()
     t2_screens: Set[str] = set()
+    t1_hazards: Set[str] = set()
+    t2_hazards: Set[str] = set()
+
+    def _snapshot_field_conditions() -> List[str]:
+        conds: List[str] = []
+        if t1_tailwind:
+            conds.append("T1_Tailwind")
+        if t2_tailwind:
+            conds.append("T2_Tailwind")
+        if trick_room:
+            conds.append("Trick_Room")
+        if t1_screens:
+            conds.append(f"T1_{'+'.join(sorted(t1_screens))}")
+        if t2_screens:
+            conds.append(f"T2_{'+'.join(sorted(t2_screens))}")
+        if t1_hazards:
+            conds.append(f"T1_{'+'.join(sorted(t1_hazards))}")
+        if t2_hazards:
+            conds.append(f"T2_{'+'.join(sorted(t2_hazards))}")
+        return conds
+
+    def get_turn_entry(t_num: int) -> Dict[str, Any]:
+        if t_num not in turn_data:
+            turn_data[t_num] = {
+                "t1_active_1": t1_slots[0],
+                "t1_active_2": t1_slots[1],
+                "t2_active_1": t2_slots[0],
+                "t2_active_2": t2_slots[1],
+                "t1_moves": [],
+                "t2_moves": [],
+                "dmg_to_t2": 0.0,
+                "dmg_to_t1": 0.0,
+                "faints": [],
+                "variance": [],
+                "weather": cur_weather,
+                "terrain": cur_terrain,
+                "field_conditions": _snapshot_field_conditions(),
+            }
+        return turn_data[t_num]
+
+    last_active_attacker: Optional[str] = None
+    last_attacker_is_t2: Optional[bool] = None
+    last_move_name: Optional[str] = None
+    vanished_mons: Set[Tuple[bool, str]] = set()
+    fake_out_targets_this_turn: Set[Tuple[bool, str]] = set()
 
     for line in lines:
         # Turn marker
         m_turn = re.match(r"^Turn\s+(\d+)", line)
         if m_turn:
             current_turn = int(m_turn.group(1))
+            t1_open_queue.clear()
+            t2_open_queue.clear()
+            fake_out_targets_this_turn.clear()
+            if not t1_slots[0] and t1_slots[1]:
+                t1_slots[0], t1_slots[1] = t1_slots[1], ""
+                for k_a, v_a in list(t1_aliases.items()):
+                    if v_a == 1:
+                        t1_aliases[k_a] = 0
+            if not t2_slots[0] and t2_slots[1]:
+                t2_slots[0], t2_slots[1] = t2_slots[1], ""
+                for k_a, v_a in list(t2_aliases.items()):
+                    if v_a == 1:
+                        t2_aliases[k_a] = 0
+            last_active_attacker = None
+            last_attacker_is_t2 = None
+            last_move_name = None
             entry = get_turn_entry(current_turn)
-            # Snapshot active slots at start of turn
-            entry["t1_active_1"] = t1_active[0] if len(t1_active) > 0 else ""
-            entry["t1_active_2"] = t1_active[1] if len(t1_active) > 1 else ""
-            entry["t2_active_1"] = t2_active[0] if len(t2_active) > 0 else ""
-            entry["t2_active_2"] = t2_active[1] if len(t2_active) > 1 else ""
+            entry["t1_active_1"] = t1_slots[0]
+            entry["t1_active_2"] = t1_slots[1]
+            entry["t2_active_1"] = t2_slots[0]
+            entry["t2_active_2"] = t2_slots[1]
             entry["weather"] = cur_weather
             entry["terrain"] = cur_terrain
+            entry["field_conditions"] = _snapshot_field_conditions()
             continue
 
         if current_turn == 0:
-            # Check pre-turn 1 leads
             m_go = re.match(r"^Go!\s+(.+?)!", line)
             if m_go:
-                mon = m_go.group(1).split("(")[-1].replace(")", "").strip()
-                if mon not in t1_active:
-                    t1_active.append(mon)
+                _assign_slot(m_go.group(1), t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
 
             m_sent = re.match(r"^(.+?)\s+sent out\s+(.+?)!", line)
             if m_sent:
-                trainer_p = m_sent.group(1).strip().replace("☆", "")
-                mon = m_sent.group(2).split("(")[-1].replace(")", "").strip()
+                trainer_p = m_sent.group(1).strip().replace("☆", "").replace("★", "").strip()
                 if trainer_p.lower() == trainer_1_name.lower():
-                    if mon not in t1_active:
-                        t1_active.append(mon)
+                    _assign_slot(m_sent.group(2), t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
                 else:
-                    if mon not in t2_active:
-                        t2_active.append(mon)
+                    _assign_slot(m_sent.group(2), t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec)
 
         entry = get_turn_entry(current_turn if current_turn > 0 else 1)
+        has_combat_actions = bool(entry["t1_moves"] or entry["t2_moves"])
+        is_post_combat_faint_replacement = bool(entry["faints"]) and has_combat_actions
 
-        # Weather / Terrain announcements & expirations
+        # Weather / Terrain announcements & expirations (TEL-05, TEL-06)
         if "The sunlight turned harsh" in line:
             cur_weather = "Sun"
-            entry["weather"] = cur_weather
+            if not is_post_combat_faint_replacement:
+                entry["weather"] = cur_weather
         elif "started to rain" in line or "Rain continues" in line:
             cur_weather = "Rain"
-            entry["weather"] = cur_weather
+            if not is_post_combat_faint_replacement:
+                entry["weather"] = cur_weather
         elif "sandstorm kicked up" in line:
             cur_weather = "Sand"
-            entry["weather"] = cur_weather
-        elif "started to snow" in line or "Snow continues" in line:
+            if not is_post_combat_faint_replacement:
+                entry["weather"] = cur_weather
+        elif "started to snow" in line or "Snow continues" in line or "started to hail" in line:
             cur_weather = "Snow"
-            entry["weather"] = cur_weather
+            if not is_post_combat_faint_replacement:
+                entry["weather"] = cur_weather
         elif (
-            "The sunlight faded" in line
+            "sunlight faded" in line
             or "The rain stopped" in line
             or "The sandstorm subsided" in line
             or "The snow stopped" in line
+            or "The hail stopped" in line
         ):
             cur_weather = "None"
-            entry["weather"] = cur_weather
-        elif "Grass grew to cover the battlefield" in line:
+            if not has_combat_actions:
+                entry["weather"] = "None"
+        elif "Grass grew to cover the battlefield" in line or "Grassy Surge]" in line:
             cur_terrain = "Grassy"
-            entry["terrain"] = cur_terrain
-        elif "surged across the battlefield" in line:
+            if not is_post_combat_faint_replacement:
+                entry["terrain"] = cur_terrain
+        elif (
+            "surged across the battlefield" in line
+            or "electric current ran across the battlefield" in line
+            or "Electric Surge]" in line
+        ):
             cur_terrain = "Electric"
-            entry["terrain"] = cur_terrain
-        elif "Mist swirled" in line:
+            if not is_post_combat_faint_replacement:
+                entry["terrain"] = cur_terrain
+        elif "Mist swirled" in line or "Misty Surge]" in line:
             cur_terrain = "Misty"
-            entry["terrain"] = cur_terrain
-        elif "weirdness" in line:
+            if not is_post_combat_faint_replacement:
+                entry["terrain"] = cur_terrain
+        elif "weirdness" in line or "became weird" in line or "Psychic Surge]" in line:
             cur_terrain = "Psychic"
-            entry["terrain"] = cur_terrain
+            if not is_post_combat_faint_replacement:
+                entry["terrain"] = cur_terrain
         elif "disappeared from the battlefield" in line:
             cur_terrain = "None"
-            entry["terrain"] = cur_terrain
+            if not has_combat_actions:
+                entry["terrain"] = "None"
 
-        # Field Conditions
-        if "Tailwind blew from behind your team" in line or f"Tailwind blew from behind {trainer_1_name}" in line:
+        # Field Conditions (TEL-04)
+        low_line = line.lower()
+        field_changed = False
+        is_expiration_change = False
+
+        if "tailwind blew from behind your team" in low_line or f"tailwind blew from behind {trainer_1_name.lower()}" in low_line:
             t1_tailwind = True
-        elif "Tailwind blew from behind the opposing team" in line or f"Tailwind blew from behind {trainer_2_name}" in line:
+            field_changed = True
+        elif "tailwind blew from behind the opposing team" in low_line or f"tailwind blew from behind {trainer_2_name.lower()}" in low_line:
             t2_tailwind = True
-        elif "The tailwind petered out" in line:
-            if "opposing" in line:
+            field_changed = True
+        elif "tailwind petered out" in low_line:
+            is_expiration_change = True
+            if "opposing" in low_line or trainer_2_name.lower() in low_line:
                 t2_tailwind = False
-            elif "your team" in line:
+            elif "your team" in low_line or trainer_1_name.lower() in low_line:
                 t1_tailwind = False
             else:
                 t1_tailwind = False
                 t2_tailwind = False
-        elif "twisted the dimensions" in line:
+        elif "twisted the dimensions" in low_line:
             trick_room = not trick_room
-        elif "twisted dimensions returned to normal" in line:
+            field_changed = True
+        elif "twisted dimensions returned to normal" in low_line:
             trick_room = False
-        elif "Light Screen" in line and "rose" in line:
-            if "opposing" in line:
-                t2_screens.add("Light Screen")
+            is_expiration_change = True
+        elif "light screen" in low_line and ("rose" in low_line or "made" in low_line):
+            if "opposing" in low_line:
+                t2_screens.add("Light_Screen")
             else:
-                t1_screens.add("Light Screen")
-        elif "Reflect" in line and "rose" in line:
-            if "opposing" in line:
+                t1_screens.add("Light_Screen")
+            field_changed = True
+        elif "reflect" in low_line and ("rose" in low_line or "made" in low_line):
+            if "opposing" in low_line:
                 t2_screens.add("Reflect")
             else:
                 t1_screens.add("Reflect")
-        elif "wore off!" in line:
-            if "Light Screen" in line:
-                t1_screens.discard("Light Screen")
-                t2_screens.discard("Light Screen")
-            if "Reflect" in line:
-                t1_screens.discard("Reflect")
-                t2_screens.discard("Reflect")
+            field_changed = True
+        elif "aurora veil" in low_line and ("rose" in low_line or "made" in low_line):
+            if "opposing" in low_line:
+                t2_screens.add("Aurora_Veil")
+            else:
+                t1_screens.add("Aurora_Veil")
+            field_changed = True
+        elif "wore off" in low_line:
+            is_expiration_change = True
+            target_screens = t2_screens if "opposing" in low_line else t1_screens
+            if "light screen" in low_line:
+                target_screens.discard("Light_Screen")
+            if "reflect" in low_line:
+                target_screens.discard("Reflect")
+            if "aurora veil" in low_line:
+                target_screens.discard("Aurora_Veil")
+        elif "poison spikes were scattered" in low_line:
+            if "opposing" in low_line:
+                t2_hazards.add("Toxic_Spikes")
+            else:
+                t1_hazards.add("Toxic_Spikes")
+            field_changed = True
+        elif "spikes were scattered" in low_line:
+            if "opposing" in low_line:
+                t2_hazards.add("Spikes")
+            else:
+                t1_hazards.add("Spikes")
+            field_changed = True
+        elif "pointed stones float" in low_line:
+            if "opposing" in low_line:
+                t2_hazards.add("Stealth_Rock")
+            else:
+                t1_hazards.add("Stealth_Rock")
+            field_changed = True
+        elif "sticky web" in low_line and ("lay" in low_line or "caught" not in low_line):
+            if "opposing" in low_line:
+                t2_hazards.add("Sticky_Web")
+            else:
+                t1_hazards.add("Sticky_Web")
+            field_changed = True
+        elif "disappeared from around" in low_line:
+            target_hazards = t2_hazards if "opposing" in low_line else t1_hazards
+            if "poison spikes" in low_line:
+                target_hazards.discard("Toxic_Spikes")
+            elif "spikes" in low_line:
+                target_hazards.discard("Spikes")
+            elif "pointed stones" in low_line:
+                target_hazards.discard("Stealth_Rock")
+            elif "sticky web" in low_line:
+                target_hazards.discard("Sticky_Web")
+            field_changed = True
 
-        # Track withdrawals so we replace the exact active slot
+        if field_changed and not is_post_combat_faint_replacement:
+            entry["field_conditions"] = _snapshot_field_conditions()
+        elif is_expiration_change and not has_combat_actions:
+            entry["field_conditions"] = _snapshot_field_conditions()
+
+        # Key Stone reaction (for canonical Mega species resolution via DuckDB)
+        m_stone = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+(.+?)\s+is reacting to the Key Stone!", line)
+        if m_stone:
+            s_nick = m_stone.group(1).strip()
+            s_item = m_stone.group(2).strip()
+            if line.startswith("The opposing "):
+                t2_pending_stone[s_nick.lower()] = s_item
+            else:
+                t1_pending_stone[s_nick.lower()] = s_item
+
+        # Track explicit withdrawals, pivot returns, and forced ejects (TEL-02)
         m_withdrew = re.match(r"^(.+?)\s+withdrew\s+(.+?)!", line)
         if m_withdrew:
-            tr_w = m_withdrew.group(1).strip().replace("☆", "")
-            mon_w = m_withdrew.group(2).split("(")[-1].replace(")", "").strip()
+            tr_w = m_withdrew.group(1).strip().replace("☆", "").replace("★", "").strip()
+            mon_w = m_withdrew.group(2).strip()
             if tr_w.lower() == trainer_1_name.lower():
-                last_withdrawn_t1 = mon_w
+                _vacate_slot(mon_w, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
             else:
-                last_withdrawn_t2 = mon_w
+                _vacate_slot(mon_w, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=False)
             continue
 
         m_comeback = re.match(r"^(.+?),\s+come back!", line)
         if m_comeback:
-            last_withdrawn_t1 = m_comeback.group(1).split("(")[-1].replace(")", "").strip()
+            _vacate_slot(
+                m_comeback.group(1).strip(),
+                t1_slots,
+                t1_open_queue,
+                t1_aliases,
+                t1_nick_to_spec,
+                clear_immediately=False,
+            )
+            continue
+
+        m_wentback = re.match(r"^(?:The opposing\s+)?(.+?)\s+went back to\s+(.+?)!", line)
+        if m_wentback:
+            mon_wb = m_wentback.group(1).strip()
+            tr_wb = m_wentback.group(2).strip().replace("☆", "").replace("★", "").strip()
+            if line.startswith("The opposing ") or tr_wb.lower() == trainer_2_name.lower():
+                _vacate_slot(mon_wb, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=False)
+            else:
+                _vacate_slot(mon_wb, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
+            continue
+
+        m_eject = re.match(r"^(?:The opposing\s+)?(.+?)\s+is switched out with the\s+.+?!", line)
+        if m_eject:
+            mon_ej = m_eject.group(1).strip()
+            if line.startswith("The opposing "):
+                _vacate_slot(mon_ej, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=False)
+            else:
+                _vacate_slot(mon_ej, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
+            continue
+
+        m_redcard = re.search(
+            r"^(?:The opposing\s+)?(.+?)\s+held up its\s+Red Card\s+against\s+(the opposing\s+)?(.+?)!",
+            line,
+        )
+        if m_redcard:
+            victim_is_t2 = bool(m_redcard.group(2))
+            victim_mon = m_redcard.group(3).strip()
+            if victim_is_t2:
+                _vacate_slot(victim_mon, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=False)
+            else:
+                _vacate_slot(victim_mon, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
+            continue
+
+        m_emexit = re.match(r"^\[(?:The opposing\s+)?(.+?)'s\s+(?:Emergency Exit|Wimp Out)\]", line)
+        if m_emexit:
+            mon_em = m_emexit.group(1).strip()
+            if line.startswith("[The opposing "):
+                _vacate_slot(mon_em, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=False)
+            else:
+                _vacate_slot(mon_em, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
             continue
 
         # Switches during battle
         m_switch = re.match(r"^(.+?)\s+sent out\s+(.+?)!", line)
         if m_switch and current_turn > 0:
-            trainer_p = m_switch.group(1).strip().replace("☆", "")
-            mon = m_switch.group(2).split("(")[-1].replace(")", "").strip()
+            trainer_p = m_switch.group(1).strip().replace("☆", "").replace("★", "").strip()
+            raw_mon = m_switch.group(2).strip()
             is_t1 = trainer_p.lower() == trainer_1_name.lower()
             if is_t1:
-                if last_withdrawn_t1 and last_withdrawn_t1 in t1_active:
-                    t1_active[t1_active.index(last_withdrawn_t1)] = mon
-                    last_withdrawn_t1 = None
-                else:
-                    if len(t1_active) >= 2:
-                        t1_active.pop(0)
-                    t1_active.append(mon)
-                entry["t1_moves"].append(f"Switch -> {mon}")
+                spec = _assign_slot(raw_mon, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
+                entry["t1_moves"].append(f"Switch -> {spec}")
             else:
-                if last_withdrawn_t2 and last_withdrawn_t2 in t2_active:
-                    t2_active[t2_active.index(last_withdrawn_t2)] = mon
-                    last_withdrawn_t2 = None
-                else:
-                    if len(t2_active) >= 2:
-                        t2_active.pop(0)
-                    t2_active.append(mon)
-                entry["t2_moves"].append(f"Switch -> {mon}")
+                spec = _assign_slot(raw_mon, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec)
+                entry["t2_moves"].append(f"Switch -> {spec}")
             continue
 
         m_go_mid = re.match(r"^Go!\s+(.+?)!", line)
         if m_go_mid and current_turn > 0:
-            mon = m_go_mid.group(1).split("(")[-1].replace(")", "").strip()
-            if last_withdrawn_t1 and last_withdrawn_t1 in t1_active:
-                t1_active[t1_active.index(last_withdrawn_t1)] = mon
-                last_withdrawn_t1 = None
+            spec = _assign_slot(m_go_mid.group(1).strip(), t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
+            entry["t1_moves"].append(f"Switch -> {spec}")
+            continue
+
+        m_drag = re.match(r"^(?:The opposing\s+)?(.+?)\s+was dragged out!", line)
+        if m_drag and current_turn > 0:
+            raw_mon = m_drag.group(1).strip()
+            _, spec_d = _parse_nick_and_species(raw_mon)
+            is_t2_drag = line.startswith("The opposing ") or (
+                spec_d not in battle.trainer_1.team_preview
+                and spec_d not in battle.trainer_1.pokemon_sets
+                and (spec_d in battle.trainer_2.team_preview or spec_d in battle.trainer_2.pokemon_sets)
+            )
+            if is_t2_drag:
+                _assign_slot(raw_mon, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec)
             else:
-                if len(t1_active) >= 2:
-                    t1_active.pop(0)
-                t1_active.append(mon)
-            entry["t1_moves"].append(f"Switch -> {mon}")
+                _assign_slot(raw_mon, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec)
+            continue
+
+        # Semi-invulnerable two-turn charge tracking (TEL-08)
+        m_van = re.match(
+            r"^(?:The opposing\s+)?(.+?)\s+(?:vanished instantly|flew up high|dug a hole|bounced up|hid underwater)!",
+            line,
+        )
+        if m_van:
+            v_nick = m_van.group(1).strip().lower()
+            v_is_t2 = line.startswith("The opposing ")
+            vanished_mons.add((v_is_t2, v_nick))
             continue
 
         # Move execution
@@ -310,60 +643,101 @@ def extract_turn_telemetry(
             is_opp = line.startswith("The opposing ")
             last_attacker_is_t2 = is_opp
             last_active_attacker = mon_nick
+            last_move_name = mv_name
+            vanished_mons.discard((is_opp, mon_nick.lower()))
             if is_opp:
                 entry["t2_moves"].append(f"{mon_nick}: {mv_name}")
             else:
                 entry["t1_moves"].append(f"{mon_nick}: {mv_name}")
             continue
 
-        # Damage observations
+        # Damage observations (TEL-07: exclude same-side self-cost & friendly-fire moves)
         m_dmg = re.search(r"\((?:The opposing\s+)?(.+?)\s+lost\s+(\d+(?:\.\d+)?)%\s+of its health!\)", line)
         if m_dmg:
             target_mon = m_dmg.group(1).strip()
             pct_lost = float(m_dmg.group(2))
             is_opp_target = "The opposing " in line
+            if last_move_name == "Fake Out":
+                fake_out_targets_this_turn.add((is_opp_target, target_mon.lower()))
+            if last_attacker_is_t2 is not None and is_opp_target == last_attacker_is_t2:
+                # Same-side damage (e.g. Substitute cost or friendly-fire Feint into partner)
+                continue
             if is_opp_target:
-                # trainer_1 dealt damage to trainer_2
                 entry["dmg_to_t2"] += pct_lost
             else:
-                # trainer_2 dealt damage to trainer_1
                 entry["dmg_to_t1"] += pct_lost
             continue
 
-        # Faints
+        # Faints (TEL-02 FIFO open-slot queue + TEL-03 immediate slot clearing)
         m_faint = re.search(r"^(?:The opposing\s+)?(.+?)\s+fainted!", line)
         if m_faint:
             fainted_mon = m_faint.group(1).strip()
             is_opp_faint = line.startswith("The opposing ")
             team_label = "trainer_2" if is_opp_faint else "trainer_1"
+            vanished_mons.discard((is_opp_faint, fainted_mon.lower()))
             if is_opp_faint:
-                last_withdrawn_t2 = fainted_mon
+                _vacate_slot(fainted_mon, t2_slots, t2_open_queue, t2_aliases, t2_nick_to_spec, clear_immediately=True)
             else:
-                last_withdrawn_t1 = fainted_mon
+                _vacate_slot(fainted_mon, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=True)
             entry["faints"].append(f"{team_label}: {fainted_mon}")
             continue
 
-        # RNG Variance & Tactical Triggers
-        if "A critical hit!" in line:
+        # RNG Variance & Tactical Triggers (TEL-08)
+        if "A critical hit" in line:
             entry["variance"].append("Critical Hit")
         elif "flinched" in line:
             m_flinch = re.search(r"^(?:The opposing\s+)?(.+?)\s+flinched", line)
-            target = m_flinch.group(1) if m_flinch else "target"
-            entry["variance"].append(f"Flinch on {target}")
+            target = m_flinch.group(1).strip() if m_flinch else "target"
+            is_opp_fl = line.startswith("The opposing ") or ("'s " in target)
+            clean_target = target.split("'s ")[-1].strip()
+            if (
+                last_move_name == "Fake Out"
+                or (is_opp_fl, clean_target.lower()) in fake_out_targets_this_turn
+                or (not is_opp_fl, clean_target.lower()) in fake_out_targets_this_turn
+            ):
+                entry["variance"].append(f"Fake Out Flinch on {target}")
+            else:
+                entry["variance"].append(f"Flinch on {target}")
         elif "paralyzed! It may be unable to move!" in line or "is paralyzed! It can't move!" in line:
             entry["variance"].append("Paralysis")
         elif "is frozen solid!" in line:
             entry["variance"].append("Frozen Solid")
         elif "avoided the attack!" in line or "missed!" in line:
+            m_avoid = re.match(r"^(?:The opposing\s+)?(.+?)\s+avoided the attack!", line)
+            if m_avoid:
+                av_is_t2 = line.startswith("The opposing ")
+                av_nick = m_avoid.group(1).strip().lower()
+                if (av_is_t2, av_nick) in vanished_mons:
+                    continue
             entry["variance"].append("Attack Missed")
         elif "Mega Evolved" in line:
-            m_mega = re.search(r"^(?:The opposing\s+)?(.+?)\s+Mega Evolved into (?:Mega\s+)?(.+?)!", line)
+            m_mega = re.search(r"^(?:The opposing\s+)?(.+?)\s+(?:has\s+)?Mega Evolved into (?:Mega\s+)?(.+?)!", line)
             if m_mega:
-                entry["variance"].append(f"Mega Evolution ({m_mega.group(2).strip()})")
+                m_nick = m_mega.group(1).strip()
+                m_into = m_mega.group(2).strip()
+                is_opp_m = line.startswith("The opposing ")
+                entry["variance"].append(f"Mega Evolution ({m_into})")
+                # Update active slot to canonical DuckDB Mega species if known
+                slots_m = t2_slots if is_opp_m else t1_slots
+                aliases_m = t2_aliases if is_opp_m else t1_aliases
+                n2s_m = t2_nick_to_spec if is_opp_m else t1_nick_to_spec
+                pstone_m = t2_pending_stone if is_opp_m else t1_pending_stone
+                idx_m = _find_slot_index(m_nick, slots_m, aliases_m, n2s_m)
+                if idx_m is not None:
+                    base_sp = _base_species_key(slots_m[idx_m] or m_into)
+                    stone_name = (
+                        pstone_m.get(m_nick.lower())
+                        or pstone_m.get(base_sp)
+                        or ""
+                    ).lower()
+                    canon_mega = stone_to_mega.get(stone_name) or base_to_mega.get(base_sp)
+                    if canon_mega:
+                        slots_m[idx_m] = canon_mega
+                        _register_slot_aliases(idx_m, m_nick, canon_mega, aliases_m, n2s_m)
             else:
                 entry["variance"].append("Mega Evolution")
         elif "White Herb" in line and ("restored" in line or "activated" in line):
-            m_wh = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+White Herb", line)
+            m_wh = re.search(r"^(?:The opposing\s+)?(.+?)(?:'s\s+White Herb|\s+restored its status using its White Herb)", line)
             mon = m_wh.group(1).strip() if m_wh else "target"
             entry["variance"].append(f"White Herb on {mon}")
         elif "Focus Sash" in line and "hung on" in line:
@@ -391,18 +765,7 @@ def extract_turn_telemetry(
         if t_idx not in turn_data:
             continue
         d = turn_data[t_idx]
-
-        conds: List[str] = []
-        if t1_tailwind:
-            conds.append("T1_Tailwind")
-        if t2_tailwind:
-            conds.append("T2_Tailwind")
-        if trick_room:
-            conds.append("Trick_Room")
-        if t1_screens:
-            conds.append(f"T1_{'+'.join(sorted(t1_screens))}")
-        if t2_screens:
-            conds.append(f"T2_{'+'.join(sorted(t2_screens))}")
+        conds = d.get("field_conditions") or []
 
         records.append(
             TurnTelemetryRecord(
@@ -539,4 +902,3 @@ def batch_update_comments(
             writer.writerows(rows)
 
     return update_count
-
