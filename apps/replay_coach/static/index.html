@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coach Porygon VGC — Standalone Showdown GPU Nash &amp; IEDS Coach</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-title">Coach Porygon VGC — Replay Nash &amp; IEDS Coach</span>
+      <span class="pill" id="gpu-badge">GPU: Cargando...</span>
+      <span class="pill zero-ai">0% IA · 100% Tensor Core + DuckDB OTS</span>
+    </div>
+    <div class="controls">
+      <label class="btn" title="Cargar archivo .html de replay oficial de Pokémon Showdown">
+        Cargar Replay (.html)
+        <input type="file" id="replay-file-input" accept=".html,.htm,.txt,.log" style="display:none" />
+      </label>
+      <select id="pov-select" title="Jugador a coachear (trainer_1)"></select>
+      <select id="mode-select" title="Precisión del motor GPU">
+        <option value="0.55|128" selected>GPU Rápido (min_prior 0.55 · K=128)</option>
+        <option value="0.45|256">GPU Estándar (min_prior 0.45 · K=256)</option>
+        <option value="0.0|256">GPU IEDS Total (min_prior 0.0 · K=256)</option>
+      </select>
+      <button class="btn primary" id="btn-analyze-all">Analizar Partida (GPU)</button>
+      <button class="btn" id="btn-open-ots">Base de Datos OTS / EVs</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- Left Column: Official Showdown Battle Engine -->
+    <section class="card">
+      <div class="card-header">
+        <span id="match-title">Reproductor Oficial Pokémon Showdown</span>
+        <span class="status-msg" id="ots-match-indicator">OTS DB: verificando...</span>
+      </div>
+      <div class="player-frame-wrap">
+        <iframe id="showdown-iframe" src="/api/replay-player" title="Official Pokémon Showdown Replay Engine"></iframe>
+      </div>
+      <div class="player-nav">
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="btn" id="btn-prev-turn">&larr; Turno Anterior</button>
+          <button class="btn" id="btn-play-pause">Play / Pausa</button>
+          <button class="btn" id="btn-next-turn">Siguiente Turno &rarr;</button>
+          <button class="btn" id="btn-flip-pov">Invertir Cámara</button>
+        </div>
+        <span class="status-msg" id="current-turn-label">Turno 1</span>
+      </div>
+    </section>
+
+    <!-- Right Column: GPU Nash + IEDS + Deterministic Commentary -->
+    <section class="card">
+      <div class="card-header">
+        <span id="coach-panel-title">Análisis GPU Tensor Core — Turno 1</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="status-msg" id="turn-compute-meta"></span>
+          <button class="btn" id="btn-recompute-turn" title="Recalcular este turno en GPU">Recalcular Turno</button>
+        </div>
+      </div>
+      <div class="card-body" id="coach-panel-body">
+        <div class="status-msg">Haz clic en "Analizar Partida (GPU)" o navega a cualquier turno para calcular Equilibrio de Nash + IEDS.</div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bottom Timeline & Evaluation Graph -->
+  <section class="timeline-bar">
+    <div class="timeline-header">
+      <strong style="font-size:12px">Línea de Tiempo &amp; Curva de Equilibrio de Nash ($v^*$) — Clic en cualquier turno para sincronizar Showdown</strong>
+      <span class="status-msg" id="stream-status">Listo</span>
+    </div>
+    <div class="turn-pills" id="turn-pills"></div>
+    <svg class="eval-svg" id="eval-chart" viewBox="0 0 1000 76" preserveAspectRatio="none"></svg>
+  </section>
+</div>
+
+<!-- OTS + EVs/SPs Database Modal -->
+<div class="modal-backdrop" id="ots-modal">
+  <div class="modal">
+    <div class="card-header">
+      <span>Base de Datos OTS + EVs/SPs (DuckDB — 0% IA)</span>
+      <button class="btn" id="btn-close-ots">Cerrar</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <div class="section-title" style="margin-top:0">Equipos Guardados</div>
+        <div id="roster-list"></div>
+        <button class="btn" id="btn-new-roster" style="width:100%;margin-top:6px">+ Nuevo Equipo OTS</button>
+        <div class="section-title">Asignar a la Partida Actual</div>
+        <div class="field-group">
+          <label>trainer_1 (Coacheado)</label>
+          <select id="assign-t1"></select>
+        </div>
+        <div class="field-group">
+          <label>trainer_2 (Rival)</label>
+          <select id="assign-t2"></select>
+        </div>
+        <button class="btn primary" id="btn-apply-rosters" style="width:100%">Aplicar a Replay Actual</button>
+      </div>
+      <div>
+        <div class="field-group">
+          <label>Roster ID</label>
+          <input type="text" id="ed-roster-id" placeholder="ej. rival_camerupt_tr" />
+        </div>
+        <div class="field-group">
+          <label>Nombre Visible</label>
+          <input type="text" id="ed-display-name" placeholder="ej. MatchaGotMe — Camerupt TR" />
+        </div>
+        <div class="field-group">
+          <label>Nombre del Entrenador en Showdown (para auto-match)</label>
+          <input type="text" id="ed-trainer-hint" placeholder="ej. MatchaGotMe" />
+        </div>
+        <div class="field-group">
+          <label>Showdown Paste completo (OTS + EVs/SPs Reg M-C 66-SP)</label>
+          <textarea id="ed-paste" rows="15" style="font-family:monospace;font-size:11.5px"></textarea>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn" id="btn-validate-paste">Validar 66-SP</button>
+          <button class="btn primary" id="btn-save-roster">Guardar en DuckDB</button>
+          <span class="status-msg" id="ots-editor-status"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
