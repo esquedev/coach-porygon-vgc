@@ -38,39 +38,22 @@ from .tournament_db import (
 
 TYPE_BOOSTING_ITEMS: Dict[str, str] = {
     "Miracle Seed": "Grass",
-    "Meadow Plate": "Grass",
     "Charcoal": "Fire",
-    "Flame Plate": "Fire",
     "Mystic Water": "Water",
-    "Splash Plate": "Water",
     "Magnet": "Electric",
-    "Zap Plate": "Electric",
     "Never-Melt Ice": "Ice",
-    "Icicle Plate": "Ice",
     "Black Belt": "Fighting",
-    "Fist Plate": "Fighting",
     "Poison Barb": "Poison",
-    "Toxic Plate": "Poison",
     "Soft Sand": "Ground",
-    "Earth Plate": "Ground",
     "Sharp Beak": "Flying",
-    "Sky Plate": "Flying",
     "Twisted Spoon": "Psychic",
-    "Mind Plate": "Psychic",
     "Silver Powder": "Bug",
-    "Insect Plate": "Bug",
     "Hard Stone": "Rock",
-    "Stone Plate": "Rock",
     "Spell Tag": "Ghost",
-    "Spooky Plate": "Ghost",
     "Dragon Fang": "Dragon",
-    "Draco Plate": "Dragon",
     "Black Glasses": "Dark",
-    "Dread Plate": "Dark",
     "Metal Coat": "Steel",
-    "Iron Plate": "Steel",
     "Fairy Feather": "Fairy",
-    "Pixie Plate": "Fairy",
     "Silk Scarf": "Normal",
 }
 
@@ -296,9 +279,7 @@ class OpponentSetInferencer:
             for cand_item in profile.items.keys():
                 if not allow_mega and cand_item in self.repo.mega_stone_to_species:
                     continue
-                if has_status_move and cand_item == "Assault Vest":
-                    continue
-                if used_multiple_moves and cand_item in ("Choice Band", "Choice Specs", "Choice Scarf"):
+                if used_multiple_moves and cand_item == "Choice Scarf":
                     continue
                 # Respect Item Clause on the team if battle is provided
                 if battle and any(
@@ -354,7 +335,7 @@ class OpponentSetInferencer:
 
         # Fallback if tournament archive had < 4 moves for a rare species
         if len(mon.moves) < 4:
-            fallback_moves = ["Protect", "Tera Blast", "Helping Hand", "Substitute"]
+            fallback_moves = ["Protect", "Helping Hand", "Substitute", "Endure"]
             sp_id = (mon.base_species or mon.species).lower().replace("-", "").replace(" ", "")
             learnset_pool = sorted(self.repo.learnsets.get(sp_id, set()))
             for lm in learnset_pool + fallback_moves:
@@ -418,25 +399,28 @@ class OpponentSetInferencer:
             if f_mon_t1 and s_mon_t2:
                 t1_spe = self._get_trainer_1_effective_speed(battle, obs.faster_mon, obs)
                 if t1_spe is not None:
+                    # Normalize by trainer_2's Tailwind during this observation if active
+                    norm_spe = t1_spe // 2 if obs.tailwind_active_slower else t1_spe
                     key = s_mon_t2.base_species or s_mon_t2.species
                     if obs.trick_room_active:
-                        update_bound(key, t1_spe, None)
-                        update_bound(s_mon_t2.species, t1_spe, None)
+                        update_bound(key, norm_spe, None)
+                        update_bound(s_mon_t2.species, norm_spe, None)
                     else:
-                        update_bound(key, None, t1_spe)
-                        update_bound(s_mon_t2.species, None, t1_spe)
+                        update_bound(key, None, norm_spe)
+                        update_bound(s_mon_t2.species, None, norm_spe)
 
             # Case B: trainer_2 moved before trainer_1 in the same priority bracket
             elif f_mon_t2 and s_mon_t1:
                 t1_spe = self._get_trainer_1_effective_speed(battle, obs.slower_mon, obs)
                 if t1_spe is not None:
+                    norm_spe = (t1_spe + 1) // 2 if obs.tailwind_active_faster else t1_spe
                     key = f_mon_t2.base_species or f_mon_t2.species
                     if obs.trick_room_active:
-                        update_bound(key, None, t1_spe)
-                        update_bound(f_mon_t2.species, None, t1_spe)
+                        update_bound(key, None, norm_spe)
+                        update_bound(f_mon_t2.species, None, norm_spe)
                     else:
-                        update_bound(key, t1_spe, None)
-                        update_bound(f_mon_t2.species, t1_spe, None)
+                        update_bound(key, norm_spe, None)
+                        update_bound(f_mon_t2.species, norm_spe, None)
 
         return bounds
 
@@ -527,8 +511,12 @@ class OpponentSetInferencer:
                 l50 = compute_level_50_stats_from_base(base_stats, test_spread, nature)
                 eff_spe = compute_effective_speed(
                     l50["spe"],
+                    spe_stage=mon.boosts.get("spe", 0),
+                    status=mon.status,
                     ability=mon.ability,
                     item=mon.item,
+                    weather=battle.weather,
+                    terrain=battle.terrain,
                 )
                 ok_low = min_spe is None or eff_spe >= min_spe
                 ok_high = max_spe is None or eff_spe <= max_spe
@@ -555,7 +543,15 @@ class OpponentSetInferencer:
             seen_spreads.add(sig)
 
             l50 = compute_level_50_stats_from_base(base_stats, spread, nature)
-            eff_spe = compute_effective_speed(l50["spe"], ability=mon.ability, item=mon.item)
+            eff_spe = compute_effective_speed(
+                l50["spe"],
+                spe_stage=mon.boosts.get("spe", 0),
+                status=mon.status,
+                ability=mon.ability,
+                item=mon.item,
+                weather=battle.weather,
+                terrain=battle.terrain,
+            )
 
             spe_ok = True
             if min_spe is not None and eff_spe < min_spe:
@@ -709,14 +705,6 @@ class OpponentSetInferencer:
         # Ability modifiers (Huge Power / Pure Power)
         if is_phys and attacker.ability in ("Huge Power", "Pure Power"):
             atk_val *= 2
-
-        # Item stat modifiers
-        if is_phys and attacker.item == "Choice Band":
-            atk_val = (atk_val * 3) // 2
-        elif not is_phys and attacker.item == "Choice Specs":
-            atk_val = (atk_val * 3) // 2
-        if not is_phys and defender.item == "Assault Vest":
-            def_val = (def_val * 3) // 2
 
         base_dmg = ((22 * bp * atk_val) // max(1, def_val)) // 50 + 2
 

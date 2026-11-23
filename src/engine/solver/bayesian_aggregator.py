@@ -42,6 +42,7 @@ from .game_theory import (
     _to_numpy,
     decode_joint_action,
     format_equilibrium_coach_report,
+    solve_bayesian_zero_sum_nash,
     solve_turn_equilibrium,
 )
 
@@ -93,12 +94,14 @@ class BayesianTurnAdvice:
         self,
         verbosity: str = "coach",
         max_recommendations: int = 5,
+        lang: str = "en",
+        style: Optional[str] = None,
     ) -> str:
         """Format the advisory report at the requested verbosity / detail level.
 
         Args:
             verbosity: Detail level:
-                - `'coach'` (default): Plain English, intuitive tactical summary for
+                - `'coach'` (default): Plain VGC language, intuitive tactical summary for
                   the everyday player. No math jargon.
                 - `'standard'`: Balanced tactical breakdown with probabilities, opponent
                   hypotheses, and top ranked plays.
@@ -106,9 +109,13 @@ class BayesianTurnAdvice:
                   documenting all 5 pipeline steps, formulas, tensor dimensions, RNG distributions,
                   CVaR tail risk, and equilibrium proofs.
             max_recommendations: Maximum number of ranked recommendations to list.
+            lang: `'es'` or `'en'`.
+            style: Optional override `'vgc'` or `'scientific'`.
         """
         v = str(verbosity or "coach").lower().strip()
-        if v in ("simple", "brief", "casual", "player"):
+        if style == "scientific":
+            v = "scientific"
+        elif v in ("simple", "brief", "casual", "player", "vgc"):
             v = "coach"
         elif v in ("nerd", "full", "audit", "deep", "verbose"):
             v = "scientific"
@@ -284,9 +291,9 @@ class BayesianTurnAdvice:
         # STEP 1: INGESTION & STAT ENGINE
         # ---------------------------------------------------------------------
         lines.append("🔬 STEP 1: INGESTION & 66-SP REGULATION M-C STAT PIPELINE")
-        lines.append("  • Champions Stat Scaling (Level 50, mandatory 31 IVs, max 66 SP total, max 32 SP/stat):")
-        lines.append("      HP   = floor(((2 * Base_HP + 31 + floor(SP_HP / 4)) * 50) / 100) + 60")
-        lines.append("      Stat = floor((floor(((2 * Base_Stat + 31 + floor(SP_Stat / 4)) * 50) / 100) + 5) * Nature_Mult)")
+        lines.append("  • Champions Stat Scaling (Level 50, mandatory 31 IVs, max 66 SP total, max 32 SP/stat, 1:1 SP):")
+        lines.append("      HP   = Base_HP + SP_HP + 15 + 60")
+        lines.append("      Stat = floor((Base_Stat + SP_Stat + 15 + 5) * Nature_Mult)")
         lines.append("  • In-Memory DuckDB Registry (`VGCDataRegistry`):")
         lines.append("      - Mechanistic base data queried dynamically from `pokedex` and `moves` views.")
         lines.append("      - Regional tournament usage weights queried from `tournament_team_slots` and `tournament_usage`.")
@@ -329,7 +336,7 @@ class BayesianTurnAdvice:
         lines.append("      - Accuracy: Move-specific accuracy scaled by stage ratios max(3, 3+b)/max(3, 3-b).")
         lines.append("      - Cartridge Critical Hits: Stage 0 (1/24 ~ 4.17%), Stage 1 (12.5%), Stage 2 (50.0%), Stage 3 (100.0%).")
         lines.append("      - 16 Cartridge Damage Rolls: Discrete uniform draw from {85, 86, ..., 100} / 100.0.")
-        lines.append("      - Multi-Hit Counts: Standard (35% 2, 35% 3, 15% 4, 15% 5) vs Loaded Dice (50% 4, 50% 5).")
+        lines.append("      - Multi-Hit Counts: Standard (35% 2, 35% 3, 15% 4, 15% 5) vs Skill Link (100% 5 hits).")
         lines.append("      - Mechanics: Focus Sash 1-HP clamp, Beat Up + Justified boost, recoil, Life Orb, secondary status.")
         lines.append("-" * 100)
 
@@ -428,6 +435,8 @@ class CoachTurnAdvisor:
         risk_aversion_lambda: float = 0.25,
         rationality_beta: float = 4.0,
     ) -> None:
+        self.backend = backend
+        self.risk_aversion_lambda = float(risk_aversion_lambda)
         self.state_compiler = TurnStateCompiler()
         self.inferencer = OpponentSetInferencer(repo=self.state_compiler.repo)
         self.tensor_compiler = ShowdownTensorCompiler(
@@ -441,6 +450,32 @@ class CoachTurnAdvisor:
             risk_aversion_lambda=risk_aversion_lambda,
         )
         self.rationality_beta = float(rationality_beta)
+
+    def _cleanup_cuda_cache(self) -> None:
+        """Release unoccupied cached PyTorch CUDA memory if running on torch backend."""
+        if self.backend == "torch":
+            try:
+                import torch
+
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            except Exception:
+                pass
+
+    def _switch_to_numpy_fallback(self) -> None:
+        """Switch compiler and state machine to CPU numpy backend after a CUDA OOM event."""
+        self._cleanup_cuda_cache()
+        self.backend = "numpy"
+        self.tensor_compiler = ShowdownTensorCompiler(
+            registry=self.state_compiler.registry,
+            backend="numpy",
+            device=None,
+        )
+        self.state_machine = VgcTensorStateMachine(
+            backend="numpy",
+            device=None,
+            risk_aversion_lambda=self.risk_aversion_lambda,
+        )
 
     def generate_opponent_hypotheses(
         self,
@@ -536,13 +571,29 @@ class CoachTurnAdvisor:
         top_k_recommendations: int = 10,
     ) -> BayesianTurnAdvice:
         """Run single-state discrete-RNG simulation and equilibrium solving on a `TurnState`."""
-        compiled = self.tensor_compiler.compile_turn_state(turn_state)
-        mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
-            compiled_state=compiled,
-            num_simulations=num_simulations,
-            min_prior_threshold=min_prior_threshold,
-            rng_seed=rng_seed,
-        )
+        try:
+            compiled = self.tensor_compiler.compile_turn_state(turn_state)
+            mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
+                compiled_state=compiled,
+                num_simulations=num_simulations,
+                min_prior_threshold=min_prior_threshold,
+                rng_seed=rng_seed,
+            )
+        except RuntimeError as exc:
+            if "out of memory" in str(exc).lower() and self.backend == "torch":
+                self._switch_to_numpy_fallback()
+                compiled = self.tensor_compiler.compile_turn_state(turn_state)
+                mask_t1, mask_t2, step_res = self.state_machine.simulate_pruned_turn(
+                    compiled_state=compiled,
+                    num_simulations=num_simulations,
+                    min_prior_threshold=min_prior_threshold,
+                    rng_seed=rng_seed,
+                )
+            else:
+                raise
+        finally:
+            self._cleanup_cuda_cache()
+
         eq_res = solve_turn_equilibrium(
             compiled_state=compiled,
             mask_trainer_1=mask_t1,
@@ -597,45 +648,103 @@ class CoachTurnAdvisor:
                 top_k_recommendations=top_k_recommendations,
             )
 
-        # Compile first hypothesis to establish canonical trainer_1 pruned action space
-        first_ts, _, _ = hypotheses[0]
-        first_compiled = self.tensor_compiler.compile_turn_state(first_ts)
-        canon_mask_t1 = self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
-            first_compiled, trainer_id="trainer_1", min_prior_threshold=min_prior_threshold
+        # Compile all hypotheses and take the UNION of trainer_1 legal actions across all M hypotheses
+        compiled_list: List[CompiledBattleState] = []
+        t1_masks_list: List[PrunedSideActionTensorMask] = []
+        for ts_m, _, _ in hypotheses:
+            comp_m = self.tensor_compiler.compile_turn_state(ts_m)
+            compiled_list.append(comp_m)
+            t1_masks_list.append(
+                self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
+                    comp_m, trainer_id="trainer_1", min_prior_threshold=min_prior_threshold
+                )
+            )
+
+        first_compiled = compiled_list[0]
+        union_valid_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.valid_mask_26x26), dtype=np.float32) for m in t1_masks_list]
         )
-        t1_choices_np = np.asarray(_to_numpy(canon_mask_t1.pruned_choices), dtype=np.int64)
+        union_prior_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.prior_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        union_risk_26x26 = np.minimum.reduce(
+            [np.asarray(_to_numpy(m.risk_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        union_upside_26x26 = np.maximum.reduce(
+            [np.asarray(_to_numpy(m.upside_matrix_26x26), dtype=np.float32) for m in t1_masks_list]
+        )
+        t1_choices_np = np.argwhere(union_valid_26x26 > 0.5).astype(np.int64)
+        if t1_choices_np.shape[0] == 0:
+            t1_choices_np = np.asarray(_to_numpy(t1_masks_list[0].pruned_choices), dtype=np.int64)
         B1 = int(t1_choices_np.shape[0])
 
+        if first_compiled.backend == "torch":
+            import torch
+
+            dev = first_compiled.roster_tensor.device
+            canon_mask_t1 = PrunedSideActionTensorMask(
+                trainer_id="trainer_1",
+                valid_mask_26x26=torch.from_numpy(union_valid_26x26).to(dev),
+                prior_matrix_26x26=torch.from_numpy(union_prior_26x26).to(dev),
+                risk_matrix_26x26=torch.from_numpy(union_risk_26x26).to(dev),
+                upside_matrix_26x26=torch.from_numpy(union_upside_26x26).to(dev),
+                pruned_choices=torch.from_numpy(t1_choices_np).to(dev),
+            )
+        else:
+            canon_mask_t1 = PrunedSideActionTensorMask(
+                trainer_id="trainer_1",
+                valid_mask_26x26=union_valid_26x26,
+                prior_matrix_26x26=union_prior_26x26,
+                risk_matrix_26x26=union_risk_26x26,
+                upside_matrix_26x26=union_upside_26x26,
+                pruned_choices=t1_choices_np,
+            )
+
         # Accumulators across M hypotheses for each trainer_1 action i in 0..B1-1
-        agg_nash_prob = np.zeros(B1, dtype=np.float64)
         agg_qre_prob = np.zeros(B1, dtype=np.float64)
-        agg_risk_nash = np.zeros(B1, dtype=np.float64)
         agg_risk_qre = np.zeros(B1, dtype=np.float64)
-        agg_mean_nash = np.zeros(B1, dtype=np.float64)
-        agg_cvar_nash = np.zeros(B1, dtype=np.float64)
-        agg_win_nash = np.zeros(B1, dtype=np.float64)
-        agg_faint_slots = np.zeros((B1, 8), dtype=np.float64)
 
         worst_counter_val = np.full(B1, np.inf, dtype=np.float64)
         worst_counter_desc = ["" for _ in range(B1)]
         survived_any_ieds = np.zeros(B1, dtype=bool)
 
         eval_list: List[OpponentHypothesisEvaluation] = []
+        u_risk_mats: List[np.ndarray] = []
+        u_mean_mats: List[np.ndarray] = []
+        u_cvar_mats: List[np.ndarray] = []
+        u_win_mats: List[np.ndarray] = []
+        faint_mats: List[np.ndarray] = []
+        weights_list: List[float] = []
 
         for m_idx, (ts_m, weight_m, label_m) in enumerate(hypotheses):
-            comp_m = self.tensor_compiler.compile_turn_state(ts_m)
+            comp_m = compiled_list[m_idx]
             mask_t2_m = self.state_machine.logic_engine.prune_side_26x26_tensor_actions(
                 comp_m, trainer_id="trainer_2", min_prior_threshold=min_prior_threshold
             )
-            step_m = self.state_machine.step(
-                F=comp_m.field_tensor,
-                P=comp_m.roster_tensor,
-                M_moves=comp_m.moves_tensor,
-                trainer_1_choices=canon_mask_t1.pruned_choices,
-                trainer_2_choices=mask_t2_m.pruned_choices,
-                num_mc_samples=num_simulations,
-                rng_seed=rng_seed + m_idx * 1009,
-            )
+            try:
+                step_m = self.state_machine.step(
+                    F=comp_m.field_tensor,
+                    P=comp_m.roster_tensor,
+                    M_moves=comp_m.moves_tensor,
+                    trainer_1_choices=canon_mask_t1.pruned_choices,
+                    trainer_2_choices=mask_t2_m.pruned_choices,
+                    num_mc_samples=num_simulations,
+                    rng_seed=rng_seed + m_idx * 1009,
+                )
+            except RuntimeError as exc:
+                if "out of memory" in str(exc).lower() and self.backend == "torch":
+                    self._switch_to_numpy_fallback()
+                    return self.advise_battle(
+                        battle=battle,
+                        max_hypotheses=max_hypotheses,
+                        num_simulations=num_simulations,
+                        min_prior_threshold=min_prior_threshold,
+                        rng_seed=rng_seed,
+                        top_k_recommendations=top_k_recommendations,
+                    )
+                raise
+            finally:
+                self._cleanup_cuda_cache()
             eq_m = solve_turn_equilibrium(
                 compiled_state=comp_m,
                 mask_trainer_1=canon_mask_t1,
@@ -658,37 +767,53 @@ class CoachTurnAdvisor:
                 )
             )
 
-            # Map eq_m recommendations back by action_index i
+            u_risk_mats.append(np.asarray(_to_numpy(step_m.stats.risk_adjusted_utility), dtype=np.float64))
+            u_mean_mats.append(np.asarray(_to_numpy(step_m.stats.mean_utility), dtype=np.float64))
+            u_cvar_mats.append(np.asarray(_to_numpy(step_m.stats.cvar_10_utility), dtype=np.float64))
+            u_win_mats.append(np.asarray(_to_numpy(step_m.stats.win_turn_prob), dtype=np.float64))
+            faint_mats.append(np.asarray(_to_numpy(step_m.faint_prob), dtype=np.float64))
+            weights_list.append(float(weight_m))
+
             for rec in eq_m.recommendations:
                 i = rec.action_index
-                agg_nash_prob[i] += weight_m * rec.nash_probability
                 agg_qre_prob[i] += weight_m * rec.qre_probability
-                agg_risk_nash[i] += weight_m * rec.expected_risk_utility_vs_nash
                 agg_risk_qre[i] += weight_m * rec.expected_risk_utility_vs_qre
-                agg_mean_nash[i] += weight_m * rec.expected_mean_utility_vs_nash
-                agg_cvar_nash[i] += weight_m * rec.expected_cvar_10_vs_nash
-                agg_win_nash[i] += weight_m * rec.win_turn_prob_vs_nash
                 if rec.survived_ieds:
                     survived_any_ieds[i] = True
                 if rec.worst_case_counter_utility < worst_counter_val[i]:
                     worst_counter_val[i] = rec.worst_case_counter_utility
                     worst_counter_desc[i] = f"[H{m_idx + 1}] {rec.worst_case_counter_description}"
 
-            q_nash_m = eq_m.nash.trainer_2_strategy
-            faint_m = np.asarray(_to_numpy(step_m.faint_prob), dtype=np.float64)  # [B1, B2_m, 8]
-            agg_faint_slots += weight_m * np.einsum("j,ijs->is", q_nash_m, faint_m)
+        # Solve true Incomplete-Information Bayesian Zero-Sum Equilibrium across all M hypotheses
+        p_bayesian_nash, q_bayesian_list, _ = solve_bayesian_zero_sum_nash(
+            u_risk_mats, weights_list
+        )
 
-        # Build blended ActionRecommendation list
+        agg_risk_nash = np.zeros(B1, dtype=np.float64)
+        agg_mean_nash = np.zeros(B1, dtype=np.float64)
+        agg_cvar_nash = np.zeros(B1, dtype=np.float64)
+        agg_win_nash = np.zeros(B1, dtype=np.float64)
+        agg_faint_slots = np.zeros((B1, 8), dtype=np.float64)
+
+        for m_idx, weight_m in enumerate(weights_list):
+            q_m = q_bayesian_list[m_idx]
+            agg_risk_nash += weight_m * (u_risk_mats[m_idx] @ q_m)
+            agg_mean_nash += weight_m * (u_mean_mats[m_idx] @ q_m)
+            agg_cvar_nash += weight_m * (u_cvar_mats[m_idx] @ q_m)
+            agg_win_nash += weight_m * (u_win_mats[m_idx] @ q_m)
+            agg_faint_slots += weight_m * np.einsum("j,ijs->is", q_m, faint_mats[m_idx])
+
+        # Build blended ActionRecommendation list ranked by Bayesian Risk-Adjusted Utility
         blended_recs: List[ActionRecommendation] = []
         for i in range(B1):
             pair_i = (int(t1_choices_np[i, 0]), int(t1_choices_np[i, 1]))
             desc_i = decode_joint_action(first_compiled, "trainer_1", pair_i)
+            p_n = float(p_bayesian_nash[i])
             comp_score = (
-                0.55 * float(agg_risk_nash[i])
-                + 0.30 * float(agg_risk_qre[i])
-                + 0.15 * float(worst_counter_val[i])
-                + 0.25 * float(agg_nash_prob[i])
-                + (0.05 if survived_any_ieds[i] else -0.25)
+                float(agg_risk_nash[i])
+                + 1e-3 * p_n
+                + 1e-4 * float(agg_risk_qre[i])
+                + 1e-5 * float(worst_counter_val[i])
             )
             blended_recs.append(
                 ActionRecommendation(
@@ -696,7 +821,7 @@ class CoachTurnAdvisor:
                     choice_pair=pair_i,
                     description=desc_i,
                     survived_ieds=bool(survived_any_ieds[i]),
-                    nash_probability=float(agg_nash_prob[i]),
+                    nash_probability=p_n,
                     qre_probability=float(agg_qre_prob[i]),
                     expected_risk_utility_vs_nash=float(agg_risk_nash[i]),
                     expected_risk_utility_vs_qre=float(agg_risk_qre[i]),

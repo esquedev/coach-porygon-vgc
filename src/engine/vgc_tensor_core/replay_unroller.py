@@ -9,8 +9,8 @@ and reconstructs Showdown wire protocol lines on CPU using `trainer_1` and `trai
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 
 from .schema_and_tables import (
@@ -40,13 +40,34 @@ class ReplayTurnExpectation:
     """Expected bounds and outcomes for a replayed VGC turn."""
 
     turn: int
-    trainer_1_choices: Tuple[int, int]
-    trainer_2_choices: Tuple[int, int]
-    expected_damages: Dict[str, Tuple[float, float]]  # e.g. {'trainer_2_b': (10.0, 20.0)}
-    expected_flinches: List[str]                      # e.g. ['trainer_2_b']
+    trainer_1_choices: Tuple[int, int] = (0, 0)
+    trainer_2_choices: Tuple[int, int] = (0, 0)
+    expected_damages: Dict[str, Tuple[float, float]] = field(default_factory=dict)
+    expected_flinches: List[str] = field(default_factory=list)
     expected_terrains: Optional[str] = None
     expected_weathers: Optional[str] = None
     expected_faints: Optional[List[str]] = None
+
+    def __init__(
+        self,
+        turn: int,
+        trainer_1_choices: Optional[Tuple[int, int]] = None,
+        trainer_2_choices: Optional[Tuple[int, int]] = None,
+        expected_damages: Optional[Dict[str, Tuple[float, float]]] = None,
+        expected_flinches: Optional[List[str]] = None,
+        expected_terrains: Optional[str] = None,
+        expected_weathers: Optional[str] = None,
+        expected_faints: Optional[List[str]] = None,
+        **kwargs: Any,
+    ) -> None:
+        self.turn = turn
+        self.trainer_1_choices = tuple(trainer_1_choices if trainer_1_choices is not None else (0, 0))
+        self.trainer_2_choices = tuple(trainer_2_choices if trainer_2_choices is not None else (0, 0))
+        self.expected_damages = expected_damages or {}
+        self.expected_flinches = expected_flinches or []
+        self.expected_terrains = expected_terrains
+        self.expected_weathers = expected_weathers
+        self.expected_faints = expected_faints
 
 
 class ShowdownReplayUnroller:

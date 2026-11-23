@@ -245,7 +245,7 @@ class IEDSResult:
 def run_iterated_dominance_elimination(
     payoff_matrix: Any,
     dominance_Margin_eps: float = 0.0,
-    eliminate_weakly_dominated: bool = True,
+    eliminate_weakly_dominated: bool = False,
     max_rounds: int = 32,
 ) -> IEDSResult:
     """Perform Iterated Elimination of Strictly/Weakly Dominated Strategies (IEDS).
@@ -559,11 +559,16 @@ def solve_zero_sum_nash(
     B1, B2 = U.shape
     row_mins = np.min(U, axis=1)  # [B1]
     col_maxs = np.max(U, axis=0)  # [B2]
+    row_means = np.mean(U, axis=1)
+    col_means = np.mean(U, axis=0)
 
-    maximin_idx = int(np.argmax(row_mins))
-    minimax_idx = int(np.argmin(col_maxs))
-    pure_maximin_val = float(row_mins[maximin_idx])
-    pure_minimax_val = float(col_maxs[minimax_idx])
+    pure_maximin_val = float(np.max(row_mins))
+    pure_minimax_val = float(np.min(col_maxs))
+    # Break saddle-point ties deterministically by secondary average row/col payoff instead of index 0
+    maximin_candidates = np.where(row_mins >= pure_maximin_val - 1e-7)[0]
+    maximin_idx = int(maximin_candidates[int(np.argmax(row_means[maximin_candidates]))])
+    minimax_candidates = np.where(col_maxs <= pure_minimax_val + 1e-7)[0]
+    minimax_idx = int(minimax_candidates[int(np.argmin(col_means[minimax_candidates]))])
 
     # 1. Fast Path: Pure-Strategy Saddle Point exists when max_i min_j U == min_j max_i U
     if abs(pure_minimax_val - pure_maximin_val) <= 1e-7:
@@ -630,6 +635,134 @@ def solve_zero_sum_nash(
         exploitability_gap=gap,
         solver_used=solver_name,
     )
+
+
+def solve_bayesian_zero_sum_nash(
+    payoff_matrices: Sequence[np.ndarray],
+    weights: Sequence[float],
+    rm_iterations: int = 2500,
+) -> Tuple[np.ndarray, List[np.ndarray], float]:
+    """Solve the Incomplete-Information Bayesian Zero-Sum Game across `M` opponent hypotheses.
+
+    `trainer_1` chooses a single mixed strategy $p \\in \\Delta_{B_1}$ without knowing which
+    hypothesis $m \\in \\{0, \\dots, M-1\\}$ holds, while `trainer_2` of type $m$ knows $m$ and
+    chooses a type-contingent strategy $q^{(m)} \\in \\Delta_{B_{2, m}}$:
+    $$\\max_{p \\in \\Delta_{B_1}} \\sum_{m=1}^M w_m \\min_{q^{(m)} \\in \\Delta_{B_{2,m}}} p^\\top U^{(m)} q^{(m)}$$
+
+    Returns:
+        `(p_star, q_stars_by_m, bayesian_game_value)`
+    """
+    M = len(payoff_matrices)
+    if M == 0:
+        raise ValueError("payoff_matrices must be non-empty.")
+    mats = [np.asarray(_to_numpy(u), dtype=np.float64) for u in payoff_matrices]
+    w_arr = np.asarray(weights, dtype=np.float64)
+    w_arr = w_arr / max(1e-12, float(np.sum(w_arr)))
+    B1 = mats[0].shape[0]
+    b2_sizes = [m.shape[1] for m in mats]
+    total_b2 = sum(b2_sizes)
+
+    if HAS_SCIPY and _scipy_linprog is not None:
+        # Primal LP: variables x = [p_0, ..., p_{B1-1}, v_0, ..., v_{M-1}] (length B1 + M)
+        # Maximize sum_m w_m v_m  <=>  Minimize -sum_m w_m v_m
+        # Subject to: -sum_i p_i U^{(m)}_{i, j} + v_m <= 0  for all m, j
+        c_obj = np.zeros(B1 + M, dtype=np.float64)
+        c_obj[B1:] = -w_arr
+
+        A_ub_rows = []
+        for m_idx, U_m in enumerate(mats):
+            C_m = U_m.shape[1]
+            v_cols = np.zeros((C_m, M), dtype=np.float64)
+            v_cols[:, m_idx] = 1.0
+            A_ub_rows.append(np.hstack([-U_m.T, v_cols]))
+        A_ub = np.vstack(A_ub_rows)
+        b_ub = np.zeros(total_b2, dtype=np.float64)
+
+        A_eq = np.zeros((1, B1 + M), dtype=np.float64)
+        A_eq[0, :B1] = 1.0
+        b_eq = np.array([1.0], dtype=np.float64)
+        bounds = [(0.0, 1.0) for _ in range(B1)] + [(None, None) for _ in range(M)]
+
+        res_p = _scipy_linprog(
+            c=c_obj, A_ub=A_ub, b_ub=b_ub, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method="highs"
+        )
+
+        # Dual LP: variables y = [q^{(0)}_0.., ..., q^{(M-1)}.., u] (length total_b2 + 1)
+        # Minimize u subject to: sum_m w_m sum_j U^{(m)}_{i,j} q^{(m)}_j - u <= 0 for all i
+        # and sum_j q^{(m)}_j = 1 for each m
+        c_dual = np.zeros(total_b2 + 1, dtype=np.float64)
+        c_dual[-1] = 1.0
+        weighted_U = np.hstack([w_arr[m_idx] * mats[m_idx] for m_idx in range(M)])  # [B1, total_b2]
+        A_ub_d = np.hstack([weighted_U, -np.ones((B1, 1), dtype=np.float64)])
+        b_ub_d = np.zeros(B1, dtype=np.float64)
+
+        A_eq_d = np.zeros((M, total_b2 + 1), dtype=np.float64)
+        offset = 0
+        for m_idx, C_m in enumerate(b2_sizes):
+            A_eq_d[m_idx, offset : offset + C_m] = 1.0
+            offset += C_m
+        b_eq_d = np.ones(M, dtype=np.float64)
+        bounds_d = [(0.0, 1.0) for _ in range(total_b2)] + [(None, None)]
+
+        res_q = _scipy_linprog(
+            c=c_dual, A_ub=A_ub_d, b_ub=b_ub_d, A_eq=A_eq_d, b_eq=b_eq_d, bounds=bounds_d, method="highs"
+        )
+
+        if res_p.success and res_p.x is not None and res_q.success and res_q.x is not None:
+            p_star = np.clip(res_p.x[:B1], 0.0, 1.0)
+            p_star = np.where(p_star < 1e-6, 0.0, p_star)
+            p_star /= max(1e-15, float(np.sum(p_star)))
+
+            q_stars: List[np.ndarray] = []
+            offset = 0
+            for m_idx, C_m in enumerate(b2_sizes):
+                q_m = np.clip(res_q.x[offset : offset + C_m], 0.0, 1.0)
+                q_m = np.where(q_m < 1e-6, 0.0, q_m)
+                q_m /= max(1e-15, float(np.sum(q_m)))
+                q_stars.append(q_m)
+                offset += C_m
+
+            val = float(sum(w_arr[m_idx] * float(p_star @ mats[m_idx] @ q_stars[m_idx]) for m_idx in range(M)))
+            return p_star, q_stars, val
+
+    # Regret-Matching+ fallback for Bayesian Zero-Sum game
+    regret_r = np.zeros(B1, dtype=np.float64)
+    regret_c_list = [np.zeros(C_m, dtype=np.float64) for C_m in b2_sizes]
+    p_sum = np.zeros(B1, dtype=np.float64)
+    q_sum_list = [np.zeros(C_m, dtype=np.float64) for C_m in b2_sizes]
+
+    p = np.full(B1, 1.0 / float(B1), dtype=np.float64)
+    q_list = [np.full(C_m, 1.0 / float(C_m), dtype=np.float64) for C_m in b2_sizes]
+
+    for t in range(1, rm_iterations + 1):
+        u_r = np.zeros(B1, dtype=np.float64)
+        for m_idx in range(M):
+            u_r += w_arr[m_idx] * (mats[m_idx] @ q_list[m_idx])
+        ev_r = float(np.dot(p, u_r))
+        regret_r = np.maximum(0.0, regret_r + (u_r - ev_r))
+        s_r = float(np.sum(regret_r))
+        p = regret_r / s_r if s_r > 1e-15 else np.full(B1, 1.0 / float(B1), dtype=np.float64)
+
+        weight = float(t)
+        p_sum += weight * p
+
+        for m_idx in range(M):
+            C_m = b2_sizes[m_idx]
+            u_c = p @ mats[m_idx]
+            ev_c = float(np.dot(u_c, q_list[m_idx]))
+            regret_c_list[m_idx] = np.maximum(0.0, regret_c_list[m_idx] + (ev_c - u_c))
+            s_c = float(np.sum(regret_c_list[m_idx]))
+            q_list[m_idx] = (
+                regret_c_list[m_idx] / s_c
+                if s_c > 1e-15
+                else np.full(C_m, 1.0 / float(C_m), dtype=np.float64)
+            )
+            q_sum_list[m_idx] += weight * q_list[m_idx]
+
+    p_star = p_sum / max(1e-15, float(np.sum(p_sum)))
+    q_stars = [qs / max(1e-15, float(np.sum(qs))) for qs in q_sum_list]
+    val = float(sum(w_arr[m_idx] * float(p_star @ mats[m_idx] @ q_stars[m_idx]) for m_idx in range(M)))
+    return p_star, q_stars, val
 
 
 # =============================================================================
@@ -765,7 +898,7 @@ def solve_turn_equilibrium(
     mask_trainer_2: PrunedSideActionTensorMask,
     step_result: StepResult,
     rationality_beta: float = 4.0,
-    eliminate_weakly_dominated: bool = True,
+    eliminate_weakly_dominated: bool = False,
     top_k: int = 10,
 ) -> TurnEquilibriumResult:
     """Run IEDS + Zero-Sum Nash + Logit QRE on a simulated turn's risk-adjusted payoff matrix.
@@ -826,15 +959,12 @@ def solve_turn_equilibrium(
         p_n = float(nash_res.trainer_1_strategy[i])
         p_q = float(qre_res.trainer_1_strategy[i])
 
-        # Composite ranking score:
-        # 55% Expected Risk-Adjusted Utility vs Nash + 30% Expected Risk-Adjusted Utility vs QRE
-        # + 15% Worst-Case Security Floor + bonus for surviving IEDS and Nash support
+        # Rank directly by game-theoretic Risk-Adjusted Utility vs Nash (with deterministic tie-breaking)
         comp = (
-            0.55 * float(ev_risk_nash[i])
-            + 0.30 * float(ev_risk_qre[i])
-            + 0.15 * worst_val
-            + 0.25 * p_n
-            + (0.05 if survived else -0.25)
+            float(ev_risk_nash[i])
+            + 1e-3 * p_n
+            + 1e-4 * float(ev_risk_qre[i])
+            + 1e-5 * worst_val
         )
 
         recommendations.append(

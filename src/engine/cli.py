@@ -62,6 +62,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="Your Pokémon Showdown username (POV trainer). If omitted, inferred automatically.",
     )
     parser.add_argument(
+        "--turn",
+        "-t",
+        type=int,
+        default=None,
+        help="Evaluate board state at the start of turn N. If omitted on a completed log, automatically rewinds to the final playable turn.",
+    )
+    parser.add_argument(
         "--sims",
         "-s",
         type=int,
@@ -99,15 +106,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--min-prior",
         type=float,
-        default=0.60,
-        help="Pruning threshold for 26x26 action matrix (0.0 keeps all legal actions).",
+        default=0.0,
+        help="Pruning threshold for 26x26 action matrix (locked to 0.0 to keep all legal actions).",
     )
     parser.add_argument(
         "--verbosity",
         "-v",
         choices=["coach", "standard", "scientific"],
         default="coach",
-        help="Detail level for explanation output: 'coach' (plain English, non-nerd), 'standard' (tactical breakdown), or 'scientific' (full mathematical & process audit).",
+        help="Detail level for explanation output: 'coach' (plain VGC language), 'standard' (tactical breakdown), or 'scientific' (full mathematical & process audit).",
+    )
+    parser.add_argument(
+        "--lang",
+        choices=["es", "en"],
+        default="es",
+        help="Output language for terminology and advisory report ('es' or 'en').",
+    )
+    parser.add_argument(
+        "--style",
+        choices=["vgc", "scientific"],
+        default=None,
+        help="Terminology style override: 'vgc' (player-friendly VGC labels) or 'scientific' (explicit mathematical variable names).",
     )
     parser.add_argument(
         "--backend",
@@ -143,7 +162,21 @@ def main(argv: Optional[list[str]] = None) -> int:
         chat_log,
         pov_trainer=args.pov,
         user_team_paste=team_paste,
+        max_turn=args.turn,
     )
+
+    if args.turn is None and battle.turns_played >= 1 and (
+        battle.winner is not None
+        or not battle.trainer_1.active_slots
+        or not battle.trainer_2.active_slots
+    ):
+        rewind_turn = battle.turns_played
+        battle = parse_showdown_chat_log(
+            chat_log,
+            pov_trainer=args.pov,
+            user_team_paste=team_paste,
+            max_turn=rewind_turn,
+        )
 
     advisor = CoachTurnAdvisor(
         backend=args.backend,
@@ -155,13 +188,16 @@ def main(argv: Optional[list[str]] = None) -> int:
         battle=battle,
         max_hypotheses=args.hypotheses,
         num_simulations=args.sims,
-        min_prior_threshold=args.min_prior,
+        min_prior_threshold=0.0,
         top_k_recommendations=args.top_k,
     )
 
+    eff_verbosity = "scientific" if args.style == "scientific" else args.verbosity
     report_text = advice.format_report(
-        verbosity=args.verbosity,
+        verbosity=eff_verbosity,
         max_recommendations=args.top_k,
+        lang=args.lang,
+        style=args.style,
     )
     print(report_text)
 

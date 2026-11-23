@@ -10,6 +10,7 @@ Champions-only JSON snapshots to engine/data/showdown/.
 
 from __future__ import annotations
 
+import argparse
 import ast
 import json
 from pathlib import Path
@@ -25,14 +26,43 @@ RAW_CACHE_DIR = OUTPUT_DIR / "raw_ts"
 MOD_URL_BASE = "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/mods/champions"
 BASE_URL_BASE = "https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data"
 
+BANNED_NONSTANDARD = (
+    "Past",
+    "Future",
+    "Unobtainable",
+    "Custom",
+    "Gmax",
+    "Gigantamax",
+    "LGPE",
+    "CAP",
+    "Legends",
+)
+BANNED_TIERS = ("Illegal", "Unreleased")
+BANNED_CONDITIONS = frozenset(
+    {
+        "dynamax",
+        "commanded",
+        "commanding",
+        "arceus",
+        "silvally",
+        "zacian",
+        "zamazenta",
+        "primordialsea",
+        "desolateland",
+        "deltastream",
+        "hail",
+    }
+)
+LEGACY_MOVE_FIELDS = ("zMove", "maxMove")
+
 
 # ==============================================================================
 # 1. NETWORK & CACHING
 # ==============================================================================
 
-def fetch_ts(url: str, cache_file: Path) -> str:
-    """Download a .ts file or read from local cache if already present."""
-    if cache_file.exists():
+def fetch_ts(url: str, cache_file: Path, refresh: bool = False) -> str:
+    """Download a .ts file or read from local cache unless `refresh=True`."""
+    if not refresh and cache_file.exists():
         return cache_file.read_text(encoding="utf-8")
 
     req = urllib.request.Request(url, headers={"User-Agent": "Coach-Porygon-VGC/2.0"})
@@ -70,8 +100,11 @@ def parse_showdown_table(raw_text: str) -> Dict[str, Any]:
 
     entry_start_pattern = re.compile(r"^\t([a-zA-Z0-9_$]+):\s*\{")
     entry_end_pattern = re.compile(r"^\t\},?")
-    method_pattern = re.compile(r"^\t\t(?:(?:async|get|set)\s+)?([a-zA-Z0-9_$]+)\s*\(")
-    prop_func_pattern = re.compile(r"^\t\t[a-zA-Z0-9_$]+\s*:\s*(?:async\s*)?(?:function\b|\(?[a-zA-Z0-9_$,\s]*\)?\s*=>)")
+    method_pattern = re.compile(r"^(\t{2,})(?:(?:async|get|set)\s+)?([a-zA-Z0-9_$]+)\s*\(")
+    prop_func_pattern = re.compile(
+        r"^(\t{2,})[a-zA-Z0-9_$]+\s*:\s*(?:async\s*)?(?:function\b|\(?[a-zA-Z0-9_$,\s]*\)?\s*=>)"
+    )
+    complex_block_pattern = re.compile(r"^(\t{2,})(?:condition|eventMethods)\s*:\s*\{")
 
     def parse_entry_block(raw_id: str, prop_lines: list[str]) -> None:
         if not prop_lines:
@@ -140,17 +173,21 @@ def parse_showdown_table(raw_text: str) -> Dict[str, Any]:
                 in_skipped_block = False
             continue
 
-        # Detect callbacks, functions, or complex condition blocks to skip
-        if method_pattern.match(line) or prop_func_pattern.match(line):
-            if line.rstrip().endswith("{"):
+        # Detect callbacks, functions, or complex condition blocks at ANY indent depth >= 2 tabs
+        stripped_no_comment = re.sub(r"//.*$", "", line).rstrip()
+        m_method = method_pattern.match(line) or prop_func_pattern.match(line)
+        if m_method:
+            if stripped_no_comment.endswith("{"):
                 in_skipped_block = True
-                skip_indent = 2
+                skip_indent = len(m_method.group(1))
             continue
 
-        # Skip complex multi-line condition/event dictionaries
-        if re.match(r"^\t\t(?:condition|eventMethods)\s*:\s*\{", line):
-            in_skipped_block = True
-            skip_indent = 2
+        # Skip complex multi-line condition/event dictionaries at any indent depth >= 2 tabs
+        m_complex = complex_block_pattern.match(line)
+        if m_complex:
+            if stripped_no_comment.endswith("{"):
+                in_skipped_block = True
+                skip_indent = len(m_complex.group(1))
             continue
 
         # Keep valid 2-tab data lines
@@ -225,23 +262,40 @@ def apply_mod_overlay(base_dict: Dict[str, Any], mod_dict: Dict[str, Any]) -> Di
 # 5. PIPELINE ORCHESTRATION
 # ==============================================================================
 
-def run_pipeline() -> None:
+def _write_jsonl(data: Dict[str, Any], target_path: Path, key_field: str = "id") -> int:
+    """Serialize a keyed Showdown dictionary directly into UTF-8 NDJSON (`.jsonl`)."""
+    count = 0
+    with open(target_path, "w", encoding="utf-8") as out:
+        for key, val in data.items():
+            if isinstance(val, dict):
+                row = dict(val)
+                if key_field not in row:
+                    row[key_field] = key
+            else:
+                row = {key_field: key, "value": val}
+            out.write(json.dumps(row, ensure_ascii=False) + "\n")
+            count += 1
+    return count
+
+
+def run_pipeline(refresh: bool = False) -> None:
     print("======================================================================")
     print("=== Coach Porygon: Ingesting & Pruning Champions Mod Dataset ===")
+    print(f"=== Cache Mode: {'REFRESH (download fresh .ts)' if refresh else 'LOCAL CACHE (pass --refresh to re-download)'} ===")
     print("======================================================================")
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     RAW_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
     # 1. Pokedex (Static, Base)
     print("[*] Loading pokedex...")
-    base_pokedex_raw = fetch_ts(f"{BASE_URL_BASE}/pokedex.ts", RAW_CACHE_DIR / "base_pokedex.ts")
+    base_pokedex_raw = fetch_ts(f"{BASE_URL_BASE}/pokedex.ts", RAW_CACHE_DIR / "base_pokedex.ts", refresh=refresh)
     base_pokedex = fast_parse_static_ts(base_pokedex_raw)
     print(f"    Base: {len(base_pokedex)} entries")
 
     # 2. Moves (Base + Champions mod overlay via indentation parser)
     print("[*] Loading moves...")
-    base_moves_raw = fetch_ts(f"{BASE_URL_BASE}/moves.ts", RAW_CACHE_DIR / "base_moves.ts")
-    mod_moves_raw = fetch_ts(f"{MOD_URL_BASE}/moves.ts", RAW_CACHE_DIR / "champ_moves.ts")
+    base_moves_raw = fetch_ts(f"{BASE_URL_BASE}/moves.ts", RAW_CACHE_DIR / "base_moves.ts", refresh=refresh)
+    mod_moves_raw = fetch_ts(f"{MOD_URL_BASE}/moves.ts", RAW_CACHE_DIR / "champ_moves.ts", refresh=refresh)
     base_moves = parse_showdown_table(base_moves_raw)
     mod_moves = parse_showdown_table(mod_moves_raw)
     moves = apply_mod_overlay(base_moves, mod_moves)
@@ -249,8 +303,8 @@ def run_pipeline() -> None:
 
     # 3. Abilities (Base + Champions mod overlay)
     print("[*] Loading abilities...")
-    base_ab_raw = fetch_ts(f"{BASE_URL_BASE}/abilities.ts", RAW_CACHE_DIR / "base_abilities.ts")
-    mod_ab_raw = fetch_ts(f"{MOD_URL_BASE}/abilities.ts", RAW_CACHE_DIR / "champ_abilities.ts")
+    base_ab_raw = fetch_ts(f"{BASE_URL_BASE}/abilities.ts", RAW_CACHE_DIR / "base_abilities.ts", refresh=refresh)
+    mod_ab_raw = fetch_ts(f"{MOD_URL_BASE}/abilities.ts", RAW_CACHE_DIR / "champ_abilities.ts", refresh=refresh)
     base_abilities = parse_showdown_table(base_ab_raw)
     mod_abilities = parse_showdown_table(mod_ab_raw)
     abilities = apply_mod_overlay(base_abilities, mod_abilities)
@@ -258,8 +312,8 @@ def run_pipeline() -> None:
 
     # 4. Items (Base + Champions mod overlay)
     print("[*] Loading items...")
-    base_items_raw = fetch_ts(f"{BASE_URL_BASE}/items.ts", RAW_CACHE_DIR / "base_items.ts")
-    mod_items_raw = fetch_ts(f"{MOD_URL_BASE}/items.ts", RAW_CACHE_DIR / "champ_items.ts")
+    base_items_raw = fetch_ts(f"{BASE_URL_BASE}/items.ts", RAW_CACHE_DIR / "base_items.ts", refresh=refresh)
+    mod_items_raw = fetch_ts(f"{MOD_URL_BASE}/items.ts", RAW_CACHE_DIR / "champ_items.ts", refresh=refresh)
     base_items = parse_showdown_table(base_items_raw)
     mod_items = parse_showdown_table(mod_items_raw)
     items = apply_mod_overlay(base_items, mod_items)
@@ -267,8 +321,8 @@ def run_pipeline() -> None:
 
     # 5. Conditions (Base + Champions mod overlay)
     print("[*] Loading conditions...")
-    base_cond_raw = fetch_ts(f"{BASE_URL_BASE}/conditions.ts", RAW_CACHE_DIR / "base_conditions.ts")
-    mod_cond_raw = fetch_ts(f"{MOD_URL_BASE}/conditions.ts", RAW_CACHE_DIR / "champ_conditions.ts")
+    base_cond_raw = fetch_ts(f"{BASE_URL_BASE}/conditions.ts", RAW_CACHE_DIR / "base_conditions.ts", refresh=refresh)
+    mod_cond_raw = fetch_ts(f"{MOD_URL_BASE}/conditions.ts", RAW_CACHE_DIR / "champ_conditions.ts", refresh=refresh)
     base_conditions = parse_showdown_table(base_cond_raw)
     mod_conditions = parse_showdown_table(mod_cond_raw)
     conditions = apply_mod_overlay(base_conditions, mod_conditions)
@@ -276,33 +330,33 @@ def run_pipeline() -> None:
 
     # 6. Formats Data (Static: Champions Mod)
     print("[*] Loading formats-data...")
-    mod_formats_raw = fetch_ts(f"{MOD_URL_BASE}/formats-data.ts", RAW_CACHE_DIR / "champ_formats-data.ts")
+    mod_formats_raw = fetch_ts(f"{MOD_URL_BASE}/formats-data.ts", RAW_CACHE_DIR / "champ_formats-data.ts", refresh=refresh)
     formats_data = fast_parse_static_ts(mod_formats_raw)
     print(f"    Mod: {len(formats_data)} entries")
 
     # 7. Learnsets (Static: Champions Mod)
     print("[*] Loading Champions learnsets...")
-    mod_learnsets_raw = fetch_ts(f"{MOD_URL_BASE}/learnsets.ts", RAW_CACHE_DIR / "champ_learnsets.ts")
+    mod_learnsets_raw = fetch_ts(f"{MOD_URL_BASE}/learnsets.ts", RAW_CACHE_DIR / "champ_learnsets.ts", refresh=refresh)
     learnsets = fast_parse_static_ts(mod_learnsets_raw)
     print(f"    Champions Learnsets: {len(learnsets)} legal species movepools loaded.")
 
-# 8. Legality Pruning
+    # 8. Legality Pruning
     print("\n[*] Pruning non-legal species, past moves, and items...")
-    
+
     # 8a. Build legal roster from formats-data and pokedex
     legal_species_ids: Set[str] = set()
-    
+
     for s_id, f_data in formats_data.items():
         is_nonstandard = f_data.get("isNonstandard")
         tier = f_data.get("tier", "")
         doubles_tier = f_data.get("doublesTier", "")
 
         # Exclude nonstandard, cut, and banned entries
-        if is_nonstandard in ("Past", "Future", "Unobtainable", "Custom", "Gigantamax"):
+        if is_nonstandard in BANNED_NONSTANDARD:
             continue
-        if tier in ("Illegal", "Unreleased") or doubles_tier in ("Illegal", "Unreleased"):
+        if tier in BANNED_TIERS or doubles_tier in BANNED_TIERS:
             continue
-            
+
         legal_species_ids.add(s_id)
 
     # 8b. Add base species for any legal Megas/Forms (so they have learnsets)
@@ -313,9 +367,25 @@ def run_pipeline() -> None:
                 base_id = re.sub(r"[^a-z0-9]", "", str(base_spec).lower())
                 legal_species_ids.add(base_id)
 
+    # 8b2. Include legal sister/battle forms (e.g., Palafin-Hero, Meowstic-F, Maushold-Four,
+    # Mimikyu-Busted, Sinistcha-Masterpiece) that inherit legality from their base species
+    # and are not explicitly banned in formats-data.ts.
+    for s_id in list(legal_species_ids):
+        entry = base_pokedex.get(s_id, {})
+        for other_forme in entry.get("otherFormes") or []:
+            of_id = re.sub(r"[^a-z0-9]", "", str(other_forme).lower())
+            if of_id in legal_species_ids or of_id not in base_pokedex:
+                continue
+            fd = formats_data.get(of_id, {})
+            if fd.get("isNonstandard") in BANNED_NONSTANDARD:
+                continue
+            if fd.get("tier", "") in BANNED_TIERS or fd.get("doublesTier", "") in BANNED_TIERS:
+                continue
+            legal_species_ids.add(of_id)
+
     # 8c. Prune Pokédex
     pruned_pokedex: Dict[str, Any] = {}
-    for s_id in legal_species_ids:
+    for s_id in sorted(legal_species_ids):
         if s_id in base_pokedex:
             pruned_pokedex[s_id] = base_pokedex[s_id]
         else:
@@ -323,42 +393,84 @@ def run_pipeline() -> None:
             if norm_id in base_pokedex:
                 pruned_pokedex[s_id] = base_pokedex[norm_id]
 
-    print(f"    [+] Pokédex: Pruned {len(base_pokedex)} -> {len(pruned_pokedex)} legal Champions species (including Megas/Forms).")
+    print(f"    [+] Pokédex: Pruned {len(base_pokedex)} -> {len(pruned_pokedex)} legal Champions species (including Megas & legal forms).")
 
-    # 8d. Prune Moves
-    pruned_moves = {
-        m_id: m_data
-        for m_id, m_data in moves.items()
-        if m_data.get("isNonstandard") not in ("Past", "Future", "Unobtainable", "Custom")
-    }
-    print(f"    [+] Moves: Pruned {len(moves)} -> {len(pruned_moves)} legal moves.")
+    # 8d. Prune Moves (strip nonstandard Gmax/LGPE/CAP/Past & legacy zMove/maxMove fields)
+    pruned_moves: Dict[str, Any] = {}
+    for m_id, m_data in moves.items():
+        if not isinstance(m_data, dict):
+            continue
+        if m_data.get("isNonstandard") in BANNED_NONSTANDARD:
+            continue
+        cleaned_move = {k: v for k, v in m_data.items() if k not in LEGACY_MOVE_FIELDS}
+        pruned_moves[m_id] = cleaned_move
+    print(f"    [+] Moves: Pruned {len(moves)} -> {len(pruned_moves)} legal Champions moves.")
 
     # 8e. Prune Items
     pruned_items = {
         i_id: i_data
         for i_id, i_data in items.items()
-        if i_data.get("isNonstandard") not in ("Past", "Future", "Unobtainable", "Custom")
+        if isinstance(i_data, dict) and i_data.get("isNonstandard") not in BANNED_NONSTANDARD
     }
-    print(f"    [+] Items: Pruned {len(items)} -> {len(pruned_items)} legal items.")
-    
-    # 9. Output Curated Snapshots
-    print("\n[*] Writing curated Champions JSON files to engine/data/showdown/...")
+    print(f"    [+] Items: Pruned {len(items)} -> {len(pruned_items)} legal Champions items.")
+
+    # 8f. Prune Abilities strictly to legal Regulation M-C Pokédex abilities
+    legal_ability_names: Set[str] = set()
+    for p_data in pruned_pokedex.values():
+        ab_map = p_data.get("abilities")
+        if isinstance(ab_map, dict):
+            for ab_name in ab_map.values():
+                if ab_name:
+                    legal_ability_names.add(str(ab_name).strip().lower())
+    pruned_abilities = {
+        a_id: a_data
+        for a_id, a_data in abilities.items()
+        if isinstance(a_data, dict)
+        and a_data.get("isNonstandard") not in BANNED_NONSTANDARD
+        and str(a_data.get("name") or "").strip().lower() in legal_ability_names
+    }
+    print(f"    [+] Abilities: Pruned {len(abilities)} -> {len(pruned_abilities)} legal Champions dex abilities.")
+
+    # 8g. Prune Conditions (remove Dynamax, Commander, Arceus/Zacian/Zamazenta, Primal Weathers, Hail)
+    pruned_conditions = {
+        c_id: c_data
+        for c_id, c_data in conditions.items()
+        if str(c_id).lower() not in BANNED_CONDITIONS
+    }
+    print(f"    [+] Conditions: Pruned {len(conditions)} -> {len(pruned_conditions)} legal Champions conditions.")
+
+    # 9. Output Curated NDJSON Snapshots directly for DuckDB VGCDataRegistry
+    print("\n[*] Writing curated Champions NDJSON (.jsonl) files to src/engine/data/showdown/...")
     file_map = {
-        "pokedex.json": pruned_pokedex,
-        "moves.json": pruned_moves,
-        "abilities.json": abilities,
-        "items.json": pruned_items,
-        "conditions.json": conditions,
-        "learnsets.json": learnsets,
+        "pokedex.jsonl": pruned_pokedex,
+        "moves.jsonl": pruned_moves,
+        "abilities.jsonl": pruned_abilities,
+        "items.jsonl": pruned_items,
+        "conditions.jsonl": pruned_conditions,
+        "learnsets.jsonl": learnsets,
     }
 
     for filename, data in file_map.items():
         target_path = OUTPUT_DIR / filename
-        target_path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-        print(f"    [✓] Saved {filename} ({len(data)} entries)")
+        count = _write_jsonl(data, target_path, key_field="id")
+        print(f"    [✓] Saved {filename} ({count} rows)")
 
-    print("\n[✓] Pipeline execution finished. Lightweight Champions dataset ready.")
+    print("\n[✓] Pipeline execution finished. Lightweight Champions NDJSON dataset ready.")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Ingest and prune Pokémon Showdown Champions Mod data directly to DuckDB NDJSON (.jsonl)."
+    )
+    parser.add_argument(
+        "--refresh",
+        "-r",
+        action="store_true",
+        help="Re-download fresh .ts source files from smogon/pokemon-showdown instead of using local raw_ts/ cache.",
+    )
+    args = parser.parse_args()
+    run_pipeline(refresh=args.refresh)
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()

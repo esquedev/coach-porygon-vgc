@@ -113,9 +113,9 @@ class TestDynamicTensorCompiler(unittest.TestCase):
         cls.tensor_compiler = ShowdownTensorCompiler()
 
     def test_compile_all_564_duckdb_moves_on_the_fly(self) -> None:
-        """Verify all 564 moves in DuckDB moves.jsonl compile programmatically into 56-float vectors."""
+        """Verify all 515 Regulation M-C moves in DuckDB moves.jsonl compile programmatically into 59-float vectors."""
         all_moves = self.tensor_compiler.compile_all_showdown_moves()
-        self.assertGreaterEqual(len(all_moves), 550)
+        self.assertEqual(len(all_moves), 515)
 
         for name, vec in all_moves.items():
             self.assertEqual(vec.shape, (MOVE_DIM,), f"Move {name} has wrong shape")
@@ -208,7 +208,7 @@ class TestDynamicTensorCompiler(unittest.TestCase):
         self.assertEqual(psy[MoveIdx.OVERRIDE_DEF_STAT], float(OverrideDefStat.TARGET_DEF))
 
     def test_compile_turn_state_and_26x26_action_masks(self) -> None:
-        """Verify compiling TurnState into [24], [8, 84], [8, 4, 56] tensors and 26x26 masks."""
+        """Verify compiling TurnState into [24], [8, 87], [8, 4, 59] tensors and 26x26 masks."""
         sets = parse_showdown_paste(USER_TEAM_PASTE)
         battle = ParsedBattle()
         battle.trainer_1 = ParsedTeam(

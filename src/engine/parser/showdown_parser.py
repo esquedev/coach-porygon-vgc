@@ -32,19 +32,17 @@ DEFAULT_MOVE_PRIORITIES: Dict[str, int] = {
     # +4
     "Protect": 4,
     "Detect": 4,
+    "Endure": 4,
     "Magic Coat": 4,
     "Snatch": 4,
     "King's Shield": 4,
     "Spiky Shield": 4,
     "Baneful Bunker": 4,
-    "Obstruct": 4,
-    "Silk Trap": 4,
-    "Burning Bulwark": 4,
     # +3
     "Fake Out": 3,
     "Quick Guard": 3,
     "Wide Guard": 3,
-    "Crafty Shield": 3,
+    "Upper Hand": 3,
     # +2
     "Extreme Speed": 2,
     "Feint": 2,
@@ -84,29 +82,165 @@ DEFAULT_MOVE_PRIORITIES: Dict[str, int] = {
 }
 
 _CACHED_MOVE_PRIORITIES: Optional[Dict[str, int]] = None
+_CACHED_STATUS_MOVES: Optional[Set[str]] = None
+_CACHED_MEGA_STONES: Optional[Set[str]] = None
+_CACHED_STONE_TO_MEGA: Optional[Dict[str, str]] = None
+_CACHED_BASE_TO_MEGA: Optional[Dict[str, str]] = None
+_CACHED_PIVOT_MOVES: Optional[Set[str]] = None
+_CACHED_PROTECT_MOVES: Optional[Set[str]] = None
+
+
+def _load_duckdb_parser_catalogs() -> Tuple[Dict[str, str], Dict[str, str], Set[str], Set[str]]:
+    """Load Mega Stone mappings, pivot moves, and stalling/protect moves from DuckDB `VGCDataRegistry`."""
+    global _CACHED_STONE_TO_MEGA, _CACHED_BASE_TO_MEGA, _CACHED_PIVOT_MOVES, _CACHED_PROTECT_MOVES
+    if (
+        _CACHED_STONE_TO_MEGA is not None
+        and _CACHED_BASE_TO_MEGA is not None
+        and _CACHED_PIVOT_MOVES is not None
+        and _CACHED_PROTECT_MOVES is not None
+    ):
+        return _CACHED_STONE_TO_MEGA, _CACHED_BASE_TO_MEGA, _CACHED_PIVOT_MOVES, _CACHED_PROTECT_MOVES
+
+    stone_to_mega: Dict[str, str] = {}
+    base_to_mega: Dict[str, str] = {}
+    pivot_moves: Set[str] = {
+        "Baton Pass",
+        "Chilly Reception",
+        "Flip Turn",
+        "Parting Shot",
+        "Revival Blessing",
+        "Shed Tail",
+        "U-turn",
+        "Volt Switch",
+    }
+    protect_moves: Set[str] = {
+        "Baneful Bunker",
+        "Detect",
+        "Endure",
+        "King's Shield",
+        "Protect",
+        "Quick Guard",
+        "Spiky Shield",
+        "Wide Guard",
+    }
+    try:
+        from engine.db_registry import get_registry
+
+        reg = get_registry()
+        for row in reg.query(
+            "SELECT name, baseSpecies, requiredItem FROM pokedex WHERE requiredItem IS NOT NULL;"
+        ):
+            m_name = str(row.get("name") or "").strip()
+            b_name = str(row.get("baseSpecies") or "").strip()
+            r_item = str(row.get("requiredItem") or "").strip()
+            if m_name and r_item:
+                stone_to_mega[r_item.lower()] = m_name
+            if m_name and b_name and b_name.lower() not in base_to_mega:
+                base_to_mega[b_name.lower()] = m_name
+
+        for row in reg.query("SELECT name FROM moves WHERE selfSwitch IS NOT NULL;"):
+            mv = str(row.get("name") or "").strip()
+            if mv:
+                pivot_moves.add(mv)
+
+        for row in reg.query(
+            "SELECT name FROM moves WHERE stallingMove = true OR (priority = 3 AND target = 'allySide');"
+        ):
+            mv = str(row.get("name") or "").strip()
+            if mv:
+                protect_moves.add(mv)
+    except Exception:
+        pass
+
+    _CACHED_STONE_TO_MEGA = stone_to_mega
+    _CACHED_BASE_TO_MEGA = base_to_mega
+    _CACHED_PIVOT_MOVES = pivot_moves
+    _CACHED_PROTECT_MOVES = protect_moves
+    return stone_to_mega, base_to_mega, pivot_moves, protect_moves
 
 
 def _load_move_priorities() -> Dict[str, int]:
     """Load move priorities from the in-memory DuckDB `moves` view via `VGCDataRegistry`."""
-    global _CACHED_MOVE_PRIORITIES
+    global _CACHED_MOVE_PRIORITIES, _CACHED_STATUS_MOVES
     if _CACHED_MOVE_PRIORITIES is not None:
         return _CACHED_MOVE_PRIORITIES
 
     priorities = dict(DEFAULT_MOVE_PRIORITIES)
+    status_moves: Set[str] = {
+        "Protect",
+        "Detect",
+        "Minimize",
+        "Swords Dance",
+        "Tailwind",
+        "Parting Shot",
+        "Will-O-Wisp",
+        "Thunder Wave",
+        "Hypnosis",
+        "Sleep Powder",
+        "Spore",
+        "Taunt",
+        "Encore",
+        "Reflect",
+        "Light Screen",
+        "Aurora Veil",
+        "Trick Room",
+        "Calm Mind",
+        "Nasty Plot",
+    }
     try:
         from engine.db_registry import get_registry
 
-        rows = get_registry().query("SELECT name, priority FROM moves;")
+        rows = get_registry().query("SELECT name, priority, category FROM moves;")
         for row in rows:
             name = row.get("name")
             prio = row.get("priority", 0)
+            cat = row.get("category", "")
             if name:
                 priorities[str(name)] = int(prio or 0)
+                if str(cat) == "Status":
+                    status_moves.add(str(name))
     except Exception:
         pass
 
     _CACHED_MOVE_PRIORITIES = priorities
+    _CACHED_STATUS_MOVES = status_moves
     return _CACHED_MOVE_PRIORITIES
+
+
+def _is_known_status_move(move_name: str) -> bool:
+    """Return True if `move_name` is a Status-category move in DuckDB."""
+    if _CACHED_STATUS_MOVES is None:
+        _load_move_priorities()
+    return bool(_CACHED_STATUS_MOVES and move_name in _CACHED_STATUS_MOVES)
+
+
+def _is_mega_stone(item_name: Optional[str]) -> bool:
+    """Return True strictly if `item_name` is a Regulation M-C Mega Stone in DuckDB `pokedex.requiredItem`."""
+    if not item_name:
+        return False
+    clean = item_name.strip()
+    if clean.lower() == "white herb":
+        return False
+    global _CACHED_MEGA_STONES
+    if _CACHED_MEGA_STONES is None:
+        stones: Set[str] = set()
+        try:
+            from engine.db_registry import get_registry
+
+            rows = get_registry().query(
+                "SELECT DISTINCT requiredItem FROM pokedex WHERE requiredItem IS NOT NULL;"
+            )
+            for r in rows:
+                req = str(r.get("requiredItem") or "").strip()
+                if req:
+                    stones.add(req.lower())
+        except Exception:
+            pass
+        _CACHED_MEGA_STONES = stones
+
+    if _CACHED_MEGA_STONES and clean.lower() in _CACHED_MEGA_STONES:
+        return True
+    return bool(re.match(r"^[A-Za-z]+ite(?:\s+[XYZ])?$", clean))
 
 
 def get_move_priority(
@@ -261,11 +395,9 @@ def parse_showdown_paste(paste_text: str) -> Dict[str, ParsedPokemon]:
                 move_name = line.lstrip("-* ").strip()
                 moves.append(move_name)
 
-        # Mega Stone detection
+        # Mega Stone detection (grounded in DuckDB pokedex.requiredItem)
         is_mega = False
-        mega_stone = None
-        if item and (item.endswith("ite") or item.endswith("ite X") or item.endswith("ite Y") or "ite" in item):
-            mega_stone = item
+        mega_stone = item if _is_mega_stone(item) else None
 
         spread = StatSpread.from_evs_or_sp(spread_dict)
 
@@ -306,15 +438,18 @@ def parse_showdown_chat_log(
     pov_trainer: Optional[str] = None,
     user_team_paste: Optional[str] = None,
     format_hint: str = "auto",
+    max_turn: Optional[int] = None,
 ) -> ParsedBattle:
     """Parse a client Showdown chat log into a fully typed ParsedBattle model.
 
     Args:
         log_text: Complete text copy-pasted from Showdown spectator or client chat.
         pov_trainer: Display name of the user / POV player. Mapped to trainer_1.
-                     If omitted, the first joined trainer is designated trainer_1.
+                     If omitted, inferred from `Go! <Mon>!` lines or `user_team_paste`.
         user_team_paste: Optional team export paste for trainer_1 to ensure 100% exact stats.
         format_hint: Format override or 'auto' to detect from header.
+        max_turn: Optional turn number N at whose decision boundary parsing halts
+                  (capturing the exact board state at the start of Turn N).
 
     Returns:
         ParsedBattle instance containing trainer_1, trainer_2, turns, and empirical telemetry.
@@ -368,9 +503,52 @@ def parse_showdown_chat_log(
             else:
                 trainer_1_name = detected_trainers[0]
                 trainer_2_name = detected_trainers[1] if len(detected_trainers) > 1 else "trainer_2"
+        elif len(detected_trainers) >= 2:
+            # TEL-01: Auto-infer which trainer is POV (trainer_1) when pov_trainer is omitted
+            t0, t1 = detected_trainers[0], detected_trainers[1]
+            has_go_lines = any(re.match(r"^Go!\s+.+?!", ln) for ln in lines)
+            sent_out_trainers = {
+                _clean_trainer_name(m_s.group(1)).lower()
+                for ln in lines
+                for m_s in [re.match(r"^(.+?)\s+sent out\s+.+?!", ln)]
+                if m_s
+            }
+            if has_go_lines and t0.lower() in sent_out_trainers and t1.lower() not in sent_out_trainers:
+                # t0 used '<Trainer> sent out ...!' while t1 used 'Go! ...!', so t1 is POV trainer_1
+                trainer_1_name = t1
+                trainer_2_name = t0
+            elif user_team_paste:
+                paste_species = {
+                    (p.base_species or p.species).lower()
+                    for p in parse_showdown_paste(user_team_paste).values()
+                }
+                preview_map: Dict[str, Set[str]] = {}
+                for idx_l, ln in enumerate(lines):
+                    m_prev = re.search(r"^(.+?)'s team:\s*(.*)", ln)
+                    if m_prev:
+                        tr_k = _clean_trainer_name(m_prev.group(1)).lower()
+                        r_str = m_prev.group(2).strip()
+                        if not r_str and idx_l + 1 < len(lines):
+                            r_str = lines[idx_l + 1]
+                        preview_map[tr_k] = {
+                            p.strip().split("-Mega")[0].lower()
+                            for p in r_str.split("/")
+                            if p.strip()
+                        }
+                overlap_0 = len(paste_species & preview_map.get(t0.lower(), set()))
+                overlap_1 = len(paste_species & preview_map.get(t1.lower(), set()))
+                if overlap_1 > overlap_0:
+                    trainer_1_name = t1
+                    trainer_2_name = t0
+                else:
+                    trainer_1_name = t0
+                    trainer_2_name = t1
+            else:
+                trainer_1_name = t0
+                trainer_2_name = t1
         else:
             trainer_1_name = detected_trainers[0]
-            trainer_2_name = detected_trainers[1] if len(detected_trainers) > 1 else "trainer_2"
+            trainer_2_name = "trainer_2"
     else:
         trainer_1_name = _clean_trainer_name(pov_trainer) if pov_trainer else "trainer_1"
         trainer_2_name = "trainer_2"
@@ -434,6 +612,12 @@ def parse_showdown_chat_log(
     terrain: Optional[str] = None
     trainer_1_tailwind = False
     trainer_2_tailwind = False
+    trainer_1_reflect = False
+    trainer_2_reflect = False
+    trainer_1_light_screen = False
+    trainer_2_light_screen = False
+    trainer_1_aurora_veil = False
+    trainer_2_aurora_veil = False
     trick_room = False
 
     # Active mons and boosts: identifier -> dict
@@ -445,18 +629,7 @@ def parse_showdown_chat_log(
     turn_actions: List[Dict[str, Any]] = []
     last_move_used: Optional[Dict[str, Any]] = None
     pending_switch_out_mon: Optional[str] = None
-    protect_moves = {
-        "Protect",
-        "Detect",
-        "Spiky Shield",
-        "King's Shield",
-        "Baneful Bunker",
-        "Silk Trap",
-        "Burning Bulwark",
-        "Wide Guard",
-        "Quick Guard",
-    }
-    pivot_moves = {"Flip Turn", "U-turn", "Volt Switch", "Parting Shot", "Baton Pass", "Chilly Reception", "Shed Tail"}
+    stone_to_mega, _, pivot_moves, protect_moves = _load_duckdb_parser_catalogs()
 
     # Name mapping: nickname / display name -> canonical species
     name_to_species: Dict[str, str] = {}
@@ -497,6 +670,8 @@ def parse_showdown_chat_log(
             pkm.active_turns = 0
             pkm.used_protect_last_turn = False
             pkm.last_move_used = None
+            pkm.taunt_turns = 0
+            pkm.encore_move = None
             pkm.boosts = {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0, "accuracy": 0, "evasion": 0}
         if mon_identifier in boosts:
             boosts[mon_identifier] = {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0, "accuracy": 0, "evasion": 0}
@@ -515,6 +690,8 @@ def parse_showdown_chat_log(
             pkm.active_turns = 0 if current_turn == 0 else 1
             pkm.used_protect_last_turn = False
             pkm.last_move_used = None
+            pkm.taunt_turns = 0
+            pkm.encore_move = None
 
     for line in lines:
         # --- Turn Marker ---
@@ -528,9 +705,13 @@ def parse_showdown_chat_log(
                     if pkm:
                         pkm.used_protect_last_turn = bool(pkm.last_move_used in protect_moves)
                         pkm.active_turns = pkm.active_turns + 1 if current_turn > 1 or pkm.active_turns == 0 else 1
+                        if pkm.taunt_turns > 0:
+                            pkm.taunt_turns = max(0, pkm.taunt_turns - 1)
             turn_actions.clear()
             last_move_used = None
             pending_switch_out_mon = None
+            if max_turn is not None and current_turn >= int(max_turn):
+                break
             continue
 
         # --- Explicit Switch-Out Lines ---
@@ -632,7 +813,11 @@ def parse_showdown_chat_log(
             pkm = target_team.get_pokemon(mon_nick)
             if pkm:
                 pkm.is_mega = True
-                pkm.species = mega_species
+                stone_key = (pkm.mega_stone or pkm.item or "").strip().lower()
+                if stone_key and stone_key in stone_to_mega:
+                    pkm.species = stone_to_mega[stone_key]
+                else:
+                    pkm.species = mega_species
             continue
 
         # Mega Stone activation
@@ -675,36 +860,184 @@ def parse_showdown_chat_log(
                 terrain = "Electric"
             elif ability_name == "Psychic Surge":
                 terrain = "Psychic"
-            elif ability_name == "Misty Surge":
-                terrain = "Misty"
             continue
 
         # --- Weather & Terrain Text Lines ---
         if "The sunlight turned harsh" in line:
             weather = "Sun"
+        elif "The harsh sunlight faded" in line:
+            weather = None
         elif "started to rain" in line or "Rain continues" in line:
             weather = "Rain"
+        elif "The rain stopped" in line:
+            weather = None
         elif "sandstorm kicked up" in line:
             weather = "Sand"
+        elif "The sandstorm subsided" in line:
+            weather = None
+        elif "started to snow" in line or "started to hail" in line:
+            weather = "Snow"
+        elif "The snow stopped" in line or "The hail stopped" in line:
+            weather = None
         elif "Grass grew to cover the battlefield" in line:
             terrain = "Grassy"
+        elif "The grass disappeared from the battlefield" in line:
+            terrain = None
         elif "surged across the battlefield" in line:
             terrain = "Electric"
+        elif "The electricity disappeared from the battlefield" in line:
+            terrain = None
+        elif "became weird" in line and "battlefield" in line:
+            terrain = "Psychic"
+        elif "The weirdness disappeared from the battlefield" in line:
+            terrain = None
         elif "Mist swirled" in line:
             terrain = "Misty"
+        elif "The mist disappeared from the battlefield" in line:
+            terrain = None
 
-        # --- Field Modifiers: Tailwind & Trick Room ---
-        if "Tailwind blew from behind your team" in line:
+        # --- Field Modifiers: Tailwind, Trick Room & Screens ---
+        if "Tailwind blew from behind your team" in line or f"Tailwind blew from behind {battle.trainer_1.trainer_name}'s team" in line:
             trainer_1_tailwind = True
-        elif "Tailwind blew from behind the opposing team" in line:
+        elif "Tailwind blew from behind the opposing team" in line or f"Tailwind blew from behind {battle.trainer_2.trainer_name}'s team" in line:
             trainer_2_tailwind = True
+        elif "tailwind petered out" in line.lower():
+            if "opposing" in line.lower() or battle.trainer_2.trainer_name.lower() in line.lower():
+                trainer_2_tailwind = False
+            else:
+                trainer_1_tailwind = False
         elif "twisted the dimensions" in line:
             trick_room = not trick_room
+        elif "twisted dimensions returned to normal" in line:
+            trick_room = False
+        elif "Reflect made" in line:
+            if "opposing" in line.lower():
+                trainer_2_reflect = True
+            else:
+                trainer_1_reflect = True
+        elif "Reflect wore off" in line:
+            if "opposing" in line.lower():
+                trainer_2_reflect = False
+            else:
+                trainer_1_reflect = False
+        elif "Light Screen made" in line:
+            if "opposing" in line.lower():
+                trainer_2_light_screen = True
+            else:
+                trainer_1_light_screen = True
+        elif "Light Screen wore off" in line:
+            if "opposing" in line.lower():
+                trainer_2_light_screen = False
+            else:
+                trainer_1_light_screen = False
+        elif "Aurora Veil made" in line:
+            if "opposing" in line.lower():
+                trainer_2_aurora_veil = True
+            else:
+                trainer_1_aurora_veil = True
+        elif "Aurora Veil wore off" in line:
+            if "opposing" in line.lower():
+                trainer_2_aurora_veil = False
+            else:
+                trainer_1_aurora_veil = False
+
+        # --- Primary Status Conditions & Cures ---
+        status_patterns = (
+            (r"^(?:The opposing\s+)?(.+?)\s+was burned!", "brn"),
+            (r"^(?:The opposing\s+)?(.+?)\s+is paralyzed!", "par"),
+            (r"^(?:The opposing\s+)?(.+?)\s+fell asleep!", "slp"),
+            (r"^(?:The opposing\s+)?(.+?)\s+was badly poisoned!", "tox"),
+            (r"^(?:The opposing\s+)?(.+?)\s+was poisoned!", "psn"),
+            (r"^(?:The opposing\s+)?(.+?)\s+was frozen solid!", "frz"),
+        )
+        for pat, st_code in status_patterns:
+            m_st = re.search(pat, line)
+            if m_st:
+                st_nick = m_st.group(1).strip()
+                is_opp_st = line.startswith("The opposing ")
+                st_team = battle.trainer_2 if is_opp_st else battle.trainer_1
+                pkm_st = st_team.get_pokemon(st_nick)
+                if pkm_st:
+                    pkm_st.status = st_code
+                break
+
+        cure_match = re.search(
+            r"^(?:The opposing\s+)?(.+?)\s+(?:woke up|thawed out|cured its\s+\w+\s+status)!",
+            line,
+        )
+        if cure_match:
+            c_nick = cure_match.group(1).strip()
+            is_opp_c = line.startswith("The opposing ")
+            c_team = battle.trainer_2 if is_opp_c else battle.trainer_1
+            pkm_c = c_team.get_pokemon(c_nick)
+            if pkm_c:
+                pkm_c.status = None
+
+        # --- Taunt & Encore Volatiles ---
+        taunt_match = re.search(r"^(?:The opposing\s+)?(.+?)\s+fell for the Taunt!", line)
+        if taunt_match:
+            t_nick = taunt_match.group(1).strip()
+            is_opp_t = line.startswith("The opposing ")
+            t_team = battle.trainer_2 if is_opp_t else battle.trainer_1
+            pkm_t = t_team.get_pokemon(t_nick)
+            if pkm_t:
+                pkm_t.taunt_turns = 3
+            continue
+
+        taunt_end = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+Taunt wore off!", line)
+        if taunt_end:
+            t_nick = taunt_end.group(1).strip()
+            is_opp_t = line.startswith("The opposing ")
+            t_team = battle.trainer_2 if is_opp_t else battle.trainer_1
+            pkm_t = t_team.get_pokemon(t_nick)
+            if pkm_t:
+                pkm_t.taunt_turns = 0
+            continue
+
+        encore_match = re.search(r"^(?:The opposing\s+)?(.+?)\s+received an Encore!", line)
+        if encore_match:
+            e_nick = encore_match.group(1).strip()
+            is_opp_e = line.startswith("The opposing ")
+            e_team = battle.trainer_2 if is_opp_e else battle.trainer_1
+            pkm_e = e_team.get_pokemon(e_nick)
+            if pkm_e and pkm_e.last_move_used:
+                pkm_e.encore_move = pkm_e.last_move_used
+            continue
+
+        encore_end = re.search(r"^(?:The opposing\s+)?(.+?)'s\s+Encore ended!", line)
+        if encore_end:
+            e_nick = encore_end.group(1).strip()
+            is_opp_e = line.startswith("The opposing ")
+            e_team = battle.trainer_2 if is_opp_e else battle.trainer_1
+            pkm_e = e_team.get_pokemon(e_nick)
+            if pkm_e:
+                pkm_e.encore_move = None
+            continue
+
+        # --- White Herb Restoration ---
+        wh_match = re.search(
+            r"^(?:The opposing\s+)?(.+?)\s+restored its status using its White Herb!",
+            line,
+        )
+        if wh_match:
+            wh_nick = wh_match.group(1).strip()
+            is_opp_wh = line.startswith("The opposing ")
+            wh_team = battle.trainer_2 if is_opp_wh else battle.trainer_1
+            pkm_wh = wh_team.get_pokemon(wh_nick)
+            if wh_nick in boosts:
+                for k_b, v_b in list(boosts[wh_nick].items()):
+                    if v_b < 0:
+                        boosts[wh_nick][k_b] = 0
+            if pkm_wh:
+                for k_b, v_b in list(pkm_wh.boosts.items()):
+                    if v_b < 0:
+                        pkm_wh.boosts[k_b] = 0
+            continue
 
         # --- Stat Stage Changes ---
         # e.g. "The opposing Starmie's evasiveness rose sharply!"
         stat_boost_match = re.search(
-            r"^(?:The opposing\s+)?(.+?)'s\s+(Attack|Defense|Sp\. Atk|Sp\. Def|Speed|evasiveness|accuracy)\s+(rose sharply|rose|fell sharply|fell)!",
+            r"^(?:The opposing\s+)?(.+?)'s\s+(Attack|Defense|Sp\. Atk|Sp\. Def|Speed|evasiveness|accuracy)\s+(rose drastically|rose sharply|rose|fell severely|fell sharply|fell)!",
             line,
         )
         if stat_boost_match:
@@ -724,7 +1057,12 @@ def parse_showdown_chat_log(
                 "accuracy": "accuracy",
             }.get(stat_raw, "atk")
 
-            delta = 2 if "sharply" in direction else 1
+            if "drastically" in direction or "severely" in direction:
+                delta = 3
+            elif "sharply" in direction:
+                delta = 2
+            else:
+                delta = 1
             if "fell" in direction:
                 delta = -delta
 
@@ -755,8 +1093,7 @@ def parse_showdown_chat_log(
                 pending_switch_out_mon = mon_nick
 
             ability_val = pkm.ability if pkm else None
-            # Check status category for prankster
-            is_status_move = move_name in ("Protect", "Minimize", "Swords Dance", "Tailwind", "Parting Shot", "Will-O-Wisp", "Thunder Wave", "Hypnosis", "Coil")
+            is_status_move = _is_known_status_move(move_name)
             prio = get_move_priority(move_name, terrain=terrain, ability=ability_val, is_status=is_status_move)
 
             # Record empirical SpeedObservation if previous move this turn had SAME priority
@@ -793,7 +1130,7 @@ def parse_showdown_chat_log(
 
         # --- Damage Observations ---
         # e.g. "(The opposing Starmie lost 97% of its health!)" or "(Arcanine lost 75% of its health!)"
-        dmg_match = re.search(r"^\((?:The opposing\s+)?(.+?)\s+lost\s+(\d+)% of its health!\)", line)
+        dmg_match = re.search(r"^\((?:The opposing\s+)?(.+?)\s+lost\s+(\d+(?:\.\d+)?)% of its health!\)", line)
         if dmg_match and last_move_used:
             def_nick = dmg_match.group(1).strip()
             dmg_pct = float(dmg_match.group(2))
@@ -878,5 +1215,11 @@ def parse_showdown_chat_log(
     battle.terrain = terrain
     battle.trainer_1_tailwind = trainer_1_tailwind
     battle.trainer_2_tailwind = trainer_2_tailwind
+    battle.trainer_1_reflect = trainer_1_reflect
+    battle.trainer_2_reflect = trainer_2_reflect
+    battle.trainer_1_light_screen = trainer_1_light_screen
+    battle.trainer_2_light_screen = trainer_2_light_screen
+    battle.trainer_1_aurora_veil = trainer_1_aurora_veil
+    battle.trainer_2_aurora_veil = trainer_2_aurora_veil
     battle.trick_room = trick_room
     return battle
