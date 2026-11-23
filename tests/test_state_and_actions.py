@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for Regulation M-C Turn State Compiler & Legal Action Enumerator."""
+"""Unit tests for Regulation M-C Turn State Compiler (`engine.state`)."""
 
 from __future__ import annotations
 
@@ -15,8 +15,6 @@ if str(SRC_DIR) not in sys.path:
 from engine.parser import parse_showdown_chat_log, parse_showdown_paste
 from engine.parser.models import ParsedBattle, ParsedTeam
 from engine.state import (
-    ActionType,
-    LegalActionEnumerator,
     TurnStateCompiler,
     calculate_level_50_stats,
 )
@@ -106,13 +104,12 @@ Turn 1
 """
 
 
-class TestTurnStateAndLegalActions(unittest.TestCase):
-    """Verify TurnStateCompiler and LegalActionEnumerator under Regulation M-C."""
+class TestTurnStateCompiler(unittest.TestCase):
+    """Verify TurnStateCompiler under Regulation M-C."""
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.compiler = TurnStateCompiler()
-        cls.enumerator = LegalActionEnumerator()
 
     def test_duckdb_backed_calculate_level_50_stats(self) -> None:
         """Verify calculate_level_50_stats queries real base stats from in-memory DuckDB."""
@@ -170,8 +167,8 @@ class TestTurnStateAndLegalActions(unittest.TestCase):
         # Field terrain from Rillaboom's Grassy Surge
         self.assertEqual(state.field.terrain, "Grassy")
 
-    def test_dual_mega_holders_branching_and_joint_constraint(self) -> None:
-        """Verify both mega_evolve=False and mega_evolve=True branch, and joint actions forbid double Mega."""
+    def test_dual_mega_holders_compilation(self) -> None:
+        """Verify TurnStateCompiler pre-compiles Mega transitions for multiple Mega Stone holders."""
         sets = parse_showdown_paste(USER_TEAM_PASTE)
         battle = ParsedBattle()
         battle.trainer_1 = ParsedTeam(
@@ -199,111 +196,6 @@ class TestTurnStateAndLegalActions(unittest.TestCase):
         self.assertEqual(s0_mon.mega_target_species, "Charizard-Mega-Y")
         self.assertTrue(s1_mon.can_mega_evolve)
         self.assertEqual(s1_mon.mega_target_species, "Raichu-Mega-X")
-
-        s0_actions = self.enumerator.enumerate_slot_actions(state, "trainer_1", 0)
-        s1_actions = self.enumerator.enumerate_slot_actions(state, "trainer_1", 1)
-
-        # Every move on Charizard and Raichu must appear with mega_evolve=False AND mega_evolve=True
-        s0_heat_wave_mega = [
-            a for a in s0_actions if a.move_name == "Heat Wave" and a.mega_evolve
-        ]
-        s0_heat_wave_base = [
-            a for a in s0_actions if a.move_name == "Heat Wave" and not a.mega_evolve
-        ]
-        self.assertEqual(len(s0_heat_wave_mega), 1)
-        self.assertEqual(len(s0_heat_wave_base), 1)
-
-        s1_fake_out_mega = [
-            a for a in s1_actions if a.move_name == "Fake Out" and a.mega_evolve
-        ]
-        s1_fake_out_base = [
-            a for a in s1_actions if a.move_name == "Fake Out" and not a.mega_evolve
-        ]
-        # Fake Out is normal targeting -> 3 targets (2 foes + 1 ally partner)
-        self.assertEqual(len(s1_fake_out_mega), 3)
-        self.assertEqual(len(s1_fake_out_base), 3)
-
-        # Joint enumeration must allow s0 Mega OR s1 Mega OR neither, NEVER both
-        joint_actions = self.enumerator.enumerate_joint_actions(state, "trainer_1")
-        both_mega = [
-            ja for ja in joint_actions if ja.slot_0_action.mega_evolve and ja.slot_1_action.mega_evolve
-        ]
-        only_s0_mega = [
-            ja for ja in joint_actions if ja.slot_0_action.mega_evolve and not ja.slot_1_action.mega_evolve
-        ]
-        only_s1_mega = [
-            ja for ja in joint_actions if not ja.slot_0_action.mega_evolve and ja.slot_1_action.mega_evolve
-        ]
-        neither_mega = [
-            ja for ja in joint_actions if not ja.slot_0_action.mega_evolve and not ja.slot_1_action.mega_evolve
-        ]
-        self.assertEqual(len(both_mega), 0)
-        self.assertGreater(len(only_s0_mega), 0)
-        self.assertGreater(len(only_s1_mega), 0)
-        self.assertGreater(len(neither_mega), 0)
-
-    def test_ally_targeting_fake_out_restriction_and_joint_switches(self) -> None:
-        """Verify ally targeting, Turn > 1 Fake Out pruning, and joint switch constraints."""
-        sets = parse_showdown_paste(USER_TEAM_PASTE)
-        # Set Garchomp and Raichu as active on Turn 2 (active_turns = 2)
-        sets["Garchomp"].active_turns = 2
-        sets["Garchomp"].used_protect_last_turn = True
-        sets["Raichu"].active_turns = 2
-
-        battle = ParsedBattle(turns_played=1)
-        battle.trainer_1 = ParsedTeam(
-            trainer_name="trainer_1",
-            team_preview=list(sets.keys()),
-            battle_roster=["Garchomp", "Raichu", "Charizard", "Kingambit"],
-            leads=("Garchomp", "Raichu"),
-            active_slots=["Garchomp", "Raichu"],
-            pokemon_sets=sets,
-        )
-        battle.trainer_2 = ParsedTeam(
-            trainer_name="trainer_2",
-            team_preview=list(sets.keys()),
-            battle_roster=["Grimmsnarl", "Milotic", "Charizard", "Kingambit"],
-            leads=("Grimmsnarl", "Milotic"),
-            active_slots=["Grimmsnarl", "Milotic"],
-            pokemon_sets=parse_showdown_paste(USER_TEAM_PASTE),
-        )
-
-        state = self.compiler.compile_turn_state(battle, run_inference=False)
-        s0_actions = self.enumerator.enumerate_slot_actions(state, "trainer_1", 0)
-        s1_actions = self.enumerator.enumerate_slot_actions(state, "trainer_1", 1)
-
-        # 1. Garchomp's Stomping Tantrum (normal target) must include targeting ally Raichu (trainer_1, slot=1)
-        tantrum_targets = {
-            (a.target.domain, a.target.slot)
-            for a in s0_actions
-            if a.move_name == "Stomping Tantrum" and a.target is not None
-        }
-        self.assertEqual(
-            tantrum_targets,
-            {("trainer_2", 0), ("trainer_2", 1), ("trainer_1", 1)},
-        )
-
-        # 2. Garchomp used Protect last turn -> consecutive Protect is pruned by default
-        protect_actions = [a for a in s0_actions if a.move_name == "Protect"]
-        self.assertEqual(len(protect_actions), 0)
-
-        # 3. Raichu has active_turns == 2 -> Fake Out must be blocked
-        fake_out_actions = [a for a in s1_actions if a.move_name == "Fake Out"]
-        self.assertEqual(len(fake_out_actions), 0)
-
-        # 4. Joint switch actions cannot switch both slots into the same bench Pokemon
-        joint_actions = self.enumerator.enumerate_joint_actions(state, "trainer_1")
-        double_switches = [
-            (ja.slot_0_action.switch_in_species, ja.slot_1_action.switch_in_species)
-            for ja in joint_actions
-            if ja.slot_0_action.action_type == ActionType.SWITCH
-            and ja.slot_1_action.action_type == ActionType.SWITCH
-        ]
-        # Bench has Charizard and Kingambit -> only (Charizard, Kingambit) and (Kingambit, Charizard) are valid
-        self.assertEqual(
-            set(double_switches),
-            {("Charizard", "Kingambit"), ("Kingambit", "Charizard")},
-        )
 
 
 if __name__ == "__main__":

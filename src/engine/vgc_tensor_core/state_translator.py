@@ -173,8 +173,8 @@ class ShowdownStateTranslator:
                     moves=["Thunderbolt", "Volt Switch", "Protect", "Fake Out"],
                 ),
                 SLOT_TRAINER_2_BENCH2: SlotMetadata(
-                    species="Basculegion-F",
-                    moves=["Wave Crash", "Shadow Ball", "Ice Beam", "Protect"],
+                    species="Pelipper",
+                    moves=["Weather Ball", "Hurricane", "Wide Guard", "Protect"],
                 ),
             }
         )
@@ -357,11 +357,29 @@ class ShowdownStateTranslator:
                 else f"Move_{move_slot}"
             )
 
+            if move_name in (
+                "Protect",
+                "Detect",
+                "Spiky Shield",
+                "King's Shield",
+                "Baneful Bunker",
+                "Wide Guard",
+                "Quick Guard",
+                "Endure",
+            ):
+                showdown_lines.append(
+                    f"|move|{actor_ident}: {actor_meta.display_name}|{move_name}|{actor_ident}: {actor_meta.display_name}"
+                )
+                showdown_lines.append(
+                    f"|-singleturn|{actor_ident}: {actor_meta.display_name}|move: {move_name}"
+                )
+                continue
+
             target_slot = self._resolve_target_slot(actor_slot, choice_val)
             target_meta = self.manifest.slots[target_slot]
             target_ident = SLOT_TO_IDENTIFIER[target_slot]
 
-            if p_post[target_slot, MonIdx.PROTECT_ACTIVE] > 0.5:
+            if p_cascade[target_slot, MonIdx.PROTECT_ACTIVE] > 0.5:
                 showdown_lines.append(
                     f"|move|{actor_ident}: {actor_meta.display_name}|{move_name}|{target_ident}: {target_meta.display_name}"
                 )

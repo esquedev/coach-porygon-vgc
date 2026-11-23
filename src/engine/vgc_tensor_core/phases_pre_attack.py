@@ -14,8 +14,8 @@ using pure matrix/tensor operations:
 2. **Phase 1 — Barrier 1: Voluntary Switches & Speed-Ordered Switch-In Abilities (`+6`)**:
    - Resets outgoing stat boosts (`8..14`) and volatile states (`58..66`) on switching active slots
      via Hadamard multiplication with `tables.switch_persist_mask`.
-   - Swaps the active slot and bench slot in both Roster Tensor `P` (`[..., 8, 84]`) and Move Tensor
-     `M_moves` (`[..., 8, 4, 56]`).
+   - Swaps the active slot and bench slot in both Roster Tensor `P` (`[..., 8, 87]`) and Move Tensor
+     `M_moves` (`[..., 8, 4, 59]`).
    - Sorts all newly switched-in slots by `TrickRoomSign * EffectiveSpeed` and fires their entry abilities.
 3. **Phase 2 — Barrier 2: Mega Evolution & Instantaneous Speed/Type/Ability Recalibration (`+5.5`)**:
    - Identifies active slots choosing Mega Evolution (`choice_idx in 12..23`) that have
@@ -66,6 +66,7 @@ from .schema_and_tables import (
     MOVES_PER_MON,
     MonIdx,
     MoveIdx,
+    NUM_TYPES,
     ROSTER_SLOTS,
     SLOT_TRAINER_1_A,
     SLOT_TRAINER_1_B,
@@ -76,6 +77,7 @@ from .schema_and_tables import (
     SLOT_TRAINER_2_BENCH1,
     SLOT_TRAINER_2_BENCH2,
     TERRAIN_TO_IDX,
+    TYPE_TO_IDX,
     WEATHER_TO_IDX,
     build_bilinear_lookup_tables,
 )
@@ -119,8 +121,8 @@ class PreAttackPhaseResult:
 
     Attributes:
         F: Updated Field Tensor of shape `[B1, B2, 24]`.
-        P: Updated 8-Slot Roster Tensor of shape `[B1, B2, 8, 84]`.
-        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 56]`.
+        P: Updated 8-Slot Roster Tensor of shape `[B1, B2, 8, 87]`.
+        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 59]`.
         effective_speeds: Effective Speed tensor for the 4 active slots `[B1, B2, 4]`
             ordered as `(trainer_1_a=0, trainer_1_b=1, trainer_2_a=4, trainer_2_b=5)`.
         effective_priorities: Effective Move/Action Priority tensor `[B1, B2, 4]`.
@@ -201,7 +203,7 @@ def compute_active_effective_speeds(
     (`0: trainer_1_a`, `1: trainer_1_b`, `4: trainer_2_a`, `5: trainer_2_b`) across `[..., 4]`.
     """
     active_indices = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
-    P_act = P[..., active_indices, :]  # [..., 4, 84]
+    P_act = P[..., active_indices, :]  # [..., 4, 87]
 
     base_spe = P_act[..., MonIdx.STAT_SPE]
     boost_spe = _clamp(P_act[..., MonIdx.BOOST_SPE], -6.0, 6.0)
@@ -223,22 +225,51 @@ def compute_active_effective_speeds(
     w_sand = F[..., FieldIdx.WEATHER_START + W_SAND][..., None]
     w_snow = F[..., FieldIdx.WEATHER_START + W_SNOW][..., None]
 
+    # Weather suppression (Cloud Nine) across all active slots
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        is_cloud_nine = torch.any(
+            (P_act[..., MonIdx.ALIVE_FLAG] > 0.5) & (P_act[..., MonIdx.ABILITY_ID] == float(AbilityID.CLOUD_NINE)),
+            dim=-1,
+            keepdim=True,
+        )
+        zero = torch.zeros_like(w_sun)
+        w_sun = torch.where(is_cloud_nine, zero, w_sun)
+        w_rain = torch.where(is_cloud_nine, zero, w_rain)
+        w_sand = torch.where(is_cloud_nine, zero, w_sand)
+        w_snow = torch.where(is_cloud_nine, zero, w_snow)
+    else:
+        is_cloud_nine = np.any(
+            (P_act[..., MonIdx.ALIVE_FLAG] > 0.5) & (P_act[..., MonIdx.ABILITY_ID] == float(AbilityID.CLOUD_NINE)),
+            axis=-1,
+            keepdims=True,
+        )
+        zero = np.zeros_like(w_sun)
+        w_sun = np.where(is_cloud_nine, zero, w_sun)
+        w_rain = np.where(is_cloud_nine, zero, w_rain)
+        w_sand = np.where(is_cloud_nine, zero, w_sand)
+        w_snow = np.where(is_cloud_nine, zero, w_snow)
+
     is_chlorophyll = ((abil_id == float(AbilityID.CHLOROPHYLL)) * 1.0) * w_sun
     is_swift_swim = ((abil_id == float(AbilityID.SWIFT_SWIM)) * 1.0) * w_rain
     is_sand_rush = ((abil_id == float(AbilityID.SAND_RUSH)) * 1.0) * w_sand
     is_slush_rush = ((abil_id == float(AbilityID.SLUSH_RUSH)) * 1.0) * w_snow
+    t_elec = F[..., FieldIdx.TERRAIN_START + T_ELECTRIC][..., None]
+    is_surge_surfer = ((abil_id == float(AbilityID.SURGE_SURFER)) * 1.0) * t_elec
 
     weather_spe_gate = _clamp(
-        is_chlorophyll + is_swift_swim + is_sand_rush + is_slush_rush, 0.0, 1.0
+        is_chlorophyll + is_swift_swim + is_sand_rush + is_slush_rush + is_surge_surfer, 0.0, 1.0
     )
     unburden_gate = P_act[..., MonIdx.UNBURDEN_ACTIVE]
-    m_abil = (1.0 + weather_spe_gate) * (1.0 + unburden_gate)
+    has_status = _clamp(1.0 - P_act[..., MonIdx.STATUS_HEALTHY], 0.0, 1.0)
+    is_quick_feet = ((abil_id == float(AbilityID.QUICK_FEET)) * 1.0) * has_status
+    m_abil = (1.0 + weather_spe_gate) * (1.0 + unburden_gate) * (1.0 + 0.5 * is_quick_feet)
     s2 = _floor(s1 * m_abil)
 
-    # Choice Scarf (1.5x when item_active == 1.0)
+    # Choice Scarf (1.5x) & Iron Ball (0.5x) when item_active == 1.0
     item_active = P_act[..., MonIdx.ITEM_ACTIVE]
     is_scarf = ((P_act[..., MonIdx.ITEM_ID] == float(ItemID.CHOICE_SCARF)) * 1.0) * item_active
-    m_item = 1.0 + 0.5 * is_scarf
+    is_iron_ball = ((P_act[..., MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)) * 1.0) * item_active
+    m_item = (1.0 + 0.5 * is_scarf) * (1.0 - 0.5 * is_iron_ball)
     s3 = _floor(s2 * m_item)
 
     # Side Tailwind (Slots 0,1 use TRAINER_1_TAILWIND_TURNS; Slots 2,3 use TRAINER_2_TAILWIND_TURNS)
@@ -252,8 +283,8 @@ def compute_active_effective_speeds(
     m_tw = 1.0 + tw_vec
     s4 = _floor(s3 * m_tw)
 
-    # Paralysis (0.5x when STATUS_PARALYZE == 1.0)
-    is_para = P_act[..., MonIdx.STATUS_PARALYZE]
+    # Paralysis (0.5x when STATUS_PARALYZE == 1.0, unless Quick Feet is active)
+    is_para = P_act[..., MonIdx.STATUS_PARALYZE] * (1.0 - is_quick_feet)
     m_para = 1.0 - 0.5 * is_para
     s_eff = _floor(s4 * m_para)
 
@@ -299,6 +330,24 @@ def _execute_speed_sorted_entry_abilities(
 
     T_w = tables.t_set_weather
     T_t = tables.t_set_terrain
+    if not (HAS_TORCH and isinstance(F, torch.Tensor)):
+        if hasattr(T_w, "detach"):
+            T_w = T_w.detach().cpu().numpy()
+        else:
+            T_w = np.asarray(T_w)
+        if hasattr(T_t, "detach"):
+            T_t = T_t.detach().cpu().numpy()
+        else:
+            T_t = np.asarray(T_t)
+    else:
+        if not isinstance(T_w, torch.Tensor):
+            T_w = torch.from_numpy(T_w).to(F.device)
+        else:
+            T_w = T_w.to(F.device)
+        if not isinstance(T_t, torch.Tensor):
+            T_t = torch.from_numpy(T_t).to(F.device)
+        else:
+            T_t = T_t.to(F.device)
 
     for step_idx in range(4):
         actor_k = entry_order[..., step_idx]
@@ -314,14 +363,47 @@ def _execute_speed_sorted_entry_abilities(
 
             abil_id = P[..., r_slot, MonIdx.ABILITY_ID]
 
+            # 0. Trace (copies an alive opposing active Pokémon's traceable ability on entry)
+            fire_trace = is_actor * ((abil_id == float(AbilityID.TRACE)) * 1.0)
+            has_any_trace = (
+                float(fire_trace.max().item()) > 0.0
+                if (HAS_TORCH and isinstance(fire_trace, torch.Tensor))
+                else float(np.max(fire_trace)) > 0.0
+            )
+            if has_any_trace:
+                opp_a_s, opp_b_s = (
+                    (SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
+                    if r_slot in (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                    else (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                )
+                opp_a_ab = P[..., opp_a_s, MonIdx.ABILITY_ID]
+                opp_b_ab = P[..., opp_b_s, MonIdx.ABILITY_ID]
+                opp_a_ok = (
+                    P[..., opp_a_s, MonIdx.ALIVE_FLAG]
+                    * ((opp_a_ab > 0.0) * 1.0)
+                    * ((opp_a_ab != float(AbilityID.TRACE)) * 1.0)
+                    * ((opp_a_ab != float(AbilityID.GOOD_AS_GOLD)) * 1.0)
+                )
+                opp_b_ok = (
+                    P[..., opp_b_s, MonIdx.ALIVE_FLAG]
+                    * ((opp_b_ab > 0.0) * 1.0)
+                    * ((opp_b_ab != float(AbilityID.TRACE)) * 1.0)
+                    * ((opp_b_ab != float(AbilityID.GOOD_AS_GOLD)) * 1.0)
+                )
+                pick_a = fire_trace * opp_a_ok
+                pick_b = fire_trace * (1.0 - opp_a_ok) * opp_b_ok
+                traced_ab = (1.0 - pick_a - pick_b) * abil_id + pick_a * opp_a_ab + pick_b * opp_b_ab
+                P[..., r_slot, MonIdx.ABILITY_ID] = traced_ab
+                abil_id = traced_ab
+
             # A. Weather-Setting Abilities (Drought, Drizzle, Sand Stream, Snow Warning)
             weather_ability_map = (
-                (AbilityID.DROUGHT, W_SUN),
-                (AbilityID.DRIZZLE, W_RAIN),
-                (AbilityID.SAND_STREAM, W_SAND),
-                (AbilityID.SNOW_WARNING, W_SNOW),
+                (AbilityID.DROUGHT, W_SUN, ItemID.HEAT_ROCK),
+                (AbilityID.DRIZZLE, W_RAIN, ItemID.DAMP_ROCK),
+                (AbilityID.SAND_STREAM, W_SAND, ItemID.SMOOTH_ROCK),
+                (AbilityID.SNOW_WARNING, W_SNOW, ItemID.ICY_ROCK),
             )
-            for target_abil, target_w_idx in weather_ability_map:
+            for target_abil, target_w_idx, rock_item in weather_ability_map:
                 has_w_abil = (abil_id == float(target_abil)) * 1.0
                 already_w = F[..., FieldIdx.WEATHER_START + target_w_idx]
                 fire_w = is_actor * has_w_abil * (1.0 - already_w)
@@ -333,21 +415,25 @@ def _execute_speed_sorted_entry_abilities(
                         continue
                 fire_w_exp = fire_w[..., None]
 
+                has_rock = (
+                    (P[..., r_slot, MonIdx.ITEM_ID] == float(rock_item)) * 1.0
+                ) * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+                w_turns_val = 5.0 + 3.0 * has_rock
+
                 w_old = F[..., FieldIdx.WEATHER_START:FieldIdx.WEATHER_END]
                 w_overwritten = _matmul(w_old, T_w[target_w_idx])
                 F[..., FieldIdx.WEATHER_START:FieldIdx.WEATHER_END] = (
                     (1.0 - fire_w_exp) * w_old + fire_w_exp * w_overwritten
                 )
                 F[..., FieldIdx.WEATHER_TURNS] = (
-                    (1.0 - fire_w) * F[..., FieldIdx.WEATHER_TURNS] + fire_w * 5.0
+                    (1.0 - fire_w) * F[..., FieldIdx.WEATHER_TURNS] + fire_w * w_turns_val
                 )
 
-            # B. Terrain-Setting Abilities (Electric, Grassy, Psychic, Misty Surge)
+            # B. Terrain-Setting Abilities (Electric, Grassy, Psychic Surge)
             terrain_ability_map = (
                 (AbilityID.ELECTRIC_SURGE, T_ELECTRIC),
                 (AbilityID.GRASSY_SURGE, T_GRASSY),
                 (AbilityID.PSYCHIC_SURGE, T_PSYCHIC),
-                (AbilityID.MISTY_SURGE, T_MISTY),
             )
             for target_abil, target_t_idx in terrain_ability_map:
                 has_t_abil = (abil_id == float(target_abil)) * 1.0
@@ -361,16 +447,21 @@ def _execute_speed_sorted_entry_abilities(
                         continue
                 fire_t_exp = fire_t[..., None]
 
+                has_terrain_ext = (
+                    (P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.TERRAIN_EXTENDER)) * 1.0
+                ) * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+                t_turns_val = 5.0 + 3.0 * has_terrain_ext
+
                 t_old = F[..., FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END]
                 t_overwritten = _matmul(t_old, T_t[target_t_idx])
                 F[..., FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END] = (
                     (1.0 - fire_t_exp) * t_old + fire_t_exp * t_overwritten
                 )
                 F[..., FieldIdx.TERRAIN_TURNS] = (
-                    (1.0 - fire_t) * F[..., FieldIdx.TERRAIN_TURNS] + fire_t * 5.0
+                    (1.0 - fire_t) * F[..., FieldIdx.TERRAIN_TURNS] + fire_t * t_turns_val
                 )
 
-            # C. Intimidate (-1 Atk to both opposing active slots + Defiant/Competitive)
+            # C. Intimidate (-1 Atk to both opposing active slots + Mirror Armor / Defiant / Competitive / White Herb)
             fire_intim = is_actor * ((abil_id == float(AbilityID.INTIMIDATE)) * 1.0)
             has_any_intim = (
                 float(fire_intim.max().item()) > 0.0
@@ -385,32 +476,62 @@ def _execute_speed_sorted_entry_abilities(
                 )
 
                 for opp_slot in opp_slots:
+                    opp_partner_slot = (
+                        opp_slots[1] if opp_slot == opp_slots[0] else opp_slots[0]
+                    )
                     opp_alive = P[..., opp_slot, MonIdx.ALIVE_FLAG]
                     opp_sub = (P[..., opp_slot, MonIdx.SUBSTITUTE_HP] > 0.0) * 1.0
-                    opp_item_act = P[..., opp_slot, MonIdx.ITEM_ACTIVE]
-                    opp_clear_amulet = (
-                        (P[..., opp_slot, MonIdx.ITEM_ID] == float(ItemID.CLEAR_AMULET)) * 1.0
-                    ) * opp_item_act
                     opp_abil = P[..., opp_slot, MonIdx.ABILITY_ID]
+                    opp_partner_abil = (
+                        P[..., opp_partner_slot, MonIdx.ABILITY_ID]
+                        * P[..., opp_partner_slot, MonIdx.ALIVE_FLAG]
+                    )
+                    opp_is_grass = _clamp(
+                        P[..., opp_slot, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]]
+                        + P[..., opp_slot, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]],
+                        0.0,
+                        1.0,
+                    )
+                    flower_veil_protects = opp_is_grass * _clamp(
+                        ((opp_abil == float(AbilityID.FLOWER_VEIL)) * 1.0)
+                        + ((opp_partner_abil == float(AbilityID.FLOWER_VEIL)) * 1.0),
+                        0.0,
+                        1.0,
+                    )
+                    is_mirror_armor = (opp_abil == float(AbilityID.MIRROR_ARMOR)) * 1.0
                     opp_abil_immune = _clamp(
                         ((opp_abil == float(AbilityID.INNER_FOCUS)) * 1.0)
                         + ((opp_abil == float(AbilityID.SCRAPPY)) * 1.0)
-                        + ((opp_abil == float(AbilityID.GOOD_AS_GOLD)) * 1.0),
+                        + ((opp_abil == float(AbilityID.GOOD_AS_GOLD)) * 1.0)
+                        + ((opp_abil == float(AbilityID.CLEAR_BODY)) * 1.0)
+                        + ((opp_abil == float(AbilityID.HYPER_CUTTER)) * 1.0)
+                        + flower_veil_protects
+                        + is_mirror_armor,
                         0.0,
                         1.0,
+                    )
+
+                    # Mirror Armor reflects Intimidate back onto the intimidator (r_slot)
+                    mirror_reflect = fire_intim * opp_alive * (1.0 - opp_sub) * is_mirror_armor
+                    P[..., r_slot, MonIdx.BOOST_ATK] = _clamp(
+                        P[..., r_slot, MonIdx.BOOST_ATK] - mirror_reflect * 1.0, -6.0, 6.0
                     )
 
                     intim_lands = (
                         fire_intim
                         * opp_alive
                         * (1.0 - opp_sub)
-                        * (1.0 - opp_clear_amulet)
                         * (1.0 - opp_abil_immune)
                     )
 
                     old_atk_boost = P[..., opp_slot, MonIdx.BOOST_ATK]
-                    actually_lowered = intim_lands * ((old_atk_boost > -6.0) * 1.0)
-                    new_atk_boost = _clamp(old_atk_boost - intim_lands * 1.0, -6.0, 6.0)
+                    is_contrary = (opp_abil == float(AbilityID.CONTRARY)) * 1.0
+                    # Contrary inverts Intimidate from -1 Atk to +1 Atk (does not trigger Defiant/Competitive/White Herb)
+                    atk_delta = intim_lands * (2.0 * is_contrary - 1.0)
+                    actually_lowered = (
+                        intim_lands * (1.0 - is_contrary) * ((old_atk_boost > -6.0) * 1.0)
+                    )
+                    new_atk_boost = _clamp(old_atk_boost + atk_delta, -6.0, 6.0)
 
                     is_defiant = (opp_abil == float(AbilityID.DEFIANT)) * 1.0
                     new_atk_boost = _clamp(
@@ -422,6 +543,26 @@ def _execute_speed_sorted_entry_abilities(
                     old_spa_boost = P[..., opp_slot, MonIdx.BOOST_SPA]
                     P[..., opp_slot, MonIdx.BOOST_SPA] = _clamp(
                         old_spa_boost + actually_lowered * is_competitive * 2.0, -6.0, 6.0
+                    )
+
+                    # White Herb restoration + Unburden trigger on opp_slot
+                    has_white_herb = (
+                        (P[..., opp_slot, MonIdx.ITEM_ID] == float(ItemID.WHITE_HERB)) * 1.0
+                    ) * P[..., opp_slot, MonIdx.ITEM_ACTIVE]
+                    wh_fires = has_white_herb * ((P[..., opp_slot, MonIdx.BOOST_ATK] < 0.0) * 1.0)
+                    for b_offset in range(7):
+                        b_col = MonIdx.BOOST_START + b_offset
+                        cur_b = P[..., opp_slot, b_col]
+                        restored_b = _clamp(cur_b, 0.0, 6.0)
+                        P[..., opp_slot, b_col] = (1.0 - wh_fires) * cur_b + wh_fires * restored_b
+                    P[..., opp_slot, MonIdx.ITEM_ACTIVE] = (
+                        P[..., opp_slot, MonIdx.ITEM_ACTIVE] * (1.0 - wh_fires)
+                    )
+                    opp_is_unburden = (opp_abil == float(AbilityID.UNBURDEN)) * 1.0
+                    P[..., opp_slot, MonIdx.UNBURDEN_ACTIVE] = _clamp(
+                        P[..., opp_slot, MonIdx.UNBURDEN_ACTIVE] + wh_fires * opp_is_unburden,
+                        0.0,
+                        1.0,
                     )
 
             # D. Hospitality (Heals ally active slot by floor(HP_MAX * 0.25))
@@ -452,6 +593,36 @@ def _execute_speed_sorted_entry_abilities(
                         P[..., ally_slot, MonIdx.HP_CUR], ally_hp_max
                     )
 
+    # E. Terrain Seeds (Electric Seed, Grassy Seed, Psychic Seed, Misty Seed) -> +1 Def/SpD + Unburden
+    seed_specs = (
+        (ItemID.ELECTRIC_SEED, T_ELECTRIC, MonIdx.BOOST_DEF),
+        (ItemID.GRASSY_SEED, T_GRASSY, MonIdx.BOOST_DEF),
+        (ItemID.PSYCHIC_SEED, T_PSYCHIC, MonIdx.BOOST_SPD),
+        (ItemID.MISTY_SEED, T_MISTY, MonIdx.BOOST_SPD),
+    )
+    for r_slot in active_roster_slots:
+        s_alive = P[..., r_slot, MonIdx.ALIVE_FLAG]
+        s_item = P[..., r_slot, MonIdx.ITEM_ID]
+        s_abil = P[..., r_slot, MonIdx.ABILITY_ID]
+        for seed_item, seed_t_idx, boost_col in seed_specs:
+            t_active = F[..., FieldIdx.TERRAIN_START + seed_t_idx]
+            seed_fires = (
+                s_alive
+                * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+                * ((s_item == float(seed_item)) * 1.0)
+                * t_active
+            )
+            P[..., r_slot, boost_col] = _clamp(
+                P[..., r_slot, boost_col] + seed_fires * 1.0, -6.0, 6.0
+            )
+            P[..., r_slot, MonIdx.ITEM_ACTIVE] = (
+                P[..., r_slot, MonIdx.ITEM_ACTIVE] * (1.0 - seed_fires)
+            )
+            is_unb = (s_abil == float(AbilityID.UNBURDEN)) * 1.0
+            P[..., r_slot, MonIdx.UNBURDEN_ACTIVE] = _clamp(
+                P[..., r_slot, MonIdx.UNBURDEN_ACTIVE] + seed_fires * is_unb, 0.0, 1.0
+            )
+
     return F, P
 
 
@@ -470,6 +641,12 @@ def execute_barrier1_switches(
     """Execute Phase 1 (Barrier 1: Voluntary Switches at Priority `+6` + Speed-Sorted Entry Abilities)
     across the `[B1, B2]` joint action grid.
     """
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
+
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
     c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
@@ -501,6 +678,16 @@ def execute_barrier1_switches(
     )
 
     persist_mask = tables.switch_persist_mask  # [84]
+    if not (HAS_TORCH and isinstance(P, torch.Tensor)):
+        if hasattr(persist_mask, "detach"):
+            persist_mask = persist_mask.detach().cpu().numpy()
+        else:
+            persist_mask = np.asarray(persist_mask)
+    else:
+        if not isinstance(persist_mask, torch.Tensor):
+            persist_mask = torch.from_numpy(persist_mask).to(P.device)
+        else:
+            persist_mask = persist_mask.to(P.device)
 
     for act_slot, bench_slot, c_grid, target_c in switch_specs:
         sw_gate = (
@@ -523,6 +710,21 @@ def execute_barrier1_switches(
         P[..., act_slot, MonIdx.CHOICE_LOCKED_MOVE] = (
             P[..., act_slot, MonIdx.CHOICE_LOCKED_MOVE] * (1.0 - sw_gate) + (-1.0) * sw_gate
         )
+        P[..., act_slot, MonIdx.LAST_MOVE_IDX] = (
+            P[..., act_slot, MonIdx.LAST_MOVE_IDX] * (1.0 - sw_gate) + (-1.0) * sw_gate
+        )
+        P[..., act_slot, MonIdx.TOXIC_COUNTER] = (
+            P[..., act_slot, MonIdx.TOXIC_COUNTER] * (1.0 - sw_gate) + 1.0 * sw_gate
+        )
+
+        # Regenerator heals 1/3 Max HP upon switching out
+        is_regen = ((P[..., act_slot, MonIdx.ABILITY_ID] == float(AbilityID.REGENERATOR)) * 1.0) * sw_gate
+        regen_heal = _floor(P[..., act_slot, MonIdx.HP_MAX] / 3.0) * is_regen
+        new_hp = P[..., act_slot, MonIdx.HP_CUR] + regen_heal
+        if HAS_TORCH and isinstance(P, torch.Tensor):
+            P[..., act_slot, MonIdx.HP_CUR] = torch.minimum(new_hp, P[..., act_slot, MonIdx.HP_MAX])
+        else:
+            P[..., act_slot, MonIdx.HP_CUR] = np.minimum(new_hp, P[..., act_slot, MonIdx.HP_MAX])
 
         p_act = P[..., act_slot, :].clone() if (HAS_TORCH and isinstance(P, torch.Tensor)) else P[..., act_slot, :].copy()
         p_bench = P[..., bench_slot, :].clone() if (HAS_TORCH and isinstance(P, torch.Tensor)) else P[..., bench_slot, :].copy()
@@ -568,6 +770,12 @@ def execute_barrier2_mega_evolution(
     """
     B1 = P.shape[0]
     B2 = P.shape[1]
+
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
 
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
@@ -615,6 +823,64 @@ def execute_barrier2_mega_evolution(
         mega_abil = P[..., r_slot, MonIdx.MEGA_ABILITY_ID]
         P[..., r_slot, MonIdx.ABILITY_ID] = (1.0 - m_gate) * base_abil + m_gate * mega_abil
 
+        # Transform Primary & Secondary Types when MEGA_TYPE1 >= 0.0 (84, 85)
+        mt1_val = P[..., r_slot, MonIdx.MEGA_TYPE1]
+        mt2_val = P[..., r_slot, MonIdx.MEGA_TYPE2]
+        has_mt1 = m_gate * ((mt1_val >= 0.0) * 1.0)
+        has_mt1_exp = has_mt1[..., None]
+
+        if HAS_TORCH and isinstance(P, torch.Tensor):
+            mt1_idx = torch.clamp(mt1_val.long(), 0, NUM_TYPES - 1)
+            mt1_oh = torch.nn.functional.one_hot(mt1_idx, num_classes=NUM_TYPES).to(torch.float32)
+            has_mt2 = ((mt2_val >= 0.0) * 1.0)[..., None]
+            mt2_idx = torch.clamp(mt2_val.long(), 0, NUM_TYPES - 1)
+            mt2_oh = torch.nn.functional.one_hot(mt2_idx, num_classes=NUM_TYPES).to(torch.float32) * has_mt2
+        else:
+            mt1_idx = np.clip(mt1_val.astype(np.int64), 0, NUM_TYPES - 1)
+            mt1_oh = np.eye(NUM_TYPES, dtype=np.float32)[mt1_idx]
+            has_mt2 = ((mt2_val >= 0.0) * 1.0)[..., None]
+            mt2_idx = np.clip(mt2_val.astype(np.int64), 0, NUM_TYPES - 1)
+            mt2_oh = np.eye(NUM_TYPES, dtype=np.float32)[mt2_idx] * has_mt2
+
+        P[..., r_slot, MonIdx.TYPE1_START:MonIdx.TYPE1_END] = (
+            (1.0 - has_mt1_exp) * P[..., r_slot, MonIdx.TYPE1_START:MonIdx.TYPE1_END]
+            + has_mt1_exp * mt1_oh
+        )
+        P[..., r_slot, MonIdx.TYPE2_START:MonIdx.TYPE2_END] = (
+            (1.0 - has_mt1_exp) * P[..., r_slot, MonIdx.TYPE2_START:MonIdx.TYPE2_END]
+            + has_mt1_exp * mt2_oh
+        )
+
+        # Recalculate GROUNDED_FLAG after Mega type/ability transformation
+        is_flying_now = _clamp(
+            P[..., r_slot, MonIdx.TYPE1_START + TYPE_TO_IDX["flying"]]
+            + P[..., r_slot, MonIdx.TYPE2_START + TYPE_TO_IDX["flying"]],
+            0.0,
+            1.0,
+        )
+        is_levitate_now = _clamp(
+            ((P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.LEVITATE)) * 1.0)
+            + ((P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.EELEVATE)) * 1.0),
+            0.0,
+            1.0,
+        )
+        is_balloon_now = (
+            ((P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.AIR_BALLOON)) * 1.0)
+            * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+        )
+        is_iron_ball_now = (
+            ((P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)) * 1.0)
+            * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+        )
+        new_grounded = _clamp(
+            (1.0 - _clamp(is_flying_now + is_levitate_now + is_balloon_now, 0.0, 1.0)) + is_iron_ball_now,
+            0.0,
+            1.0,
+        )
+        P[..., r_slot, MonIdx.GROUNDED_FLAG] = (
+            (1.0 - m_gate) * P[..., r_slot, MonIdx.GROUNDED_FLAG] + m_gate * new_grounded
+        )
+
         # Update IS_MEGA, CAN_MEGA, and SIDE_MEGA_USED
         P[..., r_slot, MonIdx.IS_MEGA] = _clamp(P[..., r_slot, MonIdx.IS_MEGA] + m_gate, 0.0, 1.0)
         P[..., r_slot, MonIdx.CAN_MEGA] = P[..., r_slot, MonIdx.CAN_MEGA] * (1.0 - m_gate)
@@ -650,6 +916,12 @@ def execute_barrier3_turn_order_sort(
     B1 = P.shape[0]
     B2 = P.shape[1]
 
+    if HAS_TORCH and isinstance(P, torch.Tensor):
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P.device)
+
     c_t1a = trainer_1_choices[:, None, 0] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 0]
     c_t1b = trainer_1_choices[:, None, 1] if trainer_1_choices.ndim == 2 else trainer_1_choices[:, :, 1]
     c_t2a = trainer_2_choices[None, :, 0] if trainer_2_choices.ndim == 2 else trainer_2_choices[:, :, 0]
@@ -680,7 +952,7 @@ def execute_barrier3_turn_order_sort(
         is_sw = ((c_slot >= CHOICE_SWITCH_BENCH1) * 1.0)
         move_idx = (c_slot % 12) % 4
 
-        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 56]
+        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 59]
         if HAS_TORCH and isinstance(P, torch.Tensor):
             m_oh = torch.nn.functional.one_hot(move_idx.long(), num_classes=4).to(torch.float32)
         else:
@@ -694,11 +966,17 @@ def execute_barrier3_turn_order_sort(
 
         abil_id = P[..., r_slot, MonIdx.ABILITY_ID]
         is_prankster = (abil_id == float(AbilityID.PRANKSTER)) * 1.0
+        is_gale_wings = (
+            ((abil_id == float(AbilityID.GALE_WINGS)) * 1.0)
+            * sel_move[..., MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]]
+            * ((P[..., r_slot, MonIdx.HP_CUR] >= P[..., r_slot, MonIdx.HP_MAX]) * 1.0)
+        )
         grounded = P[..., r_slot, MonIdx.GROUNDED_FLAG]
 
         move_prio = (
             base_prio
             + is_prankster * is_status * 1.0
+            + is_gale_wings * 1.0
             + is_grassy_glide * t_grassy * grounded * 1.0
         )
         eff_p = is_sw * 6.0 + (1.0 - is_sw) * move_prio
@@ -867,6 +1145,17 @@ def execute_pre_attack_phases(
 
     B1 = int(trainer_1_choices.shape[0])
     B2 = int(trainer_2_choices.shape[0] if trainer_2_choices.ndim == 2 else trainer_2_choices.shape[1])
+
+    if is_torch:
+        if not isinstance(trainer_1_choices, torch.Tensor):
+            trainer_1_choices = torch.from_numpy(np.asarray(trainer_1_choices)).to(P_init.device)
+        if not isinstance(trainer_2_choices, torch.Tensor):
+            trainer_2_choices = torch.from_numpy(np.asarray(trainer_2_choices)).to(P_init.device)
+    else:
+        if hasattr(trainer_1_choices, "detach"):
+            trainer_1_choices = trainer_1_choices.detach().cpu().numpy()
+        if hasattr(trainer_2_choices, "detach"):
+            trainer_2_choices = trainer_2_choices.detach().cpu().numpy()
 
     if F_init.ndim == 1:
         if is_torch:

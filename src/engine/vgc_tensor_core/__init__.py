@@ -3,7 +3,7 @@
 Coach Porygon VGC — Programmatic Showdown Tensor Core (`src/engine/vgc_tensor_core`)
 ====================================================================================
 
-Exports the canonical `trainer_1`/`trainer_2` tensor schema (`FieldIdx[24]`, `MonIdx[84]`,
+Exports the canonical `trainer_1`/`trainer_2` tensor schema (`FieldIdx[24]`, `MonIdx[86]`,
 `MoveIdx[56]`), bilinear lookup tables, on-the-fly DuckDB `ShowdownTensorCompiler`,
 `LogicalConstraintEngine` (`26x26` action pruner), `rng_engine` (Dual-Draw Spinning-Wheel
 + Counter-Based Hash Scrambling), and the 5-Phase `VgcTensorStateMachine`.
@@ -86,6 +86,7 @@ from .schema_and_tables import (
     NUM_WEATHERS,
     OverrideDefStat,
     OverrideOffStat,
+    RESIST_BERRY_TO_TYPE_IDX,
     ROSTER_SLOTS,
     SLOT_TRAINER_1_A,
     SLOT_TRAINER_1_B,
@@ -177,6 +178,7 @@ __all__ = [
     "OverrideOffStat",
     "PreAttackPhaseResult",
     "PrunedSideActionTensorMask",
+    "RESIST_BERRY_TO_TYPE_IDX",
     "RNGEventID",
     "ROSTER_SLOTS",
     "ReplayTurnExpectation",

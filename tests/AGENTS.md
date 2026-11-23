@@ -1,8 +1,9 @@
 # Test Engineering & QA Rules [SESSION: DEV]
 
-1. **Dual-Tier Test Segregation:** Maintain strict separation of concerns.
-   - `tests/testUT/`: Fast, in-memory unit tests with mocked I/O and zero network calls. 
-   - `tests/testAT/`: End-to-end acceptance, integration, multi-turn simulations, and live endpoint probing.
-2. **1-to-1 Class Parity:** Every production class must have a corresponding test file named exactly `test_<TargetClass>.py`. Monolithic, multi-class test catch-alls are prohibited.
-3. **Graceful Degradation:** Any module utilizing optional heavy dependencies (e.g., `torch`, `scipy`) must implement graceful degradation imports (`try ... except ImportError`) and shield tests using `@unittest.skipUnless` to prevent collection failures in minimal CI environments.
-4. **100% Green Mandate:** Developers must run the standard CI runner (`run_tests.cmd` or `run_tests.sh`) and pass all 5 phases before concluding any feature or bugfix task.
+1. **Dual-Tier Test Segregation (Target Architecture):** Maintain strict separation between fast unit verification and end-to-end integration tests:
+   - `tests/unit/`: Fast, in-memory unit tests with mocked I/O and zero network calls.
+   - `tests/integration/`: End-to-end simulations, DuckDB registry verification, CLI/Replay Coach pipelines, and multi-turn replay verifiers.
+   - *(Transition note: Existing suites under `tests/vgc_tensor_core/`, `tests/engine/`, and `tests/test_*.py` are scheduled to be consolidated into `tests/unit/` and `tests/integration/`.)*
+2. **Identifier & Format Compliance:** All fixtures, assertions, and mocks must strictly use `trainer_1` / `trainer_2` (never `p1` / `p2`) and enforce Regulation M-C invariants (66 SP total, 32 SP cap per stat, 31 IVs, Mega Priority `+5.5`, zero Terastallization).
+3. **Graceful Degradation:** Any test exercising optional heavy dependencies (e.g., `torch`, `scipy`, CUDA) must guard imports cleanly or fall back to CPU so collection never breaks on CPU-only laptops or minimal CI environments.
+4. **100% Green Mandate:** Execute the full pytest suite via `PYTHONPATH=src:. .venv/bin/pytest tests/ -q` and confirm every test passes before concluding any engineering task.

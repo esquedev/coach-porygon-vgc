@@ -3,7 +3,7 @@
 VGC Tensor Core — 50,000-Turn Adversarial Invariant Fuzzer
 ==========================================================
 
-Executes 50,000 randomized state transitions on CUDA (RTX 3060) to mathematically
+Executes 50,000 randomized state transitions on CUDA/CPU to mathematically
 verify that the branchless tensor state machine never produces NaN/Inf, invalid HP
 states, illegal field counters, or out-of-bounds probability metrics:
 
@@ -26,8 +26,11 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
+SRC_DIR = os.path.join(BASE_DIR, "src")
+if SRC_DIR not in sys.path:
+    sys.path.insert(0, SRC_DIR)
 
-from vgc_tensor_core.schema_and_tables import (
+from engine.vgc_tensor_core.schema_and_tables import (
     FIELD_DIM,
     FieldIdx,
     HAS_TORCH,
@@ -40,8 +43,8 @@ from vgc_tensor_core.schema_and_tables import (
     ROSTER_SLOTS,
     build_bilinear_lookup_tables,
 )
-from vgc_tensor_core.state_machine import VgcTensorStateMachine
-from vgc_tensor_core.telemetry_formatter import format_cuda_device_header
+from engine.vgc_tensor_core.state_machine import VgcTensorStateMachine
+from engine.vgc_tensor_core.telemetry_formatter import format_cuda_device_header
 
 if HAS_TORCH:
     import torch
@@ -84,7 +87,7 @@ def run_50k_invariant_fuzzer(
             F_np[i, 0, FieldIdx.TERRAIN_TURNS] = float(rng.randint(0, 6))
             F_np[i, 0, FieldIdx.TRICK_ROOM_TURNS] = float(rng.randint(0, 5))
 
-        # 2. Generate Randomized Roster [B, 8, 84]
+        # 2. Generate Randomized Roster [B, 8, 87]
         P_np = np.zeros((batch_size, 1, ROSTER_SLOTS, MON_DIM), dtype=np.float32)
         max_hps = rng.uniform(100.0, 250.0, size=(batch_size, 1, ROSTER_SLOTS)).astype(np.float32)
         cur_hps = rng.uniform(0.0, 1.0, size=(batch_size, 1, ROSTER_SLOTS)).astype(np.float32) * max_hps
@@ -143,8 +146,8 @@ def run_50k_invariant_fuzzer(
             F=F_tensor,
             P=P_tensor,
             M_moves=M_tensor,
-            p1_choices=p1_c_tensor,
-            p2_choices=p2_c_tensor,
+            trainer_1_choices=p1_c_tensor,
+            trainer_2_choices=p2_c_tensor,
             num_mc_samples=num_mc_samples,
         )
 

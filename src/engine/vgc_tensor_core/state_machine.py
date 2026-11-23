@@ -44,6 +44,7 @@ from .phases_pre_attack import (
     execute_pre_attack_phases,
 )
 from .schema_and_tables import (
+    AbilityID,
     BilinearLookupTables,
     FIELD_DIM,
     FieldIdx,
@@ -71,6 +72,26 @@ if HAS_TORCH:
     TensorOrArray = Union["torch.Tensor", np.ndarray]
 else:
     TensorOrArray = np.ndarray
+
+
+class AnalysisCancelledError(RuntimeError):
+    """Raised when a running tensor simulation is cancelled cleanly via `cancel_event`."""
+
+
+def _compute_safe_thread_budget(device: Any) -> int:
+    """Compute a safe per-chunk thread budget `(B1 * B2 * K_chunk)` for any GPU VRAM or CPU."""
+    if HAS_TORCH and isinstance(device, torch.device) and device.type == "cuda":
+        try:
+            free_bytes, _total_bytes = torch.cuda.mem_get_info(device)
+            free_gb = free_bytes / (1024.0 ** 3)
+            if free_gb >= 4.0:
+                return 65536
+            if free_gb >= 2.0:
+                return 32768
+            return 16384
+        except Exception:
+            return 65536
+    return 65536
 
 
 @dataclass(frozen=True)
@@ -148,13 +169,16 @@ class StepResult:
 
 def _execute_end_of_turn_torch(
     F: "torch.Tensor",             # [B1, B2, K, 24]
-    P: "torch.Tensor",             # [B1, B2, K, 8, 84]
-    M_moves: "torch.Tensor",       # [B1, B2, K, 8, 4, 56]
+    P: "torch.Tensor",             # [B1, B2, K, 8, 87]
+    M_moves: "torch.Tensor",       # [B1, B2, K, 8, 4, 59]
     tables: BilinearLookupTables,
+    auto_promote: bool = False,
+    extra_volatiles: Optional[Dict[str, "torch.Tensor"]] = None,
 ) -> EndOfTurnResult:
     """Pure PyTorch implementation of Phase 5 (End-of-Turn resolution + bench promotions)."""
     F = F.clone()
     P = P.clone()
+    M_moves = M_moves.clone()
 
     device = P.device
     B1, B2, K = P.shape[0], P.shape[1], P.shape[2]
@@ -164,8 +188,17 @@ def _execute_end_of_turn_torch(
     active_hp_max = P[:, :, :, active_slot_tensor, MonIdx.HP_MAX]
     active_alive = active_hp_cur > 0.0
 
-    # 1. Weather residual damage (Sandstorm: 1/16 max HP to non-Rock/Ground/Steel without Safety Goggles)
-    is_sand = (F[:, :, :, FieldIdx.WEATHER_START + W_SAND] > 0.5).unsqueeze(-1)
+    # 1. Weather residual damage & weather EoT healing/cures
+    #    - Sandstorm: 1/16 max HP to non-Rock/Ground/Steel without Overcoat/Sand Force/Sand Veil/Sand Rush
+    #    - Sun: Solar Power & Dry Skin lose 1/8 max HP
+    #    - Rain: Dry Skin heals 1/8 max HP, Rain Dish heals 1/16 max HP, Hydration cures primary status
+    #    - Snow: Ice Body heals 1/16 max HP
+    active_abil = P[:, :, :, active_slot_tensor, MonIdx.ABILITY_ID]
+    cloud_nine_active = torch.any(active_alive & (active_abil == float(AbilityID.CLOUD_NINE)), dim=-1, keepdim=True)
+    is_sand = (F[:, :, :, FieldIdx.WEATHER_START + W_SAND] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
+    is_sun = (F[:, :, :, FieldIdx.WEATHER_START + W_SUN] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
+    is_rain = (F[:, :, :, FieldIdx.WEATHER_START + W_RAIN] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
+    is_snow = (F[:, :, :, FieldIdx.WEATHER_START + W_SNOW] > 0.5).unsqueeze(-1) & (~cloud_nine_active)
     t1 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE1_START:MonIdx.TYPE1_END], dim=-1)
     t2 = torch.argmax(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1)
     has_t2 = torch.sum(P[:, :, :, active_slot_tensor, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1) > 0.5
@@ -175,20 +208,60 @@ def _execute_end_of_turn_torch(
         (t1 == rock_idx) | (t1 == ground_idx) | (t1 == steel_idx)
         | (has_t2 & ((t2 == rock_idx) | (t2 == ground_idx) | (t2 == steel_idx)))
     )
-    has_goggles = (
-        (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5)
-        & (P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID] == float(ItemID.SAFETY_GOGGLES))
+    sand_immune_abil = (
+        (active_abil == float(AbilityID.OVERCOAT))
+        | (active_abil == float(AbilityID.SAND_FORCE))
+        | (active_abil == float(AbilityID.SAND_VEIL))
+        | (active_abil == float(AbilityID.SAND_RUSH))
     )
-    is_sand_immune = sand_immune_types | has_goggles
+    is_sand_immune = sand_immune_types | sand_immune_abil
 
     sand_chip = torch.where(
         is_sand & active_alive & (~is_sand_immune),
         torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
         torch.zeros_like(active_hp_cur),
     )
-    active_hp_cur = torch.clamp(active_hp_cur - sand_chip, min=0.0)
+    sun_chip = torch.where(
+        is_sun & active_alive & ((active_abil == float(AbilityID.SOLAR_POWER)) | (active_abil == float(AbilityID.DRY_SKIN))),
+        torch.clamp(torch.floor(active_hp_max / 8.0), min=1.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    rain_dry_skin_heal = torch.where(
+        is_rain & active_alive & (active_hp_cur < active_hp_max) & (active_abil == float(AbilityID.DRY_SKIN)),
+        torch.clamp(torch.floor(active_hp_max / 8.0), min=1.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    rain_dish_heal = torch.where(
+        is_rain & active_alive & (active_hp_cur < active_hp_max) & (active_abil == float(AbilityID.RAIN_DISH)),
+        torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    ice_body_heal = torch.where(
+        is_snow & active_alive & (active_hp_cur < active_hp_max) & (active_abil == float(AbilityID.ICE_BODY)),
+        torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    active_hp_cur = torch.minimum(
+        torch.clamp(
+            active_hp_cur - sand_chip - sun_chip + rain_dry_skin_heal + rain_dish_heal + ice_body_heal,
+            min=0.0,
+        ),
+        active_hp_max,
+    )
 
-    # 2.Terrain & Item Healing (Grassy Terrain +1/16 grounded, Leftovers +1/16, Black Sludge +1/16 Poison)
+    # Hydration: cures primary status conditions at End-of-Turn in active Rain
+    hydration_cure = is_rain & (active_hp_cur > 0.0) & (active_abil == float(AbilityID.HYDRATION)) & (
+        P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY] < 0.5
+    )
+    if torch.any(hydration_cure):
+        for st_i in range(7):
+            tgt_bit = torch.ones_like(active_hp_cur) if st_i == 0 else torch.zeros_like(active_hp_cur)
+            cur_bit = P[:, :, :, active_slot_tensor, MonIdx.STATUS_START + st_i]
+            P[:, :, :, active_slot_tensor, MonIdx.STATUS_START + st_i] = torch.where(hydration_cure, tgt_bit, cur_bit)
+        cur_tox = P[:, :, :, active_slot_tensor, MonIdx.TOXIC_COUNTER]
+        P[:, :, :, active_slot_tensor, MonIdx.TOXIC_COUNTER] = torch.where(hydration_cure, torch.zeros_like(cur_tox), cur_tox)
+
+    # 2. Terrain & Item Healing (Grassy Terrain +1/16 grounded, Leftovers +1/16)
     is_grassy = (F[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY] > 0.5).unsqueeze(-1)
     is_grounded = P[:, :, :, active_slot_tensor, MonIdx.GROUNDED_FLAG] > 0.5
     grassy_heal = torch.where(
@@ -199,9 +272,7 @@ def _execute_end_of_turn_torch(
 
     item_act = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5
     item_id = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID]
-    has_lefties = item_act & (
-        (item_id == float(ItemID.LEFTOVERS)) | (item_id == float(ItemID.BLACK_SLUDGE))
-    )
+    has_lefties = item_act & (item_id == float(ItemID.LEFTOVERS))
     lefties_heal = torch.where(
         has_lefties & (active_hp_cur > 0.0) & (active_hp_cur < active_hp_max),
         torch.clamp(torch.floor(active_hp_max / 16.0), min=1.0),
@@ -238,8 +309,57 @@ def _execute_end_of_turn_torch(
         active_hp_cur - burn_chip - poison_chip - toxic_chip, min=0.0
     )
 
-    P[:, :, :, active_slot_tensor, MonIdx.HP_CUR] = active_hp_cur
-    P[:, :, :, active_slot_tensor, MonIdx.ALIVE_FLAG] = (active_hp_cur > 0.0).float()
+    # 3.5 Turn-Level Volatile EoT Residuals (Salt Cure, Leech Seed)
+    if extra_volatiles:
+        salt_cured_8 = extra_volatiles.get("salt_cured")
+        if salt_cured_8 is not None:
+            sc_act = salt_cured_8[:, :, :, active_slot_tensor] > 0.5
+            water_idx, steel_idx = TYPE_TO_IDX["water"], TYPE_TO_IDX["steel"]
+            is_water_or_steel = (
+                (t1 == water_idx) | (t1 == steel_idx)
+                | (has_t2 & ((t2 == water_idx) | (t2 == steel_idx)))
+            )
+            sc_div = torch.where(is_water_or_steel, torch.full_like(active_hp_max, 4.0), torch.full_like(active_hp_max, 8.0))
+            sc_chip = torch.where(
+                sc_act & (active_hp_cur > 0.0),
+                torch.clamp(torch.floor(active_hp_max / sc_div), min=1.0),
+                torch.zeros_like(active_hp_cur),
+            )
+            active_hp_cur = torch.clamp(active_hp_cur - sc_chip, min=0.0)
+
+        P[:, :, :, active_slot_tensor, MonIdx.HP_CUR] = active_hp_cur
+        P[:, :, :, active_slot_tensor, MonIdx.ALIVE_FLAG] = (active_hp_cur > 0.0).float()
+
+        leech_src_8 = extra_volatiles.get("leech_seed_src")
+        if leech_src_8 is not None:
+            for act_slot in ACTIVE_SLOTS:
+                ls_src = leech_src_8[:, :, :, act_slot]
+                s_hp = P[:, :, :, act_slot, MonIdx.HP_CUR]
+                s_max = P[:, :, :, act_slot, MonIdx.HP_MAX]
+                ls_active = (ls_src > 0.5) & (s_hp > 0.0)
+                if torch.any(ls_active):
+                    ls_drain = torch.where(
+                        ls_active,
+                        torch.minimum(s_hp, torch.clamp(torch.floor(s_max / 8.0), min=1.0)),
+                        torch.zeros_like(s_hp),
+                    )
+                    new_s_hp = torch.clamp(s_hp - ls_drain, min=0.0)
+                    P[:, :, :, act_slot, MonIdx.HP_CUR] = new_s_hp
+                    P[:, :, :, act_slot, MonIdx.ALIVE_FLAG] = (new_s_hp > 0.0).float()
+
+                    src_idx = torch.clamp(torch.round(ls_src).long() - 1, min=0, max=7)
+                    src_hp = torch.gather(P[:, :, :, :, MonIdx.HP_CUR], 3, src_idx.unsqueeze(-1)).squeeze(-1)
+                    src_max = torch.gather(P[:, :, :, :, MonIdx.HP_MAX], 3, src_idx.unsqueeze(-1)).squeeze(-1)
+                    src_heals = ls_active & (src_hp > 0.0)
+                    new_src_hp = torch.minimum(
+                        src_hp + torch.where(src_heals, ls_drain, torch.zeros_like(ls_drain)),
+                        src_max,
+                    )
+                    P[:, :, :, :, MonIdx.HP_CUR].scatter_(3, src_idx.unsqueeze(-1), new_src_hp.unsqueeze(-1))
+            active_hp_cur = P[:, :, :, active_slot_tensor, MonIdx.HP_CUR]
+    else:
+        P[:, :, :, active_slot_tensor, MonIdx.HP_CUR] = active_hp_cur
+        P[:, :, :, active_slot_tensor, MonIdx.ALIVE_FLAG] = (active_hp_cur > 0.0).float()
 
     # 4. Field & Side Counter Decrements
     w_turns = F[:, :, :, FieldIdx.WEATHER_TURNS]
@@ -310,6 +430,45 @@ def _execute_end_of_turn_torch(
         active_hp_cur > 0.0, act_turns + 1.0, act_turns
     )
 
+    # Speed Boost (+1 Spe at End of Turn for alive active Pokémon)
+    has_speed_boost = (active_hp_cur > 0.0) & (active_abil == float(AbilityID.SPEED_BOOST))
+    if torch.any(has_speed_boost):
+        cur_spe_b = P[:, :, :, active_slot_tensor, MonIdx.BOOST_SPE]
+        P[:, :, :, active_slot_tensor, MonIdx.BOOST_SPE] = torch.clamp(
+            cur_spe_b + torch.where(has_speed_boost, torch.ones_like(cur_spe_b), torch.zeros_like(cur_spe_b)),
+            min=-6.0,
+            max=6.0,
+        )
+
+    # 5.5 Auto-promotion of alive bench Pokémon into fainted active slots
+    if auto_promote:
+        for act_s, (b1_s, b2_s) in [
+            (0, (2, 3)),
+            (1, (2, 3)),
+            (4, (6, 7)),
+            (5, (6, 7)),
+        ]:
+            act_dead = P[:, :, :, act_s, MonIdx.HP_CUR] <= 0.0
+            b1_alive = P[:, :, :, b1_s, MonIdx.HP_CUR] > 0.0
+            b2_alive = P[:, :, :, b2_s, MonIdx.HP_CUR] > 0.0
+
+            promote_b1 = act_dead & b1_alive
+            promote_b2 = act_dead & (~b1_alive) & b2_alive
+
+            for prom_mask, bn_s in ((promote_b1, b1_s), (promote_b2, b2_s)):
+                if torch.any(prom_mask):
+                    act_p = P[:, :, :, act_s, :].clone()
+                    bn_p = P[:, :, :, bn_s, :].clone()
+                    P[:, :, :, act_s, :] = torch.where(prom_mask.unsqueeze(-1), bn_p, P[:, :, :, act_s, :])
+                    P[:, :, :, bn_s, :] = torch.where(prom_mask.unsqueeze(-1), act_p, P[:, :, :, bn_s, :])
+                    P[:, :, :, act_s, MonIdx.ACTIVE_TURNS] = torch.where(
+                        prom_mask, torch.zeros_like(P[:, :, :, act_s, MonIdx.ACTIVE_TURNS]), P[:, :, :, act_s, MonIdx.ACTIVE_TURNS]
+                    )
+                    act_m = M_moves[:, :, :, act_s, :, :].clone()
+                    bn_m = M_moves[:, :, :, bn_s, :, :].clone()
+                    M_moves[:, :, :, act_s, :, :] = torch.where(prom_mask.unsqueeze(-1).unsqueeze(-1), bn_m, M_moves[:, :, :, act_s, :, :])
+                    M_moves[:, :, :, bn_s, :, :] = torch.where(prom_mask.unsqueeze(-1).unsqueeze(-1), act_m, M_moves[:, :, :, bn_s, :, :])
+
     # 6. Match Termination & Empirical Survival / Faint Aggregation
     t1_dead_mask = (P[:, :, :, 0:4, MonIdx.HP_CUR] <= 0.0).float()
     trainer_1_fainted_count = torch.mean(torch.sum(t1_dead_mask, dim=3), dim=2)  # [B1, B2]
@@ -350,20 +509,39 @@ def execute_end_of_turn(
     M_cascade: TensorOrArray,
     tables: BilinearLookupTables,
     replacement_choices: Optional[TensorOrArray] = None,
+    auto_promote: bool = False,
+    extra_volatiles: Optional[Dict[str, TensorOrArray]] = None,
 ) -> EndOfTurnResult:
     """Execute Phase 5 (End-of-Turn resolution) across `[B1, B2, K]` simulation threads."""
+    do_promote = auto_promote or (replacement_choices is not None)
     is_torch = HAS_TORCH and isinstance(P_cascade, torch.Tensor)
     if is_torch:
-        return _execute_end_of_turn_torch(F_cascade, P_cascade, M_cascade, tables)
+        ev_t = None
+        if extra_volatiles:
+            ev_t = {
+                k: (v if isinstance(v, torch.Tensor) else torch.from_numpy(np.asarray(v, dtype=np.float32)).to(P_cascade.device))
+                for k, v in extra_volatiles.items()
+            }
+        return _execute_end_of_turn_torch(
+            F_cascade, P_cascade, M_cascade, tables, auto_promote=do_promote, extra_volatiles=ev_t
+        )
 
     if HAS_TORCH:
         dev = torch.device("cpu")
         tables_t = build_bilinear_lookup_tables(device=dev)
+        ev_t = None
+        if extra_volatiles:
+            ev_t = {
+                k: (v.detach().cpu() if isinstance(v, torch.Tensor) else torch.from_numpy(np.asarray(v, dtype=np.float32)))
+                for k, v in extra_volatiles.items()
+            }
         res_t = _execute_end_of_turn_torch(
             torch.from_numpy(np.asarray(F_cascade, dtype=np.float32)),
             torch.from_numpy(np.asarray(P_cascade, dtype=np.float32)),
             torch.from_numpy(np.asarray(M_cascade, dtype=np.float32)),
             tables_t,
+            auto_promote=do_promote,
+            extra_volatiles=ev_t,
         )
         return EndOfTurnResult(
             F=res_t.F.numpy(),
@@ -387,7 +565,8 @@ def execute_end_of_turn(
 
 def compute_per_thread_board_utility_torch(
     F_eot: "torch.Tensor",  # [B1, B2, K, 24]
-    P_eot: "torch.Tensor",  # [B1, B2, K, 8, 84]
+    P_eot: "torch.Tensor",  # [B1, B2, K, 8, 87]
+    extra_volatiles: Optional[Dict[str, "torch.Tensor"]] = None,
 ) -> "torch.Tensor":
     """Evaluate exact scalar board utility $U_{b_1, b_2, k}$ for `trainer_1` vs `trainer_2`
     inside every individual discrete simulation thread `k in 0..K-1`.
@@ -403,7 +582,14 @@ def compute_per_thread_board_utility_torch(
        $+0.12$ per net offensive/speed boost stage on alive active slots; $+0.20$ per statused opposing mon.
     5. **Side Speed Control / Screens Differential**:
        $+0.25$ for active Tailwind / Screens advantage.
+    6. **Real Speed Initiative Differential (with Trick Room Inversion)**:
+       Compares effective turn-order speeds across alive Pokémon on both sides, inverting advantage
+       when `TRICK_ROOM_TURNS > 0.0`.
+    7. **Weather & Terrain Synergy Differential**:
+       Evaluates active Weather (Sun, Rain, Sand, Snow) and Terrain (Electric, Grassy, Psychic, Misty)
+       against the types and abilities of alive Pokémon on each side.
     """
+    device = P_eot.device
     hp_cur = P_eot[:, :, :, :, MonIdx.HP_CUR]
     hp_max = torch.clamp(P_eot[:, :, :, :, MonIdx.HP_MAX], min=1.0)
     hp_frac = torch.clamp(hp_cur / hp_max, min=0.0, max=1.0)
@@ -421,7 +607,7 @@ def compute_per_thread_board_utility_torch(
     loss_penalty = torch.where(t1_alive_sum <= 0.0, torch.full_like(hp_diff, 2.0), torch.zeros_like(hp_diff))
 
     # Active stat boosts (Atk, Def, SpA, SpD, Spe) weighted on alive active slots
-    boost_weights = torch.tensor([0.10, 0.06, 0.10, 0.06, 0.12], dtype=torch.float32, device=P_eot.device)
+    boost_weights = torch.tensor([0.10, 0.06, 0.10, 0.06, 0.12], dtype=torch.float32, device=device)
     boosts_5 = P_eot[:, :, :, :, MonIdx.BOOST_ATK:MonIdx.BOOST_SPE + 1]  # [B1, B2, K, 8, 5]
     weighted_boosts = torch.sum(boosts_5 * boost_weights, dim=-1) * alive
     t1_boost_score = weighted_boosts[:, :, :, SLOT_TRAINER_1_A] + weighted_boosts[:, :, :, SLOT_TRAINER_1_B]
@@ -449,7 +635,174 @@ def compute_per_thread_board_utility_torch(
     ).float()
     field_diff = 0.25 * (t1_tw - t2_tw) + 0.15 * (t1_scr - t2_scr)
 
-    return hp_diff + alive_diff + win_bonus - loss_penalty + boost_diff + status_diff + field_diff
+    # 6. Real Speed Initiative Differential (All 8 Roster Slots, Inverted under Trick Room)
+    abil_8 = P_eot[:, :, :, :, MonIdx.ABILITY_ID]
+    act_slots_idx = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
+    cloud_nine_on = torch.any(
+        (alive[:, :, :, act_slots_idx] > 0.5) & (abil_8[:, :, :, act_slots_idx] == float(AbilityID.CLOUD_NINE)),
+        dim=-1,
+        keepdim=True,
+    )
+    no_c9 = (~cloud_nine_on).float()
+    w_sun = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SUN].unsqueeze(-1) * no_c9
+    w_rain = F_eot[:, :, :, FieldIdx.WEATHER_START + W_RAIN].unsqueeze(-1) * no_c9
+    w_sand = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SAND].unsqueeze(-1) * no_c9
+    w_snow = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SNOW].unsqueeze(-1) * no_c9
+    t_elec = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_ELECTRIC].unsqueeze(-1)
+    t_grassy = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY].unsqueeze(-1)
+    t_psychic = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_PSYCHIC].unsqueeze(-1)
+
+    base_spe_8 = P_eot[:, :, :, :, MonIdx.STAT_SPE]
+    boost_spe_8 = torch.clamp(P_eot[:, :, :, :, MonIdx.BOOST_SPE], -6.0, 6.0)
+    two = torch.tensor(2.0, dtype=torch.float32, device=device)
+    s1_8 = torch.floor(base_spe_8 * (torch.maximum(two, two + boost_spe_8) / torch.maximum(two, two - boost_spe_8)))
+
+    w_spe_gate = torch.clamp(
+        ((abil_8 == float(AbilityID.CHLOROPHYLL)).float() * w_sun)
+        + ((abil_8 == float(AbilityID.SWIFT_SWIM)).float() * w_rain)
+        + ((abil_8 == float(AbilityID.SAND_RUSH)).float() * w_sand)
+        + ((abil_8 == float(AbilityID.SLUSH_RUSH)).float() * w_snow)
+        + ((abil_8 == float(AbilityID.SURGE_SURFER)).float() * t_elec),
+        0.0,
+        1.0,
+    )
+    unb_8 = P_eot[:, :, :, :, MonIdx.UNBURDEN_ACTIVE]
+    qf_8 = ((abil_8 == float(AbilityID.QUICK_FEET)).float()) * torch.clamp(1.0 - P_eot[:, :, :, :, MonIdx.STATUS_HEALTHY], 0.0, 1.0)
+    s2_8 = torch.floor(s1_8 * (1.0 + w_spe_gate) * (1.0 + unb_8) * (1.0 + 0.5 * qf_8))
+    is_scarf_8 = ((P_eot[:, :, :, :, MonIdx.ITEM_ID] == float(ItemID.CHOICE_SCARF)).float()) * P_eot[:, :, :, :, MonIdx.ITEM_ACTIVE]
+    is_iron_ball_8 = ((P_eot[:, :, :, :, MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)).float()) * P_eot[:, :, :, :, MonIdx.ITEM_ACTIVE]
+    s3_8 = torch.floor(s2_8 * (1.0 + 0.5 * is_scarf_8) * (1.0 - 0.5 * is_iron_ball_8))
+    tw_8 = torch.cat([t1_tw.unsqueeze(-1).expand(-1, -1, -1, 4), t2_tw.unsqueeze(-1).expand(-1, -1, -1, 4)], dim=-1)
+    s4_8 = torch.floor(s3_8 * (1.0 + tw_8))
+    para_8 = P_eot[:, :, :, :, MonIdx.STATUS_PARALYZE] * (1.0 - qf_8)
+    s_eff_8 = torch.floor(s4_8 * (1.0 - 0.5 * para_8))
+
+    tr_active = (F_eot[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).float()
+    tr_sign = (1.0 - 2.0 * tr_active)  # +1.0 normal, -1.0 Trick Room
+    ordered_spe_8 = s_eff_8 * tr_sign.unsqueeze(-1)
+
+    # Active pairwise speed initiative (trainer_1 active slots 0,1 vs trainer_2 active slots 4,5)
+    t1_act_spe = ordered_spe_8[:, :, :, 0:2].unsqueeze(-1)  # [B1, B2, K, 2, 1]
+    t2_act_spe = ordered_spe_8[:, :, :, 4:6].unsqueeze(-2)  # [B1, B2, K, 1, 2]
+    t1_act_alv = alive[:, :, :, 0:2].unsqueeze(-1)
+    t2_act_alv = alive[:, :, :, 4:6].unsqueeze(-2)
+    pair_alive = t1_act_alv * t2_act_alv
+    pair_sign = torch.sign(t1_act_spe - t2_act_spe) * pair_alive
+    speed_initiative_diff = 0.06 * torch.sum(pair_sign, dim=(-2, -1))
+
+    # 7. Weather & Terrain Synergy Differential across alive roster slots (0..3 vs 4..7)
+    is_fire = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["fire"]],
+        0.0,
+        1.0,
+    )
+    is_water = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["water"]],
+        0.0,
+        1.0,
+    )
+    is_rock_ground_steel = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["rock"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["rock"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["ground"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["ground"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["steel"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]],
+        0.0,
+        1.0,
+    )
+    is_ice = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["ice"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["ice"]],
+        0.0,
+        1.0,
+    )
+    is_elec = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["electric"]],
+        0.0,
+        1.0,
+    )
+    is_grass = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]],
+        0.0,
+        1.0,
+    )
+    is_psychic = torch.clamp(
+        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["psychic"]]
+        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["psychic"]],
+        0.0,
+        1.0,
+    )
+    grounded_8 = P_eot[:, :, :, :, MonIdx.GROUNDED_FLAG]
+
+    sun_syn = w_sun * (
+        is_fire
+        + (abil_8 == float(AbilityID.SOLAR_POWER)).float()
+        + (abil_8 == float(AbilityID.CHLOROPHYLL)).float()
+        + 0.4 * (abil_8 == float(AbilityID.LEAF_GUARD)).float()
+        - 0.5 * is_water
+        - 0.6 * (abil_8 == float(AbilityID.DRY_SKIN)).float()
+    )
+    rain_syn = w_rain * (
+        is_water
+        + (abil_8 == float(AbilityID.SWIFT_SWIM)).float()
+        + 0.6 * (abil_8 == float(AbilityID.DRY_SKIN)).float()
+        + 0.4 * (abil_8 == float(AbilityID.RAIN_DISH)).float()
+        + 0.4 * (abil_8 == float(AbilityID.HYDRATION)).float()
+        - 0.5 * is_fire
+    )
+    sand_syn = w_sand * (
+        0.6 * is_rock_ground_steel
+        + (abil_8 == float(AbilityID.SAND_RUSH)).float()
+        + 0.6 * (abil_8 == float(AbilityID.SAND_FORCE)).float()
+    )
+    snow_syn = w_snow * (
+        0.9 * is_ice
+        + (abil_8 == float(AbilityID.SLUSH_RUSH)).float()
+        + 0.4 * (abil_8 == float(AbilityID.ICE_BODY)).float()
+    )
+    terrain_syn = grounded_8 * (
+        t_elec * (0.8 * is_elec + (abil_8 == float(AbilityID.SURGE_SURFER)).float())
+        + t_grassy * (0.8 * is_grass)
+        + t_psychic * (0.8 * is_psychic)
+    )
+    mon_synergy = (sun_syn + rain_syn + sand_syn + snow_syn + terrain_syn) * alive
+    synergy_diff = 0.08 * (torch.sum(mon_synergy[:, :, :, 0:4], dim=-1) - torch.sum(mon_synergy[:, :, :, 4:8], dim=-1))
+
+    # 8. Active Tactical Disruption Differential (Encore, Leech Seed, Salt Cure, Yawn, Disable, Perish Song)
+    enc_active = (P_eot[:, :, :, :, MonIdx.ENCORE_TURNS] > 0.0).float() * alive
+    vol_diff = 0.12 * (torch.sum(enc_active[:, :, :, 4:6], dim=-1) - torch.sum(enc_active[:, :, :, 0:2], dim=-1))
+    if extra_volatiles:
+        for v_key, v_weight in (
+            ("leech_seed_src", 0.16),
+            ("salt_cured", 0.16),
+            ("yawned", 0.18),
+            ("disabled", 0.10),
+            ("perish_song", 0.08),
+        ):
+            v_tens = extra_volatiles.get(v_key)
+            if v_tens is not None:
+                v_mask = (v_tens > 0.5).float() * alive
+                vol_diff = vol_diff + v_weight * (
+                    torch.sum(v_mask[:, :, :, 4:6], dim=-1) - torch.sum(v_mask[:, :, :, 0:2], dim=-1)
+                )
+
+    return (
+        hp_diff
+        + alive_diff
+        + win_bonus
+        - loss_penalty
+        + boost_diff
+        + status_diff
+        + field_diff
+        + speed_initiative_diff
+        + synergy_diff
+        + vol_diff
+    )
 
 
 def aggregate_simulation_statistics_torch(
@@ -496,7 +849,7 @@ def aggregate_simulation_statistics_torch(
 
 
 # =============================================================================
-# 3. UNIFIED VGC TENSOR STATE MACHINE (SUPPORTS CHUNKED K=1000+ SIMULATIONS)
+# 3. UNIFIED VGC TENSOR STATE MACHINE (2D TILING + CHUNKED K=1000+ SIMULATIONS)
 # =============================================================================
 
 class VgcTensorStateMachine:
@@ -528,30 +881,35 @@ class VgcTensorStateMachine:
         self.tables = build_bilinear_lookup_tables(device=self.device)
         self.logic_engine = LogicalConstraintEngine(tables=self.tables)
 
-    def step(
+    def _step_single_tile(
         self,
         F: TensorOrArray,
         P: TensorOrArray,
         M_moves: TensorOrArray,
         trainer_1_choices: TensorOrArray,
         trainer_2_choices: TensorOrArray,
-        num_mc_samples: int = 256,
-        replacement_choices: Optional[TensorOrArray] = None,
-        rng_seed: Optional[int] = 42,
-        risk_aversion_lambda: Optional[float] = None,
-        max_sim_chunk_size: int = 512,
+        num_mc_samples: int,
+        replacement_choices: Optional[TensorOrArray],
+        rng_seed: int,
+        risk_aversion_lambda: float,
+        max_sim_chunk_size: int,
+        resolve_lead_entry_abilities: bool = False,
+        _timings_accum: Optional[Dict[str, float]] = None,
+        cancel_event: Optional[Any] = None,
+        chunk_callback: Optional[Any] = None,
     ) -> StepResult:
-        """Execute a single VGC Doubles turn across `[B1, B2]` action pairs and `num_mc_samples` discrete RNG threads.
+        """Execute a single `(tb1, tb2)` tile across `num_mc_samples` discrete RNG threads."""
+        import time as _time
 
-        Automatically chunks execution when `num_mc_samples > max_sim_chunk_size` so you can run
-        thousands of simulations (`1024`, `2048`, `4096+`) per joint action pair with bounded VRAM!
-        """
-        lam = self.risk_aversion_lambda if risk_aversion_lambda is None else float(risk_aversion_lambda)
-        seed_base = int(rng_seed if rng_seed is not None else 42)
+        if cancel_event is not None and cancel_event.is_set():
+            raise AnalysisCancelledError("Simulation cancelled before tile start.")
+
+        lam = float(risk_aversion_lambda)
+        seed_base = int(rng_seed)
         K_total = int(max(1, num_mc_samples))
         is_torch_in = HAS_TORCH and isinstance(P, torch.Tensor)
 
-        # 1. Phases 1-3: Pre-Attack Synchronization Barriers (Deterministic given choices, except tie-break order)
+        _t0 = _time.perf_counter() if _timings_accum is not None else 0.0
         pre_attack_res = execute_pre_attack_phases(
             F_init=F,
             P_init=P,
@@ -560,15 +918,21 @@ class VgcTensorStateMachine:
             trainer_2_choices=trainer_2_choices,
             tables=self.tables,
             rng_seed=seed_base,
+            resolve_lead_entry_abilities=resolve_lead_entry_abilities,
         )
+        if _timings_accum is not None:
+            _t1 = _time.perf_counter()
+            _timings_accum["pre_attack_s"] = _timings_accum.get("pre_attack_s", 0.0) + (_t1 - _t0)
 
         B1, B2 = pre_attack_res.P.shape[0], pre_attack_res.P.shape[1]
-        # Bound total simultaneous simulation threads (B1 * B2 * k_chunk <= 16,384) to cap peak RAM/VRAM
-        max_threads_per_chunk = 16384
+        dev_obj = P.device if is_torch_in else None
+        max_threads_per_chunk = _compute_safe_thread_budget(dev_obj)
         effective_chunk_size = max(1, min(int(max_sim_chunk_size), max_threads_per_chunk // max(1, B1 * B2)))
 
-        # If K_total fits in a single chunk, run directly
         if K_total <= effective_chunk_size:
+            if cancel_event is not None and cancel_event.is_set():
+                raise AnalysisCancelledError("Simulation cancelled before attack cascade.")
+            _ta0 = _time.perf_counter() if _timings_accum is not None else 0.0
             attack_res = execute_attack_cascade(
                 F_init=pre_attack_res.F,
                 P_init=pre_attack_res.P,
@@ -580,20 +944,31 @@ class VgcTensorStateMachine:
                 num_mc_samples=K_total,
                 rng_seed=seed_base,
             )
+            if _timings_accum is not None:
+                _ta1 = _time.perf_counter()
+                _timings_accum["attack_s"] = _timings_accum.get("attack_s", 0.0) + (_ta1 - _ta0)
             eot_res = execute_end_of_turn(
                 F_cascade=attack_res.F,
                 P_cascade=attack_res.P,
                 M_cascade=attack_res.M_moves,
                 tables=self.tables,
                 replacement_choices=replacement_choices,
+                extra_volatiles=attack_res.extra_volatiles,
             )
 
             if is_torch_in:
-                u_k = compute_per_thread_board_utility_torch(eot_res.F, eot_res.P)
+                u_k = compute_per_thread_board_utility_torch(
+                    eot_res.F, eot_res.P, extra_volatiles=attack_res.extra_volatiles
+                )
                 stats = aggregate_simulation_statistics_torch(u_k, eot_res.faint_prob, lam)
             else:
+                ev_t = (
+                    {k: torch.from_numpy(np.asarray(v, dtype=np.float32)) for k, v in attack_res.extra_volatiles.items()}
+                    if attack_res.extra_volatiles
+                    else None
+                )
                 u_k_t = compute_per_thread_board_utility_torch(
-                    torch.from_numpy(eot_res.F), torch.from_numpy(eot_res.P)
+                    torch.from_numpy(eot_res.F), torch.from_numpy(eot_res.P), extra_volatiles=ev_t
                 )
                 stats_t = aggregate_simulation_statistics_torch(
                     u_k_t, torch.from_numpy(eot_res.faint_prob), lam
@@ -611,6 +986,9 @@ class VgcTensorStateMachine:
                     faint_prob=eot_res.faint_prob,
                     survival_prob=eot_res.survival_prob,
                 )
+            if _timings_accum is not None:
+                _te1 = _time.perf_counter()
+                _timings_accum["eot_s"] = _timings_accum.get("eot_s", 0.0) + (_te1 - _ta1)
 
             return StepResult(
                 F=eot_res.F,
@@ -628,7 +1006,6 @@ class VgcTensorStateMachine:
                 winner=eot_res.winner,
             )
 
-        # Multi-chunk execution for large K_total (e.g., 1024..10000+ simulations)
         utilities_chunks = []
         mean_hp_accum = None
         faint_prob_accum = None
@@ -642,11 +1019,15 @@ class VgcTensorStateMachine:
 
         remaining = K_total
         chunk_idx = 0
+        total_chunks = max(1, (K_total + effective_chunk_size - 1) // effective_chunk_size)
         while remaining > 0:
+            if cancel_event is not None and cancel_event.is_set():
+                raise AnalysisCancelledError("Simulation cancelled during Monte Carlo chunking.")
             k_chunk = min(effective_chunk_size, remaining)
             weight = float(k_chunk) / float(K_total)
             chunk_seed = seed_base + chunk_idx * 100003
 
+            _tc0 = _time.perf_counter() if _timings_accum is not None else 0.0
             att_c = execute_attack_cascade(
                 F_init=pre_attack_res.F,
                 P_init=pre_attack_res.P,
@@ -658,21 +1039,33 @@ class VgcTensorStateMachine:
                 num_mc_samples=k_chunk,
                 rng_seed=chunk_seed,
             )
+            if _timings_accum is not None:
+                _tc1 = _time.perf_counter()
+                _timings_accum["attack_s"] = _timings_accum.get("attack_s", 0.0) + (_tc1 - _tc0)
             eot_c = execute_end_of_turn(
                 F_cascade=att_c.F,
                 P_cascade=att_c.P,
                 M_cascade=att_c.M_moves,
                 tables=self.tables,
                 replacement_choices=replacement_choices,
+                extra_volatiles=att_c.extra_volatiles,
             )
-
-            if first_attack_res is None:
-                first_attack_res = att_c
-                first_eot_res = eot_c
+            if _timings_accum is not None:
+                _tc2 = _time.perf_counter()
+                _timings_accum["eot_s"] = _timings_accum.get("eot_s", 0.0) + (_tc2 - _tc1)
 
             f_t = eot_c.F if is_torch_in else torch.from_numpy(eot_c.F)
             p_t = eot_c.P if is_torch_in else torch.from_numpy(eot_c.P)
-            u_c = compute_per_thread_board_utility_torch(f_t, p_t)
+            ev_c = (
+                att_c.extra_volatiles
+                if is_torch_in
+                else (
+                    {k: torch.from_numpy(np.asarray(v, dtype=np.float32)) for k, v in att_c.extra_volatiles.items()}
+                    if att_c.extra_volatiles
+                    else None
+                )
+            )
+            u_c = compute_per_thread_board_utility_torch(f_t, p_t, extra_volatiles=ev_c)
             utilities_chunks.append(u_c)
 
             if mean_hp_accum is None:
@@ -692,8 +1085,16 @@ class VgcTensorStateMachine:
                 hit_rate_accum = hit_rate_accum + att_c.hit_rate_observed * weight
                 crit_rate_accum = crit_rate_accum + att_c.crit_rate_observed * weight
 
+            if first_attack_res is None:
+                first_attack_res = att_c
+                first_eot_res = eot_c
+            else:
+                del att_c, eot_c
+
             remaining -= k_chunk
             chunk_idx += 1
+            if chunk_callback is not None:
+                chunk_callback(chunk_idx, total_chunks, K_total - remaining, K_total)
 
         u_all_t = torch.cat(utilities_chunks, dim=-1)  # [B1, B2, K_total]
         fp_t = faint_prob_accum if is_torch_in else torch.from_numpy(faint_prob_accum)
@@ -762,6 +1163,422 @@ class VgcTensorStateMachine:
             winner=agg_eot_res.winner,
         )
 
+    def step(
+        self,
+        F: TensorOrArray,
+        P: TensorOrArray,
+        M_moves: TensorOrArray,
+        trainer_1_choices: Optional[TensorOrArray] = None,
+        trainer_2_choices: Optional[TensorOrArray] = None,
+        num_mc_samples: int = 256,
+        replacement_choices: Optional[TensorOrArray] = None,
+        rng_seed: Optional[int] = 42,
+        risk_aversion_lambda: Optional[float] = None,
+        max_sim_chunk_size: int = 512,
+        tile_size: Optional[int] = None,
+        resolve_lead_entry_abilities: bool = False,
+        progress_callback: Optional[Any] = None,
+        cancel_event: Optional[Any] = None,
+        **kwargs: Any,
+    ) -> StepResult:
+        """Execute a single VGC Doubles turn across `[B1, B2]` action pairs and `num_mc_samples` discrete RNG threads.
+
+        Supports automatic **2D Tiling over `(B1, B2)`** so arbitrarily large unpruned strategy grids
+        (up to `676 x 676`) execute in bounded `O(1)` memory on both GPU and CPU while preserving
+        exact bit-for-bit mathematical equivalence with full-matrix execution!
+        """
+        if trainer_1_choices is None or trainer_2_choices is None:
+            raise ValueError("Both trainer_1_choices and trainer_2_choices must be provided.")
+        if cancel_event is not None and cancel_event.is_set():
+            raise AnalysisCancelledError("Simulation cancelled before step start.")
+
+        lam = self.risk_aversion_lambda if risk_aversion_lambda is None else float(risk_aversion_lambda)
+        seed_base = int(rng_seed if rng_seed is not None else 42)
+        K_total = int(max(1, num_mc_samples))
+        is_torch_in = HAS_TORCH and isinstance(P, torch.Tensor)
+
+        B1 = int(trainer_1_choices.shape[0])
+        B2 = int(trainer_2_choices.shape[0] if trainer_2_choices.ndim == 2 else trainer_2_choices.shape[1])
+
+        # Adaptive tile_size scaled by device AND K_total so every tile completes rapidly (<1s)
+        # with bounded VRAM/RAM and frequent progress/cancellation checkpoints.
+        if tile_size is None:
+            is_cuda = is_torch_in and P.is_cuda
+            if is_cuda:
+                if K_total >= 512:
+                    eff_tile = 16
+                elif K_total >= 256:
+                    eff_tile = 24
+                else:
+                    eff_tile = 32
+            else:
+                if K_total >= 256:
+                    eff_tile = 8
+                elif K_total >= 128:
+                    eff_tile = 12
+                else:
+                    eff_tile = 16
+        else:
+            eff_tile = max(1, int(tile_size))
+
+        timings_accum: Optional[Dict[str, float]] = {} if progress_callback is not None else None
+
+        def _count_pre_stats(pre_res: Any) -> Tuple[int, int, int]:
+            sw = pre_res.switched_mask
+            mg = pre_res.mega_evolved_mask
+            st = pre_res.speed_tie_alert
+            if HAS_TORCH and isinstance(sw, torch.Tensor):
+                sw_c = int((sw > 0.5).any(dim=-1).sum().item())
+                mg_c = int((mg > 0.5).any(dim=-1).sum().item())
+                st_c = int((st > 0.5).sum().item())
+            else:
+                sw_c = int(np.sum(np.any(np.asarray(sw) > 0.5, axis=-1)))
+                mg_c = int(np.sum(np.any(np.asarray(mg) > 0.5, axis=-1)))
+                st_c = int(np.sum(np.asarray(st) > 0.5))
+            return sw_c, mg_c, st_c
+
+        # If the matrix fits inside a single tile (or input F/P/M_moves are already 3D/4D expanded), run directly
+        if (B1 <= eff_tile and B2 <= eff_tile) or P.ndim > 2 or trainer_1_choices.ndim != 2 or trainer_2_choices.ndim != 2:
+            tot_cells_s = B1 * B2
+            tot_traj_s = tot_cells_s * K_total
+
+            def _single_chunk_cb(c_idx: int, c_tot: int, k_done: int, k_all: int) -> None:
+                if progress_callback is not None and c_tot > 1:
+                    progress_callback(
+                        {
+                            "event": "tile_progress",
+                            "tile": 1,
+                            "total_tiles": 1,
+                            "chunk": c_idx,
+                            "total_chunks": c_tot,
+                            "cells_done": tot_cells_s,
+                            "total_cells": tot_cells_s,
+                            "trajectories_done": tot_cells_s * k_done,
+                            "total_trajectories": tot_traj_s,
+                        }
+                    )
+
+            res_single = self._step_single_tile(
+                F=F,
+                P=P,
+                M_moves=M_moves,
+                trainer_1_choices=trainer_1_choices,
+                trainer_2_choices=trainer_2_choices,
+                num_mc_samples=K_total,
+                replacement_choices=replacement_choices,
+                rng_seed=seed_base,
+                risk_aversion_lambda=lam,
+                max_sim_chunk_size=max_sim_chunk_size,
+                resolve_lead_entry_abilities=resolve_lead_entry_abilities,
+                _timings_accum=timings_accum,
+                cancel_event=cancel_event,
+                chunk_callback=_single_chunk_cb if progress_callback is not None else None,
+            )
+            if progress_callback is not None and timings_accum is not None:
+                sw_c, mg_c, st_c = _count_pre_stats(res_single.pre_attack)
+                progress_callback(
+                    {
+                        "event": "tile_progress",
+                        "tile": 1,
+                        "total_tiles": 1,
+                        "cells_done": tot_cells_s,
+                        "total_cells": tot_cells_s,
+                        "trajectories_done": tot_traj_s,
+                        "total_trajectories": tot_traj_s,
+                    }
+                )
+                progress_callback(
+                    {
+                        "event": "phases_summary",
+                        "pre_attack_s": timings_accum.get("pre_attack_s", 0.01),
+                        "attack_s": timings_accum.get("attack_s", 0.01),
+                        "eot_s": timings_accum.get("eot_s", 0.01),
+                        "switch_cells": sw_c,
+                        "mega_cells": mg_c,
+                        "speed_tie_cells": st_c,
+                        "total_tiles": 1,
+                        "total_cells": tot_cells_s,
+                        "total_trajectories": tot_traj_s,
+                    }
+                )
+            return res_single
+
+        # 2D Tiling across (B1, B2) with exact global RNG coordinate context
+        from .rng_engine import rng_tile_context
+
+        dev = P.device if is_torch_in else torch.device("cpu")
+        mean_u_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        std_u_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        cvar_10_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        p5_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        p95_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        risk_adj_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        win_prob_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+
+        mean_hp_mat = torch.zeros((B1, B2, ROSTER_SLOTS), dtype=torch.float32, device=dev)
+        faint_prob_mat = torch.zeros((B1, B2, ROSTER_SLOTS), dtype=torch.float32, device=dev)
+        surv_prob_mat = torch.zeros((B1, B2, ROSTER_SLOTS), dtype=torch.float32, device=dev)
+        roll_var_mat = torch.zeros((B1, B2, ROSTER_SLOTS), dtype=torch.float32, device=dev)
+        mean_dmg_mat = torch.zeros((B1, B2, 4), dtype=torch.float32, device=dev)
+        hit_rate_mat = torch.zeros((B1, B2, 4), dtype=torch.float32, device=dev)
+        crit_rate_mat = torch.zeros((B1, B2, 4), dtype=torch.float32, device=dev)
+        t1_faints_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        t2_faints_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        is_term_mat = torch.zeros((B1, B2), dtype=torch.float32, device=dev)
+        winner_mat = torch.zeros((B1, B2), dtype=torch.int32, device=dev)
+
+        first_tile_res: Optional[StepResult] = None
+        n_tiles_i = (B1 + eff_tile - 1) // eff_tile
+        n_tiles_j = (B2 + eff_tile - 1) // eff_tile
+        total_tiles = max(1, n_tiles_i * n_tiles_j)
+        total_cells = B1 * B2
+        total_trajectories = total_cells * K_total
+        tile_counter = 0
+        cells_done = 0
+        switch_cells_total = 0
+        mega_cells_total = 0
+        speed_tie_cells_total = 0
+
+        for i0 in range(0, B1, eff_tile):
+            i1 = min(B1, i0 + eff_tile)
+            t1_sub = trainer_1_choices[i0:i1]
+            for j0 in range(0, B2, eff_tile):
+                if cancel_event is not None and cancel_event.is_set():
+                    raise AnalysisCancelledError("Simulation cancelled between 2D tiles.")
+                j1 = min(B2, j0 + eff_tile)
+                t2_sub = trainer_2_choices[j0:j1]
+                tile_cells = (i1 - i0) * (j1 - j0)
+                cur_tile_num = tile_counter + 1
+                base_traj = cells_done * K_total
+
+                def _tile_chunk_cb(
+                    c_idx: int,
+                    c_tot: int,
+                    k_done: int,
+                    k_all: int,
+                    _tn: int = cur_tile_num,
+                    _bt: int = base_traj,
+                    _tc: int = tile_cells,
+                ) -> None:
+                    if progress_callback is not None and c_tot > 1:
+                        progress_callback(
+                            {
+                                "event": "tile_progress",
+                                "tile": _tn,
+                                "total_tiles": total_tiles,
+                                "chunk": c_idx,
+                                "total_chunks": c_tot,
+                                "cells_done": cells_done,
+                                "total_cells": total_cells,
+                                "trajectories_done": _bt + _tc * k_done,
+                                "total_trajectories": total_trajectories,
+                            }
+                        )
+
+                with rng_tile_context(i0, j0, B1, B2):
+                    tile_res = self._step_single_tile(
+                        F=F,
+                        P=P,
+                        M_moves=M_moves,
+                        trainer_1_choices=t1_sub,
+                        trainer_2_choices=t2_sub,
+                        num_mc_samples=K_total,
+                        replacement_choices=replacement_choices,
+                        rng_seed=seed_base,
+                        risk_aversion_lambda=lam,
+                        max_sim_chunk_size=max_sim_chunk_size,
+                        resolve_lead_entry_abilities=resolve_lead_entry_abilities,
+                        _timings_accum=timings_accum,
+                        cancel_event=cancel_event,
+                        chunk_callback=_tile_chunk_cb if progress_callback is not None else None,
+                    )
+
+                if first_tile_res is None:
+                    first_tile_res = tile_res
+
+                if progress_callback is not None:
+                    tile_counter += 1
+                    cells_done += tile_cells
+                    sw_c, mg_c, st_c = _count_pre_stats(tile_res.pre_attack)
+                    switch_cells_total += sw_c
+                    mega_cells_total += mg_c
+                    speed_tie_cells_total += st_c
+                    progress_callback(
+                        {
+                            "event": "tile_progress",
+                            "tile": tile_counter,
+                            "total_tiles": total_tiles,
+                            "cells_done": cells_done,
+                            "total_cells": total_cells,
+                            "trajectories_done": cells_done * K_total,
+                            "total_trajectories": total_trajectories,
+                        }
+                    )
+
+                if is_torch_in:
+                    mean_u_mat[i0:i1, j0:j1] = tile_res.stats.mean_utility
+                    std_u_mat[i0:i1, j0:j1] = tile_res.stats.std_utility
+                    cvar_10_mat[i0:i1, j0:j1] = tile_res.stats.cvar_10_utility
+                    p5_mat[i0:i1, j0:j1] = tile_res.stats.p5_utility
+                    p95_mat[i0:i1, j0:j1] = tile_res.stats.p95_utility
+                    risk_adj_mat[i0:i1, j0:j1] = tile_res.stats.risk_adjusted_utility
+                    win_prob_mat[i0:i1, j0:j1] = tile_res.stats.win_turn_prob
+                    mean_hp_mat[i0:i1, j0:j1] = tile_res.mean_hp
+                    faint_prob_mat[i0:i1, j0:j1] = tile_res.faint_prob
+                    surv_prob_mat[i0:i1, j0:j1] = tile_res.survival_prob
+                    roll_var_mat[i0:i1, j0:j1] = tile_res.roll_variance_alert
+                    mean_dmg_mat[i0:i1, j0:j1] = tile_res.attack_cascade.mean_damage_dealt
+                    hit_rate_mat[i0:i1, j0:j1] = tile_res.attack_cascade.hit_rate_observed
+                    crit_rate_mat[i0:i1, j0:j1] = tile_res.attack_cascade.crit_rate_observed
+                    t1_faints_mat[i0:i1, j0:j1] = tile_res.end_of_turn.trainer_1_fainted_count
+                    t2_faints_mat[i0:i1, j0:j1] = tile_res.end_of_turn.trainer_2_fainted_count
+                    is_term_mat[i0:i1, j0:j1] = tile_res.is_terminal
+                    winner_mat[i0:i1, j0:j1] = tile_res.winner
+                else:
+                    mean_u_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.mean_utility)
+                    std_u_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.std_utility)
+                    cvar_10_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.cvar_10_utility)
+                    p5_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.p5_utility)
+                    p95_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.p95_utility)
+                    risk_adj_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.risk_adjusted_utility)
+                    win_prob_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.stats.win_turn_prob)
+                    mean_hp_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.mean_hp)
+                    faint_prob_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.faint_prob)
+                    surv_prob_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.survival_prob)
+                    roll_var_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.roll_variance_alert)
+                    mean_dmg_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.attack_cascade.mean_damage_dealt)
+                    hit_rate_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.attack_cascade.hit_rate_observed)
+                    crit_rate_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.attack_cascade.crit_rate_observed)
+                    t1_faints_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.end_of_turn.trainer_1_fainted_count)
+                    t2_faints_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.end_of_turn.trainer_2_fainted_count)
+                    is_term_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.is_terminal)
+                    winner_mat[i0:i1, j0:j1] = torch.from_numpy(tile_res.winner)
+
+        assert first_tile_res is not None
+        if progress_callback is not None and timings_accum is not None:
+            progress_callback(
+                {
+                    "event": "phases_summary",
+                    "pre_attack_s": timings_accum.get("pre_attack_s", 0.01),
+                    "attack_s": timings_accum.get("attack_s", 0.01),
+                    "eot_s": timings_accum.get("eot_s", 0.01),
+                    "switch_cells": switch_cells_total,
+                    "mega_cells": mega_cells_total,
+                    "speed_tie_cells": speed_tie_cells_total,
+                    "total_tiles": total_tiles,
+                    "total_cells": total_cells,
+                    "total_trajectories": total_trajectories,
+                }
+            )
+        if is_torch_in:
+            stats = TurnSimulationStatistics(
+                num_simulations=K_total,
+                risk_aversion_lambda=lam,
+                mean_utility=mean_u_mat,
+                std_utility=std_u_mat,
+                cvar_10_utility=cvar_10_mat,
+                p5_utility=p5_mat,
+                p95_utility=p95_mat,
+                risk_adjusted_utility=risk_adj_mat,
+                win_turn_prob=win_prob_mat,
+                faint_prob=faint_prob_mat,
+                survival_prob=surv_prob_mat,
+            )
+            agg_attack = AttackCascadeResult(
+                F=first_tile_res.attack_cascade.F,
+                P=first_tile_res.attack_cascade.P,
+                M_moves=first_tile_res.attack_cascade.M_moves,
+                mean_hp=mean_hp_mat,
+                faint_prob=faint_prob_mat,
+                roll_variance_alert=roll_var_mat,
+                mean_damage_dealt=mean_dmg_mat,
+                hit_rate_observed=hit_rate_mat,
+                crit_rate_observed=crit_rate_mat,
+                redirection_events=first_tile_res.attack_cascade.redirection_events,
+            )
+            agg_eot = EndOfTurnResult(
+                F=first_tile_res.end_of_turn.F,
+                P=first_tile_res.end_of_turn.P,
+                M_moves=first_tile_res.end_of_turn.M_moves,
+                mean_hp=mean_hp_mat,
+                faint_prob=faint_prob_mat,
+                survival_prob=surv_prob_mat,
+                trainer_1_fainted_count=t1_faints_mat,
+                trainer_2_fainted_count=t2_faints_mat,
+                is_terminal=is_term_mat,
+                winner=winner_mat,
+                eot_events=first_tile_res.end_of_turn.eot_events,
+            )
+            return StepResult(
+                F=first_tile_res.F,
+                P=first_tile_res.P,
+                M_moves=first_tile_res.M_moves,
+                pre_attack=first_tile_res.pre_attack,
+                attack_cascade=agg_attack,
+                end_of_turn=agg_eot,
+                stats=stats,
+                mean_hp=mean_hp_mat,
+                faint_prob=faint_prob_mat,
+                survival_prob=surv_prob_mat,
+                roll_variance_alert=roll_var_mat,
+                is_terminal=is_term_mat,
+                winner=winner_mat,
+            )
+
+        stats_np = TurnSimulationStatistics(
+            num_simulations=K_total,
+            risk_aversion_lambda=lam,
+            mean_utility=mean_u_mat.numpy(),
+            std_utility=std_u_mat.numpy(),
+            cvar_10_utility=cvar_10_mat.numpy(),
+            p5_utility=p5_mat.numpy(),
+            p95_utility=p95_mat.numpy(),
+            risk_adjusted_utility=risk_adj_mat.numpy(),
+            win_turn_prob=win_prob_mat.numpy(),
+            faint_prob=faint_prob_mat.numpy(),
+            survival_prob=surv_prob_mat.numpy(),
+        )
+        agg_attack_np = AttackCascadeResult(
+            F=first_tile_res.attack_cascade.F,
+            P=first_tile_res.attack_cascade.P,
+            M_moves=first_tile_res.attack_cascade.M_moves,
+            mean_hp=mean_hp_mat.numpy(),
+            faint_prob=faint_prob_mat.numpy(),
+            roll_variance_alert=roll_var_mat.numpy(),
+            mean_damage_dealt=mean_dmg_mat.numpy(),
+            hit_rate_observed=hit_rate_mat.numpy(),
+            crit_rate_observed=crit_rate_mat.numpy(),
+            redirection_events=first_tile_res.attack_cascade.redirection_events,
+        )
+        agg_eot_np = EndOfTurnResult(
+            F=first_tile_res.end_of_turn.F,
+            P=first_tile_res.end_of_turn.P,
+            M_moves=first_tile_res.end_of_turn.M_moves,
+            mean_hp=mean_hp_mat.numpy(),
+            faint_prob=faint_prob_mat.numpy(),
+            survival_prob=surv_prob_mat.numpy(),
+            trainer_1_fainted_count=t1_faints_mat.numpy(),
+            trainer_2_fainted_count=t2_faints_mat.numpy(),
+            is_terminal=is_term_mat.numpy(),
+            winner=winner_mat.numpy(),
+            eot_events=first_tile_res.end_of_turn.eot_events,
+        )
+        return StepResult(
+            F=first_tile_res.F,
+            P=first_tile_res.P,
+            M_moves=first_tile_res.M_moves,
+            pre_attack=first_tile_res.pre_attack,
+            attack_cascade=agg_attack_np,
+            end_of_turn=agg_eot_np,
+            stats=stats_np,
+            mean_hp=mean_hp_mat.numpy(),
+            faint_prob=faint_prob_mat.numpy(),
+            survival_prob=surv_prob_mat.numpy(),
+            roll_variance_alert=roll_var_mat.numpy(),
+            is_terminal=is_term_mat.numpy(),
+            winner=winner_mat.numpy(),
+        )
+
     def simulate_pruned_turn(
         self,
         compiled_state: CompiledBattleState,
@@ -775,11 +1592,12 @@ class VgcTensorStateMachine:
         down to `[B1_valid, 2]` and `[B2_valid, 2]`, and simulate the `[B1_valid, B2_valid]`
         matchup matrix across `num_simulations` discrete RNG repetitions!
         """
+        # min_prior_threshold is permanently locked to 0.0 (no heuristic pruning)
         mask_t1 = self.logic_engine.prune_side_26x26_tensor_actions(
-            compiled_state, trainer_id="trainer_1", min_prior_threshold=min_prior_threshold
+            compiled_state, trainer_id="trainer_1", min_prior_threshold=0.0
         )
         mask_t2 = self.logic_engine.prune_side_26x26_tensor_actions(
-            compiled_state, trainer_id="trainer_2", min_prior_threshold=min_prior_threshold
+            compiled_state, trainer_id="trainer_2", min_prior_threshold=0.0
         )
 
         step_res = self.step(

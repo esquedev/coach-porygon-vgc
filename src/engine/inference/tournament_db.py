@@ -215,8 +215,13 @@ class TournamentUsageRepository:
         if by_id:
             return by_id
 
-        if clean_sp.endswith("-M") and clean_sp[:-2] in self.pokedex:
-            return clean_sp[:-2]
+        if clean_sp.endswith("-M"):
+            stripped_m = clean_sp[:-2]
+            if stripped_m in self.pokedex:
+                return stripped_m
+            by_id_m = self._id_to_species_name.get(_to_id(stripped_m))
+            if by_id_m:
+                return by_id_m
 
         return clean_sp
 

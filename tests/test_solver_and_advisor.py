@@ -27,6 +27,7 @@ from engine.solver import (
     decode_joint_action,
     format_equilibrium_coach_report,
     run_iterated_dominance_elimination,
+    solve_bayesian_zero_sum_nash,
     solve_quantal_response,
     solve_turn_equilibrium,
     solve_zero_sum_nash,
@@ -44,7 +45,7 @@ Level: 50
 - Solar Beam  
 - Protect  
 
-Rillaboom @ Assault Vest  
+Rillaboom @ Miracle Seed  
 Ability: Grassy Surge  
 EVs: 28 HP / 32 Atk / 6 Spe  
 Adamant Nature  
@@ -54,7 +55,7 @@ Level: 50
 - Wood Hammer  
 - U-turn  
 
-Garchomp @ Loaded Dice  
+Garchomp @ Life Orb  
 Ability: Rough Skin  
 EVs: 2 HP / 32 Atk / 32 Spe  
 Jolly Nature  
@@ -139,6 +140,25 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         self.assertAlmostEqual(float(nash_mix.trainer_2_strategy[1]), 0.375, delta=0.015)
         self.assertAlmostEqual(nash_mix.game_value, 0.875, delta=0.015)
         self.assertLess(nash_mix.exploitability_gap, 0.02)
+
+    def test_incomplete_information_bayesian_zero_sum_nash(self) -> None:
+        """Verify Incomplete-Information Bayesian Zero-Sum Nash solver across M opponent types."""
+        # Suppose trainer_1 has 3 actions:
+        # - Action 0 beats Type 1 (+2) but loses to Type 2 (-2)
+        # - Action 1 loses to Type 1 (-2) but beats Type 2 (+2)
+        # - Action 2 is a safe hedge that gets +0.5 against both Type 1 and Type 2!
+        # Note: In each individual hypothesis m, Action 2 (+0.5) is strictly inferior to Action 0 (for Type 1)
+        # or Action 1 (for Type 2), so post-hoc blending of per-hypothesis Nash strategies would put 0% on Action 2
+        # and achieve expected value 0.0!
+        # In the true Incomplete-Information Bayesian Zero-Sum game (50/50 prior), trainer_1 plays Action 2 (100%)
+        # and achieves value +0.50!
+        U_m1 = np.array([[2.0], [-2.0], [0.5]], dtype=np.float64)
+        U_m2 = np.array([[-2.0], [2.0], [0.5]], dtype=np.float64)
+        p, q_list, v_star = solve_bayesian_zero_sum_nash([U_m1, U_m2], [0.5, 0.5])
+
+        self.assertAlmostEqual(float(p[2]), 1.0, places=5)
+        self.assertAlmostEqual(float(v_star), 0.5, places=5)
+        self.assertEqual(len(q_list), 2)
 
     def test_quantal_response_equilibrium(self) -> None:
         """Verify Logit QRE produces valid probability distributions favoring higher payoffs."""
@@ -242,6 +262,103 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
             max_recommendations=3,
         )
         self.assertIn("MATHEMATICAL & PROCESS AUDIT", eq_report_sci)
+
+    def test_cli_turn_slicing_and_completed_log_auto_rewind(self) -> None:
+        """Verify CLI-01: engine.cli supports --turn and auto-rewinds completed logs to final playable turn."""
+        from engine.cli import main as cli_main
+
+        completed_log = """
+☆trainer_1 and ☆trainer_2 joined
+Format: [Gen 9 Champions] VGC 2026 Reg M-C
+trainer_1's team:Charizard / Rillaboom / Garchomp / Kingambit / Pelipper / Archaludon
+trainer_2's team:Garchomp / Kingambit / Charizard / Rillaboom / Pelipper / Archaludon
+Battle started between trainer_1 and trainer_2!
+Go! Charizard!
+Go! Rillaboom!
+trainer_2 sent out Garchomp!
+trainer_2 sent out Kingambit!
+Turn 1
+Charizard used Protect!
+Rillaboom used Fake Out!
+(The opposing Garchomp lost 12% of its health!)
+The opposing Garchomp flinched and couldn't move!
+The opposing Kingambit used Kowtow Cleave!
+(Rillaboom lost 45% of its health!)
+Turn 2
+Charizard used Heat Wave!
+(The opposing Garchomp lost 88% of its health!)
+(The opposing Kingambit lost 100% of its health!)
+The opposing Garchomp fainted!
+The opposing Kingambit fainted!
+trainer_1 won the battle!
+"""
+        rc_auto = cli_main([
+            "--paste", ADVISOR_TEAM_PASTE,
+            "--log", completed_log,
+            "--backend", "numpy",
+            "--sims", "16",
+            "--hypotheses", "1",
+            "--verbosity", "coach",
+        ])
+        self.assertEqual(rc_auto, 0)
+
+        rc_turn1 = cli_main([
+            "--paste", ADVISOR_TEAM_PASTE,
+            "--log", completed_log,
+            "--turn", "1",
+            "--backend", "numpy",
+            "--sims", "16",
+            "--hypotheses", "1",
+            "--verbosity", "standard",
+        ])
+        self.assertEqual(rc_turn1, 0)
+
+    def test_cuda_oom_graceful_numpy_fallback(self) -> None:
+        """Verify ENG-01: CoachTurnAdvisor gracefully falls back to numpy backend on CUDA OutOfMemoryError."""
+        from unittest.mock import patch
+
+        t1_sets = parse_showdown_paste(ADVISOR_TEAM_PASTE)
+        t2_sets = {
+            "Garchomp": ParsedPokemon(species="Garchomp", base_species="Garchomp"),
+            "Kingambit": ParsedPokemon(species="Kingambit", base_species="Kingambit"),
+        }
+        battle = ParsedBattle()
+        battle.trainer_1 = ParsedTeam(
+            trainer_name="trainer_1",
+            team_preview=list(t1_sets.keys()),
+            battle_roster=["Charizard", "Rillaboom", "Garchomp", "Kingambit"],
+            leads=("Charizard", "Rillaboom"),
+            active_slots=["Charizard", "Rillaboom"],
+            pokemon_sets=t1_sets,
+        )
+        battle.trainer_2 = ParsedTeam(
+            trainer_name="trainer_2",
+            team_preview=list(t2_sets.keys()),
+            battle_roster=["Garchomp", "Kingambit"],
+            leads=("Garchomp", "Kingambit"),
+            active_slots=["Garchomp", "Kingambit"],
+            pokemon_sets=t2_sets,
+        )
+
+        advisor = CoachTurnAdvisor(backend="torch")
+        orig_sim = advisor.state_machine.simulate_pruned_turn
+        call_count = {"n": 0}
+
+        def oom_once(*args, **kwargs):
+            call_count["n"] += 1
+            if call_count["n"] == 1:
+                raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
+            return advisor.state_machine.simulate_pruned_turn(*args, **kwargs)
+
+        with patch.object(advisor.state_machine, "simulate_pruned_turn", side_effect=oom_once):
+            advice = advisor.advise_battle(
+                battle=battle,
+                max_hypotheses=1,
+                num_simulations=16,
+                min_prior_threshold=0.80,
+            )
+        self.assertEqual(advisor.backend, "numpy")
+        self.assertGreaterEqual(len(advice.recommendations), 1)
 
 
 if __name__ == "__main__":
