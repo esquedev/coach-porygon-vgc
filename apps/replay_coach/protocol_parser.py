@@ -30,9 +30,6 @@ _PROTECT_STREAK_MOVES = {
     "spikyshield",
     "kingsshield",
     "banefulbunker",
-    "silktrap",
-    "burningbulwark",
-    "obstruct",
     "endure",
 }
 

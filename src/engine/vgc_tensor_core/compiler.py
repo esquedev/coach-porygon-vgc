@@ -178,6 +178,23 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "babiriberry": ItemID.BABIRI_BERRY,
     "roseli berry": ItemID.ROSELI_BERRY,
     "roseliberry": ItemID.ROSELI_BERRY,
+    "scope lens": ItemID.SCOPE_LENS,
+    "scopelens": ItemID.SCOPE_LENS,
+    "muscle band": ItemID.MUSCLE_BAND,
+    "muscleband": ItemID.MUSCLE_BAND,
+    "wise glasses": ItemID.WISE_GLASSES,
+    "wiseglasses": ItemID.WISE_GLASSES,
+    "leek": ItemID.LEEK,
+    "iron ball": ItemID.IRON_BALL,
+    "ironball": ItemID.IRON_BALL,
+    "terrain extender": ItemID.TERRAIN_EXTENDER,
+    "terrainextender": ItemID.TERRAIN_EXTENDER,
+    "chesto berry": ItemID.CHESTO_BERRY,
+    "chestoberry": ItemID.CHESTO_BERRY,
+    "shell bell": ItemID.SHELL_BELL,
+    "shellbell": ItemID.SHELL_BELL,
+    "bright powder": ItemID.BRIGHT_POWDER,
+    "brightpowder": ItemID.BRIGHT_POWDER,
 }
 ITEM_NAME_TO_BOOST_TYPE: Dict[str, int] = {}
 for _tb_item, _tb_type_idx in TYPE_BOOST_ITEM_TO_TYPE_IDX.items():
@@ -253,8 +270,21 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "motordrive": AbilityID.MOTOR_DRIVE,
     "water absorb": AbilityID.WATER_ABSORB,
     "waterabsorb": AbilityID.WATER_ABSORB,
-    "dry skin": AbilityID.WATER_ABSORB,
-    "dryskin": AbilityID.WATER_ABSORB,
+    "dry skin": AbilityID.DRY_SKIN,
+    "dryskin": AbilityID.DRY_SKIN,
+    "sand force": AbilityID.SAND_FORCE,
+    "sandforce": AbilityID.SAND_FORCE,
+    "rain dish": AbilityID.RAIN_DISH,
+    "raindish": AbilityID.RAIN_DISH,
+    "ice body": AbilityID.ICE_BODY,
+    "icebody": AbilityID.ICE_BODY,
+    "sand veil": AbilityID.SAND_VEIL,
+    "sandveil": AbilityID.SAND_VEIL,
+    "snow cloak": AbilityID.SNOW_CLOAK,
+    "snowcloak": AbilityID.SNOW_CLOAK,
+    "leaf guard": AbilityID.LEAF_GUARD,
+    "leafguard": AbilityID.LEAF_GUARD,
+    "hydration": AbilityID.HYDRATION,
     "sap sipper": AbilityID.SAP_SIPPER,
     "sapsipper": AbilityID.SAP_SIPPER,
     "earth eater": AbilityID.EARTH_EATER,
@@ -332,6 +362,44 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "telepathy": AbilityID.TELEPATHY,
     "iron fist": AbilityID.IRON_FIST,
     "ironfist": AbilityID.IRON_FIST,
+    "skill link": AbilityID.SKILL_LINK,
+    "skilllink": AbilityID.SKILL_LINK,
+    "justified": AbilityID.JUSTIFIED,
+    "shield dust": AbilityID.SHIELD_DUST,
+    "shielddust": AbilityID.SHIELD_DUST,
+    "unnerve": AbilityID.UNNERVE,
+    "trace": AbilityID.TRACE,
+    "thermal exchange": AbilityID.THERMAL_EXCHANGE,
+    "thermalexchange": AbilityID.THERMAL_EXCHANGE,
+    "hyper cutter": AbilityID.HYPER_CUTTER,
+    "hypercutter": AbilityID.HYPER_CUTTER,
+    "bulletproof": AbilityID.BULLETPROOF,
+    "damp": AbilityID.DAMP,
+    "parental bond": AbilityID.PARENTAL_BOND,
+    "parentalbond": AbilityID.PARENTAL_BOND,
+    "mega launcher": AbilityID.MEGA_LAUNCHER,
+    "megalauncher": AbilityID.MEGA_LAUNCHER,
+    "strong jaw": AbilityID.STRONG_JAW,
+    "strongjaw": AbilityID.STRONG_JAW,
+    "protean": AbilityID.PROTEAN,
+    "berserk": AbilityID.BERSERK,
+    "unseen fist": AbilityID.UNSEEN_FIST,
+    "unseenfist": AbilityID.UNSEEN_FIST,
+    "dragonize": AbilityID.DRAGONIZE,
+    "piercing drill": AbilityID.PIERCING_DRILL,
+    "piercingdrill": AbilityID.PIERCING_DRILL,
+    "mega sol": AbilityID.MEGA_SOL,
+    "megasol": AbilityID.MEGA_SOL,
+    "aura guard": AbilityID.AURA_GUARD,
+    "auraguard": AbilityID.AURA_GUARD,
+    "eelevate": AbilityID.EELEVATE,
+    "fire mane": AbilityID.FIRE_MANE,
+    "firemane": AbilityID.FIRE_MANE,
+    "spicy spray": AbilityID.SPICY_SPRAY,
+    "spicyspray": AbilityID.SPICY_SPRAY,
+    "stalwart": AbilityID.STALWART,
+    "innards out": AbilityID.INNARDS_OUT,
+    "innardsout": AbilityID.INNARDS_OUT,
 }
 
 
@@ -758,6 +826,9 @@ class ShowdownTensorCompiler:
                 and float(heal_arr[1]) > 0
             ):
                 recoil_pct = -round(float(heal_arr[0]) / float(heal_arr[1]), 4)
+            elif move_id in ("synthesis", "morningsun", "moonlight"):
+                # Base Clear-weather recovery (50%); dynamically scaled in attack_cascade (2/3 Sun, 1/4 Rain/Sand/Snow)
+                recoil_pct = -0.50
         vec[MoveIdx.RECOIL_PCT] = recoil_pct
 
         # 11. Flinch Chance (44)
@@ -813,6 +884,7 @@ class ShowdownTensorCompiler:
                     side_cond=side_cond,
                     pseudo_weather=str(row.get("pseudoWeather") or "").lower(),
                     vol_status=vol_status,
+                    flags=flags,
                 )
             )
 
@@ -828,9 +900,11 @@ class ShowdownTensorCompiler:
 
         weather_op = 0.0
         if move_id in ("thunder", "hurricane"):
-            weather_op = 2.0  # Rain sure-hit
+            weather_op = 2.0  # Rain sure-hit / Sun 50% accuracy
         elif move_id == "blizzard":
             weather_op = 4.0  # Snow sure-hit
+        elif move_id in ("synthesis", "morningsun", "moonlight"):
+            weather_op = 5.0  # Weather-scaling recovery (2/3 Sun, 1/2 Clear, 1/4 Rain/Sand/Snow)
         elif move_id == "weatherball":
             weather_op = 1.0  # Weather Ball adaptive
         elif flags.get("charge"):
@@ -936,6 +1010,7 @@ class ShowdownTensorCompiler:
         side_cond: str,
         pseudo_weather: str,
         vol_status: str,
+        flags: Optional[Dict[str, Any]] = None,
     ) -> FieldOpID:
         """Resolve `FieldOpID` programmatically from Showdown move attributes."""
         if move_id == "fakeout":
@@ -960,6 +1035,20 @@ class ShowdownTensorCompiler:
             return FieldOpID.GRAVITY
         if move_id in ("haze", "clearsmog"):
             return FieldOpID.HAZE
+        if move_id == "encore" or vol_status == "encore":
+            return FieldOpID.ENCORE
+        if move_id == "disable" or vol_status == "disable":
+            return FieldOpID.DISABLE
+        if move_id == "leechseed" or vol_status == "leechseed":
+            return FieldOpID.LEECH_SEED
+        if move_id == "saltcure":
+            return FieldOpID.SALT_CURE
+        if move_id == "yawn" or vol_status == "yawn":
+            return FieldOpID.YAWN
+        if move_id == "perishsong":
+            return FieldOpID.PERISH_SONG
+        if move_id in ("explosion", "selfdestruct", "mistyexplosion"):
+            return FieldOpID.EXPLOSION
         if weather in ("sunnyday", "sun", "desolateland"):
             return FieldOpID.SET_SUN
         if weather in ("raindance", "rain", "primordialsea"):
@@ -976,6 +1065,18 @@ class ShowdownTensorCompiler:
             return FieldOpID.SET_PSYCHIC_TERRAIN
         if terrain in ("mistyterrain", "misty"):
             return FieldOpID.SET_MISTY_TERRAIN
+        if flags:
+            is_pulse = bool(flags.get("pulse"))
+            is_bullet = bool(flags.get("bullet"))
+            is_bite = bool(flags.get("bite"))
+            if is_pulse and is_bullet:
+                return FieldOpID.FLAG_PULSE_BULLET
+            if is_pulse:
+                return FieldOpID.FLAG_PULSE
+            if is_bite:
+                return FieldOpID.FLAG_BITE
+            if is_bullet:
+                return FieldOpID.FLAG_BULLET
         return FieldOpID.NONE
 
     # -------------------------------------------------------------------------
@@ -1144,9 +1245,12 @@ class ShowdownTensorCompiler:
         )
 
         is_flying = any(str(t).lower() == "flying" for t in types)
-        is_levitate = ability_id == AbilityID.LEVITATE
+        is_levitate = ability_id in (AbilityID.LEVITATE, AbilityID.EELEVATE)
         is_air_balloon = item_id == ItemID.AIR_BALLOON
-        p_vec[MonIdx.GROUNDED_FLAG] = 0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0
+        is_iron_ball = item_id == ItemID.IRON_BALL
+        p_vec[MonIdx.GROUNDED_FLAG] = (
+            1.0 if is_iron_ball else (0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0)
+        )
         p_vec[MonIdx.ITEM_ACTIVE] = 1.0 if item_id != ItemID.NONE else 0.0
         p_vec[MonIdx.ITEM_ID] = float(item_id)
         p_vec[MonIdx.ABILITY_ID] = float(ability_id)
@@ -1287,9 +1391,12 @@ class ShowdownTensorCompiler:
         ability_id = ABILITY_NAME_TO_ID.get(ability_str, ABILITY_NAME_TO_ID.get(_to_id(ability_str), AbilityID.NONE))
 
         is_flying = any(str(t).lower() == "flying" for t in types)
-        is_levitate = (ability_id == AbilityID.LEVITATE)
+        is_levitate = ability_id in (AbilityID.LEVITATE, AbilityID.EELEVATE)
         is_air_balloon = (item_id == ItemID.AIR_BALLOON) and float(mon_spec.get("item_active", 1.0)) > 0.0
-        grounded_default = 0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0
+        is_iron_ball = (item_id == ItemID.IRON_BALL) and float(mon_spec.get("item_active", 1.0)) > 0.0
+        grounded_default = (
+            1.0 if is_iron_ball else (0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0)
+        )
         p_vec[MonIdx.GROUNDED_FLAG] = float(mon_spec.get("grounded", grounded_default))
         p_vec[MonIdx.ITEM_ACTIVE] = float(mon_spec.get("item_active", 1.0 if item_id != ItemID.NONE else 0.0))
         p_vec[MonIdx.ITEM_ID] = float(item_id)

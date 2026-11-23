@@ -338,7 +338,7 @@ class TestCompilerAndPruner(unittest.TestCase):
         """
         rosters = _build_turn1_sample_rosters()
         # Set trainer_2_a to Flying-type (Charizard) so Garchomp's Stomping Tantrum (Move 0, Ground) hits 0.0x into trainer_2_a (Choice 0)
-        # and hits 2.0x SE into Sneasler (trainer_2_b, Poison/Fighting, Choice 4)!
+        # and hits 2.0x Super Effective into Sneasler (trainer_2_b, Poison/Fighting, Choice 4)!
         rosters[4] = dict(rosters[6])  # Charizard in trainer_2_a (Airborne)
         rosters[1]["protect_counter"] = 1.0  # Garchomp used Protect last turn!
 
@@ -351,7 +351,7 @@ class TestCompilerAndPruner(unittest.TestCase):
         self.assertEqual(float(garchomp_valid[0]), 1.0)
         self.assertAlmostEqual(float(garchomp_priors[0]), 0.20, places=4)
 
-        # Garchomp Move 0 (Stomping Tantrum) -> trainer_2_b (Sneasler, 2.0x SE, Choice 4): Valid=1.0, Prior=1.20!
+        # Garchomp Move 0 (Stomping Tantrum) -> trainer_2_b (Sneasler, 2.0x Super Effective, Choice 4): Valid=1.0, Prior=1.20!
         self.assertEqual(float(garchomp_valid[4]), 1.0)
         self.assertAlmostEqual(float(garchomp_priors[4]), 1.20, places=4)
 
@@ -362,7 +362,7 @@ class TestCompilerAndPruner(unittest.TestCase):
         self._log("\n[TEST 05] SOFT TACTICAL PRIOR MATRIX (HIGH-RISK / HIGH-REWARD CONTINUUM)")
         self._log("-" * 100)
         self._log(f"  • Garchomp Stomping Tantrum -> Airborne Charizard (Choice 0) : Valid={garchomp_valid[0]:.0f} | Prior={garchomp_priors[0]:.2f} (Hard Switch Read)")
-        self._log(f"  • Garchomp Stomping Tantrum -> 2.0x SE Sneasler (Choice 4)   : Valid={garchomp_valid[4]:.0f} | Prior={garchomp_priors[4]:.2f} (Deterministic SE)")
+        self._log(f"  • Garchomp Stomping Tantrum -> 2.0x Super Effective Sneasler (Choice 4) : Valid={garchomp_valid[4]:.0f} | Prior={garchomp_priors[4]:.2f} (Deterministic Super Effective)")
         self._log(f"  • Garchomp Consecutive Protect (protect_counter=1, Choice 3) : Valid={garchomp_valid[3]:.0f} | Prior={garchomp_priors[3]:.2f} (~33% Decay Heuristic)")
         self._log(f"  • Garchomp Partner Self-Target (Choice 8)                    : Valid={garchomp_valid[8]:.0f} | Prior={garchomp_priors[8]:.2f} (Self-Side Policy)")
         self._log("  Result: PASS")

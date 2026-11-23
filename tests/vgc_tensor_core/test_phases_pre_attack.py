@@ -35,7 +35,7 @@ in `engine.vgc_tensor_core.phases_pre_attack`:
    - Verifies that when two active Pokémon share identical priority and effective speed (`169` vs `169`),
      `speed_tie_alert` flags `1.0`, `±0.01` jitter breaks the tie without ever inverting non-tied
      integer speeds, and human-readable `speed_tie_notes` log the exact `±0.01` jitter values.
-6. **Full `[100 x 100 = 10,000]` Joint Grid CPU vs. `cuda:0` RTX 3060 Speed Benchmark.**
+6. **Full `[100 x 100 = 10,000]` Joint Grid CPU vs. `cuda:0` GPU Speed Benchmark.**
 """
 
 from __future__ import annotations
@@ -436,7 +436,7 @@ class TestPhasesPreAttack(unittest.TestCase):
     def test_06_full_valid_grid_cpu_and_cuda_speed_benchmark(self) -> None:
         """
         Benchmark executing Phases 1, 2, and 3 across a `100 x 100 = 10,000` joint action grid
-        on both PyTorch CPU and `cuda:0` RTX 3060 GPU.
+        on both PyTorch CPU and `cuda:0` GPU (when CUDA is available).
         """
         roster = self._build_test_roster()
 

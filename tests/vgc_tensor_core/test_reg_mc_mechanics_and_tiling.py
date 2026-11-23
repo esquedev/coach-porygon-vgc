@@ -97,7 +97,7 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         self.assertEqual(float(p_zard[MonIdx.CAN_MEGA]), 1.0)
 
     def test_02_resist_berries_and_type_boost_items_bug_fixes(self) -> None:
-        """Verify Resist Berries (0.5x on matching SE hit) and Type-Boost Items (1.2x on matching type only)."""
+        """Verify Resist Berries (0.5x on matching Super Effective hit) and Type-Boost Items (1.2x on matching type only)."""
         # Dual-type Venusaur (Grass/Poison) holding Miracle Seed (boosts Grass ONLY, not Poison STAB!)
         # Target 1: Kingambit holding Chople Berry (Fighting resist berry) vs Fighting move
         rosters = [
@@ -196,7 +196,7 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         dmg_noitem_grass = 202.0 - float(res_noitem_grass.mean_hp[0, 0, SLOT_TRAINER_2_B].item())
         self.assertGreater(dmg_seed_grass, dmg_noitem_grass * 1.15)
 
-        # Now test Resist Berry (Rindo Berry on Water-type Milotic vs SE Grass Energy Ball)
+        # Now test Resist Berry (Rindo Berry on Water-type Milotic vs Super Effective Grass Energy Ball)
         rosters[4]["types"] = ["Water"]
         rosters[5]["types"] = ["Water"]
         state_berry = self.compiler.compile_battle_state(rosters)
@@ -746,6 +746,539 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         self.assertIn("terms", payload)
         self.assertIn("badges", payload)
         self.assertIn("rng_events", payload)
+
+    def test_09_hurricane_thunder_weather_accuracy_sun_50_rain_100_clear_70(self) -> None:
+        """Verify official cartridge weather accuracy for Hurricane/Thunder: 100% Rain, 70% Clear, 50% Sun."""
+        from engine.vgc_tensor_core.phases_pre_attack import W_CLEAR, W_RAIN, W_SUN
+
+        base_roster = [
+            {
+                "species": "Charizard",
+                "hp_max": 180.0,
+                "hp_cur": 180.0,
+                "stats": {"atk": 90.0, "def": 100.0, "spa": 165.0, "spd": 105.0, "spe": 150.0},
+                "types": ["Fire", "Flying"],
+                "ability": "Blaze",
+                "moves": ["Hurricane", "Protect", "Heat Wave", "Weather Ball"],
+            },
+            {
+                "species": "Venusaur",
+                "hp_max": 180.0,
+                "hp_cur": 180.0,
+                "stats": {"atk": 90.0, "def": 100.0, "spa": 150.0, "spd": 120.0, "spe": 110.0},
+                "types": ["Grass", "Poison"],
+                "ability": "Overgrow",
+                "moves": ["Protect", "Sludge Bomb", "Leaf Storm", "Sleep Powder"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Dragon Claw", "Rock Slide", "Stomping Tantrum"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "ability": "Drizzle", "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+            {
+                "species": "Primarina",
+                "hp_max": 250.0,
+                "hp_cur": 250.0,
+                "stats": {"atk": 84.0, "def": 105.0, "spa": 160.0, "spd": 160.0, "spe": 80.0},
+                "types": ["Water", "Fairy"],
+                "ability": "Torrent",
+                "moves": ["Protect", "Moonblast", "Hyper Voice", "Haze"],
+            },
+            {
+                "species": "Farigiraf",
+                "hp_max": 220.0,
+                "hp_cur": 220.0,
+                "stats": {"atk": 90.0, "def": 110.0, "spa": 130.0, "spd": 110.0, "spe": 80.0},
+                "types": ["Normal", "Psychic"],
+                "ability": "Armor Tail",
+                "moves": ["Protect", "Psychic", "Trick Room", "Hyper Voice"],
+            },
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "ability": "Intimidate", "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "ability": "Grassy Surge", "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+        ]
+
+        hit_rates = {}
+        st_base = self.compiler.compile_battle_state(base_roster)
+        for w_name, w_code in (("Rain", W_RAIN), ("Clear", W_CLEAR), ("Sun", W_SUN)):
+            F = st_base.field_tensor.clone()
+            F[FieldIdx.WEATHER_START:FieldIdx.WEATHER_END] = 0.0
+            F[FieldIdx.WEATHER_START + w_code] = 1.0
+            F[FieldIdx.WEATHER_TURNS] = 5.0 if w_name != "Clear" else 0.0
+            t1_c = torch.tensor([[0, 0]], dtype=torch.long)  # Charizard Hurricane -> Opp A (Primarina), Venusaur Protect
+            t2_c = torch.tensor([[1, 1]], dtype=torch.long)  # Primarina Moonblast, Farigiraf Psychic
+            res = self.state_machine.step(
+                F,
+                st_base.roster_tensor,
+                st_base.moves_tensor,
+                t1_c,
+                t2_c,
+                num_mc_samples=512,
+                rng_seed=202699,
+            )
+            hit_rates[w_name] = float(res.attack_cascade.hit_rate_observed[0, 0, 0].item())
+
+        self.assertAlmostEqual(hit_rates["Rain"], 1.0, places=4)
+        self.assertGreater(hit_rates["Clear"], 0.62)
+        self.assertLess(hit_rates["Clear"], 0.78)
+        self.assertGreater(hit_rates["Sun"], 0.42)
+        self.assertLess(hit_rates["Sun"], 0.58)
+        self.assertLess(hit_rates["Sun"], hit_rates["Clear"] - 0.12)
+        self.assertEqual(
+            self.logic_engine._resolve_accuracy("Hurricane", {"accuracy": 70}, "sun", "Blaze", "Torrent"),
+            50.0,
+        )
+        self.assertEqual(
+            self.logic_engine._resolve_accuracy("Hurricane", {"accuracy": 70}, "rain", "Blaze", "Torrent"),
+            100.0,
+        )
+
+    def test_10_complete_reg_mc_weather_mechanics_parity(self) -> None:
+        """Verify all newly added Reg M-C weather mechanics:
+        - Rock-type 1.5x SpD in Sandstorm (and NOT on Psyshock/Physical)
+        - Ice-type 1.5x Def in Snow (including Psyshock & Ice-type Body Press)
+        - Aurora Veil strict Snow gate (fails outside Snow)
+        - Synthesis / Morning Sun / Moonlight weather healing (2/3 Sun, 1/2 Clear, 1/4 Rain)
+        - Sand Force 1.3x BP in Sand + Sandstorm chip immunity
+        - Dry Skin (Water absorb + 1.25x Fire dmg + +1/8 EoT Rain / -1/8 EoT Sun)
+        - Rain Dish (+1/16 EoT Rain), Ice Body (+1/16 EoT Snow)
+        - Sand Veil / Snow Cloak (0.8x accuracy)
+        - Leaf Guard (Sun status immunity) & Hydration (Rain EoT status cure)
+        """
+        from engine.vgc_tensor_core.phases_pre_attack import W_CLEAR, W_RAIN, W_SAND, W_SNOW, W_SUN
+        from engine.vgc_tensor_core.schema_and_tables import STATUS_TO_IDX, TYPE_TO_IDX
+
+        def _set_weather(F_base: torch.Tensor, w_code: int) -> torch.Tensor:
+            F = F_base.clone()
+            F[FieldIdx.WEATHER_START:FieldIdx.WEATHER_END] = 0.0
+            F[FieldIdx.WEATHER_START + w_code] = 1.0
+            F[FieldIdx.WEATHER_TURNS] = 5.0 if w_code != W_CLEAR else 0.0
+            return F
+
+        # A. Rock 1.5x SpD in Sand, Ice 1.5x Def in Snow (Physical + Body Press), Aurora Veil Snow Gate
+        roster_a = [
+            {
+                "species": "Alakazam",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 150.0, "def": 100.0, "spa": 180.0, "spd": 100.0, "spe": 170.0},
+                "types": ["Psychic"],
+                "ability": "Inner Focus",
+                "moves": ["Psychic", "Psyshock", "Brick Break", "Protect"],
+            },
+            {
+                "species": "Ninetales-Alola",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 90.0, "def": 150.0, "spa": 120.0, "spd": 120.0, "spe": 165.0},
+                "types": ["Ice", "Fairy"],
+                "ability": "Snow Cloak",
+                "moves": ["Aurora Veil", "Body Press", "Protect", "Blizzard"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Rock Slide", "Earthquake", "Dragon Claw"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+            {
+                "species": "Tyranitar",
+                "hp_max": 300.0,
+                "hp_cur": 300.0,
+                "stats": {"atk": 150.0, "def": 120.0, "spa": 100.0, "spd": 120.0, "spe": 80.0},
+                "types": ["Rock"],
+                "ability": "Unnerve",
+                "moves": ["Protect", "Rock Slide", "Crunch", "Earthquake"],
+            },
+            {
+                "species": "Glaceon",
+                "hp_max": 300.0,
+                "hp_cur": 300.0,
+                "stats": {"atk": 90.0, "def": 120.0, "spa": 150.0, "spd": 120.0, "spe": 80.0},
+                "types": ["Ice"],
+                "ability": "Ice Body",
+                "moves": ["Protect", "Ice Beam", "Blizzard", "Shadow Ball"],
+            },
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+        ]
+        st_a = self.compiler.compile_battle_state(roster_a)
+
+        # 1. Rock SpD 1.5x in Sand (Psychic -> Tyranitar Opp A, choice 0 = slot0->OppA)
+        t1_psy = torch.tensor([[0, 2]], dtype=torch.long)  # Alakazam Psychic->Tyranitar, Ninetales Protect
+        t2_idle = torch.tensor([[1, 1]], dtype=torch.long)  # Non-protect moves
+        r_clear = self.state_machine.step(_set_weather(st_a.field_tensor, W_CLEAR), st_a.roster_tensor, st_a.moves_tensor, t1_psy, t2_idle, num_mc_samples=64, rng_seed=777)
+        r_sand = self.state_machine.step(_set_weather(st_a.field_tensor, W_SAND), st_a.roster_tensor, st_a.moves_tensor, t1_psy, t2_idle, num_mc_samples=64, rng_seed=777)
+        dmg_clear = float(r_clear.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+        dmg_sand = float(r_sand.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+        self.assertGreater(dmg_clear, 20.0)
+        self.assertAlmostEqual(dmg_sand / dmg_clear, 2.0 / 3.0, delta=0.06)
+
+        # 2. Ice Def 1.5x in Snow (Brick Break -> Glaceon Opp B = 1*4 + 2 = 6; Psyshock -> Glaceon Opp B = 1*4 + 1 = 5)
+        for mv_choice in (6, 5):
+            t1_mv = torch.tensor([[mv_choice, 2]], dtype=torch.long)
+            rc = self.state_machine.step(_set_weather(st_a.field_tensor, W_CLEAR), st_a.roster_tensor, st_a.moves_tensor, t1_mv, t2_idle, num_mc_samples=64, rng_seed=778)
+            rs = self.state_machine.step(_set_weather(st_a.field_tensor, W_SNOW), st_a.roster_tensor, st_a.moves_tensor, t1_mv, t2_idle, num_mc_samples=64, rng_seed=778)
+            dc = float(rc.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+            ds = float(rs.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+            self.assertAlmostEqual(ds / dc, 2.0 / 3.0, delta=0.06)
+
+        # 3. Ice-type attacker Body Press boosted 1.5x in Snow (Ninetales Body Press -> Tyranitar Opp A = 1)
+        t1_bp = torch.tensor([[3, 1]], dtype=torch.long)  # Alakazam Protect, Ninetales Body Press -> Tyranitar
+        rb_c = self.state_machine.step(_set_weather(st_a.field_tensor, W_CLEAR), st_a.roster_tensor, st_a.moves_tensor, t1_bp, t2_idle, num_mc_samples=64, rng_seed=779)
+        rb_s = self.state_machine.step(_set_weather(st_a.field_tensor, W_SNOW), st_a.roster_tensor, st_a.moves_tensor, t1_bp, t2_idle, num_mc_samples=64, rng_seed=779)
+        self.assertAlmostEqual(
+            float(rb_s.attack_cascade.mean_damage_dealt[0, 0, 1].item())
+            / float(rb_c.attack_cascade.mean_damage_dealt[0, 0, 1].item()),
+            1.5,
+            delta=0.08,
+        )
+
+        # 4. Aurora Veil fails outside Snow, succeeds in Snow
+        t1_av = torch.tensor([[3, 0]], dtype=torch.long)  # Alakazam Protect, Ninetales Aurora Veil
+        rav_clear = self.state_machine.step(_set_weather(st_a.field_tensor, W_CLEAR), st_a.roster_tensor, st_a.moves_tensor, t1_av, t2_idle, num_mc_samples=16, rng_seed=780)
+        rav_snow = self.state_machine.step(_set_weather(st_a.field_tensor, W_SNOW), st_a.roster_tensor, st_a.moves_tensor, t1_av, t2_idle, num_mc_samples=16, rng_seed=780)
+        self.assertEqual(float(rav_clear.end_of_turn.F[0, 0, 0, FieldIdx.TRAINER_1_AURORA_VEIL_TURNS].item()), 0.0)
+        self.assertEqual(float(rav_snow.end_of_turn.F[0, 0, 0, FieldIdx.TRAINER_1_AURORA_VEIL_TURNS].item()), 4.0)  # 5 -> 4 after EoT
+
+        # B. Synthesis weather healing + Sand Force + Dry Skin + Rain Dish + Ice Body + Leaf Guard + Hydration + Sand Veil
+        roster_b = [
+            {
+                "species": "Venusaur",
+                "hp_max": 240.0,
+                "hp_cur": 60.0,
+                "stats": {"atk": 100.0, "def": 100.0, "spa": 120.0, "spd": 100.0, "spe": 150.0},
+                "types": ["Grass", "Poison"],
+                "ability": "Leaf Guard",
+                "moves": ["Synthesis", "Protect", "Sludge Bomb", "Leaf Storm"],
+            },
+            {
+                "species": "Excadrill",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 180.0, "def": 90.0, "spa": 60.0, "spd": 90.0, "spe": 140.0},
+                "types": ["Ground", "Steel"],
+                "ability": "Sand Force",
+                "moves": ["Rock Slide", "Protect", "Earthquake", "Iron Head"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Rock Slide", "Earthquake", "Dragon Claw"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+            {
+                "species": "Heliolisk",
+                "hp_max": 160.0,
+                "hp_cur": 120.0,
+                "stats": {"atk": 80.0, "def": 100.0, "spa": 130.0, "spd": 100.0, "spe": 130.0},
+                "types": ["Electric", "Normal"],
+                "ability": "Dry Skin",
+                "moves": ["Will-O-Wisp", "Protect", "Thunderbolt", "Flamethrower"],
+            },
+            {
+                "species": "Goodra",
+                "hp_max": 240.0,
+                "hp_cur": 160.0,
+                "stats": {"atk": 100.0, "def": 100.0, "spa": 120.0, "spd": 160.0, "spe": 90.0},
+                "types": ["Dragon"],
+                "ability": "Hydration",
+                "moves": ["Protect", "Dragon Pulse", "Ice Beam", "Muddy Water"],
+            },
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+        ]
+        st_b = self.compiler.compile_battle_state(roster_b)
+        P_b = st_b.roster_tensor.clone()
+        # Burn Goodra (slot 5) before turn to verify Hydration cures Burn in Rain
+        P_b[5, MonIdx.STATUS_HEALTHY] = 0.0
+        P_b[5, MonIdx.STATUS_BURN] = 1.0
+
+        # 5. Synthesis healing: 60 + 160 = 220 in Sun, 60 + 120 = 180 in Clear, 60 + 60 = 120 in Rain
+        #    AND Heliolisk Will-O-Wisp -> Venusaur (Leaf Guard) blocked in Sun!
+        #    AND Dry Skin Heliolisk loses 20 HP in Sun (120 -> 100), gains 20 HP in Rain (120 -> 140)!
+        #    AND Hydration Goodra cured of Burn in Rain!
+        t1_syn = torch.tensor([[0, 1]], dtype=torch.long)  # Venusaur Synthesis, Excadrill Protect
+        t2_wisp = torch.tensor([[0, 0]], dtype=torch.long)  # Heliolisk Will-O-Wisp -> Venusaur, Goodra Protect
+        rsun = self.state_machine.step(_set_weather(st_b.field_tensor, W_SUN), P_b, st_b.moves_tensor, t1_syn, t2_wisp, num_mc_samples=64, rng_seed=801)
+        rclr = self.state_machine.step(_set_weather(st_b.field_tensor, W_CLEAR), P_b, st_b.moves_tensor, t1_syn, t2_wisp, num_mc_samples=64, rng_seed=801)
+        rrain = self.state_machine.step(_set_weather(st_b.field_tensor, W_RAIN), P_b, st_b.moves_tensor, t1_syn, t2_wisp, num_mc_samples=64, rng_seed=801)
+
+        self.assertAlmostEqual(float(rsun.mean_hp[0, 0, 0].item()), 220.0, delta=1.5)  # 2/3 heal in Sun + Leaf Guard blocked burn chip!
+        self.assertEqual(float(rsun.end_of_turn.P[0, 0, :, 0, MonIdx.STATUS_HEALTHY].mean().item()), 1.0)
+        self.assertAlmostEqual(float(rrain.mean_hp[0, 0, 0].item()), 120.0, delta=16.0)  # 1/4 heal (+60) minus optional burn chip
+        self.assertAlmostEqual(float(rsun.mean_hp[0, 0, 4].item()), 100.0, delta=1.0)  # Dry Skin -1/8 HP in Sun
+        self.assertAlmostEqual(float(rrain.mean_hp[0, 0, 4].item()), 140.0, delta=1.0)  # Dry Skin +1/8 HP in Rain
+        self.assertEqual(float(rrain.end_of_turn.P[0, 0, :, 5, MonIdx.STATUS_HEALTHY].mean().item()), 1.0)  # Hydration cured Burn in Rain
+        self.assertEqual(float(rclr.end_of_turn.P[0, 0, :, 5, MonIdx.STATUS_BURN].mean().item()), 1.0)  # Still burned in Clear
+
+        # 6. Sand Force 1.3x BP on Iron Head -> Heliolisk in Sand
+        t1_sf = torch.tensor([[1, 3]], dtype=torch.long)  # Venusaur Protect, Excadrill Iron Head -> Opp A (Heliolisk)
+        t2_np = torch.tensor([[2, 1]], dtype=torch.long)
+        rsf_clr = self.state_machine.step(_set_weather(st_b.field_tensor, W_CLEAR), st_b.roster_tensor, st_b.moves_tensor, t1_sf, t2_np, num_mc_samples=64, rng_seed=802)
+        rsf_snd = self.state_machine.step(_set_weather(st_b.field_tensor, W_SAND), st_b.roster_tensor, st_b.moves_tensor, t1_sf, t2_np, num_mc_samples=64, rng_seed=802)
+        self.assertAlmostEqual(
+            float(rsf_snd.attack_cascade.mean_damage_dealt[0, 0, 1].item())
+            / float(rsf_clr.attack_cascade.mean_damage_dealt[0, 0, 1].item()),
+            1.3,
+            delta=0.07,
+        )
+
+        # 7. Dry Skin 1.25x Fire damage taken (using Flamethrower from Heliolisk onto Dry Skin clone vs non-Dry Skin)
+        P_ds = st_b.roster_tensor.clone()
+        P_ds[0, MonIdx.TYPE1_START:MonIdx.TYPE1_END] = 0.0
+        P_ds[0, MonIdx.TYPE1_START + TYPE_TO_IDX["normal"]] = 1.0
+        P_ds[0, MonIdx.TYPE2_START:MonIdx.TYPE2_END] = 0.0
+        P_ds[0, MonIdx.HP_CUR] = 240.0
+        P_ds[0, MonIdx.ABILITY_ID] = float(AbilityID.NONE)
+        P_ds2 = P_ds.clone()
+        P_ds2[0, MonIdx.ABILITY_ID] = float(AbilityID.DRY_SKIN)
+        t1_pr = torch.tensor([[2, 1]], dtype=torch.long)  # Venusaur Sludge Bomb (no protect), Excadrill Protect
+        t2_fl = torch.tensor([[3, 0]], dtype=torch.long)  # Heliolisk Flamethrower -> Opp A (Venusaur)
+        r_nods = self.state_machine.step(_set_weather(st_b.field_tensor, W_CLEAR), P_ds, st_b.moves_tensor, t1_pr, t2_fl, num_mc_samples=64, rng_seed=803)
+        r_ds = self.state_machine.step(_set_weather(st_b.field_tensor, W_CLEAR), P_ds2, st_b.moves_tensor, t1_pr, t2_fl, num_mc_samples=64, rng_seed=803)
+        self.assertAlmostEqual(
+            float(r_ds.attack_cascade.mean_damage_dealt[0, 0, 2].item())
+            / float(r_nods.attack_cascade.mean_damage_dealt[0, 0, 2].item()),
+            1.25,
+            delta=0.07,
+        )
+
+        # 8. Sand Veil 0.8x incoming accuracy in Sand (100% acc move drops to ~80% hit rate)
+        P_sv = st_b.roster_tensor.clone()
+        P_sv[4, MonIdx.ABILITY_ID] = float(AbilityID.SAND_VEIL)
+        r_sv = self.state_machine.step(_set_weather(st_b.field_tensor, W_SAND), P_sv, st_b.moves_tensor, t1_sf, t2_np, num_mc_samples=512, rng_seed=804)
+        sv_hit = float(r_sv.attack_cascade.hit_rate_observed[0, 0, 1].item())
+        self.assertGreater(sv_hit, 0.72)
+        self.assertLess(sv_hit, 0.88)
+
+    def test_11_tournament_and_champions_mega_abilities_items_and_volatiles(self) -> None:
+        """Verify Opportunities 1 & 2 + F3 compiler keys across Reg M-C tournament & Champions Mega mechanics."""
+        from engine.vgc_tensor_core.compiler import ABILITY_NAME_TO_ID, ITEM_NAME_TO_ID
+        from engine.vgc_tensor_core.phases_pre_attack import W_CLEAR
+        from engine.vgc_tensor_core.schema_and_tables import FieldOpID, TYPE_TO_IDX
+
+        # 0. Verify F3 & all new compiler mappings resolve cleanly
+        for it_key, exp_it in (
+            ("scope lens", ItemID.SCOPE_LENS),
+            ("muscle band", ItemID.MUSCLE_BAND),
+            ("wise glasses", ItemID.WISE_GLASSES),
+            ("leek", ItemID.LEEK),
+            ("iron ball", ItemID.IRON_BALL),
+            ("terrain extender", ItemID.TERRAIN_EXTENDER),
+            ("chesto berry", ItemID.CHESTO_BERRY),
+            ("shell bell", ItemID.SHELL_BELL),
+            ("bright powder", ItemID.BRIGHT_POWDER),
+        ):
+            self.assertEqual(ITEM_NAME_TO_ID[it_key], exp_it)
+
+        for ab_key, exp_ab in (
+            ("skill link", AbilityID.SKILL_LINK),
+            ("justified", AbilityID.JUSTIFIED),
+            ("shield dust", AbilityID.SHIELD_DUST),
+            ("unnerve", AbilityID.UNNERVE),
+            ("trace", AbilityID.TRACE),
+            ("thermal exchange", AbilityID.THERMAL_EXCHANGE),
+            ("hyper cutter", AbilityID.HYPER_CUTTER),
+            ("bulletproof", AbilityID.BULLETPROOF),
+            ("damp", AbilityID.DAMP),
+            ("parental bond", AbilityID.PARENTAL_BOND),
+            ("mega launcher", AbilityID.MEGA_LAUNCHER),
+            ("strong jaw", AbilityID.STRONG_JAW),
+            ("protean", AbilityID.PROTEAN),
+            ("berserk", AbilityID.BERSERK),
+            ("unseen fist", AbilityID.UNSEEN_FIST),
+            ("dragonize", AbilityID.DRAGONIZE),
+            ("piercing drill", AbilityID.PIERCING_DRILL),
+            ("mega sol", AbilityID.MEGA_SOL),
+            ("aura guard", AbilityID.AURA_GUARD),
+            ("eelevate", AbilityID.EELEVATE),
+            ("fire mane", AbilityID.FIRE_MANE),
+            ("spicy spray", AbilityID.SPICY_SPRAY),
+            ("stalwart", AbilityID.STALWART),
+            ("innards out", AbilityID.INNARDS_OUT),
+        ):
+            self.assertEqual(ABILITY_NAME_TO_ID[ab_key], exp_ab)
+
+        # Verify DuckDB flag-carrier FieldOpID compilation
+        self.assertEqual(int(round(float(self.compiler.compile_move_vector("Dark Pulse")[MoveIdx.FIELD_OP_ID]))), int(FieldOpID.FLAG_PULSE))
+        self.assertEqual(int(round(float(self.compiler.compile_move_vector("Crunch")[MoveIdx.FIELD_OP_ID]))), int(FieldOpID.FLAG_BITE))
+        self.assertEqual(int(round(float(self.compiler.compile_move_vector("Shadow Ball")[MoveIdx.FIELD_OP_ID]))), int(FieldOpID.FLAG_BULLET))
+        self.assertEqual(int(round(float(self.compiler.compile_move_vector("Aura Sphere")[MoveIdx.FIELD_OP_ID]))), int(FieldOpID.FLAG_PULSE_BULLET))
+
+        # 1. Champions Mega Abilities: Piercing Drill bypasses Protect, Aura Guard halves contact,
+        #    Mega Sol skips Solar Beam charge in Clear weather, Dragonize converts Normal -> Dragon,
+        #    Bulletproof blocks Shadow Ball, Unnerve suppresses Sitrus Berry!
+        roster_m = [
+            {
+                "species": "Excadrill-Mega",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 180.0, "def": 100.0, "spa": 70.0, "spd": 90.0, "spe": 150.0},
+                "types": ["Ground", "Steel"],
+                "ability": "Piercing Drill",
+                "moves": ["Iron Head", "Earthquake", "Protect", "Rock Slide"],
+            },
+            {
+                "species": "Meganium-Mega",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 90.0, "def": 120.0, "spa": 160.0, "spd": 120.0, "spe": 120.0},
+                "types": ["Grass", "Fairy"],
+                "ability": "Mega Sol",
+                "moves": ["Solar Beam", "Shadow Ball", "Protect", "Synthesis"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Dragon Claw", "Earthquake", "Rock Slide"]},
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "ability": "Intimidate", "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {
+                "species": "Lucario-Mega-Z",
+                "hp_max": 300.0,
+                "hp_cur": 300.0,
+                "stats": {"atk": 130.0, "def": 120.0, "spa": 160.0, "spd": 110.0, "spe": 140.0},
+                "types": ["Fighting", "Steel"],
+                "ability": "Aura Guard",
+                "moves": ["Protect", "Aura Sphere", "Flash Cannon", "Vacuum Wave"],
+            },
+            {
+                "species": "Chesnaught",
+                "hp_max": 300.0,
+                "hp_cur": 300.0,
+                "stats": {"atk": 130.0, "def": 140.0, "spa": 80.0, "spd": 100.0, "spe": 80.0},
+                "types": ["Grass", "Fighting"],
+                "ability": "Bulletproof",
+                "moves": ["Protect", "Wood Hammer", "Drain Punch", "Spiky Shield"],
+            },
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+        ]
+        st_m = self.compiler.compile_battle_state(roster_m)
+
+        # Piercing Drill contact Iron Head breaks through Lucario-Mega-Z's Protect,
+        # while Mega Sol fires Solar Beam Turn 1 in Clear weather onto Chesnaught (who uses Wood Hammer)!
+        t1_c = torch.tensor([[0, 4]], dtype=torch.long)  # Excadrill Iron Head->Opp A (Lucario), Meganium Solar Beam->Opp B (Chesnaught)
+        t2_c = torch.tensor([[0, 1]], dtype=torch.long)  # Lucario Protect, Chesnaught Wood Hammer->Opp A
+        res_m = self.state_machine.step(st_m.field_tensor, st_m.roster_tensor, st_m.moves_tensor, t1_c, t2_c, num_mc_samples=32, rng_seed=901)
+        self.assertGreater(float(res_m.attack_cascade.mean_damage_dealt[0, 0, 0].item()), 5.0)
+        self.assertGreater(float(res_m.attack_cascade.mean_damage_dealt[0, 0, 1].item()), 10.0)
+
+        # Compare Aura Guard vs None on incoming contact Iron Head (Aura Guard halves contact damage!)
+        P_no_ag = st_m.roster_tensor.clone()
+        P_no_ag[4, MonIdx.ABILITY_ID] = float(AbilityID.NONE)
+        res_no_ag = self.state_machine.step(st_m.field_tensor, P_no_ag, st_m.moves_tensor, t1_c, t2_c, num_mc_samples=32, rng_seed=901)
+        dmg_ag = float(res_m.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+        dmg_no_ag = float(res_no_ag.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+        self.assertAlmostEqual(dmg_ag / dmg_no_ag, 0.5, delta=0.06)
+
+        # Bulletproof blocks Shadow Ball (choice 5 = move 1 -> Opp B Chesnaught)
+        t1_sb = torch.tensor([[2, 5]], dtype=torch.long)  # Excadrill Protect, Meganium Shadow Ball -> Opp B (Chesnaught)
+        res_bp = self.state_machine.step(st_m.field_tensor, st_m.roster_tensor, st_m.moves_tensor, t1_sb, t2_c, num_mc_samples=16, rng_seed=902)
+        self.assertEqual(float(res_bp.attack_cascade.mean_damage_dealt[0, 0, 1].item()), 0.0)
+
+        # 2. Volatile Disruption + EoT: Salt Cure (1/4 max HP to Water), Leech Seed drain/heal, Damp blocks Explosion,
+        #    Unnerve suppresses Sitrus Berry, Iron Ball halves Speed & grounds Flying types!
+        roster_v = [
+            {
+                "species": "Garganacl",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 120.0, "def": 150.0, "spa": 60.0, "spd": 110.0, "spe": 55.0},
+                "types": ["Rock"],
+                "ability": "Unnerve",
+                "moves": ["Salt Cure", "Protect", "Recover", "Wide Guard"],
+            },
+            {
+                "species": "Venusaur",
+                "hp_max": 200.0,
+                "hp_cur": 150.0,
+                "stats": {"atk": 90.0, "def": 100.0, "spa": 130.0, "spd": 120.0, "spe": 110.0},
+                "types": ["Grass", "Poison"],
+                "ability": "Overgrow",
+                "moves": ["Leech Seed", "Protect", "Sludge Bomb", "Energy Ball"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Dragon Claw", "Earthquake", "Rock Slide"]},
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {
+                "species": "Primarina",
+                "hp_max": 200.0,
+                "hp_cur": 110.0,
+                "stats": {"atk": 80.0, "def": 120.0, "spa": 160.0, "spd": 140.0, "spe": 80.0},
+                "types": ["Water", "Fairy"],
+                "ability": "Torrent",
+                "item": "Sitrus Berry",
+                "moves": ["Protect", "Moonblast", "Hyper Voice", "Haze"],
+            },
+            {
+                "species": "Swampert",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 130.0, "def": 120.0, "spa": 100.0, "spd": 110.0, "spe": 100.0},
+                "types": ["Water", "Ground"],
+                "ability": "Damp",
+                "item": "Iron Ball",
+                "moves": ["Explosion", "Protect", "Earthquake", "Ice Punch"],
+            },
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+        ]
+        st_v = self.compiler.compile_battle_state(roster_v)
+        # Garganacl Salt Cure -> Opp A (Primarina), Venusaur Leech Seed -> Opp A (Primarina)
+        # Primarina Moonblast -> Garganacl, Swampert attempts Explosion (blocked by its own Damp!)
+        t1_v = torch.tensor([[0, 0]], dtype=torch.long)
+        t2_v = torch.tensor([[1, 0]], dtype=torch.long)
+        res_v = self.state_machine.step(st_v.field_tensor, st_v.roster_tensor, st_v.moves_tensor, t1_v, t2_v, num_mc_samples=16, rng_seed=903)
+
+        # Iron Ball halves Swampert's effective speed (100 -> 50)
+        self.assertEqual(float(res_v.pre_attack.effective_speeds[0, 0, 3].item()), 50.0)
+        # Damp prevented Swampert's Explosion self-faint (Swampert stays at full 200 HP)
+        self.assertEqual(float(res_v.mean_hp[0, 0, 5].item()), 200.0)
+        # Unnerve prevented Primarina's Sitrus Berry from activating (ITEM_ACTIVE stays 1.0)
+        self.assertEqual(float(res_v.P[0, 0, 0, 4, MonIdx.ITEM_ACTIVE].item()), 1.0)
+        # Leech Seed healed Venusaur at EoT (150 -> 175 = +25 = 200/8!) and Salt Cure (50 = 200/4) + Leech Seed (25) chipped Primarina!
+        self.assertGreater(float(res_v.mean_hp[0, 0, 1].item()), 170.0)
+        self.assertLess(float(res_v.mean_hp[0, 0, 4].item()), 35.0)
+
+        # 3. Innards Out + Parental Bond + Spicy Spray + Eelevate KO Boost
+        roster_c = [
+            {
+                "species": "Kangaskhan-Mega",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 180.0, "def": 100.0, "spa": 60.0, "spd": 100.0, "spe": 150.0},
+                "types": ["Normal"],
+                "ability": "Parental Bond",
+                "moves": ["Return", "Protect", "Fake Out", "Crunch"],
+            },
+            {
+                "species": "Eelektross-Mega",
+                "hp_max": 200.0,
+                "hp_cur": 200.0,
+                "stats": {"atk": 120.0, "def": 100.0, "spa": 195.0, "spd": 100.0, "spe": 140.0},
+                "types": ["Electric"],
+                "ability": "Eelevate",
+                "moves": ["Thunderbolt", "Protect", "Flamethrower", "Giga Drain"],
+            },
+            {"species": "Garchomp", "hp_max": 183.0, "hp_cur": 183.0, "types": ["Dragon", "Ground"], "moves": ["Protect", "Dragon Claw", "Earthquake", "Rock Slide"]},
+            {"species": "Incineroar", "hp_max": 202.0, "hp_cur": 202.0, "types": ["Fire", "Dark"], "moves": ["Protect", "Flare Blitz", "Fake Out", "Parting Shot"]},
+            {
+                "species": "Scovillain-Mega",
+                "hp_max": 300.0,
+                "hp_cur": 300.0,
+                "stats": {"atk": 120.0, "def": 110.0, "spa": 140.0, "spd": 110.0, "spe": 90.0},
+                "types": ["Grass", "Fire"],
+                "ability": "Spicy Spray",
+                "moves": ["Protect", "Flamethrower", "Energy Ball", "Overheat"],
+            },
+            {
+                "species": "Victreebel-Mega",
+                "hp_max": 200.0,
+                "hp_cur": 40.0,
+                "stats": {"atk": 130.0, "def": 80.0, "spa": 150.0, "spd": 80.0, "spe": 90.0},
+                "types": ["Grass", "Poison"],
+                "ability": "Innards Out",
+                "moves": ["Protect", "Sludge Bomb", "Leaf Storm", "Sucker Punch"],
+            },
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "types": ["Grass"], "moves": ["Protect", "Wood Hammer", "Grassy Glide", "Fake Out"]},
+            {"species": "Pelipper", "hp_max": 167.0, "hp_cur": 167.0, "types": ["Water", "Flying"], "moves": ["Protect", "Hurricane", "Weather Ball", "Tailwind"]},
+        ]
+        st_c = self.compiler.compile_battle_state(roster_c)
+        # Kangaskhan-Mega Crunch -> Opp A (Scovillain-Mega with Spicy Spray), Eelektross-Mega Flamethrower -> Opp B (Victreebel-Mega at 40 HP with Innards Out)
+        t1_k = torch.tensor([[3, 6]], dtype=torch.long)  # Kangaskhan move 3 (Crunch)->Opp A, Eelektross move 2 (Flamethrower)->Opp B
+        t2_k = torch.tensor([[1, 1]], dtype=torch.long)  # Scovillain Flamethrower->Opp A, Victreebel Sludge Bomb->Opp A
+        res_c = self.state_machine.step(st_c.field_tensor, st_c.roster_tensor, st_c.moves_tensor, t1_k, t2_k, num_mc_samples=16, rng_seed=904)
+        # Spicy Spray burned Kangaskhan-Mega upon taking Crunch!
+        self.assertEqual(float(res_c.P[0, 0, 0, 0, MonIdx.STATUS_BURN].item()), 1.0)
+        # Eelektross-Mega KO'd Victreebel-Mega -> took exactly 40 Innards Out damage (200 -> 160) AND gained +1 SpA from Eelevate!
+        self.assertEqual(float(res_c.mean_hp[0, 0, 5].item()), 0.0)
+        self.assertEqual(float(res_c.mean_hp[0, 0, 1].item()), 160.0)
+        self.assertEqual(float(res_c.P[0, 0, 0, 1, MonIdx.BOOST_SPA].item()), 1.0)
 
 
 if __name__ == "__main__":

@@ -3,125 +3,381 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coach Porygon VGC — Standalone Showdown GPU Nash &amp; IEDS Coach</title>
+  <title>Coach Porygon VGC — Replay Coach Studio</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 <div class="app-shell">
+  <!-- Subtle Great Ball Top Accent Ribbon -->
+  <div class="greatball-ribbon" aria-hidden="true"></div>
+
+  <!-- Minimalist Top Navigation Bar -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-title">Coach Porygon VGC — Replay Nash &amp; IEDS Coach</span>
-      <span class="pill" id="gpu-badge">GPU: Cargando...</span>
-      <span class="pill zero-ai">0% IA · 100% Tensor Core + DuckDB OTS</span>
+      <!-- Sleek Great Ball SVG Emblem -->
+      <svg class="greatball-icon" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="#f8fafc" stroke="#0b101b" stroke-width="2"/>
+        <path d="M2 16 A14 14 0 0 1 30 16 Z" fill="#2563eb"/>
+        <path d="M5.2 9.4 L10.8 13.6 L8.6 15.6 L3.6 11.8 Z" fill="#e11d48"/>
+        <path d="M26.8 9.4 L21.2 13.6 L23.4 15.6 L28.4 11.8 Z" fill="#e11d48"/>
+        <rect x="2" y="14.6" width="28" height="2.8" fill="#0b101b"/>
+        <circle cx="16" cy="16" r="4.6" fill="#f8fafc" stroke="#0b101b" stroke-width="2.2"/>
+        <circle cx="16" cy="16" r="1.8" fill="#2563eb"/>
+      </svg>
+      <span class="brand-title">Coach Porygon VGC</span>
+      <span class="hw-chip" id="hw-badge" title="Active compute backend (CUDA GPU or CPU)">...</span>
     </div>
-    <div class="controls">
-      <label class="btn" title="Cargar archivo .html de replay oficial de Pokémon Showdown">
-        Cargar Replay (.html)
-        <input type="file" id="replay-file-input" accept=".html,.htm,.txt,.log" style="display:none" />
-      </label>
-      <select id="pov-select" title="Jugador a coachear (trainer_1)"></select>
-      <select id="mode-select" title="Precisión del motor GPU">
-        <option value="0.55|128" selected>GPU Rápido (min_prior 0.55 · K=128)</option>
-        <option value="0.45|256">GPU Estándar (min_prior 0.45 · K=256)</option>
-        <option value="0.0|256">GPU IEDS Total (min_prior 0.0 · K=256)</option>
-      </select>
-      <button class="btn primary" id="btn-analyze-all">Analizar Partida (GPU)</button>
-      <button class="btn" id="btn-open-ots">Base de Datos OTS / EVs</button>
+
+    <nav class="stepper" aria-label="Analysis steps">
+      <button class="step-btn active" id="nav-step-setup" data-step="setup" type="button">
+        <span class="step-num">1</span>
+        <span id="lbl-step-1">Partida y Equipos</span>
+      </button>
+      <span class="step-sep">/</span>
+      <button class="step-btn" id="nav-step-pipeline" data-step="pipeline" disabled type="button">
+        <span class="step-num">2</span>
+        <span id="lbl-step-2">Ejecución</span>
+      </button>
+      <span class="step-sep">/</span>
+      <button class="step-btn" id="nav-step-review" data-step="review" disabled type="button">
+        <span class="step-num">3</span>
+        <span id="lbl-step-3">Revisión</span>
+      </button>
+    </nav>
+
+    <div class="topbar-controls">
+      <div class="seg-group" aria-label="Language">
+        <button class="seg-btn active" id="btn-lang-es" type="button">ES</button>
+        <button class="seg-btn" id="btn-lang-en" type="button">EN</button>
+      </div>
+      <div class="seg-group" aria-label="Terminology style">
+        <button class="seg-btn active" id="btn-style-vgc" type="button">VGC</button>
+        <button class="seg-btn" id="btn-style-sci" type="button">Científico</button>
+      </div>
+      <button class="btn btn-ghost btn-analytics" id="btn-open-analytics-modal" type="button" title="Ver analítica histórica Bo3 y sesiones guardadas en CSV">
+        <span id="lbl-analytics-btn">Analítica</span>
+      </button>
+      <button class="btn btn-ghost btn-bug" id="btn-open-bug-modal" type="button" title="Generar log de error y enviarlo por correo">
+        <span id="lbl-bug-btn">Reportar Bug</span>
+      </button>
     </div>
   </header>
 
-  <main class="workspace">
-    <!-- Left Column: Official Showdown Battle Engine -->
-    <section class="card">
-      <div class="card-header">
-        <span id="match-title">Reproductor Oficial Pokémon Showdown</span>
-        <span class="status-msg" id="ots-match-indicator">OTS DB: verificando...</span>
-      </div>
-      <div class="player-frame-wrap">
-        <iframe id="showdown-iframe" src="/api/replay-player" title="Official Pokémon Showdown Replay Engine"></iframe>
-      </div>
-      <div class="player-nav">
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="btn" id="btn-prev-turn">&larr; Turno Anterior</button>
-          <button class="btn" id="btn-play-pause">Play / Pausa</button>
-          <button class="btn" id="btn-next-turn">Siguiente Turno &rarr;</button>
-          <button class="btn" id="btn-flip-pov">Invertir Cámara</button>
+  <!-- ================================================================== -->
+  <!-- STEP 1: MATCH SETUP                                                -->
+  <!-- ================================================================== -->
+  <section class="studio-view active" id="view-setup">
+    <div class="setup-wrap">
+      <!-- TOP HERO ACTION BAR (Primary CTA Front & Center — Zero Scrolling!) -->
+      <div class="hero-action-bar">
+        <div class="hero-copy">
+          <div class="hero-title" id="lbl-setup-replay-title">Configurar Replay y Equipos Full OTS</div>
+          <div class="muted-sm" id="setup-status-msg">Carga un replay o usa la partida de ejemplo para comenzar.</div>
         </div>
-        <span class="status-msg" id="current-turn-label">Turno 1</span>
-      </div>
-    </section>
-
-    <!-- Right Column: GPU Nash + IEDS + Deterministic Commentary -->
-    <section class="card">
-      <div class="card-header">
-        <span id="coach-panel-title">Análisis GPU Tensor Core — Turno 1</span>
-        <div style="display:flex;gap:6px;align-items:center">
-          <span class="status-msg" id="turn-compute-meta"></span>
-          <button class="btn" id="btn-recompute-turn" title="Recalcular este turno en GPU">Recalcular Turno</button>
+        <div class="hero-cta-group">
+          <button class="btn btn-ghost" id="btn-toggle-raw-replay" type="button">Pegar Log / HTML</button>
+          <button class="btn" id="btn-load-sample" type="button">Partida de Ejemplo</button>
+          <button class="btn btn-greatball btn-lg" id="btn-launch-analysis" type="button" disabled>
+            <span id="lbl-launch-btn">Iniciar Análisis Tensor Core &rarr;</span>
+          </button>
         </div>
       </div>
-      <div class="card-body" id="coach-panel-body">
-        <div class="status-msg">Haz clic en "Analizar Partida (GPU)" o navega a cualquier turno para calcular Equilibrio de Nash + IEDS.</div>
-      </div>
-    </section>
-  </main>
 
-  <!-- Bottom Timeline & Evaluation Graph -->
-  <section class="timeline-bar">
-    <div class="timeline-header">
-      <strong style="font-size:12px">Línea de Tiempo &amp; Curva de Equilibrio de Nash ($v^*$) — Clic en cualquier turno para sincronizar Showdown</strong>
-      <span class="status-msg" id="stream-status">Listo</span>
+      <!-- 1A. Replay Dropzone / Loaded Match Strip -->
+      <div class="panel">
+        <div class="panel-body replay-panel-body">
+          <div class="dropzone" id="replay-dropzone">
+            <div class="dropzone-title" id="lbl-dropzone-title">Arrastra aquí tu archivo de Replay (.html, .log, .txt)</div>
+            <div class="muted-sm" id="lbl-dropzone-sub">o selecciona un archivo local descargado desde Pokémon Showdown</div>
+            <label class="btn btn-greatball" style="margin-top:10px;display:inline-flex">
+              <span id="lbl-pick-file">Seleccionar archivo</span>
+              <input type="file" id="replay-file-input" accept=".html,.htm,.txt,.log" hidden />
+            </label>
+          </div>
+
+          <div id="raw-replay-box" class="raw-box" style="display:none">
+            <textarea id="raw-replay-textarea" rows="5" placeholder="Pega aquí el contenido del replay (.html o protocolo |turn|)..."></textarea>
+            <div class="raw-actions">
+              <button class="btn btn-greatball" id="btn-parse-raw-replay" type="button">Cargar texto</button>
+            </div>
+          </div>
+
+          <!-- Compact Loaded Match Settings Bar -->
+          <div class="match-meta-bar" id="detected-match-bar" style="display:none">
+            <div class="match-meta-left">
+              <span class="gb-dot" aria-hidden="true"></span>
+              <strong id="detected-players-label">trainer_1 vs. trainer_2</strong>
+              <span class="tag-neutral" id="detected-format-badge">Reg M-C</span>
+              <span class="muted-sm" id="detected-turns-label">10 turnos</span>
+              <button class="btn-link" id="btn-change-replay" type="button">Cambiar replay</button>
+            </div>
+            <div class="match-meta-right">
+              <label class="field-inline">
+                <span id="lbl-pov-select">Perspectiva:</span>
+                <select id="setup-pov-select"></select>
+              </label>
+              <label class="field-inline">
+                <span id="lbl-k-select">Simulaciones RNG:</span>
+                <select id="setup-k-select">
+                  <option value="32">Muy Rápido (K=32)</option>
+                  <option value="64">Rápido (K=64)</option>
+                  <option value="128" selected>Balanceado (K=128)</option>
+                  <option value="256">Torneo (K=256)</option>
+                  <option value="512">Profundo (K=512 · lento)</option>
+                </select>
+              </label>
+              <label class="check-inline" title="Proyecta las jugadas clave del núcleo IEDS hacia el siguiente turno (Turn + 2)">
+                <input type="checkbox" id="chk-two-ply" />
+                <span id="lbl-two-ply">2-Ply (Turn+2)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1B. Side-by-Side Searchable Full OTS Configurators -->
+      <div class="ots-columns">
+        <!-- Trainer 1 -->
+        <div class="panel ots-card">
+          <div class="panel-head">
+            <span class="panel-title" id="t1-card-title">Tu Equipo (trainer_1)</span>
+            <span class="sp-status" id="t1-sp-status">Sin OTS</span>
+          </div>
+          <div class="panel-body">
+            <!-- Searchable Saved Teams Bar -->
+            <div class="ots-search-bar">
+              <input type="text" id="t1-search-input" class="grow search-input" placeholder="Filtrar por Pokémon o nombre (ej. Charizard Garchomp)..." autocomplete="off" />
+              <button class="btn btn-ghost btn-infer" id="btn-t1-infer" type="button" title="Auto-inferir 66-SP desde el replay + DuckDB regional">Auto-Inferir</button>
+              <button class="btn btn-ghost" id="btn-t1-toggle-paste" type="button">Pegar OTS</button>
+              <button class="btn btn-ghost" id="btn-t1-clear" type="button" title="Limpiar equipo seleccionado de esta tarjeta (no borra de DuckDB)">Limpiar</button>
+            </div>
+
+            <!-- Interactive Searchable Saved Teams List (with mini sprites + confirmed DB delete) -->
+            <div class="saved-teams-box" id="t1-saved-teams"></div>
+
+            <!-- Collapsible Inline Paste Editor -->
+            <div id="t1-paste-drawer" class="paste-drawer" style="display:none">
+              <textarea id="t1-paste-input" rows="8" placeholder="Pega el Showdown Paste completo (66-SP) de trainer_1..."></textarea>
+              <div class="save-db-row">
+                <label class="check-inline">
+                  <input type="checkbox" id="t1-save-db-check" />
+                  <span id="lbl-t1-save-db">Guardar en DB:</span>
+                </label>
+                <input type="text" id="t1-save-name" class="grow" placeholder="Nombre del equipo" />
+                <button class="btn btn-greatball" id="btn-t1-validate" type="button">Aplicar</button>
+              </div>
+            </div>
+
+            <!-- Active Selected Team Roster Preview -->
+            <div class="ots-roster-list" id="t1-ots-mon-grid"></div>
+          </div>
+        </div>
+
+        <!-- Trainer 2 -->
+        <div class="panel ots-card">
+          <div class="panel-head">
+            <span class="panel-title" id="t2-card-title">Equipo Rival (trainer_2)</span>
+            <span class="sp-status" id="t2-sp-status">Sin OTS</span>
+          </div>
+          <div class="panel-body">
+            <div class="ots-search-bar">
+              <input type="text" id="t2-search-input" class="grow search-input" placeholder="Filtrar por Pokémon o nombre (ej. Incineroar Farigiraf)..." autocomplete="off" />
+              <button class="btn btn-ghost btn-infer" id="btn-t2-infer" type="button" title="Auto-inferir 66-SP del rival desde el replay + DuckDB regional">Auto-Inferir</button>
+              <button class="btn btn-ghost" id="btn-t2-toggle-paste" type="button">Pegar OTS</button>
+              <button class="btn btn-ghost" id="btn-t2-clear" type="button" title="Limpiar equipo seleccionado de esta tarjeta (no borra de DuckDB)">Limpiar</button>
+            </div>
+
+            <div class="saved-teams-box" id="t2-saved-teams"></div>
+
+            <div id="t2-paste-drawer" class="paste-drawer" style="display:none">
+              <textarea id="t2-paste-input" rows="8" placeholder="Pega el Showdown Paste completo (66-SP) de trainer_2..."></textarea>
+              <div class="save-db-row">
+                <label class="check-inline">
+                  <input type="checkbox" id="t2-save-db-check" />
+                  <span id="lbl-t2-save-db">Guardar en DB:</span>
+                </label>
+                <input type="text" id="t2-save-name" class="grow" placeholder="Nombre del equipo rival" />
+                <button class="btn btn-greatball" id="btn-t2-validate" type="button">Aplicar</button>
+              </div>
+            </div>
+
+            <div class="ots-roster-list" id="t2-ots-mon-grid"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="turn-pills" id="turn-pills"></div>
-    <svg class="eval-svg" id="eval-chart" viewBox="0 0 1000 76" preserveAspectRatio="none"></svg>
   </section>
-</div>
 
-<!-- OTS + EVs/SPs Database Modal -->
-<div class="modal-backdrop" id="ots-modal">
-  <div class="modal">
-    <div class="card-header">
-      <span>Base de Datos OTS + EVs/SPs (DuckDB — 0% IA)</span>
-      <button class="btn" id="btn-close-ots">Cerrar</button>
-    </div>
-    <div class="modal-body">
-      <div>
-        <div class="section-title" style="margin-top:0">Equipos Guardados</div>
-        <div id="roster-list"></div>
-        <button class="btn" id="btn-new-roster" style="width:100%;margin-top:6px">+ Nuevo Equipo OTS</button>
-        <div class="section-title">Asignar a la Partida Actual</div>
-        <div class="field-group">
-          <label>trainer_1 (Coacheado)</label>
-          <select id="assign-t1"></select>
+  <!-- ================================================================== -->
+  <!-- STEP 2: LIVE TENSOR CORE PIPELINE CONSOLE                          -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-pipeline">
+    <div class="pipeline-wrap">
+      <div class="panel pipeline-panel">
+        <div class="panel-head">
+          <div class="pipeline-head-left">
+            <span class="panel-title" id="lbl-pipeline-title">Ejecución del Pipeline Tensor Core</span>
+            <span class="muted-sm" id="pipeline-sub-meta"></span>
+          </div>
+          <div class="btn-row">
+            <span class="tag-neutral" id="pipeline-progress-pill">0 / 0</span>
+            <button class="btn btn-greatball" id="btn-resume-stream" type="button" style="display:none">Continuar ▶</button>
+            <button class="btn" id="btn-restart-stream" type="button" style="display:none">Reiniciar</button>
+            <button class="btn btn-danger" id="btn-cancel-stream" type="button">Detener</button>
+          </div>
         </div>
-        <div class="field-group">
-          <label>trainer_2 (Rival)</label>
-          <select id="assign-t2"></select>
+
+        <div class="progress-track">
+          <div class="progress-fill" id="pipeline-progress-fill" style="width:0%"></div>
         </div>
-        <button class="btn primary" id="btn-apply-rosters" style="width:100%">Aplicar a Replay Actual</button>
+
+        <div class="live-status-strip" id="live-tile-bar">
+          <span class="status-dot" id="live-status-dot"></span>
+          <span class="mono-label" id="live-tile-badge">IDLE</span>
+          <span id="live-tile-text">Esperando inicio...</span>
+        </div>
+
+        <div class="pipeline-console" id="pipeline-log-feed"></div>
+
+        <div class="pipeline-done-bar" id="pipeline-done-banner" style="display:none">
+          <div class="done-summary">
+            <div class="done-acc">
+              <span class="muted-xs" id="lbl-done-acc">PRECISIÓN</span>
+              <strong id="done-acc-val">--%</strong>
+            </div>
+            <div class="badge-row" id="done-badges-strip"></div>
+            <span class="muted-sm" id="done-meta-text"></span>
+          </div>
+          <button class="btn btn-greatball btn-lg" id="btn-start-synced-replay" type="button">
+            <span id="lbl-start-replay-btn">Ver Replay Sincronizado &▶;</span>
+          </button>
+        </div>
       </div>
-      <div>
-        <div class="field-group">
-          <label>Roster ID</label>
-          <input type="text" id="ed-roster-id" placeholder="ej. rival_camerupt_tr" />
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- STEP 3: SYNCHRONIZED MATCH REVIEW WORKSPACE                        -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-review">
+    <div class="review-bar">
+      <div class="review-bar-group">
+        <div class="acc-readout">
+          <span class="muted-xs" id="lbl-bar-acc">PRECISIÓN</span>
+          <strong id="bar-acc-val">--%</strong>
         </div>
-        <div class="field-group">
-          <label>Nombre Visible</label>
-          <input type="text" id="ed-display-name" placeholder="ej. MatchaGotMe — Camerupt TR" />
+        <div class="badge-row" id="bar-badge-counters"></div>
+        <button class="btn btn-ghost" id="btn-jump-turning-point" type="button">
+          <span id="lbl-turning-point">Momento Clave: T1</span>
+        </button>
+      </div>
+      <div class="review-bar-group">
+        <label class="check-inline" title="Pausa automáticamente el reproductor en turnos con Imprecisión (?!), Superada (?) o Error Grave (??)">
+          <input type="checkbox" id="chk-autopause-mistakes" checked />
+          <span id="lbl-autopause">Auto-Pausa en errores</span>
+        </label>
+        <div class="csv-group">
+          <select id="telemetry-team-select" title="Carpeta de equipo para battles_telemetry.csv"></select>
+          <button class="btn btn-ghost" id="btn-export-telemetry" type="button">
+            <span id="lbl-export-csv">Exportar CSV</span>
+          </button>
         </div>
-        <div class="field-group">
-          <label>Nombre del Entrenador en Showdown (para auto-match)</label>
-          <input type="text" id="ed-trainer-hint" placeholder="ej. MatchaGotMe" />
+        <button class="btn btn-ghost" id="btn-back-to-log" type="button">Log</button>
+      </div>
+    </div>
+
+    <div class="autopause-banner" id="autopause-toast" style="display:none">
+      <span id="autopause-toast-text">Replay pausado en un turno clave.</span>
+      <button class="btn btn-greatball" id="btn-resume-replay" type="button">Continuar ▶</button>
+    </div>
+
+    <main class="review-grid">
+      <!-- Left: Official Showdown Player + Turn Scrubber -->
+      <section class="panel player-panel">
+        <div class="panel-head">
+          <span class="panel-title" id="match-title">Pokémon Showdown Replay</span>
+          <span class="muted-xs" id="ots-match-indicator"></span>
         </div>
-        <div class="field-group">
-          <label>Showdown Paste completo (OTS + EVs/SPs Reg M-C 66-SP)</label>
-          <textarea id="ed-paste" rows="15" style="font-family:monospace;font-size:11.5px"></textarea>
+        <div class="player-frame-wrap">
+          <iframe id="showdown-iframe" src="about:blank" title="Official Pokémon Showdown Replay Engine"></iframe>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn" id="btn-validate-paste">Validar 66-SP</button>
-          <button class="btn primary" id="btn-save-roster">Guardar en DuckDB</button>
-          <span class="status-msg" id="ots-editor-status"></span>
+        <div class="player-controls">
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btn-prev-turn" type="button">&larr;</button>
+            <button class="btn btn-greatball" id="btn-play-pause" type="button">Play / Pausa</button>
+            <button class="btn btn-ghost" id="btn-next-turn" type="button">&rarr;</button>
+            <button class="btn btn-ghost" id="btn-flip-pov" type="button">Invertir</button>
+          </div>
+          <div class="btn-row">
+            <span class="muted-xs" id="stream-status"></span>
+            <strong id="current-turn-label">Turno 1</strong>
+          </div>
         </div>
+        <div class="turn-scrubber" id="turn-pills"></div>
+      </section>
+
+      <!-- Right: Focused Coach Advice Panel with 3 Clean Tabs -->
+      <section class="panel coach-panel">
+        <div class="panel-head">
+          <span class="panel-title" id="coach-panel-title">Turno 1</span>
+          <div class="btn-row">
+            <span class="muted-xs" id="turn-compute-meta"></span>
+            <button class="btn btn-ghost" id="btn-recompute-turn" type="button">Recalcular</button>
+          </div>
+        </div>
+
+        <div class="coach-tabs" role="tablist">
+          <button class="coach-tab active" data-tab="advice" id="tab-btn-advice" type="button">Consejos</button>
+          <button class="coach-tab" data-tab="matrix" id="tab-btn-matrix" type="button">Todas las Jugadas</button>
+          <button class="coach-tab" data-tab="board" id="tab-btn-board" type="button">Tablero y Curva</button>
+        </div>
+
+        <div class="panel-body coach-body" id="coach-panel-body"></div>
+      </section>
+    </main>
+  </section>
+
+  <!-- Session / Bo3 Tournament Analytics Dashboard Modal -->
+  <div class="modal-backdrop" id="analytics-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="lbl-analytics-modal-title">
+    <div class="modal-card modal-wide">
+      <div class="panel-head">
+        <span class="panel-title" id="lbl-analytics-modal-title">Analítica de Sesiones y Torneos Bo3</span>
+        <div class="btn-row">
+          <select id="analytics-team-select" title="Filtrar por carpeta de equipo"></select>
+          <button class="btn btn-ghost" id="btn-refresh-analytics" type="button">Actualizar</button>
+          <button class="btn btn-ghost" id="btn-close-analytics-modal" type="button" aria-label="Close">&times;</button>
+        </div>
+      </div>
+      <div class="panel-body modal-body analytics-body" id="analytics-dashboard-body">
+        <div class="muted-sm">Cargando telemetría...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bug Report Modal (Diagnostic Log Generator + Direct Email to esquedevil94@gmail.com) -->
+  <div class="modal-backdrop" id="bug-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="lbl-bug-modal-title">
+    <div class="modal-card">
+      <div class="panel-head">
+        <span class="panel-title" id="lbl-bug-modal-title">Reportar Bug / Generar Log Diagnóstico</span>
+        <button class="btn btn-ghost" id="btn-close-bug-modal" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="panel-body modal-body">
+        <p class="muted-sm" id="lbl-bug-modal-desc" style="margin:0 0 8px 0">
+          Describe el error o jugada extraña. Se adjuntará automáticamente el estado del turno, hardware, replay y últimos logs del Tensor Core.
+        </p>
+        <textarea id="bug-user-message" rows="4" placeholder="Ej. En el Turno 5 bajo Sol el motor propuso un movimiento inesperado..."></textarea>
+
+        <div class="modal-actions">
+          <button class="btn btn-greatball" id="btn-generate-bug-log" type="button">Generar Bug Log</button>
+          <a class="btn btn-email" id="link-email-bug-log" href="mailto:esquedevil94@gmail.com" style="display:none">
+            Enviar correo a esquedevil94@gmail.com
+          </a>
+          <button class="btn btn-ghost" id="btn-download-bug-log" type="button" style="display:none">Descargar .md</button>
+          <button class="btn btn-ghost" id="btn-copy-bug-log" type="button" style="display:none">Copiar</button>
+        </div>
+
+        <div class="muted-xs" id="bug-status-msg" style="margin-top:8px"></div>
+        <pre class="bug-preview" id="bug-log-preview" style="display:none"></pre>
       </div>
     </div>
   </div>

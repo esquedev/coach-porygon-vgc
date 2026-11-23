@@ -133,6 +133,26 @@ class TestDBRegistry(unittest.TestCase):
         self.assertEqual(float(alluring[MoveIdx.IS_SOUND_MOVE]), 1.0)
         self.assertEqual(float(alluring[MoveIdx.BYPASS_SUB]), 1.0)
 
+    def test_tournament_team_slots_items_grounded_and_indeedee_scarf_normalized(self) -> None:
+        """Verify 100% of tournament_team_slots items exist in DuckDB `items` and Frankfurt Indeedee is Choice Scarf."""
+        bad_items = self.registry.query(
+            """
+            SELECT DISTINCT item FROM tournament_team_slots
+            WHERE item IS NOT NULL AND item != ''
+              AND LOWER(item) NOT IN (SELECT LOWER(name) FROM items);
+            """
+        )
+        self.assertEqual(bad_items, [], msg=f"Found non-Reg-M-C items in tournament_team_slots: {bad_items}")
+
+        frankfurt_indeedee = self.registry.query(
+            """
+            SELECT item FROM tournament_team_slots
+            WHERE player_name = 'Matthias Hirsch' AND species = 'Indeedee';
+            """
+        )
+        self.assertTrue(frankfurt_indeedee, msg="Expected Frankfurt Regional Matthias Hirsch Indeedee slot")
+        self.assertEqual(frankfurt_indeedee[0]["item"], "Choice Scarf")
+
 
 if __name__ == "__main__":
     unittest.main()

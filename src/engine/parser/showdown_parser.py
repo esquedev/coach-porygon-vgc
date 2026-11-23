@@ -860,8 +860,6 @@ def parse_showdown_chat_log(
                 terrain = "Electric"
             elif ability_name == "Psychic Surge":
                 terrain = "Psychic"
-            elif ability_name == "Misty Surge":
-                terrain = "Misty"
             continue
 
         # --- Weather & Terrain Text Lines ---

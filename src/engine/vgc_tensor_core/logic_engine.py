@@ -106,7 +106,7 @@ FIRE_ABSORBING_ABILITIES = {"Flash Fire"}
 ELECTRIC_ABSORBING_ABILITIES = {"Lightning Rod", "Motor Drive", "Volt Absorb"}
 WATER_ABSORBING_ABILITIES = {"Water Absorb", "Dry Skin"}
 GRASS_ABSORBING_ABILITIES = {"Sap Sipper"}
-GROUND_ABSORBING_ABILITIES = {"Levitate", "Earth Eater"}
+GROUND_ABSORBING_ABILITIES = {"Levitate", "Earth Eater", "Eelevate"}
 
 
 @dataclass
@@ -269,6 +269,8 @@ class LogicalConstraintEngine:
             return 100.0
         if weather == "rain" and move_name in ("Thunder", "Hurricane"):
             return 100.0
+        if weather == "sun" and move_name in ("Thunder", "Hurricane"):
+            return 50.0
         if weather == "snow" and move_name == "Blizzard":
             return 100.0
         return acc_val
@@ -921,15 +923,19 @@ class LogicalConstraintEngine:
                         tgt_vec = raw_tgt_vec
 
                     tgt_ab = 0 if user_has_mold_breaker else int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
+                    raw_tgt_ab = int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
+                    tgt_has_lev_like = raw_tgt_ab in (AbilityID.LEVITATE, AbilityID.EELEVATE)
+                    tgt_has_iron_ball = (
+                        tgt_vec[MonIdx.ITEM_ACTIVE] > 0.5
+                        and int(round(float(tgt_vec[MonIdx.ITEM_ID]))) == int(ItemID.IRON_BALL)
+                    )
                     tgt_grounded = (
                         1.0
                         if (
                             gravity_active > 0.0
-                            or (
-                                tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0
-                                and not (user_has_mold_breaker and int(round(float(tgt_vec[MonIdx.ABILITY_ID]))) == AbilityID.LEVITATE)
-                            )
-                            or (user_has_mold_breaker and int(round(float(tgt_vec[MonIdx.ABILITY_ID]))) == AbilityID.LEVITATE)
+                            or tgt_has_iron_ball
+                            or (tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0)
+                            or (user_has_mold_breaker and tgt_has_lev_like)
                         )
                         else 0.0
                     )
@@ -968,13 +974,15 @@ class LogicalConstraintEngine:
                         m_type_vec[TYPE_TO_IDX["water"]] = 1.0
                     elif (
                         m_vec[MoveIdx.TYPE_START + TYPE_TO_IDX["normal"]] > 0.5
-                        and eff_user_ab in (AbilityID.AERILATE, AbilityID.PIXILATE, AbilityID.REFRIGERATE)
+                        and eff_user_ab in (AbilityID.AERILATE, AbilityID.PIXILATE, AbilityID.REFRIGERATE, AbilityID.DRAGONIZE)
                     ):
                         m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
                         if eff_user_ab == AbilityID.AERILATE:
                             m_type_vec[TYPE_TO_IDX["flying"]] = 1.0
                         elif eff_user_ab == AbilityID.PIXILATE:
                             m_type_vec[TYPE_TO_IDX["fairy"]] = 1.0
+                        elif eff_user_ab == AbilityID.DRAGONIZE:
+                            m_type_vec[TYPE_TO_IDX["dragon"]] = 1.0
                         else:
                             m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
                     else:
@@ -1019,14 +1027,21 @@ class LogicalConstraintEngine:
                         ):
                             continue
 
-                        # 7. Soundproof, Good as Gold, Elemental Absorb & Terrain Sleep Invariants
+                        # 7. Soundproof, Bulletproof, Good as Gold, Elemental Absorb & Terrain Sleep Invariants
+                        from .schema_and_tables import FieldOpID as _FopID
+                        m_fop = int(round(float(m_vec[MoveIdx.FIELD_OP_ID])))
                         if m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5 and tgt_ab == AbilityID.SOUNDPROOF:
+                            continue
+                        if m_fop in (int(_FopID.FLAG_BULLET), int(_FopID.FLAG_PULSE_BULLET)) and tgt_ab == AbilityID.BULLETPROOF:
                             continue
                         if is_status and tgt_ab == AbilityID.GOOD_AS_GOLD:
                             continue
                         if m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE:
                             continue
-                        if m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab == AbilityID.WATER_ABSORB:
+                        if m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab in (
+                            AbilityID.WATER_ABSORB,
+                            AbilityID.DRY_SKIN,
+                        ):
                             continue
                         if m_type_vec[TYPE_TO_IDX["electric"]] > 0.5 and tgt_ab in (
                             AbilityID.VOLT_ABSORB,
@@ -1072,6 +1087,8 @@ class LogicalConstraintEngine:
                         acc_val = 1.0
                     elif m_vec[MoveIdx.WEATHER_SURE_HIT] == 2.0 and is_rain > 0.5:
                         acc_val = 1.0
+                    elif m_vec[MoveIdx.WEATHER_SURE_HIT] == 2.0 and is_sun > 0.5:
+                        acc_val = 0.50
                     elif m_vec[MoveIdx.WEATHER_SURE_HIT] == 4.0 and is_snow > 0.5:
                         acc_val = 1.0
                     acc_val = min(1.0, max(0.0, acc_val))
@@ -1094,7 +1111,10 @@ class LogicalConstraintEngine:
                             eff_total = 0.0
                         if (
                             (m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE)
-                            or (m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab == AbilityID.WATER_ABSORB)
+                            or (
+                                m_type_vec[TYPE_TO_IDX["water"]] > 0.5
+                                and tgt_ab in (AbilityID.WATER_ABSORB, AbilityID.DRY_SKIN)
+                            )
                             or (
                                 m_type_vec[TYPE_TO_IDX["electric"]] > 0.5
                                 and tgt_ab in (AbilityID.VOLT_ABSORB, AbilityID.MOTOR_DRIVE, AbilityID.LIGHTNING_ROD)

@@ -265,10 +265,11 @@ def compute_active_effective_speeds(
     m_abil = (1.0 + weather_spe_gate) * (1.0 + unburden_gate) * (1.0 + 0.5 * is_quick_feet)
     s2 = _floor(s1 * m_abil)
 
-    # Choice Scarf (1.5x when item_active == 1.0)
+    # Choice Scarf (1.5x) & Iron Ball (0.5x) when item_active == 1.0
     item_active = P_act[..., MonIdx.ITEM_ACTIVE]
     is_scarf = ((P_act[..., MonIdx.ITEM_ID] == float(ItemID.CHOICE_SCARF)) * 1.0) * item_active
-    m_item = 1.0 + 0.5 * is_scarf
+    is_iron_ball = ((P_act[..., MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)) * 1.0) * item_active
+    m_item = (1.0 + 0.5 * is_scarf) * (1.0 - 0.5 * is_iron_ball)
     s3 = _floor(s2 * m_item)
 
     # Side Tailwind (Slots 0,1 use TRAINER_1_TAILWIND_TURNS; Slots 2,3 use TRAINER_2_TAILWIND_TURNS)
@@ -362,6 +363,39 @@ def _execute_speed_sorted_entry_abilities(
 
             abil_id = P[..., r_slot, MonIdx.ABILITY_ID]
 
+            # 0. Trace (copies an alive opposing active Pokémon's traceable ability on entry)
+            fire_trace = is_actor * ((abil_id == float(AbilityID.TRACE)) * 1.0)
+            has_any_trace = (
+                float(fire_trace.max().item()) > 0.0
+                if (HAS_TORCH and isinstance(fire_trace, torch.Tensor))
+                else float(np.max(fire_trace)) > 0.0
+            )
+            if has_any_trace:
+                opp_a_s, opp_b_s = (
+                    (SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
+                    if r_slot in (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                    else (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+                )
+                opp_a_ab = P[..., opp_a_s, MonIdx.ABILITY_ID]
+                opp_b_ab = P[..., opp_b_s, MonIdx.ABILITY_ID]
+                opp_a_ok = (
+                    P[..., opp_a_s, MonIdx.ALIVE_FLAG]
+                    * ((opp_a_ab > 0.0) * 1.0)
+                    * ((opp_a_ab != float(AbilityID.TRACE)) * 1.0)
+                    * ((opp_a_ab != float(AbilityID.GOOD_AS_GOLD)) * 1.0)
+                )
+                opp_b_ok = (
+                    P[..., opp_b_s, MonIdx.ALIVE_FLAG]
+                    * ((opp_b_ab > 0.0) * 1.0)
+                    * ((opp_b_ab != float(AbilityID.TRACE)) * 1.0)
+                    * ((opp_b_ab != float(AbilityID.GOOD_AS_GOLD)) * 1.0)
+                )
+                pick_a = fire_trace * opp_a_ok
+                pick_b = fire_trace * (1.0 - opp_a_ok) * opp_b_ok
+                traced_ab = (1.0 - pick_a - pick_b) * abil_id + pick_a * opp_a_ab + pick_b * opp_b_ab
+                P[..., r_slot, MonIdx.ABILITY_ID] = traced_ab
+                abil_id = traced_ab
+
             # A. Weather-Setting Abilities (Drought, Drizzle, Sand Stream, Snow Warning)
             weather_ability_map = (
                 (AbilityID.DROUGHT, W_SUN, ItemID.HEAT_ROCK),
@@ -413,13 +447,18 @@ def _execute_speed_sorted_entry_abilities(
                         continue
                 fire_t_exp = fire_t[..., None]
 
+                has_terrain_ext = (
+                    (P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.TERRAIN_EXTENDER)) * 1.0
+                ) * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+                t_turns_val = 5.0 + 3.0 * has_terrain_ext
+
                 t_old = F[..., FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END]
                 t_overwritten = _matmul(t_old, T_t[target_t_idx])
                 F[..., FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END] = (
                     (1.0 - fire_t_exp) * t_old + fire_t_exp * t_overwritten
                 )
                 F[..., FieldIdx.TERRAIN_TURNS] = (
-                    (1.0 - fire_t) * F[..., FieldIdx.TERRAIN_TURNS] + fire_t * 5.0
+                    (1.0 - fire_t) * F[..., FieldIdx.TERRAIN_TURNS] + fire_t * t_turns_val
                 )
 
             # C. Intimidate (-1 Atk to both opposing active slots + Mirror Armor / Defiant / Competitive / White Herb)
@@ -465,6 +504,7 @@ def _execute_speed_sorted_entry_abilities(
                         + ((opp_abil == float(AbilityID.SCRAPPY)) * 1.0)
                         + ((opp_abil == float(AbilityID.GOOD_AS_GOLD)) * 1.0)
                         + ((opp_abil == float(AbilityID.CLEAR_BODY)) * 1.0)
+                        + ((opp_abil == float(AbilityID.HYPER_CUTTER)) * 1.0)
                         + flower_veil_protects
                         + is_mirror_armor,
                         0.0,
@@ -818,12 +858,25 @@ def execute_barrier2_mega_evolution(
             0.0,
             1.0,
         )
-        is_levitate_now = (P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.LEVITATE)) * 1.0
+        is_levitate_now = _clamp(
+            ((P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.LEVITATE)) * 1.0)
+            + ((P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.EELEVATE)) * 1.0),
+            0.0,
+            1.0,
+        )
         is_balloon_now = (
             ((P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.AIR_BALLOON)) * 1.0)
             * P[..., r_slot, MonIdx.ITEM_ACTIVE]
         )
-        new_grounded = 1.0 - _clamp(is_flying_now + is_levitate_now + is_balloon_now, 0.0, 1.0)
+        is_iron_ball_now = (
+            ((P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)) * 1.0)
+            * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+        )
+        new_grounded = _clamp(
+            (1.0 - _clamp(is_flying_now + is_levitate_now + is_balloon_now, 0.0, 1.0)) + is_iron_ball_now,
+            0.0,
+            1.0,
+        )
         P[..., r_slot, MonIdx.GROUNDED_FLAG] = (
             (1.0 - m_gate) * P[..., r_slot, MonIdx.GROUNDED_FLAG] + m_gate * new_grounded
         )

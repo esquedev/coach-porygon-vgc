@@ -236,7 +236,7 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
         self.assertIn("TRAINER_1 26x26 ACTION PRUNING MATRIX", summary_str)
 
     def test_multihit_rock_blast_and_willcrit_flower_trick(self) -> None:
-        """Verify multi-hit Rock Blast (2-5 hits, 4x SE) breaks Focus Sash on Charizard and Flower Trick crits 100%."""
+        """Verify multi-hit Rock Blast (2-5 hits, 4x Super Effective) breaks Focus Sash on Charizard and Flower Trick crits 100%."""
         battle = _build_test_battle(
             t1_roster=["Meowscarada", "Garchomp", "Rillaboom", "Kingambit"],
             t2_roster=["Charizard", "Grimmsnarl", "Kingambit", "Rillaboom"],
@@ -261,9 +261,12 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
             rng_seed=42,
         )
 
-        # Charizard (SLOT_TRAINER_2_A = 4) holds Focus Sash, but whenever 4x SE Rock Blast hits (~90% acc), 4-5 hits break Focus Sash and KO!
+        # Charizard (SLOT_TRAINER_2_A = 4) holds Focus Sash behind Prankster Reflect:
+        # under the Reg M-C 35/35/15/15 cartridge multi-hit wheel (90% acc), 3-5 hits of 4x Super Effective
+        # Rock Blast break Focus Sash and KO while 2-hit low rolls behind Reflect survive (~66% overall KO probability).
         charizard_faint_prob = float(step_res.faint_prob[0, 0, SLOT_TRAINER_2_A].item())
-        self.assertGreater(charizard_faint_prob, 0.80)
+        self.assertGreater(charizard_faint_prob, 0.50)
+        self.assertLess(charizard_faint_prob, 0.95)
 
         # Meowscarada's observed crit rate on Flower Trick (willCrit=True) must be 1.0 (100%)
         meow_crit_rate = float(step_res.attack_cascade.crit_rate_observed[0, 0, 0].item())

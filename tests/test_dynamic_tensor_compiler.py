@@ -113,9 +113,9 @@ class TestDynamicTensorCompiler(unittest.TestCase):
         cls.tensor_compiler = ShowdownTensorCompiler()
 
     def test_compile_all_564_duckdb_moves_on_the_fly(self) -> None:
-        """Verify all 564 moves in DuckDB moves.jsonl compile programmatically into 56-float vectors."""
+        """Verify all 515 Regulation M-C moves in DuckDB moves.jsonl compile programmatically into 59-float vectors."""
         all_moves = self.tensor_compiler.compile_all_showdown_moves()
-        self.assertGreaterEqual(len(all_moves), 550)
+        self.assertEqual(len(all_moves), 515)
 
         for name, vec in all_moves.items():
             self.assertEqual(vec.shape, (MOVE_DIM,), f"Move {name} has wrong shape")

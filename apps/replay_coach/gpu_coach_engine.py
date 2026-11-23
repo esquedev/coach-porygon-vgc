@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""Persistent GPU Tensor Core Replay Coach Engine (RTX 3060 CUDA + DuckDB).
+"""Persistent Tensor Core Replay Coach Engine (PyTorch CUDA / CPU + DuckDB).
 
 Compiles each `TurnSnapshot` from `protocol_parser.py` into exact `CompiledBattleState`
-tensors, evaluates the `[B1 x B2]` discrete-RNG payoff matrix on GPU (`VgcTensorStateMachine`),
+tensors, evaluates the `[Strats_1 x Strats_2]` discrete-RNG payoff matrix on the best
+available PyTorch accelerator (CUDA GPU or multi-core CPU via `VgcTensorStateMachine`),
 runs Strict & Weak IEDS (`run_iterated_dominance_elimination`), Zero-Sum Nash
 (`solve_zero_sum_nash`), Logit QRE (`solve_quantal_response`), and feeds the witnesses
 into `commentary_engine.py` (100% deterministic, zero LLM calls).
@@ -11,9 +12,10 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import math
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -24,6 +26,7 @@ from engine.solver.game_theory import (
     solve_quantal_response,
     solve_zero_sum_nash,
 )
+from engine.solver.two_ply_lookahead import evaluate_two_ply_on_ieds_core
 from engine.state.state_compiler import TurnStateCompiler
 from engine.terminology import export_glossary_payload
 from engine.vgc_tensor_core import (
@@ -33,13 +36,15 @@ from engine.vgc_tensor_core import (
     ShowdownTensorCompiler,
     VgcTensorStateMachine,
 )
+from engine.vgc_tensor_core.state_machine import AnalysisCancelledError
 from engine.vgc_tensor_core.compiler import CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH2
 
 from .commentary_engine import (
+    _classify_verdict_key,
     generate_all_commentary_variants,
     generate_deterministic_commentary,
 )
-from .ots_db import OTSRosterDatabase
+from .ots_db import OTSRosterDatabase, resolve_sprite_urls
 from .protocol_parser import ParsedReplay, RecordedSlotAction, TurnSnapshot
 
 
@@ -48,16 +53,33 @@ def _norm_id(s: str) -> str:
 
 
 class GPUReplayCoachEngine:
-    """Warm singleton GPU solver wrapping `VgcTensorStateMachine` and DuckDB OTS DB."""
+    """Warm singleton Tensor Core solver wrapping `VgcTensorStateMachine` (CUDA GPU or CPU) and DuckDB OTS DB."""
 
-    def __init__(self, ots_db: OTSRosterDatabase) -> None:
+    def __init__(self, ots_db: OTSRosterDatabase, device: Optional[str] = None) -> None:
         self.ots_db = ots_db
         self._gpu_lock = threading.Lock()
         self.sc = TurnStateCompiler()
-        self.tc = ShowdownTensorCompiler(registry=self.sc.registry, backend="torch")
-        self.sm = VgcTensorStateMachine(backend="torch", risk_aversion_lambda=0.25)
+
+        req = (device or "auto").strip().lower()
+        if req == "cpu":
+            resolved_dev = torch.device("cpu")
+        elif req.startswith("cuda") and torch.cuda.is_available():
+            resolved_dev = torch.device(req if ":" in req else "cuda:0")
+        else:
+            resolved_dev = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
+
+        self.sm = VgcTensorStateMachine(backend="torch", device=resolved_dev, risk_aversion_lambda=0.25)
+        # Sync device if BilinearLookupTables gracefully fell back from CUDA OOM to CPU
+        actual_dev = self.sm.tables.device if hasattr(self.sm.tables, "device") else resolved_dev
+        if isinstance(actual_dev, torch.device):
+            self.sm.device = actual_dev
+            resolved_dev = actual_dev
+        self.device_type: str = resolved_dev.type
+        self.tc = ShowdownTensorCompiler(registry=self.sc.registry, backend="torch", device=resolved_dev)
         self.device_name = (
-            torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU (PyTorch)"
+            torch.cuda.get_device_name(resolved_dev)
+            if resolved_dev.type == "cuda"
+            else "CPU (PyTorch)"
         )
 
     def _compile_snapshot(self, snap: TurnSnapshot) -> Any:
@@ -229,44 +251,78 @@ class GPUReplayCoachEngine:
         min_prior: float = 0.0,
         num_mc: int = 128,
         force_recompute: bool = False,
+        enable_two_ply: bool = False,
+        log_cb: Optional[Callable[[Dict[str, Any]], None]] = None,
+        cancel_event: Optional[threading.Event] = None,
     ) -> Dict[str, Any]:
-        """Run full GPU Tensor Core IEDS + Nash + QRE + Zero-AI Commentary for one turn."""
+        """Run full Tensor Core IEDS + Nash + QRE + Zero-AI Commentary for one turn."""
+        if cancel_event is not None and cancel_event.is_set():
+            raise AnalysisCancelledError("Analysis cancelled before turn start.")
+
         # min_prior is permanently locked to 0.0 (strictly mathematical pruner, zero heuristics)
         min_prior = 0.0
         snap = next((t for t in replay.turns if t.turn_number == turn_number), None)
         if snap is None:
             raise ValueError(f"Turn {turn_number} not found in replay {replay.replay_id}")
 
-        # Build deterministic cache key from replay_id, spreads, turn, and solver settings
-        spread_sig = hashlib.sha1(
-            (
-                replay.replay_id
-                + f"|v2|t={turn_number}|mp={min_prior:.2f}|k={num_mc}|pov={replay.trainer_1_name}|"
-                + str(
-                    [
-                        (m.species, m.spread.to_dict(), m.item, m.moves)
-                        for m in list(snap.battle_state.trainer_1.pokemon_sets.values())
-                        + list(snap.battle_state.trainer_2.pokemon_sets.values())
-                    ]
-                )
-            ).encode("utf-8")
-        ).hexdigest()[:20]
+        turn_logs: List[Dict[str, Any]] = []
 
-        if not force_recompute:
-            cached = self.ots_db.get_cached_turn(spread_sig)
-            if cached is not None:
-                cached["from_cache"] = True
-                return cached
+        def _emit_log(
+            phase: str,
+            es_vgc: str,
+            en_vgc: str,
+            es_sci: str,
+            en_sci: str,
+            in_place: bool = False,
+            extra: Optional[Dict[str, Any]] = None,
+        ) -> None:
+            entry: Dict[str, Any] = {
+                "turn": int(turn_number),
+                "phase": phase,
+                "in_place": bool(in_place),
+                "messages": {
+                    "es_vgc": es_vgc,
+                    "en_vgc": en_vgc,
+                    "es_scientific": es_sci,
+                    "en_scientific": en_sci,
+                },
+            }
+            if extra:
+                entry.update(extra)
+            if not in_place:
+                turn_logs.append(entry)
+            if log_cb is not None:
+                try:
+                    log_cb(entry)
+                except Exception:
+                    pass
 
+        # Always execute live Tensor Core computation (no stale turn-result caching)
         t0 = time.time()
         with self._gpu_lock:
+            if cancel_event is not None and cancel_event.is_set():
+                raise AnalysisCancelledError("Analysis cancelled while acquiring compute lock.")
+            t_comp0 = time.perf_counter()
             comp = self._compile_snapshot(snap)
+            t_comp_ms = (time.perf_counter() - t_comp0) * 1000.0
+            t1_leads = f"{comp.slot_species[0]} + {comp.slot_species[1]}"
+            t2_leads = f"{comp.slot_species[4]} + {comp.slot_species[5]}"
+            _emit_log(
+                "COMPILE",
+                f"Turno {turn_number}: Tablero y equipos 66-SP preparados ({t1_leads} vs. {t2_leads}) en {t_comp_ms:.0f}ms",
+                f"Turn {turn_number}: Board & 66-SP teams compiled ({t1_leads} vs. {t2_leads}) in {t_comp_ms:.0f}ms",
+                f"Turno {turn_number}: Tensores F[24], P[8,87], M[8,4,59] compilados ({t1_leads} vs. {t2_leads}) en {t_comp_ms:.1f}ms",
+                f"Turn {turn_number}: Compiled tensors F[24], P[8,87], M[8,4,59] ({t1_leads} vs. {t2_leads}) in {t_comp_ms:.1f}ms",
+            )
+
+            t_pr0 = time.perf_counter()
             m1 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
                 comp, "trainer_1", min_prior_threshold=0.0
             )
             m2 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
                 comp, "trainer_2", min_prior_threshold=0.0
             )
+            t_pr_ms = (time.perf_counter() - t_pr0) * 1000.0
             c1_np = m1.pruned_choices.detach().cpu().numpy()
             c2_np = m2.pruned_choices.detach().cpu().numpy()
 
@@ -298,37 +354,192 @@ class GPUReplayCoachEngine:
                 c2_np = np.vstack([c2_np, np.array([[actual_t2[0], actual_t2[1]]], dtype=np.int64)])
 
             B1, B2 = c1_np.shape[0], c2_np.shape[0]
+            tot_cells = B1 * B2
+            tot_timelines = tot_cells * num_mc
+            _emit_log(
+                "PRUNE",
+                f"Jugadas legales: {B1} opciones tuyas × {B2} del rival = {tot_cells:,} cruces ({t_pr_ms:.0f}ms)",
+                f"Legal plays: {B1} your options × {B2} rival options = {tot_cells:,} matchups ({t_pr_ms:.0f}ms)",
+                f"26×26 Mechanical Pruner (min_prior=0.0): Strats_1={B1} × Strats_2={B2} ({tot_cells:,} cells, {t_pr_ms:.1f}ms)",
+                f"26×26 Mechanical Pruner (min_prior=0.0): Strats_1={B1} × Strats_2={B2} ({tot_cells:,} cells, {t_pr_ms:.1f}ms)",
+            )
+
             t1_t = torch.tensor(c1_np, dtype=torch.long, device=self.sm.device)
             t2_t = torch.tensor(c2_np, dtype=torch.long, device=self.sm.device)
+            t_sim_start = time.perf_counter()
+
+            def _sm_progress(ev: Dict[str, Any]) -> None:
+                ev_type = ev.get("event")
+                if ev_type == "tile_progress":
+                    ti, tn = ev["tile"], ev["total_tiles"]
+                    tr_d, tr_t = ev["trajectories_done"], ev["total_trajectories"]
+                    pct = min(100, int(round(100.0 * tr_d / max(1, tr_t))))
+                    el = max(0.01, time.perf_counter() - t_sim_start)
+                    eta = (el * (tr_t - tr_d) / tr_d) if tr_d > 0 else 0.0
+                    eta_str = f" · ETA ~{eta:.1f}s" if (0 < pct < 100 and eta >= 0.5) else ""
+                    ck = ev.get("chunk")
+                    ck_tot = ev.get("total_chunks")
+                    ck_str = f" (lote {ck}/{ck_tot})" if ck and ck_tot and ck_tot > 1 else ""
+                    ck_str_en = f" (chunk {ck}/{ck_tot})" if ck and ck_tot and ck_tot > 1 else ""
+                    _emit_log(
+                        "TILE_PROGRESS",
+                        f"Simulando en {self.device_name}: {pct}% · Bloque {ti}/{tn}{ck_str} · {tr_d:,} / {tr_t:,} simulaciones{eta_str}",
+                        f"Simulating on {self.device_name}: {pct}% · Tile {ti}/{tn}{ck_str_en} · {tr_d:,} / {tr_t:,} sims{eta_str}",
+                        f"2D Tiling ({self.device_name}): {pct}% · Tile {ti}/{tn}{ck_str} · {tr_d:,} / {tr_t:,} MC threads (K={num_mc}){eta_str}",
+                        f"2D Tiling ({self.device_name}): {pct}% · Tile {ti}/{tn}{ck_str_en} · {tr_d:,} / {tr_t:,} MC threads (K={num_mc}){eta_str}",
+                        in_place=True,
+                        extra={
+                            "tile": ti,
+                            "total_tiles": tn,
+                            "pct": pct,
+                            "trajectories_done": tr_d,
+                            "total_trajectories": tr_t,
+                        },
+                    )
+                elif ev_type == "phases_summary":
+                    sw_c = ev["switch_cells"]
+                    mg_c = ev["mega_cells"]
+                    st_c = ev["speed_tie_cells"]
+                    pre_s = ev["pre_attack_s"]
+                    att_s = ev["attack_s"]
+                    eot_s = ev["eot_s"]
+                    tn = ev["total_tiles"]
+                    _emit_log(
+                        "PHASE_1",
+                        f"Fase 1 (Cambios): {sw_c:,} cruces con cambios de banca y habilidades de entrada",
+                        f"Phase 1 (Switches): {sw_c:,} matchups with bench swaps & switch-in abilities",
+                        f"Phase 1 (Barrier +6): Permutación 8×8 P/M_moves + habilidades de entrada ({sw_c:,} switch cells)",
+                        f"Phase 1 (Barrier +6): 8×8 P/M_moves permutation & entry abilities ({sw_c:,} switch cells)",
+                    )
+                    _emit_log(
+                        "PHASE_2",
+                        f"Fase 2 (Mega Evolución): recálculo instantáneo de stats y velocidad en {mg_c:,} líneas Mega",
+                        f"Phase 2 (Mega Evolution): instant stat & speed recalculation across {mg_c:,} Mega lines",
+                        f"Phase 2 (Barrier +5.5): Interpolación Mega in-place y habilidades ({mg_c:,} Mega cells)",
+                        f"Phase 2 (Barrier +5.5): In-place Mega stat interpolation & abilities ({mg_c:,} Mega cells)",
+                    )
+                    _emit_log(
+                        "PHASE_3",
+                        f"Fase 3 (Velocidad y Prioridad): {st_c:,} empates de velocidad resueltos al 50/50 ({pre_s:.2f}s)",
+                        f"Phase 3 (Speed & Priority): {st_c:,} speed ties resolved via 50/50 coinflip ({pre_s:.2f}s)",
+                        f"Phase 3 (Priority/Speed Sort): S_eff + SplitMix64 50/50 tie-break ({st_c:,} tied cells, {pre_s:.2f}s)",
+                        f"Phase 3 (Priority/Speed Sort): S_eff + SplitMix64 50/50 tie-break ({st_c:,} tied cells, {pre_s:.2f}s)",
+                    )
+                    _emit_log(
+                        "PHASE_4",
+                        f"Fase 4 (Ataques y RNG): {tot_timelines:,} simulaciones de daño, críticos y precisión ({tn} bloques) en {att_s:.2f}s",
+                        f"Phase 4 (Attacks & RNG): {tot_timelines:,} damage roll, crit & accuracy sims ({tn} tiles) in {att_s:.2f}s",
+                        f"Phase 4 (Attack Cascade): {tot_timelines:,} discrete threads [Strats_1,Strats_2,K={num_mc}] ({tn} tiles) in {att_s:.2f}s",
+                        f"Phase 4 (Attack Cascade): {tot_timelines:,} discrete threads [Strats_1,Strats_2,K={num_mc}] ({tn} tiles) in {att_s:.2f}s",
+                    )
+                    _emit_log(
+                        "PHASE_5",
+                        f"Fase 5 (Fin de Turno): daño residual, clima/terreno y escenario de peor 10% de RNG en {eot_s:.2f}s",
+                        f"Phase 5 (End-of-Turn): residual chip, weather/terrain & worst 10% RNG floor in {eot_s:.2f}s",
+                        f"Phase 5 (End-of-Turn & CVaR_10): Residuales, U(F_eot,P_eot) y CVaR_10 (λ=0.25) en {eot_s:.2f}s",
+                        f"Phase 5 (End-of-Turn & CVaR_10): Residuals, U(F_eot,P_eot) & CVaR_10 (λ=0.25) in {eot_s:.2f}s",
+                    )
 
             with torch.inference_mode():
-                # Uses automatic 2D Tiling over (B1, B2) in VgcTensorStateMachine.step()
-                res = self.sm.step(
-                    comp.field_tensor,
-                    comp.roster_tensor,
-                    comp.moves_tensor,
-                    t1_t,
-                    t2_t,
-                    num_mc_samples=num_mc,
-                    rng_seed=202600 + turn_number * 1009,
-                )
+                try:
+                    res = self.sm.step(
+                        comp.field_tensor,
+                        comp.roster_tensor,
+                        comp.moves_tensor,
+                        t1_t,
+                        t2_t,
+                        num_mc_samples=num_mc,
+                        rng_seed=202600 + turn_number * 1009,
+                        progress_callback=_sm_progress,
+                        cancel_event=cancel_event,
+                    )
+                except torch.cuda.OutOfMemoryError:
+                    torch.cuda.empty_cache()
+                    res = self.sm.step(
+                        comp.field_tensor,
+                        comp.roster_tensor,
+                        comp.moves_tensor,
+                        t1_t,
+                        t2_t,
+                        num_mc_samples=num_mc,
+                        rng_seed=202600 + turn_number * 1009,
+                        tile_size=8,
+                        max_sim_chunk_size=64,
+                        progress_callback=_sm_progress,
+                        cancel_event=cancel_event,
+                    )
                 U_risk = res.stats.risk_adjusted_utility.detach().cpu().numpy().astype(np.float64)
                 U_mean = res.stats.mean_utility.detach().cpu().numpy().astype(np.float64)
                 U_cvar = res.stats.cvar_10_utility.detach().cpu().numpy().astype(np.float64)
                 U_win = res.stats.win_turn_prob.detach().cpu().numpy().astype(np.float64)
 
+        if cancel_event is not None and cancel_event.is_set():
+            raise AnalysisCancelledError("Analysis cancelled after simulation step.")
+
         idx_act1 = next(i for i, r in enumerate(c1_np) if (int(r[0]), int(r[1])) == actual_t1)
         idx_act2 = next(j for j, r in enumerate(c2_np) if (int(r[0]), int(r[1])) == actual_t2)
 
         # Strict & Weak IEDS
+        t_ieds0 = time.perf_counter()
         ieds_strict = run_iterated_dominance_elimination(
             U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=False
         )
         ieds_weak = run_iterated_dominance_elimination(
             U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=True
         )
+        t_ieds_s = time.perf_counter() - t_ieds0
+        _emit_log(
+            "IEDS",
+            f"Filtro de jugadas viables: {B1} -> {ieds_strict.num_trainer_1_surviving} tuyas · {B2} -> {ieds_strict.num_trainer_2_surviving} rivales ({t_ieds_s*1000:.0f}ms)",
+            f"Viable play filter: {B1} -> {ieds_strict.num_trainer_1_surviving} yours · {B2} -> {ieds_strict.num_trainer_2_surviving} rival ({t_ieds_s*1000:.0f}ms)",
+            f"IEDS Dominance: Strict Strats_1 {B1}->{ieds_strict.num_trainer_1_surviving} ({ieds_strict.rounds_executed}r), Weak->{ieds_weak.num_trainer_1_surviving} · Strats_2 {B2}->{ieds_strict.num_trainer_2_surviving} ({t_ieds_s*1000:.1f}ms)",
+            f"IEDS Dominance: Strict Strats_1 {B1}->{ieds_strict.num_trainer_1_surviving} ({ieds_strict.rounds_executed}r), Weak->{ieds_weak.num_trainer_1_surviving} · Strats_2 {B2}->{ieds_strict.num_trainer_2_surviving} ({t_ieds_s*1000:.1f}ms)",
+        )
+
+        # Optional Selective 2-Ply Lookahead on the Strict-IEDS surviving core
+        two_ply_meta: Dict[str, Any] = {"enabled": False, "cells_evaluated": 0, "elapsed_s": 0.0, "gamma": 0.35}
+        if enable_two_ply:
+            with self._gpu_lock:
+                tp_res = evaluate_two_ply_on_ieds_core(
+                    sm=self.sm,
+                    comp=comp,
+                    c1_np=c1_np,
+                    c2_np=c2_np,
+                    U_risk_ply1=U_risk,
+                    surv_1_indices=ieds_strict.trainer_1_surviving_indices,
+                    surv_2_indices=ieds_strict.trainer_2_surviving_indices,
+                    gamma=0.35,
+                    max_core_dim=6,
+                    k_ply1_branch=4,
+                    k_ply2=16,
+                    max_ply2_actions=8,
+                    rng_seed=202600 + turn_number * 1009,
+                    cancel_event=cancel_event,
+                )
+            U_risk = tp_res.U_blended
+            ieds_strict = run_iterated_dominance_elimination(
+                U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=False
+            )
+            ieds_weak = run_iterated_dominance_elimination(
+                U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=True
+            )
+            two_ply_meta = {
+                "enabled": True,
+                "cells_evaluated": int(tp_res.cells_evaluated),
+                "core_shape": [len(tp_res.eval_t1_indices), len(tp_res.eval_t2_indices)],
+                "elapsed_s": round(float(tp_res.elapsed_s), 3),
+                "gamma": float(tp_res.gamma),
+            }
+            _emit_log(
+                "PLY_2",
+                f"Proyección 2-Ply: {tp_res.cells_evaluated} líneas clave evaluadas al siguiente turno en {tp_res.elapsed_s:.2f}s",
+                f"2-Ply Lookahead: {tp_res.cells_evaluated} key matchups projected into Turn+2 in {tp_res.elapsed_s:.2f}s",
+                f"Selective 2-Ply Lookahead (γ={tp_res.gamma:.2f}): {len(tp_res.eval_t1_indices)}×{len(tp_res.eval_t2_indices)} IEDS core ({tp_res.cells_evaluated} cells, K2=16) in {tp_res.elapsed_s:.2f}s",
+                f"Selective 2-Ply Lookahead (γ={tp_res.gamma:.2f}): {len(tp_res.eval_t1_indices)}×{len(tp_res.eval_t2_indices)} IEDS core ({tp_res.cells_evaluated} cells, K2=16) in {tp_res.elapsed_s:.2f}s",
+            )
 
         # Zero-Sum Nash Equilibrium on Strict-IEDS core
+        t_nash0 = time.perf_counter()
         nash_sub = solve_zero_sum_nash(ieds_strict.reduced_payoff_matrix)
         p_nash = np.zeros(B1, dtype=np.float64)
         q_nash = np.zeros(B2, dtype=np.float64)
@@ -337,6 +548,7 @@ class GPUReplayCoachEngine:
 
         # Logit QRE (beta=4.0 human behavioral model)
         qre_res = solve_quantal_response(U_risk, rationality_beta=4.0)
+        t_nash_s = time.perf_counter() - t_nash0
 
         ev_vs_q = U_risk @ q_nash
         mean_vs_q = U_mean @ q_nash
@@ -383,6 +595,7 @@ class GPUReplayCoachEngine:
                 idx_act2 = min(cand_j, key=lambda jdx: float(p_dot_u[jdx]))
                 actual_t2 = (int(c2_np[idx_act2, 0]), int(c2_np[idx_act2, 1]))
 
+        k_ko = max(256, num_mc)
         with self._gpu_lock, torch.inference_mode():
             res_act = self.sm.step(
                 comp.field_tensor,
@@ -390,10 +603,19 @@ class GPUReplayCoachEngine:
                 comp.moves_tensor,
                 torch.tensor([[actual_t1[0], actual_t1[1]]], dtype=torch.long, device=self.sm.device),
                 torch.tensor([[actual_t2[0], actual_t2[1]]], dtype=torch.long, device=self.sm.device),
-                num_mc_samples=max(256, num_mc),
+                num_mc_samples=k_ko,
                 rng_seed=909090 + turn_number * 131,
+                cancel_event=cancel_event,
             )
             faint_act = res_act.faint_prob[0, 0].detach().cpu().numpy()
+
+        _emit_log(
+            "NASH_QRE",
+            f"Equilibrio del turno calculado: Ventaja = {nash_sub.game_value:+.2f} · Prob. de KO ({k_ko} rolls) en {t_nash_s*1000:.0f}ms",
+            f"Turn equilibrium solved: Turn Advantage = {nash_sub.game_value:+.2f} · KO odds ({k_ko} rolls) in {t_nash_s*1000:.0f}ms",
+            f"HiGHS Nash LP + Logit QRE (β=4.0): Nash_Eq_Value={nash_sub.game_value:+.4f} (gap={nash_sub.exploitability_gap:.5f}) + {k_ko}-thread KO audit ({t_nash_s*1000:.1f}ms)",
+            f"HiGHS Nash LP + Logit QRE (β=4.0): Nash_Eq_Value={nash_sub.game_value:+.4f} (gap={nash_sub.exploitability_gap:.5f}) + {k_ko}-thread KO audit ({t_nash_s*1000:.1f}ms)",
+        )
 
         strict_surv_set = set(int(x) for x in ieds_strict.trainer_1_surviving_indices)
         weak_surv_set = set(int(x) for x in ieds_weak.trainer_1_surviving_indices)
@@ -473,17 +695,27 @@ class GPUReplayCoachEngine:
             for j in opp_sorted
         ]
 
-        # Build roster state summary for UI display
+        # Build roster state summary for UI display (with local species & item sprite URLs)
         P_np = comp.roster_tensor.detach().cpu().numpy()
         board_slots: Dict[str, List[Dict[str, Any]]] = {"trainer_1": [], "trainer_2": []}
         for tid, slots in (("trainer_1", (0, 1, 2, 3)), ("trainer_2", (4, 5, 6, 7))):
+            team_obj = snap.battle_state.trainer_1 if tid == "trainer_1" else snap.battle_state.trainer_2
             for pos, s in enumerate(slots):
+                sp_name = comp.slot_species[s]
+                mon_obj = team_obj.get_pokemon(sp_name) if sp_name else None
+                item_name = mon_obj.item if (mon_obj and P_np[s, MonIdx.ITEM_ACTIVE] > 0.5) else None
+                ability_name = mon_obj.ability if mon_obj else None
+                sprites = resolve_sprite_urls(sp_name, item_name)
                 hp_c = float(P_np[s, MonIdx.HP_CUR])
                 hp_m = max(1.0, float(P_np[s, MonIdx.HP_MAX]))
                 board_slots[tid].append(
                     {
-                        "species": comp.slot_species[s],
+                        "species": sp_name,
                         "role": "Active" if pos < 2 else "Bench",
+                        "item": item_name,
+                        "ability": ability_name,
+                        "sprite_url": sprites["sprite_url"],
+                        "item_sprite_url": sprites["item_sprite_url"],
                         "hp_cur": int(round(hp_c)),
                         "hp_max": int(round(hp_m)),
                         "hp_pct": round(hp_c / hp_m * 100.0, 1),
@@ -551,8 +783,22 @@ class GPUReplayCoachEngine:
             field_context=field_context,
         )
         commentary = commentary_variants["es_vgc"]
+        verdict_key = _classify_verdict_key(
+            actual_row.get("strict_dominated_by"),
+            actual_row.get("weak_dominated_by"),
+            float(actual_row.get("nash_regret", 0.0)),
+            float(actual_row.get("nash_pct", 0.0)),
+        )
 
         elapsed_s = round(time.time() - t0, 2)
+        _emit_log(
+            "VERDICT",
+            f"Turno {turn_number} listo ({elapsed_s:.2f}s) -> [{commentary['symbol']}] {commentary['badge']} (Costo: {actual_row['nash_regret']:.2f})",
+            f"Turn {turn_number} done ({elapsed_s:.2f}s) -> [{commentary_variants['en_vgc']['symbol']}] {commentary_variants['en_vgc']['badge']} (Cost: {actual_row['nash_regret']:.2f})",
+            f"Turno {turn_number} finalizado ({elapsed_s:.2f}s) -> [{commentary_variants['es_scientific']['symbol']}] {commentary_variants['es_scientific']['badge']} (Nash_Utility_Loss={actual_row['nash_regret']:.4f})",
+            f"Turn {turn_number} finished ({elapsed_s:.2f}s) -> [{commentary_variants['en_scientific']['symbol']}] {commentary_variants['en_scientific']['badge']} (Nash_Utility_Loss={actual_row['nash_regret']:.4f})",
+        )
+
         payload = {
             "turn": turn_number,
             "elapsed_s": elapsed_s,
@@ -573,9 +819,87 @@ class GPUReplayCoachEngine:
             "top_actions": top_actions,
             "opp_top_actions": opp_top,
             "events": events_dict,
+            "verdict_key": verdict_key,
             "commentary": commentary,
             "commentary_variants": commentary_variants,
             "terminology": export_glossary_payload(),
+            "two_ply": two_ply_meta,
+            "pipeline_logs": turn_logs,
         }
-        self.ots_db.put_cached_turn(spread_sig, replay.replay_id, turn_number, payload)
         return payload
+
+
+def compute_match_summary(turn_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Compute Chess.com-style overall Match Accuracy %, badge counts, and Biggest Turning Point."""
+    if not turn_results:
+        return {
+            "accuracy_pct": 100.0,
+            "badge_counts": {
+                "optimal": 0,
+                "good": 0,
+                "inaccuracy": 0,
+                "weak_dominated": 0,
+                "strict_dominated": 0,
+            },
+            "turning_point_turn": 1,
+            "turning_point_regret": 0.0,
+            "total_turns": 0,
+            "total_timelines": 0,
+            "total_elapsed_s": 0.0,
+            "mean_nash_value": 0.0,
+        }
+
+    counts = {
+        "optimal": 0,
+        "good": 0,
+        "inaccuracy": 0,
+        "weak_dominated": 0,
+        "strict_dominated": 0,
+    }
+    acc_scores: List[float] = []
+    worst_turn = int(turn_results[0].get("turn", 1))
+    worst_regret = -1.0
+    total_timelines = 0
+    total_elapsed = 0.0
+    nash_vals: List[float] = []
+
+    for tr in sorted(turn_results, key=lambda x: int(x.get("turn", 0))):
+        t_num = int(tr.get("turn", 1))
+        act = tr.get("actual_action") or {}
+        reg = max(0.0, float(act.get("nash_regret", 0.0)))
+        v_key = tr.get("verdict_key") or _classify_verdict_key(
+            act.get("strict_dominated_by"),
+            act.get("weak_dominated_by"),
+            reg,
+            float(act.get("nash_pct", 0.0)),
+        )
+        counts[v_key] = counts.get(v_key, 0) + 1
+
+        # Exponential regret decay + dominance penalty -> smooth [0, 100] accuracy score
+        base_score = 100.0 * math.exp(-1.85 * reg)
+        if v_key == "strict_dominated":
+            base_score *= 0.55
+        elif v_key == "weak_dominated":
+            base_score *= 0.78
+        acc_scores.append(max(0.0, min(100.0, base_score)))
+
+        # Weight strict/weak dominance slightly when selecting the biggest turning point
+        tp_score = reg + (0.25 if v_key == "strict_dominated" else (0.10 if v_key == "weak_dominated" else 0.0))
+        if tp_score > worst_regret:
+            worst_regret = tp_score
+            worst_turn = t_num
+
+        total_timelines += int(tr.get("total_timelines", 0))
+        total_elapsed += float(tr.get("elapsed_s", 0.0))
+        nash_vals.append(float(tr.get("nash_value", 0.0)))
+
+    return {
+        "accuracy_pct": round(float(sum(acc_scores) / max(1, len(acc_scores))), 1),
+        "badge_counts": counts,
+        "turning_point_turn": int(worst_turn),
+        "turning_point_regret": round(max(0.0, float(worst_regret)), 3),
+        "total_turns": len(turn_results),
+        "total_timelines": int(total_timelines),
+        "total_elapsed_s": round(float(total_elapsed), 2),
+        "mean_nash_value": round(float(sum(nash_vals) / max(1, len(nash_vals))), 3),
+    }

@@ -361,11 +361,66 @@ TERM_GLOSSARY: Dict[str, Dict[Language, Dict[Style, Dict[str, str]]]] = {
             },
             "scientific": {
                 "label": "Oracle_Best_Response",
-                "short": "Oracle_Best_Response",
+                "short": "Oracle_BR",
                 "desc": "Ex-post hindsight best response (argmax_i U(i, j_actual)) against trainer_2's recorded action.",
             },
         },
     },
+    "ko_prob": {
+        "es": {
+            "vgc": {
+                "label": "Probabilidad de KO",
+                "short": "Prob. KO",
+                "desc": "Porcentaje de veces que un Pokémon cae debilitado en este turno considerando daño, precisión y críticos.",
+            },
+            "scientific": {
+                "label": "P(KO)",
+                "short": "P(KO)",
+                "desc": "Probabilidad empírica de debilitamiento (HP_cur == 0) al cierre de la cascada discreta de RNG_Samples.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "KO Chance",
+                "short": "KO %",
+                "desc": "How often a Pokémon faints on this turn across damage rolls, accuracy checks, and critical hits.",
+            },
+            "scientific": {
+                "label": "P(KO)",
+                "short": "P(KO)",
+                "desc": "Empirical faint probability (HP_cur == 0) across the discrete RNG_Samples ensemble.",
+            },
+        },
+    },
+}
+
+# Canonical alias map so both snake_case keys and legacy/scientific PascalCase keys resolve cleanly
+TERM_KEY_ALIASES: Dict[str, str] = {
+    "Strats_1": "strats_pair",
+    "Strats_2": "strats_pair",
+    "RNG_Samples": "rng_samples",
+    "RNG_Sample_Count": "rng_samples",
+    "IEDS_Strict_Eliminated": "ieds_strict",
+    "IEDS_Dominated": "ieds_strict",
+    "IEDS_Weak_Eliminated": "ieds_weak",
+    "IEDS_Weakly_Dominated": "ieds_weak",
+    "IEDS_Survivors": "ieds_survivors",
+    "IEDS_Pruned": "ieds_survivors",
+    "Nash_Eq_Value": "nash_value",
+    "Risk_Adjusted_EV": "risk_utility",
+    "Risk_Adjusted_Utility": "risk_utility",
+    "Downside_CVaR_10": "cvar_10",
+    "CVaR_10_RNG_Floor": "cvar_10",
+    "Nash_Mix_Prob": "nash_mix",
+    "Nash_Mindgame_Mix_%": "nash_mix",
+    "QRE_Human_Prob": "human_qre",
+    "Human_QRE_%": "human_qre",
+    "Nash_Utility_Loss": "nash_regret",
+    "Worst_Case_Payoff": "security_floor",
+    "Minimax_Worst_Counter": "security_floor",
+    "Future_Sight_Best_Play": "oracle_best_response",
+    "Oracle_Best_Response": "oracle_best_response",
+    "KO_Prob": "ko_prob",
 }
 
 VERDICT_BADGES: Dict[str, Dict[str, Any]] = {
@@ -440,10 +495,18 @@ def normalize_lang_style(lang: str = "es", style: str = "vgc") -> tuple[Language
     return l_clean, s_clean
 
 
+def resolve_term_key(key: str) -> str:
+    """Resolve either a canonical snake_case key or a PascalCase alias to its `TERM_GLOSSARY` key."""
+    if key in TERM_GLOSSARY:
+        return key
+    return TERM_KEY_ALIASES.get(key, key)
+
+
 def get_term_label(key: str, lang: str = "es", style: str = "vgc", short: bool = False) -> str:
     """Return the localized label (or compact column header) for `key`."""
     l_clean, s_clean = normalize_lang_style(lang, style)
-    entry = TERM_GLOSSARY.get(key, {}).get(l_clean, {}).get(s_clean, {})
+    canon = resolve_term_key(key)
+    entry = TERM_GLOSSARY.get(canon, {}).get(l_clean, {}).get(s_clean, {})
     if short:
         return entry.get("short") or entry.get("label") or key
     return entry.get("label") or key
@@ -452,7 +515,8 @@ def get_term_label(key: str, lang: str = "es", style: str = "vgc", short: bool =
 def get_term_description(key: str, lang: str = "es", style: str = "vgc") -> str:
     """Return the localized tooltip / explanation for `key`."""
     l_clean, s_clean = normalize_lang_style(lang, style)
-    return TERM_GLOSSARY.get(key, {}).get(l_clean, {}).get(s_clean, {}).get("desc", "")
+    canon = resolve_term_key(key)
+    return TERM_GLOSSARY.get(canon, {}).get(l_clean, {}).get(s_clean, {}).get("desc", "")
 
 
 def get_rng_sampling_note(lang: str = "es", style: str = "vgc", num_samples: int = 128) -> str:
@@ -481,9 +545,10 @@ def get_verdict_badge(verdict_key: str, lang: str = "es", style: str = "vgc") ->
 
 
 def export_glossary_payload() -> Dict[str, Any]:
-    """Export the full 4-variant glossary and badge dictionary for zero-latency GUI switching."""
+    """Export the full 4-variant glossary, aliases, and badge dictionary for zero-latency GUI switching."""
     return {
         "terms": TERM_GLOSSARY,
+        "aliases": TERM_KEY_ALIASES,
         "badges": VERDICT_BADGES,
         "rng_events": RNG_SAMPLED_EVENTS_TEXT,
     }

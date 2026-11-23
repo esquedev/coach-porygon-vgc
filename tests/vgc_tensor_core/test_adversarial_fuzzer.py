@@ -3,7 +3,7 @@
 VGC Tensor Core — 50,000-Turn Adversarial Invariant Fuzzer
 ==========================================================
 
-Executes 50,000 randomized state transitions on CUDA (RTX 3060) to mathematically
+Executes 50,000 randomized state transitions on CUDA/CPU to mathematically
 verify that the branchless tensor state machine never produces NaN/Inf, invalid HP
 states, illegal field counters, or out-of-bounds probability metrics:
 

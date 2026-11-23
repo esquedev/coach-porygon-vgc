@@ -123,7 +123,14 @@ class VGCDataRegistry:
                         WHEN REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''') = 'Maushold-Three' THEN 'Maushold'
                         ELSE REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''')
                     END AS species,
-                    REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''') AS item,
+                    CASE
+                        WHEN LOWER(REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''')) = 'choice band'
+                             AND LOWER(TRIM(CAST(u.slot.pokemon AS VARCHAR))) LIKE 'indeedee%' THEN 'Choice Scarf'
+                        WHEN LOWER(REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''')) IN (
+                            SELECT LOWER(name) FROM items
+                        ) THEN REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''')
+                        ELSE ''
+                    END AS item,
                     REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.ability AS VARCHAR), '')), '’', ''''), '‘', '''') AS ability,
                     COALESCE(NULLIF(TRIM(CAST(u.slot.nature AS VARCHAR)), ''), 'Hardy') AS nature,
                     list_transform(

@@ -197,6 +197,14 @@ class ItemID(IntEnum):
     KEBIA_BERRY = 42
     TANGA_BERRY = 43
     CHILAN_BERRY = 44
+    MUSCLE_BAND = 45
+    WISE_GLASSES = 46
+    LEEK = 47
+    IRON_BALL = 48
+    TERRAIN_EXTENDER = 49
+    CHESTO_BERRY = 50
+    SHELL_BELL = 51
+    BRIGHT_POWDER = 52
 
 
 # Mapping from ItemID type-resist berries to their resisted type index in CANONICAL_TYPES
@@ -348,6 +356,35 @@ class AbilityID(IntEnum):
     SHELL_ARMOR = 83
     TELEPATHY = 84
     IRON_FIST = 85
+    SAND_FORCE = 86
+    DRY_SKIN = 87
+    RAIN_DISH = 88
+    ICE_BODY = 89
+    SAND_VEIL = 90
+    SNOW_CLOAK = 91
+    LEAF_GUARD = 92
+    HYDRATION = 93
+    UNNERVE = 94
+    TRACE = 95
+    THERMAL_EXCHANGE = 96
+    HYPER_CUTTER = 97
+    BULLETPROOF = 98
+    DAMP = 99
+    PARENTAL_BOND = 100
+    MEGA_LAUNCHER = 101
+    STRONG_JAW = 102
+    PROTEAN = 103
+    BERSERK = 104
+    UNSEEN_FIST = 105
+    DRAGONIZE = 106
+    PIERCING_DRILL = 107
+    MEGA_SOL = 108
+    AURA_GUARD = 109
+    EELEVATE = 110
+    FIRE_MANE = 111
+    SPICY_SPRAY = 112
+    STALWART = 113
+    INNARDS_OUT = 114
 
 
 class TargetType(IntEnum):
@@ -385,6 +422,18 @@ class FieldOpID(IntEnum):
     AURORA_VEIL = 19
     GRAVITY = 20
     HAZE = 21
+    ENCORE = 22
+    DISABLE = 23
+    LEECH_SEED = 24
+    SALT_CURE = 25
+    YAWN = 26
+    PERISH_SONG = 27
+    EXPLOSION = 28
+    # Flag-carrier codes (zero conflict with active FieldOpID moves in DuckDB `moves`)
+    FLAG_PULSE = 100
+    FLAG_BITE = 101
+    FLAG_BULLET = 102
+    FLAG_PULSE_BULLET = 103
 
 
 class OverrideOffStat(IntEnum):
@@ -716,21 +765,30 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
             dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         else:
             dev = torch.device(device)
-        return BilinearLookupTables(
-            backend="torch",
-            device=dev,
-            m_type_chart=torch.from_numpy(m_type_chart_np).to(dev),
-            m_weather_mod=torch.from_numpy(m_weather_mod_np).to(dev),
-            m_terrain_mod=torch.from_numpy(m_terrain_mod_np).to(dev),
-            m_psychic_prio_block=torch.from_numpy(m_psychic_np).to(dev),
-            m_misty_status_block=torch.from_numpy(m_misty_np).to(dev),
-            m_electric_sleep_block=torch.from_numpy(m_electric_np).to(dev),
-            t_set_weather=torch.from_numpy(t_set_weather_np).to(dev),
-            t_set_terrain=torch.from_numpy(t_set_terrain_np).to(dev),
-            p_switch_perms=torch.from_numpy(p_switch_perms_np).to(dev),
-            switch_persist_mask=torch.from_numpy(switch_persist_np).to(dev),
-            resist_berry_type_lut=torch.from_numpy(resist_berry_lut_np).to(dev),
-        )
+
+        def _alloc_tables(target_dev: "torch.device") -> BilinearLookupTables:
+            return BilinearLookupTables(
+                backend="torch",
+                device=target_dev,
+                m_type_chart=torch.from_numpy(m_type_chart_np).to(target_dev),
+                m_weather_mod=torch.from_numpy(m_weather_mod_np).to(target_dev),
+                m_terrain_mod=torch.from_numpy(m_terrain_mod_np).to(target_dev),
+                m_psychic_prio_block=torch.from_numpy(m_psychic_np).to(target_dev),
+                m_misty_status_block=torch.from_numpy(m_misty_np).to(target_dev),
+                m_electric_sleep_block=torch.from_numpy(m_electric_np).to(target_dev),
+                t_set_weather=torch.from_numpy(t_set_weather_np).to(target_dev),
+                t_set_terrain=torch.from_numpy(t_set_terrain_np).to(target_dev),
+                p_switch_perms=torch.from_numpy(p_switch_perms_np).to(target_dev),
+                switch_persist_mask=torch.from_numpy(switch_persist_np).to(target_dev),
+                resist_berry_type_lut=torch.from_numpy(resist_berry_lut_np).to(target_dev),
+            )
+
+        try:
+            return _alloc_tables(dev)
+        except RuntimeError:
+            if dev.type == "cuda":
+                return _alloc_tables(torch.device("cpu"))
+            raise
 
     return BilinearLookupTables(
         backend="numpy",

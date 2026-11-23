@@ -408,7 +408,7 @@ def extract_turn_telemetry(
             cur_terrain = "Electric"
             if not is_post_combat_faint_replacement:
                 entry["terrain"] = cur_terrain
-        elif "Mist swirled" in line or "Misty Surge]" in line:
+        elif "Mist swirled" in line:
             cur_terrain = "Misty"
             if not is_post_combat_faint_replacement:
                 entry["terrain"] = cur_terrain

@@ -21,6 +21,57 @@ from engine.sp_validator import validate_and_calculate_sp
 DEFAULT_DB_PATH = Path("data/replay_coach_ots.duckdb")
 DEFAULT_TRAINER_1_PASTE = Path("data/teams/char_y_v4.txt")
 DEFAULT_OPPONENT_PASTE = Path("apps/replay_coach/sample_data/matchagotme_ots.txt")
+SLUG_MAP_PATH = Path("assets/slug_map.json")
+
+_CACHED_SLUG_LOOKUP: Optional[Dict[str, Dict[str, str]]] = None
+
+
+def _norm_slug(s: str) -> str:
+    return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+
+
+def get_sprite_lookup() -> Dict[str, Dict[str, str]]:
+    """Load and cache normalized species & item sprite URLs from `assets/slug_map.json`."""
+    global _CACHED_SLUG_LOOKUP
+    if _CACHED_SLUG_LOOKUP is not None:
+        return _CACHED_SLUG_LOOKUP
+    species_map: Dict[str, str] = {}
+    items_map: Dict[str, str] = {}
+    if SLUG_MAP_PATH.exists():
+        try:
+            raw = json.loads(SLUG_MAP_PATH.read_text(encoding="utf-8"))
+            for k, rel in (raw.get("species") or {}).items():
+                url = "/" + str(rel).lstrip("/")
+                species_map[k] = url
+                species_map[_norm_slug(k)] = url
+            for k, rel in (raw.get("items") or {}).items():
+                url = "/" + str(rel).lstrip("/")
+                items_map[k] = url
+                items_map[_norm_slug(k)] = url
+        except Exception:
+            pass
+    _CACHED_SLUG_LOOKUP = {"species": species_map, "items": items_map}
+    return _CACHED_SLUG_LOOKUP
+
+
+def resolve_sprite_urls(species: Optional[str], item: Optional[str] = None) -> Dict[str, Optional[str]]:
+    """Resolve local `/assets/...` sprite URLs for a Pokémon species and optional held item."""
+    lut = get_sprite_lookup()
+    sp_map = lut["species"]
+    it_map = lut["items"]
+    sp_raw = (species or "").strip()
+    sp_url = (
+        sp_map.get(sp_raw)
+        or sp_map.get(_norm_slug(sp_raw))
+        or sp_map.get(_canon_species(sp_raw))
+    )
+    it_raw = (item or "").strip()
+    it_url = (
+        (it_map.get(it_raw) or it_map.get(_norm_slug(it_raw)))
+        if it_raw and it_raw.lower() != "none"
+        else None
+    )
+    return {"sprite_url": sp_url, "item_sprite_url": it_url}
 
 
 def _canon_species(name: str) -> str:
@@ -113,6 +164,7 @@ class OTSRosterDatabase:
                     warnings.append(f"{mon.species}: {msg_sp}")
             except Exception:
                 stats_l50 = {}
+            sprites = resolve_sprite_urls(mon.species, mon.item)
             mons_summary.append(
                 {
                     "species": mon.species,
@@ -123,6 +175,8 @@ class OTSRosterDatabase:
                     "total_sp": total_sp,
                     "moves": list(mon.moves),
                     "stats": stats_l50,
+                    "sprite_url": sprites["sprite_url"],
+                    "item_sprite_url": sprites["item_sprite_url"],
                 }
             )
         return {
@@ -195,17 +249,24 @@ class OTSRosterDatabase:
             FROM ots_rosters ORDER BY updated_at DESC;
             """
         ).fetchall()
-        return [
-            {
-                "roster_id": r[0],
-                "display_name": r[1],
-                "trainer_hint": r[2],
-                "paste_text": r[3],
-                "species": json.loads(r[4]),
-                "updated_at": r[5],
-            }
-            for r in rows
-        ]
+        result: List[Dict[str, Any]] = []
+        for r in rows:
+            sp_list = json.loads(r[4])
+            result.append(
+                {
+                    "roster_id": r[0],
+                    "display_name": r[1],
+                    "trainer_hint": r[2],
+                    "paste_text": r[3],
+                    "species": sp_list,
+                    "species_sprites": [
+                        {"species": sp, "sprite_url": resolve_sprite_urls(sp)["sprite_url"]}
+                        for sp in sp_list
+                    ],
+                    "updated_at": r[5],
+                }
+            )
+        return result
 
     def match_best_roster(
         self,
@@ -264,6 +325,15 @@ class OTSRosterDatabase:
                 datetime.now(timezone.utc).isoformat(),
             ],
         )
+
+    def delete_roster(self, roster_id: str) -> bool:
+        """Delete a stored OTS roster by ID and invalidate turn analysis cache."""
+        clean_id = (roster_id or "").strip()
+        if not clean_id or self.get_roster(clean_id) is None:
+            return False
+        self.conn.execute("DELETE FROM ots_rosters WHERE roster_id = ?;", [clean_id])
+        self.conn.execute("DELETE FROM analysis_cache;")
+        return True
 
     def clear_cache(self) -> None:
         """Clear cached turn analyses."""
