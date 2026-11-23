@@ -87,7 +87,7 @@ def run_50k_invariant_fuzzer(
             F_np[i, 0, FieldIdx.TERRAIN_TURNS] = float(rng.randint(0, 6))
             F_np[i, 0, FieldIdx.TRICK_ROOM_TURNS] = float(rng.randint(0, 5))
 
-        # 2. Generate Randomized Roster [B, 8, 84]
+        # 2. Generate Randomized Roster [B, 8, 87]
         P_np = np.zeros((batch_size, 1, ROSTER_SLOTS, MON_DIM), dtype=np.float32)
         max_hps = rng.uniform(100.0, 250.0, size=(batch_size, 1, ROSTER_SLOTS)).astype(np.float32)
         cur_hps = rng.uniform(0.0, 1.0, size=(batch_size, 1, ROSTER_SLOTS)).astype(np.float32) * max_hps

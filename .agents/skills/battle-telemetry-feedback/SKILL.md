@@ -19,8 +19,7 @@ This skill automates the full post-match coaching pipeline:
    - `[WEATHER_TERRAIN]`: Sun vs. Rain control, Electric Terrain deployment.
    - `[VARIANCE_AUDIT]`: Distinguishing cartridge RNG (crits, flinches, low damage rolls) from misplays.
    - `[NASH_REGRET]`: Regret calculation on lines deviating from the risk-resilient Nash equilibrium.
-4. Auto-syncing the interactive Team Preview Playbook (`reports/char_y_v3_playbook.html`) and markdown cheatsheet.
-5. Delivering an executive post-mortem to the player with concrete tournament takeaways.
+4. Delivering an executive post-mortem to the player with concrete tournament takeaways.
 
 ---
 
@@ -32,7 +31,7 @@ When a raw Showdown chat log is provided (either as text or a saved file), immed
 ```bash
 python3 scripts/dump_battle_telemetry.py \
     --log path/to/match.log \
-    --paste data/teams/char_y_v3.txt \
+    --paste data/teams/<team>.txt \
     --output data/telemetry/battles_telemetry.csv
 ```
 
@@ -44,8 +43,8 @@ python3 scripts/dump_battle_telemetry.py \
 Run the turn advisor CLI against the battle log to detect missed opportunities and evaluate risk floors:
 
 ```bash
-python3 -m engine.cli \
-    --paste data/teams/char_y_v3.txt \
+PYTHONPATH=src python3 -m engine.cli \
+    --paste data/teams/<team>.txt \
     --log path/to/match.log \
     --verbosity coach
 ```
@@ -59,7 +58,7 @@ Using Python and `engine.telemetry.batch_update_comments`, populate the `comment
 from engine.telemetry import batch_update_comments
 
 comments = {
-    1: "[LEAD_EVAL] Fake Out stopped Tailwind setup. Solid tempo control against Kyogre + Tornadus.",
+    1: "[LEAD_EVAL] Fake Out stopped Tailwind setup. Solid tempo control against Whimsicott + Charizard-Mega-Y.",
     2: "[VARIANCE_AUDIT] Opponent landed a 4.1% critical hit through screen.",
     3: "[MEGA_DECISION] Mega Evolved Charizard Y into Rain to reset Sun and secure OHKO with Weather Ball.",
     4: "[ITEM_TRIGGER] White Herb restored Intimidate drop, immediately activating Sneasler's Unburden.",
@@ -74,23 +73,10 @@ batch_update_comments(
 
 ---
 
-### Step 4: Auto-Sync the Team Preview Playbook
-After populating the turn comments in `data/telemetry/battles_telemetry.csv`, immediately refresh the interactive Team Preview Playbook so the new match record, empirical lead win rates, and coaching notes appear in the live report:
-
-```bash
-PYTHONPATH=src:src/engine python3 scripts/generate_team_preview_playbook.py \
-    --paste data/teams/char_y_v3.txt \
-    --telemetry data/telemetry/battles_telemetry.csv \
-    --out reports/char_y_v3_playbook.html \
-    --cheatsheet reports/char_y_v3_cheatsheet.md
-```
-
----
-
-### Step 5: Deliver the Coach Post-Mortem in Chat
+### Step 4: Deliver the Coach Post-Mortem in Chat
 Present a clean, high-impact summary to the user:
 1. **Match Result & Key Turning Point:** The single turn where game equity was won or lost.
 2. **Variance vs. Decision Audit:** Did the game come down to bad luck or a tactical leak?
 3. **Turn-by-Turn Formatting Mandate:** Always format turn-by-turn match audits and telemetry breakdowns using **native GitHub Flavored Markdown (GFM) tables** (`| Turn | Board State | Actions Executed | Tactical & Process Audit |`) with responsive cell-wrapping, or vertical Turn Cards. **Strictly never use fixed-width ASCII / Unicode box-drawing tables (`┌─┬─┐`) inside code blocks**, which wrap onto subsequent lines and break horizontal alignment on narrow or responsive client windows.
-4. **Actionable Takeaway for LAIC:** What one specific habit or rule to remember for the next match.
+4. **Actionable Takeaway for Tournament Play:** What one specific habit or rule to remember for the next match.
 

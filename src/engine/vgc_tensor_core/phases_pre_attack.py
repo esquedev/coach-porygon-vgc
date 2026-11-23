@@ -14,8 +14,8 @@ using pure matrix/tensor operations:
 2. **Phase 1 — Barrier 1: Voluntary Switches & Speed-Ordered Switch-In Abilities (`+6`)**:
    - Resets outgoing stat boosts (`8..14`) and volatile states (`58..66`) on switching active slots
      via Hadamard multiplication with `tables.switch_persist_mask`.
-   - Swaps the active slot and bench slot in both Roster Tensor `P` (`[..., 8, 84]`) and Move Tensor
-     `M_moves` (`[..., 8, 4, 56]`).
+   - Swaps the active slot and bench slot in both Roster Tensor `P` (`[..., 8, 87]`) and Move Tensor
+     `M_moves` (`[..., 8, 4, 59]`).
    - Sorts all newly switched-in slots by `TrickRoomSign * EffectiveSpeed` and fires their entry abilities.
 3. **Phase 2 — Barrier 2: Mega Evolution & Instantaneous Speed/Type/Ability Recalibration (`+5.5`)**:
    - Identifies active slots choosing Mega Evolution (`choice_idx in 12..23`) that have
@@ -121,8 +121,8 @@ class PreAttackPhaseResult:
 
     Attributes:
         F: Updated Field Tensor of shape `[B1, B2, 24]`.
-        P: Updated 8-Slot Roster Tensor of shape `[B1, B2, 8, 84]`.
-        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 56]`.
+        P: Updated 8-Slot Roster Tensor of shape `[B1, B2, 8, 87]`.
+        M_moves: Updated 8-Slot Move Tensor of shape `[B1, B2, 8, 4, 59]`.
         effective_speeds: Effective Speed tensor for the 4 active slots `[B1, B2, 4]`
             ordered as `(trainer_1_a=0, trainer_1_b=1, trainer_2_a=4, trainer_2_b=5)`.
         effective_priorities: Effective Move/Action Priority tensor `[B1, B2, 4]`.
@@ -203,7 +203,7 @@ def compute_active_effective_speeds(
     (`0: trainer_1_a`, `1: trainer_1_b`, `4: trainer_2_a`, `5: trainer_2_b`) across `[..., 4]`.
     """
     active_indices = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
-    P_act = P[..., active_indices, :]  # [..., 4, 84]
+    P_act = P[..., active_indices, :]  # [..., 4, 87]
 
     base_spe = P_act[..., MonIdx.STAT_SPE]
     boost_spe = _clamp(P_act[..., MonIdx.BOOST_SPE], -6.0, 6.0)
@@ -395,12 +395,11 @@ def _execute_speed_sorted_entry_abilities(
                     (1.0 - fire_w) * F[..., FieldIdx.WEATHER_TURNS] + fire_w * w_turns_val
                 )
 
-            # B. Terrain-Setting Abilities (Electric, Grassy, Psychic, Misty Surge)
+            # B. Terrain-Setting Abilities (Electric, Grassy, Psychic Surge)
             terrain_ability_map = (
                 (AbilityID.ELECTRIC_SURGE, T_ELECTRIC),
                 (AbilityID.GRASSY_SURGE, T_GRASSY),
                 (AbilityID.PSYCHIC_SURGE, T_PSYCHIC),
-                (AbilityID.MISTY_SURGE, T_MISTY),
             )
             for target_abil, target_t_idx in terrain_ability_map:
                 has_t_abil = (abil_id == float(target_abil)) * 1.0
@@ -486,8 +485,13 @@ def _execute_speed_sorted_entry_abilities(
                     )
 
                     old_atk_boost = P[..., opp_slot, MonIdx.BOOST_ATK]
-                    actually_lowered = intim_lands * ((old_atk_boost > -6.0) * 1.0)
-                    new_atk_boost = _clamp(old_atk_boost - intim_lands * 1.0, -6.0, 6.0)
+                    is_contrary = (opp_abil == float(AbilityID.CONTRARY)) * 1.0
+                    # Contrary inverts Intimidate from -1 Atk to +1 Atk (does not trigger Defiant/Competitive/White Herb)
+                    atk_delta = intim_lands * (2.0 * is_contrary - 1.0)
+                    actually_lowered = (
+                        intim_lands * (1.0 - is_contrary) * ((old_atk_boost > -6.0) * 1.0)
+                    )
+                    new_atk_boost = _clamp(old_atk_boost + atk_delta, -6.0, 6.0)
 
                     is_defiant = (opp_abil == float(AbilityID.DEFIANT)) * 1.0
                     new_atk_boost = _clamp(
@@ -815,7 +819,11 @@ def execute_barrier2_mega_evolution(
             1.0,
         )
         is_levitate_now = (P[..., r_slot, MonIdx.ABILITY_ID] == float(AbilityID.LEVITATE)) * 1.0
-        new_grounded = 1.0 - _clamp(is_flying_now + is_levitate_now, 0.0, 1.0)
+        is_balloon_now = (
+            ((P[..., r_slot, MonIdx.ITEM_ID] == float(ItemID.AIR_BALLOON)) * 1.0)
+            * P[..., r_slot, MonIdx.ITEM_ACTIVE]
+        )
+        new_grounded = 1.0 - _clamp(is_flying_now + is_levitate_now + is_balloon_now, 0.0, 1.0)
         P[..., r_slot, MonIdx.GROUNDED_FLAG] = (
             (1.0 - m_gate) * P[..., r_slot, MonIdx.GROUNDED_FLAG] + m_gate * new_grounded
         )
@@ -891,7 +899,7 @@ def execute_barrier3_turn_order_sort(
         is_sw = ((c_slot >= CHOICE_SWITCH_BENCH1) * 1.0)
         move_idx = (c_slot % 12) % 4
 
-        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 56]
+        slot_moves = M_moves[..., r_slot, :, :]  # [B1, B2, 4, 59]
         if HAS_TORCH and isinstance(P, torch.Tensor):
             m_oh = torch.nn.functional.one_hot(move_idx.long(), num_classes=4).to(torch.float32)
         else:

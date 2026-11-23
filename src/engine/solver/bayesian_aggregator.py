@@ -94,12 +94,14 @@ class BayesianTurnAdvice:
         self,
         verbosity: str = "coach",
         max_recommendations: int = 5,
+        lang: str = "en",
+        style: Optional[str] = None,
     ) -> str:
         """Format the advisory report at the requested verbosity / detail level.
 
         Args:
             verbosity: Detail level:
-                - `'coach'` (default): Plain English, intuitive tactical summary for
+                - `'coach'` (default): Plain VGC language, intuitive tactical summary for
                   the everyday player. No math jargon.
                 - `'standard'`: Balanced tactical breakdown with probabilities, opponent
                   hypotheses, and top ranked plays.
@@ -107,9 +109,13 @@ class BayesianTurnAdvice:
                   documenting all 5 pipeline steps, formulas, tensor dimensions, RNG distributions,
                   CVaR tail risk, and equilibrium proofs.
             max_recommendations: Maximum number of ranked recommendations to list.
+            lang: `'es'` or `'en'`.
+            style: Optional override `'vgc'` or `'scientific'`.
         """
         v = str(verbosity or "coach").lower().strip()
-        if v in ("simple", "brief", "casual", "player"):
+        if style == "scientific":
+            v = "scientific"
+        elif v in ("simple", "brief", "casual", "player", "vgc"):
             v = "coach"
         elif v in ("nerd", "full", "audit", "deep", "verbose"):
             v = "scientific"
@@ -330,7 +336,7 @@ class BayesianTurnAdvice:
         lines.append("      - Accuracy: Move-specific accuracy scaled by stage ratios max(3, 3+b)/max(3, 3-b).")
         lines.append("      - Cartridge Critical Hits: Stage 0 (1/24 ~ 4.17%), Stage 1 (12.5%), Stage 2 (50.0%), Stage 3 (100.0%).")
         lines.append("      - 16 Cartridge Damage Rolls: Discrete uniform draw from {85, 86, ..., 100} / 100.0.")
-        lines.append("      - Multi-Hit Counts: Standard (35% 2, 35% 3, 15% 4, 15% 5) vs Loaded Dice (50% 4, 50% 5).")
+        lines.append("      - Multi-Hit Counts: Standard (35% 2, 35% 3, 15% 4, 15% 5) vs Skill Link (100% 5 hits).")
         lines.append("      - Mechanics: Focus Sash 1-HP clamp, Beat Up + Justified boost, recoil, Life Orb, secondary status.")
         lines.append("-" * 100)
 

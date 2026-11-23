@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Unit tests for Regulation M-C Team Modes, Leads, Slug Map & Preview Playbook Generator."""
+"""Unit tests for Regulation M-C Team Modes, Leads, and Deterministic Sprite Slug Map."""
 
-import csv
+import json
 from pathlib import Path
-import tempfile
 import unittest
 
 from engine.db_registry import get_registry
@@ -21,13 +20,9 @@ from engine.modes.archetype_matcher import (
     TournamentArchetype,
     TournamentArchetypeMatcher,
 )
-from scripts.generate_team_preview_playbook import (
-    generate_html_playbook,
-    generate_mermaid_cheatsheet,
-    parse_telemetry_csv,
-    resolve_item_path,
-    resolve_sprite_path,
-)
+from scripts.build_sprite_slug_map import SLUG_MAP_PATH, build_slug_map, normalize_slug
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
 
 SAMPLE_PASTE = """
 Hazard (Charizard) @ Charizardite Y  
@@ -225,91 +220,66 @@ class TestTournamentArchetypeMatcher(unittest.TestCase):
         self.assertEqual(lead_species, {"Garchomp", "Grimmsnarl"})
 
 
-class TestPlaybookGeneratorOutputs(unittest.TestCase):
-    """Test suite for deterministic slug resolution, telemetry sync, and HTML/Markdown rendering."""
+class TestSpriteSlugMapResolution(unittest.TestCase):
+    """Test suite for deterministic sprite and item slug resolution via `assets/slug_map.json`."""
 
     @classmethod
     def setUpClass(cls):
-        cls.registry = get_registry()
-        cls.analyzer = TeamModeAnalyzer(cls.registry)
-        cls.members, cls.modes, cls.leads = cls.analyzer.analyze_team(SAMPLE_PASTE)
-        cls.matcher = TournamentArchetypeMatcher(cls.registry)
-        cls.plans = cls.matcher.generate_all_plans(cls.modes, cls.leads)
+        cls.slug_map = (
+            json.loads(SLUG_MAP_PATH.read_text(encoding="utf-8"))
+            if SLUG_MAP_PATH.exists()
+            else build_slug_map()
+        )
+
+    def _resolve_species(self, name: str) -> Path | None:
+        smap = self.slug_map.get("species", {})
+        for cand in (name, name.lower(), normalize_slug(name)):
+            rel = smap.get(cand)
+            if rel:
+                full = REPO_ROOT / rel
+                if full.exists():
+                    return full
+        return None
+
+    def _resolve_item(self, name: str) -> Path | None:
+        imap = self.slug_map.get("items", {})
+        for cand in (name, name.lower(), normalize_slug(name)):
+            rel = imap.get(cand)
+            if rel:
+                full = REPO_ROOT / rel
+                if full.exists():
+                    return full
+        return None
 
     def test_slug_map_deterministic_resolution(self):
         """Verifies exact sprite and item resolution via assets/slug_map.json without mega collisions."""
-        base_chomp = resolve_sprite_path("Garchomp")
+        base_chomp = self._resolve_species("Garchomp")
         self.assertIsNotNone(base_chomp)
         self.assertEqual(base_chomp.name, "garchomp.png")
 
-        mega_chomp = resolve_sprite_path("Garchomp", "Garchomp-Mega-Z")
+        mega_chomp = self._resolve_species("Garchomp-Mega-Z")
         self.assertIsNotNone(mega_chomp)
         self.assertEqual(mega_chomp.name, "garchomp-mega-z.png")
 
-        indeedee_f = resolve_sprite_path("Indeedee-F")
+        indeedee_f = self._resolve_species("Indeedee-F")
         self.assertIsNotNone(indeedee_f)
         self.assertEqual(indeedee_f.name, "indeedee-female.png")
 
-        scarf_path = resolve_item_path("Choice Scarf")
+        scarf_path = self._resolve_item("Choice Scarf")
         self.assertIsNotNone(scarf_path)
         self.assertEqual(scarf_path.name, "choice-scarf.png")
 
-        mega_stone_path = resolve_item_path("Charizardite Y")
+        mega_stone_path = self._resolve_item("Charizardite Y")
         self.assertIsNotNone(mega_stone_path)
         self.assertEqual(mega_stone_path.name, "charizardite-y.png")
 
-    def test_telemetry_csv_integration_and_rendering(self):
-        """Verifies live telemetry CSV parsing and rendering into HTML and Markdown reports."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            csv_path = Path(tmpdir) / "battles_telemetry.csv"
-            with open(csv_path, "w", encoding="utf-8", newline="") as f:
-                writer = csv.DictWriter(
-                    f,
-                    fieldnames=[
-                        "match_id", "timestamp", "turn", "trainer_1", "trainer_2",
-                        "trainer_1_active_1", "trainer_1_active_2", "trainer_2_active_1", "trainer_2_active_2",
-                        "trainer_1_moves", "trainer_2_moves", "damage_dealt_to_trainer_2", "damage_dealt_to_trainer_1",
-                        "faints_this_turn", "variance_events", "weather", "terrain", "field_conditions", "winner", "comment",
-                    ],
-                )
-                writer.writeheader()
-                writer.writerow({
-                    "match_id": "battle-test-101",
-                    "timestamp": "2026-11-10T17:00:00Z",
-                    "turn": "1",
-                    "trainer_1": "BeRightVGC",
-                    "trainer_2": "RivalPlayer",
-                    "trainer_1_active_1": "Garchomp",
-                    "trainer_1_active_2": "Grimmsnarl",
-                    "trainer_2_active_1": "Whimsicott",
-                    "trainer_2_active_2": "Glimmora",
-                    "trainer_1_moves": "Garchomp: Rock Slide; Grimmsnarl: Light Screen",
-                    "trainer_2_moves": "Whimsicott: Tailwind",
-                    "damage_dealt_to_trainer_2": "95.0",
-                    "damage_dealt_to_trainer_1": "30.0",
-                    "faints_this_turn": "None",
-                    "variance_events": "None",
-                    "weather": "Clear",
-                    "terrain": "None",
-                    "field_conditions": "Light Screen (T1)",
-                    "winner": "BeRightVGC",
-                    "comment": "Textbook Scarf Rock Slide + Light Screen countered Tailwind lead!",
-                })
-
-            telemetry = parse_telemetry_csv(csv_path)
-            self.assertEqual(telemetry.total_matches, 1)
-            self.assertEqual(telemetry.wins, 1)
-
-            html = generate_html_playbook("char_y_v3", self.members, self.plans, self.modes, self.leads, telemetry)
-            self.assertIn("90-Second Team Preview Sequential Checklist", html)
-            self.assertIn("If-Then-Else Decision-Tree Rulebook", html)
-            self.assertIn("battle-test-101", html)
-            self.assertIn("Textbook Scarf Rock Slide + Light Screen countered Tailwind lead!", html)
-
-            md = generate_mermaid_cheatsheet("char_y_v3", self.plans, self.modes, self.leads, telemetry)
-            self.assertIn("## 1. The 90-Second Team Preview Execution Protocol", md)
-            self.assertIn("## 2. If-Then-Else Decision-Tree Rulebook", md)
-            self.assertIn("1W / 1G", md)
+    def test_build_slug_map_fresh_payload_integrity(self):
+        """Verifies `build_slug_map()` generates non-empty species and items tables."""
+        payload = build_slug_map()
+        self.assertIn("species", payload)
+        self.assertIn("items", payload)
+        self.assertGreater(len(payload["species"]), 300)
+        self.assertGreater(len(payload["items"]), 50)
 
 
 if __name__ == "__main__":

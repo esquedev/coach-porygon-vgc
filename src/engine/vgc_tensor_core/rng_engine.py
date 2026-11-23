@@ -31,8 +31,9 @@ Why Dual-Draw (Spinning-Wheel Rolling Window) + Counter-Based Hash Scrambling?
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from enum import IntEnum
-from typing import Tuple, Union
+from typing import Iterator, Optional, Tuple, Union
 
 import numpy as np
 
@@ -43,6 +44,27 @@ if HAS_TORCH:
     TensorOrArray = Union["torch.Tensor", np.ndarray]
 else:
     TensorOrArray = np.ndarray
+
+# Active 2D tile coordinate context (b1_offset, b2_offset, B1_full, B2_full) so tiled execution
+# draws the exact same counter-based random numbers as full-matrix execution.
+_ACTIVE_TILE_CONTEXT: Optional[Tuple[int, int, int, int]] = None
+
+
+@contextmanager
+def rng_tile_context(
+    b1_offset: int,
+    b2_offset: int,
+    b1_full: int,
+    b2_full: int,
+) -> Iterator[None]:
+    """Set global 2D `(B1, B2)` coordinate offsets for tiled RNG draws."""
+    global _ACTIVE_TILE_CONTEXT
+    prev = _ACTIVE_TILE_CONTEXT
+    _ACTIVE_TILE_CONTEXT = (int(b1_offset), int(b2_offset), int(b1_full), int(b2_full))
+    try:
+        yield
+    finally:
+        _ACTIVE_TILE_CONTEXT = prev
 
 
 class RNGEventID(IntEnum):
@@ -116,7 +138,16 @@ def counter_uniform_0_100_numpy(
     `(seed, event_id, step_idx, hit_idx, sub_draw, turn_idx, actor_slot, target_slot)` so draws are reproducible and decorrelated.
     """
     total = int(np.prod(shape))
-    flat_idx = np.arange(total, dtype=np.uint64).reshape(shape)
+    if _ACTIVE_TILE_CONTEXT is not None and len(shape) >= 2:
+        i0, j0, _b1_full, b2_full = _ACTIVE_TILE_CONTEXT
+        tb1, tb2 = int(shape[0]), int(shape[1])
+        inner_prod = int(np.prod(shape[2:])) if len(shape) > 2 else 1
+        bi = np.arange(i0, i0 + tb1, dtype=np.uint64)[:, None, None]
+        bj = np.arange(j0, j0 + tb2, dtype=np.uint64)[None, :, None]
+        r = np.arange(inner_prod, dtype=np.uint64)[None, None, :]
+        flat_idx = (((bi * np.uint64(b2_full) + bj) * np.uint64(inner_prod)) + r).reshape(shape)
+    else:
+        flat_idx = np.arange(total, dtype=np.uint64).reshape(shape)
     with np.errstate(over="ignore"):
         key = (
             np.uint64(seed & 0x7FFFFFFFFFFFFFFF)
@@ -148,7 +179,16 @@ def counter_uniform_0_100_torch(
 ) -> "torch.Tensor":
     """Generate a PyTorch tensor of uniform random floats in `[0.0, 100.0)` on GPU/CPU."""
     total = int(np.prod(shape))
-    flat_idx = torch.arange(total, dtype=torch.int64, device=device).view(shape)
+    if _ACTIVE_TILE_CONTEXT is not None and len(shape) >= 2:
+        i0, j0, _b1_full, b2_full = _ACTIVE_TILE_CONTEXT
+        tb1, tb2 = int(shape[0]), int(shape[1])
+        inner_prod = int(np.prod(shape[2:])) if len(shape) > 2 else 1
+        bi = torch.arange(i0, i0 + tb1, dtype=torch.int64, device=device).view(tb1, 1, 1)
+        bj = torch.arange(j0, j0 + tb2, dtype=torch.int64, device=device).view(1, tb2, 1)
+        r = torch.arange(inner_prod, dtype=torch.int64, device=device).view(1, 1, inner_prod)
+        flat_idx = (((bi * int(b2_full) + bj) * inner_prod) + r).view(shape)
+    else:
+        flat_idx = torch.arange(total, dtype=torch.int64, device=device).view(shape)
     key = (
         (int(seed) & 0x7FFFFFFFFFFFFFFF)
         ^ ((int(event_id) + 1) * 5871781006564002453)
@@ -282,7 +322,7 @@ def spin_wheel_crit_gate(
     - Stage 0: `1/24` (`4.1667%`)
     - Stage 1: `1/8` (`12.5%`)
     - Stage 2: `1/2` (`50.0%`)
-    - Stage >= 3: `1/1` (`100.0%`, e.g., Wicked Blow, Surging Strikes, Flower Trick)
+    - Stage >= 3: `1/1` (`100.0%`, e.g., Flower Trick)
     """
     if HAS_TORCH and isinstance(crit_stage, torch.Tensor):
         st = torch.clamp(torch.round(crit_stage).long(), min=0, max=3)
@@ -302,7 +342,6 @@ def spin_wheel_crit_gate(
 
 def spin_wheel_multihit_count(
     expected_hits_code: TensorOrArray,
-    has_loaded_dice: TensorOrArray,
     has_skill_link: TensorOrArray,
     seed: int,
     step_idx: int = 0,
@@ -314,7 +353,6 @@ def spin_wheel_multihit_count(
     - `2.0`, `3.0`, `4.0`, `10.0`: Fixed multi-hit count (`2`, `3`, `4`, `10`)
     - `3.1`: Variable `2..5` multi-hit move (`Bullet Seed`, `Scale Shot`, `Icicle Spear`, `Rock Blast`):
       * With `Skill Link`: always `5` hits.
-      * With `Loaded Dice`: `50%` 4 hits, `50%` 5 hits.
       * Standard Cartridge Wheel on `[0, 100)`:
         - `[0, 35)` -> `2` hits (35%)
         - `[35, 70)` -> `3` hits (35%)
@@ -346,21 +384,15 @@ def spin_wheel_multihit_count(
                 ),
             ),
         )
-        dice_hits = torch.where(
-            cyclic_pct < 50.0,
-            torch.tensor(4, dtype=torch.int64, device=dev),
-            torch.tensor(5, dtype=torch.int64, device=dev),
-        )
         var_hits = torch.where(
             has_skill_link > 0.5,
             torch.tensor(5, dtype=torch.int64, device=dev),
-            torch.where(has_loaded_dice > 0.5, dice_hits, std_hits),
+            std_hits,
         )
         fixed_hits = torch.clamp(torch.round(expected_hits_code).long(), min=1, max=10)
         return torch.where(is_var_2_5, var_hits, fixed_hits)
 
     arr_code = np.asarray(expected_hits_code, dtype=np.float32)
-    arr_dice = np.asarray(has_loaded_dice, dtype=np.float32)
     arr_slink = np.asarray(has_skill_link, dtype=np.float32)
     shape = arr_code.shape
 
@@ -378,8 +410,7 @@ def spin_wheel_multihit_count(
         2,
         np.where(cyclic_pct < 70.0, 3, np.where(cyclic_pct < 85.0, 4, 5)),
     )
-    dice_hits = np.where(cyclic_pct < 50.0, 4, 5)
-    var_hits = np.where(arr_slink > 0.5, 5, np.where(arr_dice > 0.5, dice_hits, std_hits))
+    var_hits = np.where(arr_slink > 0.5, 5, std_hits)
     fixed_hits = np.clip(np.round(arr_code).astype(np.int32), 1, 10)
     return np.where(is_var_2_5, var_hits, fixed_hits).astype(np.int32)
 

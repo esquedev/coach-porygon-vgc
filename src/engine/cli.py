@@ -106,15 +106,27 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--min-prior",
         type=float,
-        default=0.60,
-        help="Pruning threshold for 26x26 action matrix (0.0 keeps all legal actions).",
+        default=0.0,
+        help="Pruning threshold for 26x26 action matrix (locked to 0.0 to keep all legal actions).",
     )
     parser.add_argument(
         "--verbosity",
         "-v",
         choices=["coach", "standard", "scientific"],
         default="coach",
-        help="Detail level for explanation output: 'coach' (plain English, non-nerd), 'standard' (tactical breakdown), or 'scientific' (full mathematical & process audit).",
+        help="Detail level for explanation output: 'coach' (plain VGC language), 'standard' (tactical breakdown), or 'scientific' (full mathematical & process audit).",
+    )
+    parser.add_argument(
+        "--lang",
+        choices=["es", "en"],
+        default="es",
+        help="Output language for terminology and advisory report ('es' or 'en').",
+    )
+    parser.add_argument(
+        "--style",
+        choices=["vgc", "scientific"],
+        default=None,
+        help="Terminology style override: 'vgc' (player-friendly VGC labels) or 'scientific' (explicit mathematical variable names).",
     )
     parser.add_argument(
         "--backend",
@@ -176,13 +188,16 @@ def main(argv: Optional[list[str]] = None) -> int:
         battle=battle,
         max_hypotheses=args.hypotheses,
         num_simulations=args.sims,
-        min_prior_threshold=args.min_prior,
+        min_prior_threshold=0.0,
         top_k_recommendations=args.top_k,
     )
 
+    eff_verbosity = "scientific" if args.style == "scientific" else args.verbosity
     report_text = advice.format_report(
-        verbosity=args.verbosity,
+        verbosity=eff_verbosity,
         max_recommendations=args.top_k,
+        lang=args.lang,
+        style=args.style,
     )
     print(report_text)
 

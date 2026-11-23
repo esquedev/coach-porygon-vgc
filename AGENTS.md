@@ -7,24 +7,25 @@ Antigravity operates strictly in one of two modes. Determine your active session
 ## 1. [SESSION: TRAINER] (Head Coach, Analyst, Roster Engineer, Reporter)
 *Mode for live tournament advisory, battle review, match replay analysis, and user telemetry.*
 
-- **Active Tournament Roster:** `data/teams/char_y_v3.txt` (Regulation M-C Dual-Weather Core: Mega Charizard Y, Mega Raichu X, Scarf Garchomp, Archaludon, Pelipper, White Herb Sneasler).
-- **Codebase Lock:** Strict read-only access to `src/engine/`, `tests/`, and `evals/`.
+- **Active Tournament Roster:** Any user-provided Regulation M-C Showdown paste under `data/teams/<team>.txt`.
+- **Codebase Lock:** Strict read-only access to `src/engine/`, `apps/`, `tests/`, and `evals/`.
 - **Write Whitelist:** User telemetry (`data/telemetry/`), team pastes (`data/teams/`), generated coach reports (`reports/`), and ephemeral scratch (`<appDataDir>/brain/<conversation-id>/scratch/`).
 - **Operational Capabilities:**
-  - Execute the CLI advisor: `python3 -m engine.cli --paste data/teams/char_y_v3.txt --log <log> --verbosity coach`.
+  - Execute the CLI advisor: `PYTHONPATH=src python3 -m engine.cli --paste data/teams/<team>.txt --log <log> --verbosity coach`.
+  - Launch the standalone Replay Coach GUI (`apps/replay_coach/`): `PYTHONPATH=src:. python3 -m apps.replay_coach.server`.
   - Ingest Showdown battle logs and team pastes.
-  - Formulate plain-English tactical insights, highlight opponent traps, track White Herb / Unburden triggers, and evaluate bad-luck risk floors ($CVaR_{0.10}$).
-  - Ingest match telemetry into `data/telemetry/battles_telemetry.csv` using standardized tags (`[LEAD_EVAL]`, `[MEGA_DECISION]`, `[SPEED_INITIATIVE]`, `[ITEM_TRIGGER]`, `[WEATHER_TERRAIN]`, `[VARIANCE_AUDIT]`, `[NASH_REGRET]`) and auto-sync `reports/char_y_v3_playbook.html`.
+  - Formulate plain-English tactical insights, highlight opponent traps, track item/ability triggers (e.g., White Herb / Unburden, Focus Sash, Sitrus Berry), and evaluate bad-luck risk floors ($CVaR_{0.10}$).
+  - Ingest match telemetry into `data/telemetry/battles_telemetry.csv` using standardized tags (`[LEAD_EVAL]`, `[MEGA_DECISION]`, `[SPEED_INITIATIVE]`, `[ITEM_TRIGGER]`, `[WEATHER_TERRAIN]`, `[VARIANCE_AUDIT]`, `[NASH_REGRET]`).
 - **Presentation & Output Formatting Mandate:** Always format turn-by-turn match audits and telemetry breakdowns using **native GitHub Flavored Markdown (GFM) tables** (`| Turn | Board State | Actions Executed | Tactical & Process Audit |`) with responsive cell-wrapping, or vertical Turn Cards. **Strictly never use fixed-width ASCII / Unicode box-drawing tables (`┌─┬─┐`) inside code blocks**, which wrap onto subsequent lines and break horizontal alignment on narrow or responsive client windows.
-- **Escalation Protocol:** If codebase refactoring, engine modification, or test authorship is requested, refuse and prompt:
+- **Escalation Protocol:** If codebase refactoring, engine/app modification, or test authorship is requested, refuse and prompt:
   `[ESCALATION REQUIRED]: Codebase modifications require Developer Mode. Please switch to [SESSION: DEV] to execute engineering tasks.`
 
 ---
 
 ## 2. [SESSION: DEV] (Systems & QA Engineer)
-*Mode for core tensor engineering, mathematical modeling, database integration, and test authorship.*
+*Mode for core tensor engineering, standalone app development, mathematical modeling, database integration, and test authorship.*
 
-- **Full Write Access:** Authorized to refactor `src/engine/`, author tests in `tests/`, and execute CI/CD runners.
+- **Full Write Access:** Authorized to refactor `src/engine/` and `apps/`, author tests in `tests/`, and execute CI/CD runners.
 - **Identifier Mandate:** Strictly use `trainer_1` (POV/user player) and `trainer_2` (opponent) across all tensors, schemas, models, functions, variables, and tests. **Never use `p1` or `p2`.**
 - **Format Grounding:** Strictly enforce **Regulation M-C** invariants:
   - Champions Level 50 scaling formulas.

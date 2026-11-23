@@ -219,7 +219,7 @@ def _is_mega_stone(item_name: Optional[str]) -> bool:
     if not item_name:
         return False
     clean = item_name.strip()
-    if clean.lower() in ("white herb", "eviolite"):
+    if clean.lower() == "white herb":
         return False
     global _CACHED_MEGA_STONES
     if _CACHED_MEGA_STONES is None:

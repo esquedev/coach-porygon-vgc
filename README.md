@@ -5,7 +5,7 @@
 [![PyTorch 2.0+](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)](https://pytorch.org/)
 [![DuckDB](https://img.shields.io/badge/DuckDB-In--Memory_Telemetry-FFF000.svg)](https://duckdb.org/)
 [![Regulation M-C](https://img.shields.io/badge/Format-Regulation_M--C_(Champions)-purple.svg)](https://www.pokemon.com/)
-[![Tests Passing](https://img.shields.io/badge/Tests-25%2F25_Passing-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/Tests-100%25_Pytest_Passing-brightgreen.svg)](tests/)
 
 **The World's First Single-Turn Exact Game-Theoretic & Risk-Resilient Decision Engine for Competitive Pokémon VGC 4v4 Doubles (Regulation M-C).**
 
@@ -32,7 +32,7 @@ Competitive Pokémon VGC is one of the most mathematically brutal simultaneous-d
 
 ```mermaid
 flowchart TD
-    State["Initial State Vectors: Field F [24], Roster P [8, 84], Moves M [8, 4, 56]<br>Legal Joint Actions: trainer_1 [B1, 2] vs trainer_2 [B2, 2]"] --> B1
+    State["Initial State Vectors: Field F [24], Roster P [8, 87], Moves M [8, 4, 59]<br>Legal Joint Actions: trainer_1 [Strats_1, 2] vs trainer_2 [Strats_2, 2]"] --> B1
     
     subgraph PreAttack ["Phases 1–3: Pre-Attack Resolution"]
         B1["Phase 1: Switches & Entry Abilities (+6)<br>• Active/Bench permutation swap<br>• Speed-sorted Weather/Terrain & Intimidate triggers"]
@@ -43,8 +43,8 @@ flowchart TD
 
     B3 --> B4
 
-    subgraph AttackCascade ["Phase 4: Vectorized Discrete-RNG Attack Cascade (K Timelines)"]
-        B4["Phase 4: 4-Step Vectorized Attack Loop across [B1, B2, K]<br>• Gating: Sleep (50% wake), Freeze (20% thaw), Paralysis (25% immobilize), Flinch<br>• Protect Wheel: Consecutive decay ((1/3)^chain); Wide/Quick Guard<br>• Target Resolution: Follow Me / Rage Powder redirection & KO-Target XOR<br>• Dual-Draw Spinning-Wheel Accuracy: ((dart - window_start) % 100) < Acc<br>• Multi-Hit Discrete Loop: 35/35/15/15 standard vs 50/50 Loaded Dice<br>• Per-Hit Crits: Stage 0 (1/24), Stage 1 (12.5%), Stage 2 (50%), Stage 3 (100%)<br>• 16 Cartridge Damage Rolls: Discrete uniform draw from {85..100} / 100.0<br>• Defensive Clamps: Focus Sash & Sturdy 1-HP clamp (Hit 1 breaks Sash; Hit 2+ KOs)<br>• Special Mechanics: Beat Up + Justified, Pollen Puff ally heal, Body Press / Foul Play<br>• Recoil (-10% Life Orb, -33% moves), Drain (+75%), Secondary status/stat drops<br>• Mid-Turn Pivots: U-turn, Volt Switch, Flip Turn, Parting Shot bench swaps"]
+    subgraph AttackCascade ["Phase 4: Vectorized Discrete-RNG Attack Cascade (K Timelines, 2D Tiled)"]
+        B4["Phase 4: 4-Step Vectorized Attack Loop across [Strats_1, Strats_2, K]<br>• Gating: Sleep (50% wake), Freeze (20% thaw), Paralysis (25% immobilize), Flinch<br>• Protect Wheel: Consecutive decay ((1/3)^chain); Wide/Quick Guard<br>• Target Resolution: Follow Me / Rage Powder / Lightning Rod redirection & KO-Target XOR<br>• Dual-Draw Spinning-Wheel Accuracy: ((dart - window_start) % 100) < Acc<br>• Multi-Hit Discrete Loop: 35/35/15/15 standard wheel (or 5 hits with Skill Link)<br>• Per-Hit Crits: Stage 0 (1/24), Stage 1 (12.5%), Stage 2 (50%), Stage 3 (100%)<br>• 16 Cartridge Damage Rolls: Discrete uniform draw from {85..100} / 100.0<br>• Defensive Clamps: Focus Sash & Sturdy 1-HP clamp (Hit 1 breaks Sash; Hit 2+ KOs)<br>• Special Mechanics: Beat Up + Justified, Pollen Puff ally heal, Body Press / Foul Play<br>• Recoil (-10% Life Orb, -33% moves), Drain (+75%), Secondary status/stat drops<br>• Mid-Turn Pivots: U-turn, Volt Switch, Flip Turn, Parting Shot bench swaps"]
     end
 
     B4 --> B5
@@ -96,8 +96,9 @@ $$U_{\text{risk}} = (1 - \lambda) \cdot \mathbb{E}[U] + \lambda \cdot CVaR_{0.10
 All calculations strictly enforce the official **Pokémon Champions (Regulation M-C)** rules:
 - **Stat Point (SP) Limit:** Exactly **66 total SP** budget per Pokémon; maximum **32 SP** in any single stat.
 - **Champions Level 50 Formulas (Mandatory 31 IVs):**
-  $$\text{HP} = \left\lfloor \frac{(2 \cdot \text{Base} + 31 + \lfloor \text{SP} / 4 \rfloor) \cdot 50}{100} \right\rfloor + 60$$
-  $$\text{Other Stats} = \left\lfloor \left( \left\lfloor \frac{(2 \cdot \text{Base} + 31 + \lfloor \text{SP} / 4 \rfloor) \cdot 50}{100} \right\rfloor + 5 \right) \cdot \text{NatureMult} \right\rfloor$$
+  $$\text{HP} = \text{Base} + \text{SP} + 75$$
+  $$\text{Other Stats} = \left\lfloor (\text{Base} + \text{SP} + 20) \cdot \text{NatureMult} \right\rfloor$$
+  *(Equivalent Showdown EV conversion: $\text{EV} = 0$ for $\text{SP} = 0$, and $\text{EV} = 4 + 8 \cdot (\text{SP} - 1)$ for $1 \le \text{SP} \le 32$.)*
 - **Mega Evolution Priority:** Mega Evolution resolves at **Priority `+5.5`**, recalculating speed tiers *instantaneously* before any move executes.
 - **Terastallization:** Strictly forbidden.
 
@@ -168,47 +169,46 @@ COACH PORYGON VGC — TURN COACH ADVICE (MATCH PLAY)
 ========================================================================================
 ```
 
-### B. Scientific Mode (Comprehensive Mathematical & Process Audit)
+### B. Scientific & Bilingual Modes (`--lang {es,en}`, `--style {vgc,scientific}`)
 ```bash
 PYTHONPATH=src python3 -m engine.cli \
   --paste team.txt \
   --log battle.log \
   --pov "CyberPsycho" \
   --sims 256 \
+  --lang es \
+  --style scientific \
   --verbosity scientific
 ```
-*Outputs complete mathematical transparency: Level 50 scaling derivations, DuckDB tournament priors ($w_m$), combinatoric action reduction ($676 \to B_1$), Dual-Draw Spinning-Wheel RNG breakdowns, $CVaR_{10}$ integrals, IEDS round elimination tables, and Zero-Sum Nash LP dual gap proofs.*
+*Outputs complete mathematical transparency: Level 50 scaling derivations, DuckDB tournament priors ($w_m$), combinatoric action reduction ($676 \to \text{Strats}_1$), Dual-Draw Spinning-Wheel RNG breakdowns, $CVaR_{10}$ integrals, IEDS round elimination tables, and Zero-Sum Nash LP dual gap proofs across all 4 bilingual terminology profiles (`es_vgc`, `en_vgc`, `es_scientific`, `en_scientific`).*
+
+### C. Standalone Replay Coach GUI (`apps/replay_coach/`)
+Launch the zero-dependency local HTTP/SSE Replay Coach server with embedded Pokémon Showdown battle playback and persistent DuckDB OTS + 66-SP storage:
+```bash
+PYTHONPATH=src:. python3 -m apps.replay_coach.server
+```
 
 ---
 
 ## 7. Running the Test Suite (100% Green Mandate)
 
-Execute all 25 unit tests across the 5 engine phases:
+Execute the complete `pytest` verification suite across all engine, tensor core, DuckDB registry, mode analyzer, telemetry, and Replay Coach tests:
 
 ```bash
-PYTHONPATH=src python3 -m unittest \
-  tests/test_showdown_parser.py \
-  tests/test_set_inferencer.py \
-  tests/test_state_and_actions.py \
-  tests/test_dynamic_tensor_compiler.py \
-  tests/test_discrete_rng_state_machine.py \
-  tests/test_solver_and_advisor.py \
-  tests/engine/test_db_registry.py -v
+PYTHONPATH=src:. .venv/bin/pytest tests/ -q
 ```
-
-All 25 tests complete in under 15 seconds with zero external dependencies.
 
 ---
 
 ## 8. Tensor Architecture & Schema
 
-The engine maintains a minimal, cache-aligned state vector partitioned into three primary tensors:
+The engine maintains a minimal, cache-aligned state vector partitioned into three primary tensors (bounded to `O(1)` VRAM via 2D Tiling over `(Strats_1, Strats_2)`):
 
 | Tensor | Shape | Features | Description |
 | :--- | :--- | :--- | :--- |
-| **`F` (Field Tensor)** | `[B1, B2, K, 24]` | `FieldIdx` | Weather, Terrain, Trick Room, Tailwind, Reflect, Light Screen, Aurora Veil, Gravity. |
-| **`P` (Pokémon Tensor)** | `[B1, B2, K, 8, 84]` | `MonIdx` | Current HP, Max HP, Level 50 Stats (Atk..Spe), Boosts (-6..+6), Status conditions, Mega stats, Volatiles (Flinch, Protect chain), Items, Abilities. |
-| **`M` (Moves Tensor)** | `[B1, B2, K, 8, 4, 56]` | `MoveIdx` | Base Power, Accuracy, Priority, Type one-hot (18), Category (Physical/Special/Status), Target type, Expected hits, Overrides (Body Press, Foul Play), Recoil/Drain. |
+| **`F` (Field Tensor)** | `[Strats_1, Strats_2, K, 24]` | `FieldIdx` | Weather, Terrain, Trick Room, Tailwind, Reflect, Light Screen, Aurora Veil, Gravity. |
+| **`P` (Pokémon Tensor)** | `[Strats_1, Strats_2, K, 8, 87]` | `MonIdx` | Current HP, Max HP, Level 50 Stats (Atk..Spe), Boosts (-6..+6), Status conditions, Mega stats, Volatiles (Flinch, Protect chain), Items, Type-Boost Item index, Abilities. |
+| **`M` (Moves Tensor)** | `[Strats_1, Strats_2, K, 8, 4, 59]` | `MoveIdx` | Base Power, Accuracy, Priority, Type one-hot (18), Category (Physical/Special/Status), Target type, Expected hits, Overrides (Body Press, Foul Play), Recoil/Drain, Contact/Slicing/Punch flags. |
 
 ---
 

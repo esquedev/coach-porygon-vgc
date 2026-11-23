@@ -6,21 +6,21 @@ Defines the exact tensor dimensions, feature slice indices (`FieldIdx`, `MonIdx`
 Tensor Engine under `trainer_1` and `trainer_2` semantics:
 
 1. Global Field Tensor `F`: shape `[..., 24]`
-2. 8-Slot Unified Roster Tensor `P`: shape `[..., 8, 84]`
+2. 8-Slot Unified Roster Tensor `P`: shape `[..., 8, 87]`
    - Slots 0, 1: `trainer_1` Active (`SLOT_TRAINER_1_A`, `SLOT_TRAINER_1_B`)
    - Slots 2, 3: `trainer_1` Bench  (`SLOT_TRAINER_1_BENCH1`, `SLOT_TRAINER_1_BENCH2`)
    - Slots 4, 5: `trainer_2` Active (`SLOT_TRAINER_2_A`, `SLOT_TRAINER_2_B`)
    - Slots 6, 7: `trainer_2` Bench  (`SLOT_TRAINER_2_BENCH1`, `SLOT_TRAINER_2_BENCH2`)
-3. 8-Slot Programmatic Move Tensor `M_moves`: shape `[..., 8, 4, 56]`
+3. 8-Slot Programmatic Move Tensor `M_moves`: shape `[..., 8, 4, 59]`
    - Compiled dynamically on the fly from Showdown's `moves.jsonl` via in-memory
      DuckDB (`VGCDataRegistry`).
-   - Includes 56 channels covering Base Power, Accuracy, Priority, Target Type,
+   - Includes 59 channels covering Base Power, Accuracy, Priority, Target Type,
      Crit Stage (`willCrit`), 18-Type One-Hot, 3-Category One-Hot, 7 Stat Stage
      Deltas + Chance + Self/Target flag, 7 Status Procs + Chance, Recoil/Drain/Heal,
      Flinch Chance, Protect Type, Switch Mode, Field Op ID, Turn-1 Gate, Sound Flag,
      Weather Sure-Hit, Grassy Priority Boost, Expected Multi-Hit Count (`EXPECTED_HITS`),
      Offensive Stat Override (`Body Press` / `Foul Play`), Defensive Stat Override
-     (`Psyshock`), and Substitute Bypass.
+     (`Psyshock`), Substitute Bypass, Contact Flag, Slicing Flag, and Punch Flag.
 """
 
 from __future__ import annotations
@@ -81,14 +81,12 @@ WEATHER_TO_IDX: Dict[str, int] = {
     "": 0,
     "sun": 1,
     "sunnyday": 1,
-    "desolateland": 1,
     "rain": 2,
     "raindance": 2,
-    "primordialsea": 2,
     "sand": 3,
     "sandstorm": 3,
     "snow": 4,
-    "hail": 4,
+    "snowscape": 4,
     "chillyreception": 4,
 }
 
@@ -159,50 +157,46 @@ class ItemID(IntEnum):
     LIFE_ORB = 2
     SITRUS_BERRY = 3
     WHITE_HERB = 4
-    COVERT_CLOAK = 5
-    GRASSY_SEED = 6
-    PSYCHIC_SEED = 7
-    CHOICE_SCARF = 8
-    CHOICE_BAND = 9
-    CHOICE_SPECS = 10
-    EJECT_BUTTON = 11
-    ELECTRIC_SEED = 12
-    RED_CARD = 13
-    MISTY_SEED = 14
-    LEFTOVERS = 15
-    LUM_BERRY = 16
-    ROCKY_HELMET = 17
-    MEGA_STONE = 18
-    LOADED_DICE = 19
-    LIGHT_CLAY = 20
-    TYPE_BOOST_ITEM = 21
-    SCOPE_LENS = 22
-    MENTAL_HERB = 23
-    AIR_BALLOON = 24
-    EXPERT_BELT = 25
-    WIDE_LENS = 26
-    DAMP_ROCK = 27
-    HEAT_ROCK = 28
-    SMOOTH_ROCK = 29
-    ICY_ROCK = 30
-    CHOPLE_BERRY = 31
-    COLBUR_BERRY = 32
-    OCCA_BERRY = 33
-    PASSHO_BERRY = 34
-    YACHE_BERRY = 35
-    SHUCA_BERRY = 36
-    BABIRI_BERRY = 37
-    HABAN_BERRY = 38
-    ROSELI_BERRY = 39
-    WACAN_BERRY = 40
-    RINDO_BERRY = 41
-    CHARTI_BERRY = 42
-    KASIB_BERRY = 43
-    PAYAPA_BERRY = 44
-    COBA_BERRY = 45
-    KEBIA_BERRY = 46
-    TANGA_BERRY = 47
-    CHILAN_BERRY = 48
+    GRASSY_SEED = 5
+    PSYCHIC_SEED = 6
+    CHOICE_SCARF = 7
+    EJECT_BUTTON = 8
+    ELECTRIC_SEED = 9
+    RED_CARD = 10
+    MISTY_SEED = 11
+    LEFTOVERS = 12
+    LUM_BERRY = 13
+    ROCKY_HELMET = 14
+    MEGA_STONE = 15
+    LIGHT_CLAY = 16
+    TYPE_BOOST_ITEM = 17
+    SCOPE_LENS = 18
+    MENTAL_HERB = 19
+    AIR_BALLOON = 20
+    EXPERT_BELT = 21
+    WIDE_LENS = 22
+    DAMP_ROCK = 23
+    HEAT_ROCK = 24
+    SMOOTH_ROCK = 25
+    ICY_ROCK = 26
+    CHOPLE_BERRY = 27
+    COLBUR_BERRY = 28
+    OCCA_BERRY = 29
+    PASSHO_BERRY = 30
+    YACHE_BERRY = 31
+    SHUCA_BERRY = 32
+    BABIRI_BERRY = 33
+    HABAN_BERRY = 34
+    ROSELI_BERRY = 35
+    WACAN_BERRY = 36
+    RINDO_BERRY = 37
+    CHARTI_BERRY = 38
+    KASIB_BERRY = 39
+    PAYAPA_BERRY = 40
+    COBA_BERRY = 41
+    KEBIA_BERRY = 42
+    TANGA_BERRY = 43
+    CHILAN_BERRY = 44
 
 
 # Mapping from ItemID type-resist berries to their resisted type index in CANONICAL_TYPES
@@ -227,6 +221,44 @@ RESIST_BERRY_TO_TYPE_IDX: Dict[int, int] = {
     int(ItemID.ROSELI_BERRY): TYPE_TO_IDX["fairy"],
 }
 
+# Mapping from all 18 legal Champions Reg M-C type-boosting items (DuckDB `items`) to their exact type index
+TYPE_BOOST_ITEM_TO_TYPE_IDX: Dict[str, int] = {
+    "silk scarf": TYPE_TO_IDX["normal"],
+    "silkscarf": TYPE_TO_IDX["normal"],
+    "charcoal": TYPE_TO_IDX["fire"],
+    "mystic water": TYPE_TO_IDX["water"],
+    "mysticwater": TYPE_TO_IDX["water"],
+    "miracle seed": TYPE_TO_IDX["grass"],
+    "miracleseed": TYPE_TO_IDX["grass"],
+    "magnet": TYPE_TO_IDX["electric"],
+    "never-melt ice": TYPE_TO_IDX["ice"],
+    "nevermeltice": TYPE_TO_IDX["ice"],
+    "black belt": TYPE_TO_IDX["fighting"],
+    "blackbelt": TYPE_TO_IDX["fighting"],
+    "poison barb": TYPE_TO_IDX["poison"],
+    "poisonbarb": TYPE_TO_IDX["poison"],
+    "soft sand": TYPE_TO_IDX["ground"],
+    "softsand": TYPE_TO_IDX["ground"],
+    "sharp beak": TYPE_TO_IDX["flying"],
+    "sharpbeak": TYPE_TO_IDX["flying"],
+    "twisted spoon": TYPE_TO_IDX["psychic"],
+    "twistedspoon": TYPE_TO_IDX["psychic"],
+    "silver powder": TYPE_TO_IDX["bug"],
+    "silverpowder": TYPE_TO_IDX["bug"],
+    "hard stone": TYPE_TO_IDX["rock"],
+    "hardstone": TYPE_TO_IDX["rock"],
+    "spell tag": TYPE_TO_IDX["ghost"],
+    "spelltag": TYPE_TO_IDX["ghost"],
+    "dragon fang": TYPE_TO_IDX["dragon"],
+    "dragonfang": TYPE_TO_IDX["dragon"],
+    "black glasses": TYPE_TO_IDX["dark"],
+    "blackglasses": TYPE_TO_IDX["dark"],
+    "metal coat": TYPE_TO_IDX["steel"],
+    "metalcoat": TYPE_TO_IDX["steel"],
+    "fairy feather": TYPE_TO_IDX["fairy"],
+    "fairyfeather": TYPE_TO_IDX["fairy"],
+}
+
 
 class AbilityID(IntEnum):
     """Canonical Numeric Ability Identifiers for Branchless Matrix Gates (Regulation M-C Grounded)."""
@@ -242,7 +274,6 @@ class AbilityID(IntEnum):
     ELECTRIC_SURGE = 8
     GRASSY_SURGE = 9
     PSYCHIC_SURGE = 10
-    MISTY_SURGE = 11
     FAIRY_AURA = 12
     STAMINA = 13
     PRANKSTER = 14
@@ -311,6 +342,12 @@ class AbilityID(IntEnum):
     AERILATE = 77
     REFRIGERATE = 78
     SURGE_SURFER = 79
+    CONTRARY = 80
+    SHADOW_TAG = 81
+    THICK_FAT = 82
+    SHELL_ARMOR = 83
+    TELEPATHY = 84
+    IRON_FIST = 85
 
 
 class TargetType(IntEnum):
@@ -417,12 +454,12 @@ class FieldIdx:
     TRAINER_2_MEGA_USED: int = 23
 
 
-# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 86] ---
-MON_DIM: int = 86
+# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 87] ---
+MON_DIM: int = 87
 
 
 class MonIdx:
-    """Exact indices for the 86-Float Per-Pokémon Feature Vector `[..., 8, 86]`."""
+    """Exact indices for the 87-Float Per-Pokémon Feature Vector `[..., 8, 87]`."""
 
     # 0..2 (3 floats): HP Channels
     HP_CUR: int = 0
@@ -503,15 +540,16 @@ class MonIdx:
     MEGA_ABILITY_ID: int = 83
     MEGA_TYPE1: int = 84          # Type index 0..17 for Mega primary type (or -1.0 if unchanged)
     MEGA_TYPE2: int = 85          # Type index 0..17 for Mega secondary type (or -1.0 if single-type)
+    ITEM_BOOST_TYPE: int = 86     # Type index 0..17 boosted by held type-boosting item (or -1.0 if none)
 
 
-# --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 56] ---
+# --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 59] ---
 MOVES_PER_MON: int = 4
-MOVE_DIM: int = 56
+MOVE_DIM: int = 59
 
 
 class MoveIdx:
-    """Exact indices for the 56-Float Programmatic Move Vector `[..., 8, 4, 56]`."""
+    """Exact indices for the 59-Float Programmatic Move Vector `[..., 8, 4, 59]`."""
 
     # 0..4 (5 floats): Core Numeric Parameters
     BASE_POWER: int = 0
@@ -555,16 +593,19 @@ class MoveIdx:
     PROTECT_TYPE: int = 45        # 0.0 None, 1.0 Standard Protect, 2.0 Wide Guard, 3.0 Quick Guard
     SWITCH_MODE: int = 46         # 0.0 None, 1.0 Voluntary Self-Pivot, 2.0 Forced Foe Switch
     FIELD_OP_ID: int = 47         # FieldOpID enum float
-    FIRST_TURN_ONLY: int = 48     # 1.0 for Fake Out / First Impression / Mat Block
+    FIRST_TURN_ONLY: int = 48     # 1.0 for Fake Out / First Impression
     IS_SOUND_MOVE: int = 49       # 1.0 when flags.sound == 1
     WEATHER_SURE_HIT: int = 50    # 0: Standard, 1: Weather Ball, 2: Rain sure-hit, 4: Snow sure-hit, 10: Sun-charge (Solar Beam/Blade), 20: Rain-charge (Electro Shot), 30: General charge
     GRASSY_PRIO_BOOST: int = 51   # 1.0 for Grassy Glide
 
-    # 52..55 (4 floats): Multi-Hit & Stat Override Channels from DuckDB moves.jsonl
-    EXPECTED_HITS: int = 52       # 1.0 default, 2.0 Dual Wingbeat, 3.0 Surging Strikes, 3.1 [2..5] multi-hit
+    # 52..58 (7 floats): Multi-Hit, Stat Override & Move Flag Channels from DuckDB moves.jsonl
+    EXPECTED_HITS: int = 52       # 1.0 default, 2.0 Dual Wingbeat, 3.0 Triple Axel, 3.1 [2..5] multi-hit, 10.0 Population Bomb
     OVERRIDE_OFF_STAT: int = 53   # OverrideOffStat (0.0 standard, 1.0 Body Press Def, 2.0 Foul Play Target Atk)
     OVERRIDE_DEF_STAT: int = 54   # OverrideDefStat (0.0 standard, 1.0 Psyshock/Psystrike/Secret Sword Def)
     BYPASS_SUB: int = 55          # 1.0 when flags.bypasssub == 1 or flags.sound == 1
+    IS_CONTACT: int = 56          # 1.0 when flags.contact == 1 (Tough Claws, Rough Skin, Rocky Helmet, Flame Body, Poison Touch)
+    IS_SLICING: int = 57          # 1.0 when flags.slicing == 1 (Sharpness 1.5x)
+    IS_PUNCH: int = 58            # 1.0 when flags.punch == 1 (Iron Fist 1.2x)
 
 
 # =============================================================================
@@ -587,6 +628,7 @@ class BilinearLookupTables:
     t_set_terrain: Any
     p_switch_perms: Any
     switch_persist_mask: Any
+    resist_berry_type_lut: Any = None
 
 
 _RAW_TYPE_CHART: Dict[str, Dict[str, float]] = {
@@ -663,6 +705,12 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
     switch_persist_np[MonIdx.HELPING_HAND_MULT] = 1.0
     switch_persist_np[MonIdx.UNBURDEN_ACTIVE] = 0.0
 
+    # Branchless lookup table from ItemID (0..63) -> resisted type index (0..17) or -1
+    resist_berry_lut_np = np.full((64,), -1, dtype=np.int64)
+    for b_item_id, b_type_idx in RESIST_BERRY_TO_TYPE_IDX.items():
+        if 0 <= int(b_item_id) < 64:
+            resist_berry_lut_np[int(b_item_id)] = int(b_type_idx)
+
     if HAS_TORCH and torch is not None:
         if device is None:
             dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -681,6 +729,7 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
             t_set_terrain=torch.from_numpy(t_set_terrain_np).to(dev),
             p_switch_perms=torch.from_numpy(p_switch_perms_np).to(dev),
             switch_persist_mask=torch.from_numpy(switch_persist_np).to(dev),
+            resist_berry_type_lut=torch.from_numpy(resist_berry_lut_np).to(dev),
         )
 
     return BilinearLookupTables(
@@ -696,6 +745,7 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
         t_set_terrain=t_set_terrain_np,
         p_switch_perms=p_switch_perms_np,
         switch_persist_mask=switch_persist_np,
+        resist_berry_type_lut=resist_berry_lut_np,
     )
 
 
@@ -786,7 +836,7 @@ def apply_switch_permutation(
     slot_b: Any,
     tables: BilinearLookupTables,
 ) -> Tuple[Any, Any]:
-    """Swap Active Slot `slot_a` with Bench Slot `slot_b` across `P` `[..., 8, 84]` and `M_moves` `[..., 8, 4, 56]`."""
+    """Swap Active Slot `slot_a` with Bench Slot `slot_b` across `P` `[..., 8, 87]` and `M_moves` `[..., 8, 4, 59]`."""
     perm_mat = tables.p_switch_perms[slot_a, slot_b]
     new_roster = _einsum("...ij,...jk->...ik", perm_mat, roster_tensor)
     new_moves = _einsum("...ij,...jmk->...imk", perm_mat, moves_tensor)

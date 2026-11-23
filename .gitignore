@@ -70,6 +70,8 @@ Desktop.ini
 # 6. Private Coaching Telemetry, Rosters, Scouting Intel & Heavy Tournament Dumps
 data/
 src/data/
+src/engine/data/showdown/raw_ts/
+src/engine/data/showdown/*.ts
 reports/*.pdf
 reports/*.html
 !reports/agent_audits/

@@ -45,7 +45,7 @@ Level: 50
 - Solar Beam  
 - Protect  
 
-Rillaboom @ Assault Vest  
+Rillaboom @ Miracle Seed  
 Ability: Grassy Surge  
 EVs: 28 HP / 32 Atk / 6 Spe  
 Adamant Nature  
@@ -55,7 +55,7 @@ Level: 50
 - Wood Hammer  
 - U-turn  
 
-Garchomp @ Loaded Dice  
+Garchomp @ Life Orb  
 Ability: Rough Skin  
 EVs: 2 HP / 32 Atk / 32 Spe  
 Jolly Nature  

@@ -5,24 +5,24 @@ Coach Porygon VGC — Logical Constraint, Action Pruner & Risk-Reward Engine
 
 Evaluates candidate Pokémon VGC 4v4 Doubles (Regulation M-C) battle actions through
 a dual-mode logical lens, operating both at the symbolic DuckDB level and directly
-as vectorized `26x26` tensor masks on `[24]`, `[8, 84]`, and `[8, 4, 56]` board states:
+as vectorized `26x26` tensor masks on `[24]`, `[8, 87]`, and `[8, 4, 59]` board states:
 
 1. **Hard Mechanical Invariants (Physical Failures — Probability 0%, Pruned from Tensor Batch)**:
-   - `Fake Out`, `First Impression`, `Mat Block` when `active_turns >= 1` (0-indexed after lead/switch).
+   - `Fake Out`, `First Impression` when `active_turns >= 1` (0-indexed after lead/switch).
    - Priority moves (`priority > 0`, `Prankster` status, `Grassy Glide` in Grassy Terrain) targeting
-     opposing slots when `Armor Tail` / `Queenly Majesty` / `Dazzling` is active on the opposing side,
+     opposing slots when `Armor Tail` / `Queenly Majesty` is active on the opposing side,
      or into grounded foes under `Psychic Terrain`.
    - `Prankster` status moves into `Dark`-type opposing targets.
    - Sound moves into `Soundproof`, status moves into `Good as Gold`, Fire moves into `Flash Fire`,
-     Water moves into `Storm Drain` / `Water Absorb`, Electric moves into `Lightning Rod` / `Volt Absorb` /
+     Water moves into `Water Absorb` / `Dry Skin`, Electric moves into `Lightning Rod` / `Volt Absorb` /
      `Motor Drive`, Grass moves into `Sap Sipper`, Ground moves into `Earth Eater`.
-   - Sleep moves (`Spore`, `Sleep Powder`, `Hypnosis`, `Yawn`, `Lovely Kiss`, `Sing`, `Grass Whistle`)
+   - Sleep moves (`Spore`, `Sleep Powder`, `Hypnosis`, `Yawn`, `Sing`)
      into grounded targets under `Electric Terrain` or `Misty Terrain`.
-   - Choice-lock (`Choice Band`, `Choice Specs`, `Choice Scarf`), `Encore`, `Taunt`, and `Assault Vest`.
+   - Choice-lock (`Choice Scarf`), `Encore`, and `Taunt`.
    - Single-Mega exclusivity (`M[12:24, 12:24] = 0`) and same-bench switch collision (`M[24, 24] = M[25, 25] = 0`).
 
 2. **Soft Tactical Constraints (Continuous Risk / Upside Continuum & Tensor Priors)**:
-   - Consecutive `Protect` / `Detect` / `Spiky Shield` / `King's Shield` / `Silk Trap` / `Baneful Bunker`
+   - Consecutive `Protect` / `Detect` / `Spiky Shield` / `King's Shield` / `Baneful Bunker`
      decay (`(1/3)^k` success probability -> `risk_score = 0.67` on 2nd use, `0.89+` on 3rd+ use).
    - Sub-85% nominal accuracy risk weighting (modified dynamically by `No Guard`, Rain sure-hit, Snow sure-hit).
    - Type effectiveness & immunity hard-read classification (`0.0x` immunity on active slot only viable as
@@ -84,21 +84,19 @@ SOUND_MOVES = {
     "Bug Buzz",
     "Snarl",
     "Roar",
-    "Disarming Voice",
     "Alluring Voice",
     "Torch Song",
     "Boomburst",
     "Perish Song",
     "Clangorous Soul",
 }
-SLEEP_MOVES = {"Hypnosis", "Yawn", "Sleep Powder", "Spore", "Grass Whistle", "Lovely Kiss", "Sing", "Dark Void"}
+SLEEP_MOVES = {"Hypnosis", "Yawn", "Sleep Powder", "Spore", "Sing"}
 PROTECT_MOVES = {
     "Protect",
     "Detect",
     "Spiky Shield",
     "King's Shield",
     "Baneful Bunker",
-    "Burning Bulwark",
     "Endure",
     "Wide Guard",
     "Quick Guard",
@@ -269,13 +267,7 @@ class LogicalConstraintEngine:
 
         if user_ability == "No Guard" or target_ability == "No Guard":
             return 100.0
-        if weather == "rain" and move_name in (
-            "Thunder",
-            "Hurricane",
-            "Bleakwind Storm",
-            "Wildbolt Storm",
-            "Sandsear Storm",
-        ):
+        if weather == "rain" and move_name in ("Thunder", "Hurricane"):
             return 100.0
         if weather == "snow" and move_name == "Blizzard":
             return 100.0
@@ -411,8 +403,8 @@ class LogicalConstraintEngine:
         m_type = str(move_data.get("type", "Normal"))
         m_cat = str(move_data.get("cat", "Status"))
 
-        # 1. Physical invariant: Fake Out / First Impression / Mat Block only on first active turn
-        if move_name in ("Fake Out", "First Impression", "Mat Block") and active_turns > 1:
+        # 1. Physical invariant: Fake Out / First Impression only on first active turn
+        if move_name in ("Fake Out", "First Impression") and active_turns > 1:
             return self._make_result(
                 is_mechanically_valid=False,
                 risk_score=1.0,
@@ -725,7 +717,7 @@ class LogicalConstraintEngine:
         if user_vec[MonIdx.ALIVE_FLAG] <= 0.0:
             return valid_26, prior_26, risk_26, upside_26
 
-        moves_4 = m_np[user_slot]  # [4, 56]
+        moves_4 = m_np[user_slot]  # [4, 59]
         partner_vec = p_np[partner_slot]
         opp_a_vec = p_np[opp_a_slot]
         opp_b_vec = p_np[opp_b_slot]
@@ -794,12 +786,87 @@ class LogicalConstraintEngine:
             else 0.0
         )
 
+        # Full-OTS pre-checks for Wide Guard, Quick Guard, and Shadow Tag
+        opp_bench_slots = (opp_bench1_slot, opp_bench2_slot)
+        opp_all_alive_slots = [
+            s for s in (opp_a_slot, opp_b_slot, opp_bench1_slot, opp_bench2_slot)
+            if p_np[s, MonIdx.ALIVE_FLAG] > 0.0
+        ]
+        opp_can_have_psychic_terrain = is_psychic_terrain > 0.5 or any(
+            int(round(float(p_np[s, MonIdx.ABILITY_ID]))) == AbilityID.PSYCHIC_SURGE
+            or (
+                p_np[s, MonIdx.CAN_MEGA] > 0.0
+                and int(round(float(p_np[s, MonIdx.MEGA_ABILITY_ID]))) == AbilityID.PSYCHIC_SURGE
+            )
+            for s in opp_all_alive_slots
+        )
+        opp_can_have_grassy_terrain = is_grassy_terrain > 0.5 or any(
+            int(round(float(p_np[s, MonIdx.ABILITY_ID]))) == AbilityID.GRASSY_SURGE
+            or (
+                p_np[s, MonIdx.CAN_MEGA] > 0.0
+                and int(round(float(p_np[s, MonIdx.MEGA_ABILITY_ID]))) == AbilityID.GRASSY_SURGE
+            )
+            for s in opp_all_alive_slots
+        )
+
+        opp_has_spread_threat = False
+        opp_has_prio_threat = False
+        for opp_act_s in (opp_a_slot, opp_b_slot):
+            if p_np[opp_act_s, MonIdx.ALIVE_FLAG] <= 0.0:
+                continue
+            opp_s_vec = p_np[opp_act_s]
+            opp_s_ab = int(round(float(opp_s_vec[MonIdx.ABILITY_ID])))
+            opp_s_can_mega = opp_s_vec[MonIdx.CAN_MEGA] > 0.0 and opp_s_vec[MonIdx.IS_MEGA] <= 0.0
+            opp_s_mega_ab = int(round(float(opp_s_vec[MonIdx.MEGA_ABILITY_ID]))) if opp_s_can_mega else opp_s_ab
+            opp_s_act_turns = float(opp_s_vec[MonIdx.ACTIVE_TURNS])
+            opp_s_full_hp = opp_s_vec[MonIdx.HP_CUR] >= opp_s_vec[MonIdx.HP_MAX]
+
+            for opp_m_i in range(MOVES_PER_MON):
+                omv = m_np[opp_act_s, opp_m_i]
+                if omv[MoveIdx.BASE_POWER] <= 0.0 and omv[MoveIdx.CAT_STATUS] <= 0.5:
+                    continue
+                if omv[MoveIdx.FIRST_TURN_ONLY] > 0.5 and opp_s_act_turns > 0.0:
+                    continue
+                otgt = int(round(float(omv[MoveIdx.TARGET_TYPE])))
+                if otgt in (int(TargetType.ALL_ADJACENT_FOES), int(TargetType.ALL_ADJACENT)):
+                    opp_has_spread_threat = True
+                elif (
+                    opp_can_have_psychic_terrain
+                    and omv[MoveIdx.TYPE_START + TYPE_TO_IDX["psychic"]] > 0.5
+                    and omv[MoveIdx.CAT_SPECIAL] > 0.5
+                    and abs(float(omv[MoveIdx.BASE_POWER]) - 80.0) < 0.5
+                ):
+                    opp_has_spread_threat = True
+
+                # Quick Guard only blocks foe-targeting moves with effective priority > 0
+                if otgt in (
+                    int(TargetType.SINGLE_FOE),
+                    int(TargetType.ALL_ADJACENT_FOES),
+                    int(TargetType.ALL_ADJACENT),
+                ):
+                    oprio = float(omv[MoveIdx.PRIORITY])
+                    if omv[MoveIdx.CAT_STATUS] > 0.5 and (
+                        opp_s_ab == AbilityID.PRANKSTER or opp_s_mega_ab == AbilityID.PRANKSTER
+                    ):
+                        oprio += 1.0
+                    elif (
+                        omv[MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]] > 0.5
+                        and opp_s_full_hp
+                        and (opp_s_ab == AbilityID.GALE_WINGS or opp_s_mega_ab == AbilityID.GALE_WINGS)
+                    ):
+                        oprio += 1.0
+                    elif omv[MoveIdx.GRASSY_PRIO_BOOST] > 0.5 and opp_can_have_grassy_terrain:
+                        oprio += 1.0
+                    if oprio > 0.0:
+                        opp_has_prio_threat = True
+
         target_slots = (opp_a_vec, opp_b_vec, partner_vec)
 
         for mega_mode in (0, 1):
             if mega_mode == 1 and can_mega_gate <= 0.0:
                 continue
             eff_user_ab = int(round(float(user_vec[MonIdx.MEGA_ABILITY_ID]))) if mega_mode == 1 else user_ab
+            user_has_mold_breaker = eff_user_ab == AbilityID.MOLD_BREAKER
 
             for tgt_bucket, raw_tgt_vec in enumerate(target_slots):
                 for m_idx in range(MOVES_PER_MON):
@@ -815,6 +882,13 @@ class LogicalConstraintEngine:
 
                     target_type = int(round(float(m_vec[MoveIdx.TARGET_TYPE])))
                     is_status = m_vec[MoveIdx.CAT_STATUS] > 0.5
+                    protect_type = float(m_vec[MoveIdx.PROTECT_TYPE])
+
+                    # Wide Guard / Quick Guard Full-OTS Zero-Effect Invariants
+                    if protect_type == 2.0 and not opp_has_spread_threat:
+                        continue
+                    if protect_type == 3.0 and not opp_has_prio_threat:
+                        continue
 
                     # 1. Target Bucket Routing & Target Alive Gate
                     if target_type in (
@@ -846,9 +920,18 @@ class LogicalConstraintEngine:
                             continue
                         tgt_vec = raw_tgt_vec
 
-                    tgt_ab = int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
+                    tgt_ab = 0 if user_has_mold_breaker else int(round(float(tgt_vec[MonIdx.ABILITY_ID])))
                     tgt_grounded = (
-                        1.0 if (gravity_active > 0.0 or tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0) else 0.0
+                        1.0
+                        if (
+                            gravity_active > 0.0
+                            or (
+                                tgt_vec[MonIdx.GROUNDED_FLAG] > 0.0
+                                and not (user_has_mold_breaker and int(round(float(tgt_vec[MonIdx.ABILITY_ID]))) == AbilityID.LEVITATE)
+                            )
+                            or (user_has_mold_breaker and int(round(float(tgt_vec[MonIdx.ABILITY_ID]))) == AbilityID.LEVITATE)
+                        )
+                        else 0.0
                     )
                     tgt_type1 = tgt_vec[MonIdx.TYPE1_START:MonIdx.TYPE1_END]
                     tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
@@ -862,9 +945,40 @@ class LogicalConstraintEngine:
                     if is_status and taunt_active > 0.0:
                         continue
 
-                    # 3. Turn-1 Gate (Fake Out / First Impression / Mat Block)
+                    # 3. Turn-1 Gate (Fake Out / First Impression)
                     if m_vec[MoveIdx.FIRST_TURN_ONLY] > 0.5 and active_turns > 0.0:
                         continue
+
+                    # Resolve effective move type (accounting for Weather Ball, Liquid Voice, Aerilate, Pixilate, Refrigerate)
+                    w_code = m_vec[MoveIdx.WEATHER_SURE_HIT]
+                    if w_code == 1.0:
+                        m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
+                        if is_sun > 0.5:
+                            m_type_vec[TYPE_TO_IDX["fire"]] = 1.0
+                        elif is_rain > 0.5:
+                            m_type_vec[TYPE_TO_IDX["water"]] = 1.0
+                        elif is_sand > 0.5:
+                            m_type_vec[TYPE_TO_IDX["rock"]] = 1.0
+                        elif is_snow > 0.5:
+                            m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
+                        else:
+                            m_type_vec[TYPE_TO_IDX["normal"]] = 1.0
+                    elif eff_user_ab == AbilityID.LIQUID_VOICE and m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5:
+                        m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
+                        m_type_vec[TYPE_TO_IDX["water"]] = 1.0
+                    elif (
+                        m_vec[MoveIdx.TYPE_START + TYPE_TO_IDX["normal"]] > 0.5
+                        and eff_user_ab in (AbilityID.AERILATE, AbilityID.PIXILATE, AbilityID.REFRIGERATE)
+                    ):
+                        m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
+                        if eff_user_ab == AbilityID.AERILATE:
+                            m_type_vec[TYPE_TO_IDX["flying"]] = 1.0
+                        elif eff_user_ab == AbilityID.PIXILATE:
+                            m_type_vec[TYPE_TO_IDX["fairy"]] = 1.0
+                        else:
+                            m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
+                    else:
+                        m_type_vec = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
 
                     # 4. Effective Priority Resolution
                     eff_prio = float(m_vec[MoveIdx.PRIORITY])
@@ -872,7 +986,7 @@ class LogicalConstraintEngine:
                         eff_prio += 1.0
                     elif (
                         eff_user_ab == AbilityID.GALE_WINGS
-                        and m_vec[MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]] > 0.5
+                        and m_type_vec[TYPE_TO_IDX["flying"]] > 0.5
                         and user_vec[MonIdx.HP_CUR] >= user_vec[MonIdx.HP_MAX]
                     ):
                         eff_prio += 1.0
@@ -883,46 +997,46 @@ class LogicalConstraintEngine:
                     ):
                         eff_prio += 1.0
 
-                    # 5. Priority Blocking & Psychic Terrain Invariants on Opposing Targets
+                    # 5. Priority Blocking, Psychic Terrain, Prankster vs Dark & Ability Immunities
+                    # Unified Switch-Read Rule: single-target immunities are only hard-pruned when
+                    # the opponent has no alive bench (`not opp_has_alive_bench`).
+                    can_hard_prune_single_target = (
+                        prune_zero_effect_attacks_when_no_bench and not opp_has_alive_bench
+                    )
                     is_single_targeted_at_foe = target_type == TargetType.SINGLE_FOE and tgt_bucket in (0, 1)
-                    if is_single_targeted_at_foe and eff_prio > 0.0:
-                        if opp_blocks_prio > 0.5:
-                            continue
-                        if is_psychic_terrain > 0.5 and tgt_grounded > 0.5:
+                    if is_single_targeted_at_foe and can_hard_prune_single_target:
+                        if eff_prio > 0.0:
+                            if opp_blocks_prio > 0.5 and not user_has_mold_breaker:
+                                continue
+                            if is_psychic_terrain > 0.5 and tgt_grounded > 0.5:
+                                continue
+
+                        # 6. Prankster vs Dark-Type Target Invariant
+                        if (
+                            eff_user_ab == AbilityID.PRANKSTER
+                            and is_status
+                            and tgt_is_dark > 0.5
+                        ):
                             continue
 
-                    # 6. Prankster vs Dark-Type Target Invariant
-                    if (
-                        is_single_targeted_at_foe
-                        and eff_user_ab == AbilityID.PRANKSTER
-                        and is_status
-                        and tgt_is_dark > 0.5
-                    ):
-                        continue
-
-                    # 7. Soundproof, Good as Gold, Flash Fire & Terrain Sleep Invariants
-                    if is_single_targeted_at_foe or target_type in (
-                        TargetType.ALL_ADJACENT_FOES,
-                        TargetType.ALL_ADJACENT,
-                    ):
-                        if (
-                            m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5
-                            and tgt_ab == AbilityID.SOUNDPROOF
-                            and target_type == TargetType.SINGLE_FOE
+                        # 7. Soundproof, Good as Gold, Elemental Absorb & Terrain Sleep Invariants
+                        if m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5 and tgt_ab == AbilityID.SOUNDPROOF:
+                            continue
+                        if is_status and tgt_ab == AbilityID.GOOD_AS_GOLD:
+                            continue
+                        if m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE:
+                            continue
+                        if m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab == AbilityID.WATER_ABSORB:
+                            continue
+                        if m_type_vec[TYPE_TO_IDX["electric"]] > 0.5 and tgt_ab in (
+                            AbilityID.VOLT_ABSORB,
+                            AbilityID.MOTOR_DRIVE,
+                            AbilityID.LIGHTNING_ROD,
                         ):
                             continue
-                        if (
-                            is_status
-                            and tgt_ab == AbilityID.GOOD_AS_GOLD
-                            and target_type == TargetType.SINGLE_FOE
-                        ):
+                        if m_type_vec[TYPE_TO_IDX["grass"]] > 0.5 and tgt_ab == AbilityID.SAP_SIPPER:
                             continue
-                        m_type_onehot = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
-                        if (
-                            m_type_onehot[TYPE_TO_IDX["fire"]] > 0.5
-                            and tgt_ab == AbilityID.FLASH_FIRE
-                            and target_type == TargetType.SINGLE_FOE
-                        ):
+                        if m_type_vec[TYPE_TO_IDX["ground"]] > 0.5 and tgt_ab == AbilityID.EARTH_EATER:
                             continue
                         is_sleep_move = (
                             m_vec[MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["sleep"]] > 0.5
@@ -944,7 +1058,6 @@ class LogicalConstraintEngine:
                         prior_scale = 0.33 if protect_count == 1.0 else 0.11
 
                     # Two-turn charging move evaluation (Turn 1: deals 0 damage if must charge)
-                    w_code = m_vec[MoveIdx.WEATHER_SURE_HIT]
                     is_solar_charge = (w_code == 10.0) and (is_sun <= 0.5)
                     is_electro_charge = (w_code == 20.0) and (is_rain <= 0.5)
                     is_general_charge = (w_code == 30.0)
@@ -964,20 +1077,6 @@ class LogicalConstraintEngine:
                     acc_val = min(1.0, max(0.0, acc_val))
 
                     if not is_status:
-                        if w_code == 1.0:
-                            m_type_vec = np.zeros(NUM_TYPES, dtype=np.float32)
-                            if is_sun > 0.5:
-                                m_type_vec[TYPE_TO_IDX["fire"]] = 1.0
-                            elif is_rain > 0.5:
-                                m_type_vec[TYPE_TO_IDX["water"]] = 1.0
-                            elif is_sand > 0.5:
-                                m_type_vec[TYPE_TO_IDX["rock"]] = 1.0
-                            elif is_snow > 0.5:
-                                m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
-                            else:
-                                m_type_vec[TYPE_TO_IDX["normal"]] = 1.0
-                        else:
-                            m_type_vec = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
                         eff1 = float(m_type_vec @ self._type_chart_np @ tgt_type1)
                         raw_eff2 = float(m_type_vec @ self._type_chart_np @ tgt_type2)
                         eff2 = raw_eff2 + (1.0 - float(np.sum(tgt_type2)))
@@ -992,6 +1091,17 @@ class LogicalConstraintEngine:
                                 eff_total = max(1.0, eff_total)
 
                         if m_type_vec[TYPE_TO_IDX["ground"]] > 0.5 and tgt_grounded <= 0.0:
+                            eff_total = 0.0
+                        if (
+                            (m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE)
+                            or (m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab == AbilityID.WATER_ABSORB)
+                            or (
+                                m_type_vec[TYPE_TO_IDX["electric"]] > 0.5
+                                and tgt_ab in (AbilityID.VOLT_ABSORB, AbilityID.MOTOR_DRIVE, AbilityID.LIGHTNING_ROD)
+                            )
+                            or (m_type_vec[TYPE_TO_IDX["grass"]] > 0.5 and tgt_ab == AbilityID.SAP_SIPPER)
+                            or (m_type_vec[TYPE_TO_IDX["ground"]] > 0.5 and tgt_ab == AbilityID.EARTH_EATER)
+                        ):
                             eff_total = 0.0
 
                         # If single-targeting foe with 0.0x move AND opponent has no bench to switch in, prune!
@@ -1042,16 +1152,31 @@ class LogicalConstraintEngine:
                     risk_26[choice_idx] = round(float(risk_val), 4)
                     upside_26[choice_idx] = round(float(upside_val), 4)
 
-        if p_np[bench1_slot, MonIdx.ALIVE_FLAG] > 0.0:
-            valid_26[CHOICE_SWITCH_BENCH1] = 1.0
-            prior_26[CHOICE_SWITCH_BENCH1] = 0.65
-            risk_26[CHOICE_SWITCH_BENCH1] = 0.25
-            upside_26[CHOICE_SWITCH_BENCH1] = 0.65
-        if p_np[bench2_slot, MonIdx.ALIVE_FLAG] > 0.0:
-            valid_26[CHOICE_SWITCH_BENCH2] = 1.0
-            prior_26[CHOICE_SWITCH_BENCH2] = 0.65
-            risk_26[CHOICE_SWITCH_BENCH2] = 0.25
-            upside_26[CHOICE_SWITCH_BENCH2] = 0.65
+        # Shadow Tag switch lock: blocks voluntary switches on non-Ghost / non-Shadow-Tag slots
+        opp_has_shadow_tag = (
+            opp_a_ab == AbilityID.SHADOW_TAG or opp_b_ab == AbilityID.SHADOW_TAG
+        )
+        user_is_ghost = (
+            user_vec[MonIdx.TYPE1_START + TYPE_TO_IDX["ghost"]] > 0.5
+            or user_vec[MonIdx.TYPE2_START + TYPE_TO_IDX["ghost"]] > 0.5
+        )
+        is_trapped_by_shadow_tag = (
+            opp_has_shadow_tag
+            and not user_is_ghost
+            and user_ab != AbilityID.SHADOW_TAG
+        )
+
+        if not is_trapped_by_shadow_tag:
+            if p_np[bench1_slot, MonIdx.ALIVE_FLAG] > 0.0:
+                valid_26[CHOICE_SWITCH_BENCH1] = 1.0
+                prior_26[CHOICE_SWITCH_BENCH1] = 0.65
+                risk_26[CHOICE_SWITCH_BENCH1] = 0.25
+                upside_26[CHOICE_SWITCH_BENCH1] = 0.65
+            if p_np[bench2_slot, MonIdx.ALIVE_FLAG] > 0.0:
+                valid_26[CHOICE_SWITCH_BENCH2] = 1.0
+                prior_26[CHOICE_SWITCH_BENCH2] = 0.65
+                risk_26[CHOICE_SWITCH_BENCH2] = 0.25
+                upside_26[CHOICE_SWITCH_BENCH2] = 0.65
 
         return valid_26, prior_26, risk_26, upside_26
 
@@ -1064,15 +1189,17 @@ class LogicalConstraintEngine:
         """Compute the `26x26` logical validity, prior, risk, and upside matrices and prune non-viable actions.
 
         Args:
-            state: `CompiledBattleState` containing `field_tensor [24]`, `roster_tensor [8, 84]`,
-                and `moves_tensor [8, 4, 56]`.
+            state: `CompiledBattleState` containing `field_tensor [24]`, `roster_tensor [8, 87]`,
+                and `moves_tensor [8, 4, 59]`.
             trainer_id: `'trainer_1'` or `'trainer_2'`.
-            min_prior_threshold: Optional soft-pruning floor on `joint_prior_mat` (default `0.0`
-                keeps all mechanically valid actions; set e.g. `0.05` to also prune extreme low-prior reads).
+            min_prior_threshold: Ignored (permanently locked to `0.0` to guarantee zero heuristic pruning;
+                only strictly mathematical/mechanical zero-effect actions are pruned).
 
         Returns:
             `PrunedSideActionTensorMask` with `[N_valid, 2]` pruned choice pairs.
         """
+        # Lock min_prior_threshold permanently to 0.0 (no heuristic pruning)
+        min_prior_threshold = 0.0
         if trainer_id not in ("trainer_1", "trainer_2"):
             raise ValueError(f"trainer_id must be 'trainer_1' or 'trainer_2', got '{trainer_id}'")
 
@@ -1124,12 +1251,32 @@ class LogicalConstraintEngine:
         joint_valid[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH1] = 0.0
         joint_valid[CHOICE_SWITCH_BENCH2, CHOICE_SWITCH_BENCH2] = 0.0
 
+        # Cross-Slot Invariant 3: Helping Hand + Partner Status / Switch Zero-Effect Pruning
+        from .schema_and_tables import FieldOpID
+        for c_a in range(24):
+            m_a = m_np[slot_a, (c_a % 12) % 4]
+            if int(round(float(m_a[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                joint_valid[c_a, CHOICE_SWITCH_BENCH1] = 0.0
+                joint_valid[c_a, CHOICE_SWITCH_BENCH2] = 0.0
+                for c_b in range(24):
+                    m_b = m_np[slot_b, (c_b % 12) % 4]
+                    if m_b[MoveIdx.CAT_STATUS] > 0.5 or m_b[MoveIdx.BASE_POWER] <= 0.0:
+                        joint_valid[c_a, c_b] = 0.0
+
+        for c_b in range(24):
+            m_b = m_np[slot_b, (c_b % 12) % 4]
+            if int(round(float(m_b[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                joint_valid[CHOICE_SWITCH_BENCH1, c_b] = 0.0
+                joint_valid[CHOICE_SWITCH_BENCH2, c_b] = 0.0
+                for c_a in range(24):
+                    m_a = m_np[slot_a, (c_a % 12) % 4]
+                    if m_a[MoveIdx.CAT_STATUS] > 0.5 or m_a[MoveIdx.BASE_POWER] <= 0.0:
+                        joint_valid[c_a, c_b] = 0.0
+
+        if np.sum(joint_valid) <= 0.0:
+            joint_valid[0, 0] = 1.0
+
         joint_prior = (np.outer(pri_a, pri_b) * joint_valid).astype(np.float32)
-        if min_prior_threshold > 0.0:
-            pruned_by_prior = (joint_prior >= min_prior_threshold).astype(np.float32)
-            if np.sum(pruned_by_prior) > 0:
-                joint_valid = joint_valid * pruned_by_prior
-                joint_prior = joint_prior * joint_valid
 
         # Composite joint risk = 1 - (1 - risk_a)*(1 - risk_b) on valid cells
         joint_risk = ((1.0 - np.outer(1.0 - rsk_a, 1.0 - rsk_b)) * joint_valid).astype(np.float32)

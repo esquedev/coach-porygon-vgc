@@ -580,7 +580,7 @@ def extract_turn_telemetry(
                 _vacate_slot(victim_mon, t1_slots, t1_open_queue, t1_aliases, t1_nick_to_spec, clear_immediately=False)
             continue
 
-        m_emexit = re.match(r"^\[(?:The opposing\s+)?(.+?)'s\s+(?:Emergency Exit|Wimp Out)\]", line)
+        m_emexit = re.match(r"^\[(?:The opposing\s+)?(.+?)'s\s+Emergency Exit\]", line)
         if m_emexit:
             mon_em = m_emexit.group(1).strip()
             if line.startswith("[The opposing "):

@@ -3,7 +3,7 @@
 
 Compiles any Pokémon Showdown move, roster slot, or `TurnState` (`trainer_1`
 and `trainer_2`) on the fly into aligned tensors (`Field` `[24]`, `Roster`
-`[8, 86]`, and `Moves` `[8, 4, 56]`) directly from the in-memory DuckDB
+`[8, 87]`, and `Moves` `[8, 4, 59]`) directly from the in-memory DuckDB
 `VGCDataRegistry` (`moves`, `pokedex`, `items`, `abilities` views) — with
 ZERO hardcoded move catalog.
 
@@ -29,11 +29,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from engine.db_registry import VGCDataRegistry, get_registry
-from engine.inference.set_inferencer import TYPE_BOOSTING_ITEMS
-from engine.inference.tournament_db import (
-    TournamentUsageRepository,
-    get_tournament_repository,
-)
 from engine.state.models import CompiledMove, CompiledPokemonState, TurnState
 
 from .schema_and_tables import (
@@ -63,6 +58,7 @@ from .schema_and_tables import (
     SLOT_TRAINER_2_BENCH2,
     STATUS_TO_IDX,
     TERRAIN_TO_IDX,
+    TYPE_BOOST_ITEM_TO_TYPE_IDX,
     TYPE_TO_IDX,
     TargetType,
     WEATHER_TO_IDX,
@@ -107,18 +103,12 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "sitrusberry": ItemID.SITRUS_BERRY,
     "white herb": ItemID.WHITE_HERB,
     "whiteherb": ItemID.WHITE_HERB,
-    "covert cloak": ItemID.COVERT_CLOAK,
-    "covertcloak": ItemID.COVERT_CLOAK,
     "grassy seed": ItemID.GRASSY_SEED,
     "grassyseed": ItemID.GRASSY_SEED,
     "psychic seed": ItemID.PSYCHIC_SEED,
     "psychicseed": ItemID.PSYCHIC_SEED,
     "choice scarf": ItemID.CHOICE_SCARF,
     "choicescarf": ItemID.CHOICE_SCARF,
-    "choice band": ItemID.CHOICE_BAND,
-    "choiceband": ItemID.CHOICE_BAND,
-    "choice specs": ItemID.CHOICE_SPECS,
-    "choicespecs": ItemID.CHOICE_SPECS,
     "eject button": ItemID.EJECT_BUTTON,
     "ejectbutton": ItemID.EJECT_BUTTON,
     "electric seed": ItemID.ELECTRIC_SEED,
@@ -132,8 +122,6 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "lumberry": ItemID.LUM_BERRY,
     "rocky helmet": ItemID.ROCKY_HELMET,
     "rockyhelmet": ItemID.ROCKY_HELMET,
-    "loaded dice": ItemID.LOADED_DICE,
-    "loadeddice": ItemID.LOADED_DICE,
     "light clay": ItemID.LIGHT_CLAY,
     "lightclay": ItemID.LIGHT_CLAY,
     "mega stone": ItemID.MEGA_STONE,
@@ -191,9 +179,14 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "roseli berry": ItemID.ROSELI_BERRY,
     "roseliberry": ItemID.ROSELI_BERRY,
 }
-for _tb_item in TYPE_BOOSTING_ITEMS:
-    ITEM_NAME_TO_ID[_tb_item.lower()] = ItemID.TYPE_BOOST_ITEM
-    ITEM_NAME_TO_ID[_tb_item.lower().replace(" ", "").replace("-", "")] = ItemID.TYPE_BOOST_ITEM
+ITEM_NAME_TO_BOOST_TYPE: Dict[str, int] = {}
+for _tb_item, _tb_type_idx in TYPE_BOOST_ITEM_TO_TYPE_IDX.items():
+    _tb_low = _tb_item.lower()
+    _tb_id = _tb_low.replace(" ", "").replace("-", "")
+    ITEM_NAME_TO_ID[_tb_low] = ItemID.TYPE_BOOST_ITEM
+    ITEM_NAME_TO_ID[_tb_id] = ItemID.TYPE_BOOST_ITEM
+    ITEM_NAME_TO_BOOST_TYPE[_tb_low] = _tb_type_idx
+    ITEM_NAME_TO_BOOST_TYPE[_tb_id] = _tb_type_idx
 
 
 ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
@@ -214,8 +207,6 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "grassysurge": AbilityID.GRASSY_SURGE,
     "psychic surge": AbilityID.PSYCHIC_SURGE,
     "psychicsurge": AbilityID.PSYCHIC_SURGE,
-    "misty surge": AbilityID.MISTY_SURGE,
-    "mistysurge": AbilityID.MISTY_SURGE,
     "fairy aura": AbilityID.FAIRY_AURA,
     "fairyaura": AbilityID.FAIRY_AURA,
     "stamina": AbilityID.STAMINA,
@@ -226,7 +217,6 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "inner focus": AbilityID.INNER_FOCUS,
     "innerfocus": AbilityID.INNER_FOCUS,
     "multiscale": AbilityID.MULTISCALE,
-    "shadow shield": AbilityID.MULTISCALE,
     "guts": AbilityID.GUTS,
     "adaptability": AbilityID.ADAPTABILITY,
     "huge power": AbilityID.HUGE_POWER,
@@ -277,25 +267,18 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "rockhead": AbilityID.ROCK_HEAD,
     "rough skin": AbilityID.ROUGH_SKIN,
     "roughskin": AbilityID.ROUGH_SKIN,
-    "iron barbs": AbilityID.ROUGH_SKIN,
-    "ironbarbs": AbilityID.ROUGH_SKIN,
     "poison touch": AbilityID.POISON_TOUCH,
     "poisontouch": AbilityID.POISON_TOUCH,
     "clear body": AbilityID.CLEAR_BODY,
     "clearbody": AbilityID.CLEAR_BODY,
     "white smoke": AbilityID.CLEAR_BODY,
     "whitesmoke": AbilityID.CLEAR_BODY,
-    "full metal body": AbilityID.CLEAR_BODY,
     "flower veil": AbilityID.FLOWER_VEIL,
     "flowerveil": AbilityID.FLOWER_VEIL,
     "emergency exit": AbilityID.EMERGENCY_EXIT,
     "emergencyexit": AbilityID.EMERGENCY_EXIT,
-    "wimp out": AbilityID.EMERGENCY_EXIT,
-    "wimpout": AbilityID.EMERGENCY_EXIT,
     "cloud nine": AbilityID.CLOUD_NINE,
     "cloudnine": AbilityID.CLOUD_NINE,
-    "air lock": AbilityID.CLOUD_NINE,
-    "airlock": AbilityID.CLOUD_NINE,
     "aerilate": AbilityID.AERILATE,
     "refrigerate": AbilityID.REFRIGERATE,
     "flame body": AbilityID.FLAME_BODY,
@@ -337,6 +320,18 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "swarm": AbilityID.SWARM,
     "surge surfer": AbilityID.SURGE_SURFER,
     "surgesurfer": AbilityID.SURGE_SURFER,
+    "contrary": AbilityID.CONTRARY,
+    "shadow tag": AbilityID.SHADOW_TAG,
+    "shadowtag": AbilityID.SHADOW_TAG,
+    "thick fat": AbilityID.THICK_FAT,
+    "thickfat": AbilityID.THICK_FAT,
+    "shell armor": AbilityID.SHELL_ARMOR,
+    "shellarmor": AbilityID.SHELL_ARMOR,
+    "battle armor": AbilityID.SHELL_ARMOR,
+    "battlearmor": AbilityID.SHELL_ARMOR,
+    "telepathy": AbilityID.TELEPATHY,
+    "iron fist": AbilityID.IRON_FIST,
+    "ironfist": AbilityID.IRON_FIST,
 }
 
 
@@ -418,8 +413,8 @@ class CompiledBattleState:
 
     Attributes:
         field_tensor: Tensor/ndarray of shape `[24]` (`FieldIdx`).
-        roster_tensor: Tensor/ndarray of shape `[8, 84]` (`MonIdx`).
-        moves_tensor: Tensor/ndarray of shape `[8, 4, 56]` (`MoveIdx`).
+        roster_tensor: Tensor/ndarray of shape `[8, 87]` (`MonIdx`).
+        moves_tensor: Tensor/ndarray of shape `[8, 4, 59]` (`MoveIdx`).
         backend: 'torch' or 'numpy'.
         device: Active torch.device or 'cpu'.
         slot_species: Tuple of 8 species names corresponding to roster slots 0..7.
@@ -477,7 +472,7 @@ class ShowdownTensorCompiler:
         self,
         tables: Optional[BilinearLookupTables] = None,
         registry: Optional[VGCDataRegistry] = None,
-        repo: Optional[TournamentUsageRepository] = None,
+        repo: Optional[Any] = None,
         device: Any = None,
         backend: Optional[str] = None,
     ) -> None:
@@ -485,12 +480,32 @@ class ShowdownTensorCompiler:
         self.backend: str = backend or self.tables.backend
         self.device: Any = self.tables.device
         self.registry: VGCDataRegistry = registry or get_registry()
-        self.repo: TournamentUsageRepository = repo or get_tournament_repository()
+        self.repo: Optional[Any] = repo
 
-        # Index all Showdown move rows from in-memory DuckDB `moves` view
+        # Index all Showdown move rows and Mega Stones from in-memory DuckDB
         self._moves_by_id: Dict[str, Dict[str, Any]] = {}
         self._move_vector_cache: Dict[str, np.ndarray] = {}
+        self._mega_stones_lower: set[str] = set()
         self._load_duckdb_moves()
+        self._load_duckdb_mega_stones()
+
+    def _load_duckdb_mega_stones(self) -> None:
+        """Load legal Mega Stone names directly from DuckDB `pokedex` view (`requiredItem`)."""
+        rows = self.registry.query(
+            "SELECT DISTINCT requiredItem FROM pokedex WHERE requiredItem IS NOT NULL;"
+        )
+        for r in rows:
+            req = str(r.get("requiredItem") or "").strip()
+            if req and req.lower() != "null":
+                self._mega_stones_lower.add(req.lower())
+                self._mega_stones_lower.add(_to_id(req))
+
+    def _is_mega_stone(self, item_raw: str) -> bool:
+        """Return True if `item_raw` is a legal Mega Stone in DuckDB."""
+        if not item_raw:
+            return False
+        low = item_raw.strip().lower()
+        return low in self._mega_stones_lower or _to_id(low) in self._mega_stones_lower
 
     def _load_duckdb_moves(self) -> None:
         """Load all move definitions from the in-memory DuckDB `moves` view."""
@@ -772,9 +787,7 @@ class ShowdownTensorCompiler:
             "spikyshield",
             "kingsshield",
             "banefulbunker",
-            "burningbulwark",
             "endure",
-            "maxguard",
         ):
             vec[MoveIdx.PROTECT_TYPE] = 1.0
 
@@ -807,14 +820,14 @@ class ShowdownTensorCompiler:
         vec[MoveIdx.FIRST_TURN_ONLY] = float(
             ovr.get(
                 "first_turn_only",
-                1.0 if move_id in ("fakeout", "firstimpression", "matblock") else 0.0,
+                1.0 if move_id in ("fakeout", "firstimpression") else 0.0,
             )
         )
         is_sound = 1.0 if flags.get("sound") else 0.0
         vec[MoveIdx.IS_SOUND_MOVE] = float(ovr.get("is_sound", is_sound))
 
         weather_op = 0.0
-        if move_id in ("thunder", "hurricane", "bleakwindstorm", "wildboltstorm", "sandsearstorm"):
+        if move_id in ("thunder", "hurricane"):
             weather_op = 2.0  # Rain sure-hit
         elif move_id == "blizzard":
             weather_op = 4.0  # Snow sure-hit
@@ -867,6 +880,9 @@ class ShowdownTensorCompiler:
             vec[MoveIdx.OVERRIDE_DEF_STAT] = float(OverrideDefStat.STANDARD)
 
         vec[MoveIdx.BYPASS_SUB] = 1.0 if (flags.get("bypasssub") or is_sound > 0.5) else 0.0
+        vec[MoveIdx.IS_CONTACT] = float(ovr.get("is_contact", 1.0 if flags.get("contact") else 0.0))
+        vec[MoveIdx.IS_SLICING] = float(ovr.get("is_slicing", 1.0 if flags.get("slicing") else 0.0))
+        vec[MoveIdx.IS_PUNCH] = float(ovr.get("is_punch", 1.0 if flags.get("punch") else 0.0))
 
         return vec
 
@@ -967,7 +983,7 @@ class ShowdownTensorCompiler:
     # -------------------------------------------------------------------------
 
     def compile_turn_state(self, turn_state: TurnState) -> CompiledBattleState:
-        """Compile a `TurnState` (`trainer_1` vs `trainer_2`) directly into `[24]`, `[8, 84]`, and `[8, 4, 56]` tensors."""
+        """Compile a `TurnState` (`trainer_1` vs `trainer_2`) directly into `[24]`, `[8, 87]`, and `[8, 4, 59]` tensors."""
         f_np = np.zeros((FIELD_DIM,), dtype=np.float32)
 
         # Weather & Terrain One-Hot
@@ -1052,7 +1068,7 @@ class ShowdownTensorCompiler:
         self,
         mon: Optional[CompiledPokemonState],
     ) -> Tuple[np.ndarray, np.ndarray, str, Tuple[str, ...]]:
-        """Compile a `CompiledPokemonState` into its 84-float `MonIdx` vector and `[4, 56]` `MoveIdx` matrix."""
+        """Compile a `CompiledPokemonState` into its 87-float `MonIdx` vector and `[4, 59]` `MoveIdx` matrix."""
         p_vec = np.zeros((MON_DIM,), dtype=np.float32)
         m_mat = np.zeros((MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
 
@@ -1064,6 +1080,7 @@ class ShowdownTensorCompiler:
             p_vec[MonIdx.LAST_MOVE_IDX] = -1.0
             p_vec[MonIdx.MEGA_TYPE1] = -1.0
             p_vec[MonIdx.MEGA_TYPE2] = -1.0
+            p_vec[MonIdx.ITEM_BOOST_TYPE] = -1.0
             return p_vec, m_mat, (mon.species if mon else "None"), ("Protect",) * 4
 
         p_vec[MonIdx.HP_CUR] = float(mon.current_hp)
@@ -1112,7 +1129,7 @@ class ShowdownTensorCompiler:
         # Item & Ability IDs
         item_raw = str(mon.item or "").strip()
         item_lower = item_raw.lower()
-        if mon.mega_stone or item_raw in self.repo.mega_stone_to_species:
+        if mon.mega_stone or self._is_mega_stone(item_raw):
             item_id = ItemID.MEGA_STONE
         else:
             item_id = ITEM_NAME_TO_ID.get(
@@ -1121,16 +1138,26 @@ class ShowdownTensorCompiler:
             )
 
         ability_lower = str(mon.ability or "none").strip().lower()
-        ability_id = ABILITY_NAME_TO_ID.get(ability_lower, AbilityID.NONE)
+        ability_id = ABILITY_NAME_TO_ID.get(
+            ability_lower,
+            ABILITY_NAME_TO_ID.get(_to_id(ability_lower), AbilityID.NONE),
+        )
 
         is_flying = any(str(t).lower() == "flying" for t in types)
         is_levitate = ability_id == AbilityID.LEVITATE
-        p_vec[MonIdx.GROUNDED_FLAG] = 0.0 if (is_flying or is_levitate) else 1.0
+        is_air_balloon = item_id == ItemID.AIR_BALLOON
+        p_vec[MonIdx.GROUNDED_FLAG] = 0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0
         p_vec[MonIdx.ITEM_ACTIVE] = 1.0 if item_id != ItemID.NONE else 0.0
         p_vec[MonIdx.ITEM_ID] = float(item_id)
         p_vec[MonIdx.ABILITY_ID] = float(ability_id)
         p_vec[MonIdx.UNBURDEN_ACTIVE] = 0.0
         p_vec[MonIdx.TOXIC_COUNTER] = 1.0
+        p_vec[MonIdx.ITEM_BOOST_TYPE] = float(
+            ITEM_NAME_TO_BOOST_TYPE.get(
+                item_lower,
+                ITEM_NAME_TO_BOOST_TYPE.get(_to_id(item_lower), -1),
+            )
+        )
 
         # Compile up to 4 moves programmatically on the fly
         move_names: List[str] = []
@@ -1172,7 +1199,12 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.MEGA_SPE] = float(mega_stats.get("spe", p_vec[MonIdx.STAT_SPE]))
 
         mega_ab_lower = str(mon.mega_ability or mon.ability or "none").strip().lower()
-        p_vec[MonIdx.MEGA_ABILITY_ID] = float(ABILITY_NAME_TO_ID.get(mega_ab_lower, ability_id))
+        p_vec[MonIdx.MEGA_ABILITY_ID] = float(
+            ABILITY_NAME_TO_ID.get(
+                mega_ab_lower,
+                ABILITY_NAME_TO_ID.get(_to_id(mega_ab_lower), ability_id),
+            )
+        )
 
         if mon.mega_types and len(mon.mega_types) >= 1:
             mt1_idx = TYPE_TO_IDX.get(str(mon.mega_types[0]).lower(), t1_idx)
@@ -1189,8 +1221,8 @@ class ShowdownTensorCompiler:
         return p_vec, m_mat, mon.species, tuple(move_names)
 
     def compile_pokemon_slot(self, mon_spec: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
-        """Compile a single Pokémon specification dictionary into its 86-float Roster Vector (`MonIdx`)
-        and its [4, 56] Move Matrix (`MoveIdx`).
+        """Compile a single Pokémon specification dictionary into its 87-float Roster Vector (`MonIdx`)
+        and its [4, 59] Move Matrix (`MoveIdx`).
         """
         p_vec = np.zeros((MON_DIM,), dtype=np.float32)
         m_mat = np.zeros((MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
@@ -1203,6 +1235,7 @@ class ShowdownTensorCompiler:
             p_vec[MonIdx.LAST_MOVE_IDX] = -1.0
             p_vec[MonIdx.MEGA_TYPE1] = -1.0
             p_vec[MonIdx.MEGA_TYPE2] = -1.0
+            p_vec[MonIdx.ITEM_BOOST_TYPE] = -1.0
             return p_vec, m_mat
 
         hp_max = float(mon_spec.get("hp_max", 160.0))
@@ -1247,7 +1280,7 @@ class ShowdownTensorCompiler:
         item_raw = str(mon_spec.get("item", "none")).strip()
         item_str = item_raw.lower()
         ability_str = str(mon_spec.get("ability", "none")).strip().lower()
-        if item_raw in self.repo.mega_stone_to_species or item_raw.title() in self.repo.mega_stone_to_species:
+        if self._is_mega_stone(item_raw):
             item_id = ItemID.MEGA_STONE
         else:
             item_id = ITEM_NAME_TO_ID.get(item_str, ITEM_NAME_TO_ID.get(_to_id(item_str), ItemID.NONE))
@@ -1255,7 +1288,8 @@ class ShowdownTensorCompiler:
 
         is_flying = any(str(t).lower() == "flying" for t in types)
         is_levitate = (ability_id == AbilityID.LEVITATE)
-        grounded_default = 0.0 if (is_flying or is_levitate) else 1.0
+        is_air_balloon = (item_id == ItemID.AIR_BALLOON) and float(mon_spec.get("item_active", 1.0)) > 0.0
+        grounded_default = 0.0 if (is_flying or is_levitate or is_air_balloon) else 1.0
         p_vec[MonIdx.GROUNDED_FLAG] = float(mon_spec.get("grounded", grounded_default))
         p_vec[MonIdx.ITEM_ACTIVE] = float(mon_spec.get("item_active", 1.0 if item_id != ItemID.NONE else 0.0))
         p_vec[MonIdx.ITEM_ID] = float(item_id)
@@ -1264,6 +1298,15 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.CHOICE_LOCKED_MOVE] = float(mon_spec.get("choice_locked_move", -1.0))
         p_vec[MonIdx.LAST_MOVE_IDX] = float(mon_spec.get("last_move_idx", -1.0))
         p_vec[MonIdx.TOXIC_COUNTER] = float(mon_spec.get("toxic_counter", 1.0))
+        p_vec[MonIdx.ITEM_BOOST_TYPE] = float(
+            mon_spec.get(
+                "item_boost_type",
+                ITEM_NAME_TO_BOOST_TYPE.get(
+                    item_str,
+                    ITEM_NAME_TO_BOOST_TYPE.get(_to_id(item_str), -1),
+                ),
+            )
+        )
 
         can_mega_default = 1.0 if item_id == ItemID.MEGA_STONE else 0.0
         p_vec[MonIdx.CAN_MEGA] = float(mon_spec.get("can_mega", can_mega_default))
@@ -1307,8 +1350,8 @@ class ShowdownTensorCompiler:
         roster_specs: List[Dict[str, Any]],
         field_spec: Optional[Dict[str, Any]] = None,
     ) -> CompiledBattleState:
-        """Compile a full 8-slot VGC battle state into aligned Field [24], Roster [8, 84],
-        and Moves [8, 4, 56] tensors on the active device.
+        """Compile a full 8-slot VGC battle state into aligned Field [24], Roster [8, 87],
+        and Moves [8, 4, 59] tensors on the active device.
         """
         f_spec = field_spec or {}
         f_np = np.zeros((FIELD_DIM,), dtype=np.float32)
@@ -1393,7 +1436,7 @@ class ShowdownTensorCompiler:
         if user_vec[MonIdx.ALIVE_FLAG] <= 0.0:
             return valid_26, prior_26
 
-        moves_4 = m_np[user_slot]  # Shape [4, 56]
+        moves_4 = m_np[user_slot]  # Shape [4, 59]
         partner_vec = p_np[partner_slot]
         opp_a_vec = p_np[opp_a_slot]
         opp_b_vec = p_np[opp_b_slot]
@@ -1507,7 +1550,7 @@ class ShowdownTensorCompiler:
                     if is_status and taunt_active > 0.0:
                         continue
 
-                    # 3. Turn-1 Gate (Fake Out / First Impression / Mat Block)
+                    # 3. Turn-1 Gate (Fake Out / First Impression)
                     if m_vec[MoveIdx.FIRST_TURN_ONLY] > 0.5 and active_turns > 0.0:
                         continue
 
@@ -1626,12 +1669,26 @@ class ShowdownTensorCompiler:
 
                     prior_26[choice_idx] = round(float(prior_scale), 4)
 
-        if p_np[bench1_slot, MonIdx.ALIVE_FLAG] > 0.0:
-            valid_26[CHOICE_SWITCH_BENCH1] = 1.0
-            prior_26[CHOICE_SWITCH_BENCH1] = 0.65
-        if p_np[bench2_slot, MonIdx.ALIVE_FLAG] > 0.0:
-            valid_26[CHOICE_SWITCH_BENCH2] = 1.0
-            prior_26[CHOICE_SWITCH_BENCH2] = 0.65
+        opp_has_shadow_tag = (
+            opp_a_ab == AbilityID.SHADOW_TAG or opp_b_ab == AbilityID.SHADOW_TAG
+        )
+        user_is_ghost = (
+            user_vec[MonIdx.TYPE1_START + TYPE_TO_IDX["ghost"]] > 0.5
+            or user_vec[MonIdx.TYPE2_START + TYPE_TO_IDX["ghost"]] > 0.5
+        )
+        is_trapped_by_shadow_tag = (
+            opp_has_shadow_tag
+            and not user_is_ghost
+            and user_ab != AbilityID.SHADOW_TAG
+        )
+
+        if not is_trapped_by_shadow_tag:
+            if p_np[bench1_slot, MonIdx.ALIVE_FLAG] > 0.0:
+                valid_26[CHOICE_SWITCH_BENCH1] = 1.0
+                prior_26[CHOICE_SWITCH_BENCH1] = 0.65
+            if p_np[bench2_slot, MonIdx.ALIVE_FLAG] > 0.0:
+                valid_26[CHOICE_SWITCH_BENCH2] = 1.0
+                prior_26[CHOICE_SWITCH_BENCH2] = 0.65
 
         return valid_26, prior_26
 

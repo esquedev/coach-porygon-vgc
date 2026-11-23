@@ -57,7 +57,7 @@ Level: 50
 - Solar Beam  
 - Protect  
 
-Rillaboom @ Assault Vest  
+Rillaboom @ Miracle Seed  
 Ability: Grassy Surge  
 EVs: 28 HP / 32 Atk / 6 Spe  
 Adamant Nature  
@@ -77,7 +77,7 @@ Level: 50
 - Sucker Punch  
 - Protect  
 
-Garchomp @ Loaded Dice  
+Garchomp @ Life Orb  
 Ability: Rough Skin  
 EVs: 2 HP / 32 Atk / 32 Spe  
 Jolly Nature  
@@ -184,36 +184,33 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
         self.assertAlmostEqual(float(np.mean(rolls)), 0.925, delta=0.005)
 
     def test_multihit_wheel_distributions(self) -> None:
-        """Verify variable 2..5 multi-hit wheel (35/35/15/15) and Loaded Dice (50/50 4 or 5)."""
+        """Verify variable 2..5 multi-hit wheel (35/35/15/15) and Skill Link (100% 5 hits)."""
         K = 20000
         code_var = np.full((K,), 3.1, dtype=np.float32)
-        no_dice = np.zeros((K,), dtype=np.float32)
-        with_dice = np.ones((K,), dtype=np.float32)
         no_slink = np.zeros((K,), dtype=np.float32)
+        with_slink = np.ones((K,), dtype=np.float32)
 
-        counts_std = spin_wheel_multihit_count(code_var, no_dice, no_slink, seed=42)
+        counts_std = spin_wheel_multihit_count(code_var, no_slink, seed=42)
         self.assertAlmostEqual(float(np.mean(counts_std == 2)), 0.35, delta=0.015)
         self.assertAlmostEqual(float(np.mean(counts_std == 3)), 0.35, delta=0.015)
         self.assertAlmostEqual(float(np.mean(counts_std == 4)), 0.15, delta=0.015)
         self.assertAlmostEqual(float(np.mean(counts_std == 5)), 0.15, delta=0.015)
 
-        counts_dice = spin_wheel_multihit_count(code_var, with_dice, no_slink, seed=42)
-        self.assertEqual(int(np.sum(counts_dice < 4)), 0)
-        self.assertAlmostEqual(float(np.mean(counts_dice == 4)), 0.50, delta=0.015)
-        self.assertAlmostEqual(float(np.mean(counts_dice == 5)), 0.50, delta=0.015)
+        counts_slink = spin_wheel_multihit_count(code_var, with_slink, seed=42)
+        self.assertEqual(int(np.sum(counts_slink != 5)), 0)
 
     def test_logical_constraint_engine_and_tensor_pruner(self) -> None:
         """Verify symbolic and 26x26 tensor pruning via LogicalConstraintEngine."""
         res_fo = self.logic_engine.evaluate_slot_action(
             slot_species="Rillaboom",
             move_name="Fake Out",
-            target_species="Tornadus",
+            target_species="Whimsicott",
             active_turns=2,
         )
         self.assertFalse(res_fo.is_mechanically_valid)
 
         res_prank = self.logic_engine.evaluate_slot_action(
-            slot_species="Tornadus",
+            slot_species="Whimsicott",
             move_name="Taunt",
             target_species="Kingambit",
             user_ability="Prankster",
@@ -239,7 +236,7 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
         self.assertIn("TRAINER_1 26x26 ACTION PRUNING MATRIX", summary_str)
 
     def test_multihit_rock_blast_and_willcrit_flower_trick(self) -> None:
-        """Verify Loaded Dice Rock Blast (4-5 hits, 4x SE) breaks Focus Sash on Charizard and Flower Trick crits 100%."""
+        """Verify multi-hit Rock Blast (2-5 hits, 4x SE) breaks Focus Sash on Charizard and Flower Trick crits 100%."""
         battle = _build_test_battle(
             t1_roster=["Meowscarada", "Garchomp", "Rillaboom", "Kingambit"],
             t2_roster=["Charizard", "Grimmsnarl", "Kingambit", "Rillaboom"],
@@ -248,7 +245,7 @@ class TestDiscreteRNGAndStateMachine(unittest.TestCase):
         compiled = self.tensor_compiler.compile_turn_state(turn_state)
 
         # trainer_1_a (Meowscarada) uses Flower Trick (move 0, 100% crit) on trainer_2_b (Grimmsnarl, choice 4)
-        # trainer_1_b (Garchomp @ Loaded Dice) uses Rock Blast (move 0, 4-5 hits, 100% acc via No Guard or ~90% acc) on trainer_2_a (Charizard @ Focus Sash, choice 0)
+        # trainer_1_b (Garchomp @ Life Orb) uses Rock Blast (move 0, 2-5 hits, 90% acc) on trainer_2_a (Charizard @ Focus Sash, choice 0)
         # trainer_2_a (Charizard) uses Protect? No, let Charizard use Scorching Sands on Garchomp (choice 5) and Grimmsnarl use Reflect (choice 0)
         import torch
         t1_choices = torch.tensor([[4, 0]], dtype=torch.long)

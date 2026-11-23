@@ -208,7 +208,7 @@ class TestDynamicTensorCompiler(unittest.TestCase):
         self.assertEqual(psy[MoveIdx.OVERRIDE_DEF_STAT], float(OverrideDefStat.TARGET_DEF))
 
     def test_compile_turn_state_and_26x26_action_masks(self) -> None:
-        """Verify compiling TurnState into [24], [8, 84], [8, 4, 56] tensors and 26x26 masks."""
+        """Verify compiling TurnState into [24], [8, 87], [8, 4, 59] tensors and 26x26 masks."""
         sets = parse_showdown_paste(USER_TEAM_PASTE)
         battle = ParsedBattle()
         battle.trainer_1 = ParsedTeam(

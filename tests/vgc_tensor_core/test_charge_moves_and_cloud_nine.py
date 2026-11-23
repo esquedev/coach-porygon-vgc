@@ -173,7 +173,7 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
                 "moves": ["Hyper Voice", "Protect"],
             },
             # trainer_2_b (Slot 5): Opponent B
-            {"species": "Ogerpon", "hp_max": 155.0, "hp_cur": 155.0, "moves": ["Spiky Shield", "Ivy Cudgel"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "moves": ["Wood Hammer", "Protect"]},
             {}, {},
         ]
 
@@ -217,18 +217,18 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
             # trainer_1_b (Slot 1): Partner
             {"species": "Incineroar", "hp_max": 200.0, "hp_cur": 200.0, "moves": ["Fake Out", "Protect"]},
             {}, {},
-            # trainer_2_a (Slot 4): Opponent without Cloud Nine (Urshifu)
+            # trainer_2_a (Slot 4): Opponent without Cloud Nine (Basculegion)
             {
-                "species": "Urshifu-Rapid-Strike",
-                "hp_max": 175.0,
-                "hp_cur": 175.0,
-                "stats": {"atk": 182.0, "def": 120.0, "spa": 74.0, "spd": 80.0, "spe": 149.0},
-                "types": ["Fighting", "Water"],
-                "ability": "Unseen Fist",
-                "moves": ["Surging Strikes", "Protect"],
+                "species": "Basculegion",
+                "hp_max": 195.0,
+                "hp_cur": 195.0,
+                "stats": {"atk": 180.0, "def": 85.0, "spa": 100.0, "spd": 95.0, "spe": 130.0},
+                "types": ["Water", "Ghost"],
+                "ability": "Adaptability",
+                "moves": ["Wave Crash", "Protect"],
             },
             # trainer_2_b (Slot 5): Opponent B
-            {"species": "Ogerpon", "hp_max": 155.0, "hp_cur": 155.0, "moves": ["Spiky Shield", "Ivy Cudgel"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "moves": ["Wood Hammer", "Protect"]},
             {}, {},
         ]
 
@@ -247,9 +247,9 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
             pre_res.F, pre_res.P, pre_res.M_moves, t1_choices, t2_choices, pre_res, self.tables, num_mc_samples=16
         )
 
-        urshifu_hp_after = float(att_res.P[0, 0, 0, SLOT_TRAINER_2_A, MonIdx.HP_CUR])
-        # In unsuppressed Sun, Solar Beam fires immediately and deals super-effective damage to Urshifu-Water!
-        self.assertLess(urshifu_hp_after, 100.0, f"Expected Solar Beam to deal heavy damage, got HP {urshifu_hp_after}")
+        basc_hp_after = float(att_res.P[0, 0, 0, SLOT_TRAINER_2_A, MonIdx.HP_CUR])
+        # In unsuppressed Sun, Solar Beam fires immediately and deals super-effective damage to Water-type Basculegion!
+        self.assertLess(basc_hp_after, 100.0, f"Expected Solar Beam to deal heavy damage, got HP {basc_hp_after}")
 
     def test_06_weather_ball_dynamic_adaptation_and_cloud_nine_suppression(self) -> None:
         """Weather Ball executes as 100 BP Fire in Sun, but 50 BP Normal when Cloud Nine is active."""
@@ -275,7 +275,7 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
                 "ability": "Cloud Nine",
                 "moves": ["Protect"],
             },
-            {"species": "Ogerpon", "hp_max": 155.0, "hp_cur": 155.0, "moves": ["Protect"]},
+            {"species": "Rillaboom", "hp_max": 207.0, "hp_cur": 207.0, "moves": ["Protect"]},
             {}, {},
         ]
 
@@ -307,9 +307,9 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
             user_species="Charizard",
             user_types=["Fire", "Flying"],
             user_ability="Blaze",
-            target_species="Urshifu",
-            target_types=["Fighting", "Water"],
-            target_ability="Unseen Fist",
+            target_species="Basculegion",
+            target_types=["Water", "Ghost"],
+            target_ability="Adaptability",
             weather="sun",
         )
         self.assertTrue(eval_sun.is_mechanically_valid)
@@ -339,9 +339,9 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
             user_species="Archaludon",
             user_types=["Steel", "Dragon"],
             user_ability="Stamina",
-            target_species="Urshifu",
-            target_types=["Fighting", "Water"],
-            target_ability="Unseen Fist",
+            target_species="Basculegion",
+            target_types=["Water", "Ghost"],
+            target_ability="Adaptability",
             weather="clear",
         )
         self.assertTrue(eval_es_no_rain.is_mechanically_valid)

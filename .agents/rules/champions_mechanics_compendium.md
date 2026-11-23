@@ -63,7 +63,7 @@ All modifiers apply sequentially with `n / 4096` scaling and strict integer trun
   - **Clear Body / White Smoke:** Flat immunity to all opponent-induced stat drops.
   - **Inner Focus:** Flat immunity to Intimidate and Flinch (Fake Out).
 - **Ability-Based Invulnerability & Redirection:**
-  - **Lightning Rod & Storm Drain:** Unconditionally redirect single-target Electric/Water attacks to the ability bearer, granting immunity and +1 stat boost.
+  - **Lightning Rod:** Unconditionally redirects single-target Electric attacks to the ability bearer, granting immunity and `+1 SpA` boost.
   - **Powder / Spore Immunities:** `Grass`-types and `Overcoat` users are 100% immune to `Rage Powder` and `Spore`.
   - **Good as Gold:** Flat immunity to status moves (Taunt, Thunder Wave, Parting Shot).
   - **Soundproof:** Flat immunity to sound-based moves (Hyper Voice, Snarl, Roar).
@@ -84,7 +84,7 @@ All modifiers apply sequentially with `n / 4096` scaling and strict integer trun
 - **IF [Sheer Force + Life Orb] THEN:** Moves with secondary effects get `1.3×` BP. Life Orb recoil is *nullified* while retaining the `1.3×` damage boost. Total: `1.69×`.
 - **IF [Technician] THEN:** Base Power `≤ 60` → `1.5×` multiplier.
 - **IF [Psychic Terrain + Expanding Force] THEN:** BP `80 → 120` AND becomes a spread move AND grounded targets are immune to priority.
-- **IF [-ate Ability] (Pixilate/Aerilate/Refrigerate/Galvanize) THEN:** Normal moves convert to element AND gain `+20%` BP. Apply STAB (`1.5×`) if matches user type.
+- **IF [-ate Ability] (Pixilate/Aerilate/Refrigerate) THEN:** Normal moves convert to element AND gain `+20%` BP. Apply STAB (`1.5×`) if matches user type.
 - **IF [Liquid Voice] THEN:** Sound moves convert to `Water` type. Applies `1.5×` STAB if user is Water-type.
 - **IF [Unburden + Item Loss] THEN:** Speed is immediately doubled. Recalibrate turn order (e.g., Sneasler becomes the fastest in the format with unburden active).
 - **IF [Stamina] THEN:** User gains +1 Defense every time it is hit by an attack (e.g., Archaludon).

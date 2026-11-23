@@ -4,7 +4,7 @@
 
 Scans `assets/sprites/`, `assets/items/`, and `assets/megastones/` and cross-references
 `src/engine/data/showdown/pokedex.jsonl` and `items.jsonl` to generate `assets/slug_map.json`.
-Guarantees 100% deterministic resolution of all 350 Regulation M-C Pokémon species
+Guarantees 100% deterministic resolution of all legal Champions Pokémon species
 (including Mega Evolutions, regional formes, and gender variants) and held items
 without fuzzy-matching collisions (e.g., never mapping base Garchomp to Mega Garchomp).
 """
@@ -70,18 +70,23 @@ EXPLICIT_SPECIES_FILE_OVERRIDES: Dict[str, str] = {
 
 
 def build_slug_map() -> Dict[str, Dict[str, str]]:
-    """Builds and returns the complete slug_map dictionary."""
+    """Builds and returns the complete slug_map dictionary (recursively scanning subfolders like Reg_M-C / Reg_M-D)."""
+    sprite_paths = sorted(SPRITES_DIR.rglob("*.png"))
     sprite_files: Dict[str, str] = {
-        p.stem.lower(): f"assets/sprites/{p.name}"
-        for p in sorted(SPRITES_DIR.glob("*.png"))
+        p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
+        for p in sprite_paths
+    }
+    sprite_by_filename: Dict[str, str] = {
+        p.name.lower(): p.relative_to(ROOT_DIR).as_posix()
+        for p in sprite_paths
     }
     item_files: Dict[str, str] = {
-        p.stem.lower(): f"assets/items/{p.name}"
-        for p in sorted(ITEMS_DIR.glob("*.png"))
+        p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
+        for p in sorted(ITEMS_DIR.rglob("*.png"))
     }
     megastone_files: Dict[str, str] = {
-        p.stem.lower(): f"assets/megastones/{p.name}"
-        for p in sorted(MEGASTONES_DIR.glob("*.png"))
+        p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
+        for p in sorted(MEGASTONES_DIR.rglob("*.png"))
     }
 
     species_map: Dict[str, str] = {}
@@ -92,7 +97,7 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
         species_map[stem] = rel_path
         species_map[normalize_slug(stem)] = rel_path
 
-    # 2. Register all 350 Pokédex entries with strict precedence
+    # 2. Register all Pokédex entries with strict precedence
     pokedex_path = SHOWDOWN_DIR / "pokedex.jsonl"
     if pokedex_path.exists():
         with open(pokedex_path, encoding="utf-8") as f:
@@ -108,9 +113,9 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
 
                 # Check explicit override first
                 if sid in EXPLICIT_SPECIES_FILE_OVERRIDES:
-                    fname = EXPLICIT_SPECIES_FILE_OVERRIDES[sid]
-                    if (SPRITES_DIR / fname).exists():
-                        resolved_rel = f"assets/sprites/{fname}"
+                    fname = EXPLICIT_SPECIES_FILE_OVERRIDES[sid].lower()
+                    if fname in sprite_by_filename:
+                        resolved_rel = sprite_by_filename[fname]
 
                 # Check exact dash stem or id stem
                 if not resolved_rel:
@@ -143,8 +148,9 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
 
     # Apply explicit overrides directly to map keys as well
     for k, fname in EXPLICIT_SPECIES_FILE_OVERRIDES.items():
-        if (SPRITES_DIR / fname).exists():
-            species_map[k] = f"assets/sprites/{fname}"
+        resolved_override = sprite_by_filename.get(fname.lower())
+        if resolved_override:
+            species_map[k] = resolved_override
 
     # 3. Register Mega Stones and Held Items
     for stem, rel_path in item_files.items():

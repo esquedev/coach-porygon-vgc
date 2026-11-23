@@ -32,10 +32,11 @@ class VGCDataRegistry:
                 CREATE OR REPLACE VIEW pokedex AS 
                 SELECT 
                     id,
-                    name,
+                    REPLACE(REPLACE(name, '’', ''''), '‘', '''') AS name,
                     num,
                     types,
                     baseSpecies,
+                    baseForme,
                     forme,
                     requiredItem,
                     otherFormes,
@@ -118,7 +119,10 @@ class VGCDataRegistry:
                         WHEN COALESCE(TRY_CAST(t.placement AS INTEGER), 999) <= 64 OR t.day_reached = 'day2' THEN 1.5
                         ELSE 1.0
                     END AS weight,
-                    REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''') AS species,
+                    CASE
+                        WHEN REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''') = 'Maushold-Three' THEN 'Maushold'
+                        ELSE REPLACE(REPLACE(TRIM(CAST(u.slot.pokemon AS VARCHAR)), '’', ''''), '‘', '''')
+                    END AS species,
                     REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.item AS VARCHAR), '')), '’', ''''), '‘', '''') AS item,
                     REPLACE(REPLACE(TRIM(COALESCE(CAST(u.slot.ability AS VARCHAR), '')), '’', ''''), '‘', '''') AS ability,
                     COALESCE(NULLIF(TRIM(CAST(u.slot.nature AS VARCHAR)), ''), 'Hardy') AS nature,
@@ -140,10 +144,25 @@ class VGCDataRegistry:
     # --- High-Frequency Lookup Helpers ---
 
     def get_pokemon(self, name_or_id: str) -> dict[str, Any] | None:
-        clean = name_or_id.strip().lower().replace(" ", "").replace("-", "")
+        """Fetch a Pokédex entry by canonical ID, display name, or `<name>-<baseForme>` alias."""
+        raw_lower = name_or_id.strip().lower()
+        clean = "".join(ch for ch in raw_lower if ch.isalnum())
         res = self.query(
             "SELECT * FROM pokedex WHERE LOWER(id) = ? OR LOWER(name) = ? LIMIT 1;",
-            (clean, name_or_id.strip().lower())
+            (clean, raw_lower),
+        )
+        if res:
+            return res[0]
+        # Fallback for Showdown baseForme aliases (e.g., 'Maushold-Three' -> 'maushold',
+        # 'Palafin-Zero' -> 'palafin', 'Mimikyu-Disguised' -> 'mimikyu').
+        res = self.query(
+            """
+            SELECT * FROM pokedex
+            WHERE baseForme IS NOT NULL
+              AND LOWER(id) || LOWER(REGEXP_REPLACE(baseForme, '[^a-zA-Z0-9]', '', 'g')) = ?
+            LIMIT 1;
+            """,
+            (clean,),
         )
         return res[0] if res else None
 

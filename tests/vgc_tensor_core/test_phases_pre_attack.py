@@ -20,9 +20,9 @@ in `engine.vgc_tensor_core.phases_pre_attack`:
    - Verifies that `Incineroar` switching in triggers `Intimidate` (`-1 Atk`) on both opponents:
      - `Floette` (Unprotected): drops from `0.0` to **`-1.0 Atk`**.
      - `Kingambit` (`Defiant`): drops `-1.0 Atk` then immediately gains `+2.0 Atk` = **`+1.0 Atk`**!
-     - `Garchomp` holding `Clear Amulet`: **`0.0 Atk` change** (Immune!).
+     - `Garchomp` holding `White Herb`: **`0.0 Atk` net change** (Restored immediately!).
 3. **Barrier 1 $\to$ Barrier 2 Sequencing (Switch-In Weather vs. Mega Evolution Weather):**
-   - Verifies that when P1 switches in `Pelipper` (`Drizzle` at Barrier 1, `+6`) and P2 Mega Evolves
+   - Verifies that when `trainer_1` switches in `Pelipper` (`Drizzle` at Barrier 1, `+6`) and `trainer_2` Mega Evolves
      `Charizard` $\to$ `Mega Charizard Y` (`Drought` at Barrier 2, `+5.5`) on the same turn,
      Barrier 2 strictly executes after Barrier 1 so **`Sun` always overwrites `Rain`**, even though
      `Pelipper` (`85`) is slower than `Mega Charizard Y` (`169`)!
@@ -126,17 +126,17 @@ class TestPhasesPreAttack(unittest.TestCase):
     def _build_test_roster() -> List[Dict[str, Any]]:
         """
         Build an 8-Pokémon roster dictionary list designed to test all Barrier 1, Barrier 2, and Barrier 3 interactions:
-        - Slot 0 (P1A): Grimmsnarl (Spe=80, Prankster, Boosts: +2 Atk, Taunt=2 turns)
-        - Slot 1 (P1B): Garchomp (Spe=169, Clear Amulet)
-        - Slot 2 (P1_Bench1): Pelipper (Spe=85, Drizzle)
-        - Slot 3 (P1_Bench2): Incineroar (Spe=80, Intimidate)
-        - Slot 4 (P2A): Floette (Spe=144 -> Mega Spe=168, Mega Stone, Fairy Aura)
-        - Slot 5 (P2B): Kingambit (Spe=150, Defiant)
-        - Slot 6 (P2_Bench1): Torkoal (Spe=40, Drought)
-        - Slot 7 (P2_Bench2): Charizard (Spe=169 -> Mega Spe=169, Mega Stone, Mega Ability=Drought)
+        - Slot 0 (trainer_1_a): Grimmsnarl (Spe=80, Prankster, Boosts: +2 Atk, Taunt=2 turns)
+        - Slot 1 (trainer_1_b): Garchomp (Spe=169, White Herb)
+        - Slot 2 (trainer_1_bench1): Pelipper (Spe=85, Drizzle)
+        - Slot 3 (trainer_1_bench2): Incineroar (Spe=80, Intimidate)
+        - Slot 4 (trainer_2_a): Floette (Spe=144 -> Mega Spe=168, Mega Stone, Fairy Aura)
+        - Slot 5 (trainer_2_b): Kingambit (Spe=150, Defiant)
+        - Slot 6 (trainer_2_bench1): Torkoal (Spe=40, Drought)
+        - Slot 7 (trainer_2_bench2): Charizard (Spe=169 -> Mega Spe=169, Mega Stone, Mega Ability=Drought)
         """
         return [
-            # 0: P1A Grimmsnarl
+            # 0: trainer_1_a Grimmsnarl
             {
                 "name": "Grimmsnarl",
                 "hp_max": 202.0, "hp_cur": 202.0,

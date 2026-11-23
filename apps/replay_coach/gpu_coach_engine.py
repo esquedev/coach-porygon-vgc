@@ -25,51 +25,26 @@ from engine.solver.game_theory import (
     solve_zero_sum_nash,
 )
 from engine.state.state_compiler import TurnStateCompiler
+from engine.terminology import export_glossary_payload
 from engine.vgc_tensor_core import (
     FieldIdx,
     MonIdx,
     MoveIdx,
     ShowdownTensorCompiler,
-    TYPE_TO_IDX,
     VgcTensorStateMachine,
 )
 from engine.vgc_tensor_core.compiler import CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH2
 
-from .commentary_engine import generate_deterministic_commentary
+from .commentary_engine import (
+    generate_all_commentary_variants,
+    generate_deterministic_commentary,
+)
 from .ots_db import OTSRosterDatabase
 from .protocol_parser import ParsedReplay, RecordedSlotAction, TurnSnapshot
 
 
 def _norm_id(s: str) -> str:
     return "".join(ch for ch in (s or "").lower() if ch.isalnum())
-
-
-def _apply_cartridge_ability_hooks(comp) -> Any:
-    """Apply Liquid Voice (Hyper Voice -> Water) & Mega Camerupt Sheer Force (1.3x BP) to move tensor."""
-    M = comp.moves_tensor.clone()
-    P = comp.roster_tensor
-    for s_idx, sp in enumerate(comp.slot_species):
-        low = sp.lower()
-        if "primarina" in low:
-            for m_idx, m_name in enumerate(comp.slot_move_names[s_idx]):
-                if m_name.lower() == "hyper voice":
-                    M[s_idx, m_idx, MoveIdx.TYPE_START:MoveIdx.TYPE_END] = 0.0
-                    M[s_idx, m_idx, MoveIdx.TYPE_START + TYPE_TO_IDX["water"]] = 1.0
-        if "camerupt-mega" in low or ("camerupt" in low and float(P[s_idx, MonIdx.IS_MEGA].item()) > 0.5):
-            for m_idx, m_name in enumerate(comp.slot_move_names[s_idx]):
-                ml = m_name.lower()
-                if ml == "heat wave":
-                    M[s_idx, m_idx, MoveIdx.BASE_POWER] = 123.0
-                    M[s_idx, m_idx, MoveIdx.SECONDARY_CHANCE] = 0.0
-                elif ml == "earth power":
-                    M[s_idx, m_idx, MoveIdx.BASE_POWER] = 117.0
-                    M[s_idx, m_idx, MoveIdx.SECONDARY_CHANCE] = 0.0
-                elif ml == "ancient power":
-                    M[s_idx, m_idx, MoveIdx.BASE_POWER] = 78.0
-                    M[s_idx, m_idx, MoveIdx.SECONDARY_CHANCE] = 0.0
-    out = copy.copy(comp)
-    out.moves_tensor = M
-    return out
 
 
 class GPUReplayCoachEngine:
@@ -167,7 +142,7 @@ class GPUReplayCoachEngine:
         comp = copy.copy(comp)
         comp.field_tensor = F
         comp.roster_tensor = P
-        return _apply_cartridge_ability_hooks(comp)
+        return comp
 
     def _map_recorded_action_to_choice(
         self,
@@ -237,15 +212,27 @@ class GPUReplayCoachEngine:
                 return cand
         return pair
 
+    @staticmethod
+    def _is_non_protect_non_switch_choice(comp: Any, slot_idx: int, choice_val: int) -> bool:
+        """Return True if `choice_val` is an active move (not Switch and not Protect/Guard)."""
+        if choice_val >= CHOICE_SWITCH_BENCH1:
+            return False
+        m_idx = (choice_val % 12) % 4
+        m_vec = comp.moves_tensor[slot_idx, m_idx]
+        prot_val = float(m_vec[MoveIdx.PROTECT_TYPE].item() if hasattr(m_vec[MoveIdx.PROTECT_TYPE], "item") else m_vec[MoveIdx.PROTECT_TYPE])
+        return prot_val <= 0.5
+
     def analyze_turn(
         self,
         replay: ParsedReplay,
         turn_number: int,
-        min_prior: float = 0.55,
+        min_prior: float = 0.0,
         num_mc: int = 128,
         force_recompute: bool = False,
     ) -> Dict[str, Any]:
         """Run full GPU Tensor Core IEDS + Nash + QRE + Zero-AI Commentary for one turn."""
+        # min_prior is permanently locked to 0.0 (strictly mathematical pruner, zero heuristics)
+        min_prior = 0.0
         snap = next((t for t in replay.turns if t.turn_number == turn_number), None)
         if snap is None:
             raise ValueError(f"Turn {turn_number} not found in replay {replay.replay_id}")
@@ -254,7 +241,7 @@ class GPUReplayCoachEngine:
         spread_sig = hashlib.sha1(
             (
                 replay.replay_id
-                + f"|t={turn_number}|mp={min_prior:.2f}|k={num_mc}|pov={replay.trainer_1_name}|"
+                + f"|v2|t={turn_number}|mp={min_prior:.2f}|k={num_mc}|pov={replay.trainer_1_name}|"
                 + str(
                     [
                         (m.species, m.spread.to_dict(), m.item, m.moves)
@@ -275,10 +262,10 @@ class GPUReplayCoachEngine:
         with self._gpu_lock:
             comp = self._compile_snapshot(snap)
             m1 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
-                comp, "trainer_1", min_prior_threshold=min_prior
+                comp, "trainer_1", min_prior_threshold=0.0
             )
             m2 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
-                comp, "trainer_2", min_prior_threshold=min_prior
+                comp, "trainer_2", min_prior_threshold=0.0
             )
             c1_np = m1.pruned_choices.detach().cpu().numpy()
             c2_np = m2.pruned_choices.detach().cpu().numpy()
@@ -294,10 +281,10 @@ class GPUReplayCoachEngine:
             b1_c, fl1_b = self._map_recorded_action_to_choice(
                 comp, "trainer_1", False, snap.trainer_1_slot_b_action, fb1_b
             )
-            a2_c, _ = self._map_recorded_action_to_choice(
+            a2_c, fl2_a = self._map_recorded_action_to_choice(
                 comp, "trainer_2", True, snap.trainer_2_slot_a_action, fb2_a
             )
-            b2_c, _ = self._map_recorded_action_to_choice(
+            b2_c, fl2_b = self._map_recorded_action_to_choice(
                 comp, "trainer_2", False, snap.trainer_2_slot_b_action, fb2_b
             )
 
@@ -314,43 +301,21 @@ class GPUReplayCoachEngine:
             t1_t = torch.tensor(c1_np, dtype=torch.long, device=self.sm.device)
             t2_t = torch.tensor(c2_np, dtype=torch.long, device=self.sm.device)
 
-            # Tuned CUDA chunking for RTX 3060 5.8 GB VRAM
-            max_cells = max(1, 32768 // max(1, num_mc))
-            chunk_b1 = max(1, min(B1, max(1, max_cells // max(1, B2))))
-
-            U_risk = np.zeros((B1, B2), dtype=np.float64)
-            U_mean = np.zeros((B1, B2), dtype=np.float64)
-            U_cvar = np.zeros((B1, B2), dtype=np.float64)
-            U_win = np.zeros((B1, B2), dtype=np.float64)
-
             with torch.inference_mode():
-                for s in range(0, B1, chunk_b1):
-                    e = min(B1, s + chunk_b1)
-                    res = self.sm.step(
-                        comp.field_tensor,
-                        comp.roster_tensor,
-                        comp.moves_tensor,
-                        t1_t[s:e],
-                        t2_t,
-                        num_mc_samples=num_mc,
-                        rng_seed=202600 + turn_number * 1009 + s * 37,
-                    )
-                    U_risk[s:e] = res.stats.risk_adjusted_utility.detach().cpu().numpy()
-                    U_mean[s:e] = res.stats.mean_utility.detach().cpu().numpy()
-                    U_cvar[s:e] = res.stats.cvar_10_utility.detach().cpu().numpy()
-                    U_win[s:e] = res.stats.win_turn_prob.detach().cpu().numpy()
-
-                # Focused KO probabilities on (actual_t1, actual_t2)
-                res_act = self.sm.step(
+                # Uses automatic 2D Tiling over (B1, B2) in VgcTensorStateMachine.step()
+                res = self.sm.step(
                     comp.field_tensor,
                     comp.roster_tensor,
                     comp.moves_tensor,
-                    torch.tensor([[actual_t1[0], actual_t1[1]]], dtype=torch.long, device=self.sm.device),
-                    torch.tensor([[actual_t2[0], actual_t2[1]]], dtype=torch.long, device=self.sm.device),
-                    num_mc_samples=max(256, num_mc),
-                    rng_seed=909090 + turn_number * 131,
+                    t1_t,
+                    t2_t,
+                    num_mc_samples=num_mc,
+                    rng_seed=202600 + turn_number * 1009,
                 )
-                faint_act = res_act.faint_prob[0, 0].detach().cpu().numpy()
+                U_risk = res.stats.risk_adjusted_utility.detach().cpu().numpy().astype(np.float64)
+                U_mean = res.stats.mean_utility.detach().cpu().numpy().astype(np.float64)
+                U_cvar = res.stats.cvar_10_utility.detach().cpu().numpy().astype(np.float64)
+                U_win = res.stats.win_turn_prob.detach().cpu().numpy().astype(np.float64)
 
         idx_act1 = next(i for i, r in enumerate(c1_np) if (int(r[0]), int(r[1])) == actual_t1)
         idx_act2 = next(j for j, r in enumerate(c2_np) if (int(r[0]), int(r[1])) == actual_t2)
@@ -379,6 +344,56 @@ class GPUReplayCoachEngine:
         win_vs_q = U_win @ q_nash
         min_j_vals = U_risk.min(axis=1)
         min_j_args = U_risk.argmin(axis=1)
+
+        # When a slot of trainer_1 was flinched before acting, infer its best available
+        # non-Protect/non-Switch attack paired with the partner's recorded action so the
+        # turn is graded with one of the 5 real badges.
+        if fl1_a or fl1_b:
+            cand_indices = []
+            for i_cand in range(B1):
+                ca, cb = int(c1_np[i_cand, 0]), int(c1_np[i_cand, 1])
+                if not fl1_a and ca != actual_t1[0]:
+                    continue
+                if not fl1_b and cb != actual_t1[1]:
+                    continue
+                if fl1_a and not self._is_non_protect_non_switch_choice(comp, 0, ca):
+                    continue
+                if fl1_b and not self._is_non_protect_non_switch_choice(comp, 1, cb):
+                    continue
+                cand_indices.append(i_cand)
+            if cand_indices:
+                idx_act1 = max(cand_indices, key=lambda idx: float(ev_vs_q[idx]))
+                actual_t1 = (int(c1_np[idx_act1, 0]), int(c1_np[idx_act1, 1]))
+
+        if fl2_a or fl2_b:
+            cand_j = []
+            p_dot_u = p_nash @ U_risk
+            for j_cand in range(B2):
+                ca, cb = int(c2_np[j_cand, 0]), int(c2_np[j_cand, 1])
+                if not fl2_a and ca != actual_t2[0]:
+                    continue
+                if not fl2_b and cb != actual_t2[1]:
+                    continue
+                if fl2_a and not self._is_non_protect_non_switch_choice(comp, 4, ca):
+                    continue
+                if fl2_b and not self._is_non_protect_non_switch_choice(comp, 5, cb):
+                    continue
+                cand_j.append(j_cand)
+            if cand_j:
+                idx_act2 = min(cand_j, key=lambda jdx: float(p_dot_u[jdx]))
+                actual_t2 = (int(c2_np[idx_act2, 0]), int(c2_np[idx_act2, 1]))
+
+        with self._gpu_lock, torch.inference_mode():
+            res_act = self.sm.step(
+                comp.field_tensor,
+                comp.roster_tensor,
+                comp.moves_tensor,
+                torch.tensor([[actual_t1[0], actual_t1[1]]], dtype=torch.long, device=self.sm.device),
+                torch.tensor([[actual_t2[0], actual_t2[1]]], dtype=torch.long, device=self.sm.device),
+                num_mc_samples=max(256, num_mc),
+                rng_seed=909090 + turn_number * 131,
+            )
+            faint_act = res_act.faint_prob[0, 0].detach().cpu().numpy()
 
         strict_surv_set = set(int(x) for x in ieds_strict.trainer_1_surviving_indices)
         weak_surv_set = set(int(x) for x in ieds_weak.trainer_1_surviving_indices)
@@ -526,7 +541,7 @@ class GPUReplayCoachEngine:
             "t2_tailwind": snap.trainer_2_tailwind_turns,
         }
 
-        commentary = generate_deterministic_commentary(
+        commentary_variants = generate_all_commentary_variants(
             turn_number=turn_number,
             actual_action=actual_row,
             top_actions=top_actions,
@@ -535,6 +550,7 @@ class GPUReplayCoachEngine:
             events=events_dict,
             field_context=field_context,
         )
+        commentary = commentary_variants["es_vgc"]
 
         elapsed_s = round(time.time() - t0, 2)
         payload = {
@@ -558,6 +574,8 @@ class GPUReplayCoachEngine:
             "opp_top_actions": opp_top,
             "events": events_dict,
             "commentary": commentary,
+            "commentary_variants": commentary_variants,
+            "terminology": export_glossary_payload(),
         }
         self.ots_db.put_cached_turn(spread_sig, replay.replay_id, turn_number, payload)
         return payload

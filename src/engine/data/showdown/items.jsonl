@@ -16,10 +16,8 @@
 {"name": "Beedrillite", "spritenum": 628, "megaStone": {"Beedrill": "Beedrill-Mega"}, "itemUser": ["Beedrill"], "num": 770, "gen": 6, "isNonstandard": null, "id": "beedrillite"}
 {"name": "Big Root", "spritenum": 29, "fling": {"basePower": 10}, "onTryHealPriority": 1, "num": 296, "gen": 4, "id": "bigroot"}
 {"name": "Binding Band", "spritenum": 31, "fling": {"basePower": 30}, "num": 544, "gen": 5, "id": "bindingband"}
-{"name": "Black Augurite", "num": 1691, "gen": 8, "isNonstandard": "Legends", "id": "blackaugurite"}
 {"name": "Black Belt", "spritenum": 32, "fling": {"basePower": 30}, "onBasePowerPriority": 15, "num": 241, "gen": 2, "id": "blackbelt"}
 {"name": "Black Glasses", "spritenum": 35, "fling": {"basePower": 30}, "onBasePowerPriority": 15, "num": 240, "gen": 2, "id": "blackglasses"}
-{"name": "Blank Plate", "num": 1780, "gen": 8, "isNonstandard": "Legends", "id": "blankplate"}
 {"name": "Blastoisinite", "spritenum": 583, "megaStone": {"Blastoise": "Blastoise-Mega"}, "itemUser": ["Blastoise"], "num": 661, "gen": 6, "isNonstandard": null, "id": "blastoisinite"}
 {"name": "Blazikenite", "spritenum": 584, "megaStone": {"Blaziken": "Blaziken-Mega"}, "itemUser": ["Blaziken"], "num": 664, "gen": 6, "isNonstandard": null, "id": "blazikenite"}
 {"name": "Bright Powder", "spritenum": 51, "fling": {"basePower": 10}, "onModifyAccuracyPriority": -2, "num": 213, "gen": 2, "id": "brightpowder"}
@@ -83,9 +81,8 @@
 {"name": "Kasib Berry", "spritenum": 233, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Ghost"}, "num": 196, "gen": 4, "id": "kasibberry"}
 {"name": "Kebia Berry", "spritenum": 234, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Poison"}, "num": 190, "gen": 4, "id": "kebiaberry"}
 {"name": "King's Rock", "spritenum": 236, "fling": {"basePower": 30, "volatileStatus": "flinch"}, "onModifyMovePriority": -1, "num": 221, "gen": 2, "id": "kingsrock"}
-{"name": "Leek", "fling": {"basePower": 60}, "spritenum": 475, "itemUser": ["Farfetch\u2019d", "Farfetch\u2019d-Galar", "Sirfetch\u2019d"], "num": 259, "gen": 8, "isNonstandard": null, "id": "leek"}
+{"name": "Leek", "fling": {"basePower": 60}, "spritenum": 475, "itemUser": ["Farfetch’d", "Farfetch’d-Galar", "Sirfetch’d"], "num": 259, "gen": 8, "isNonstandard": null, "id": "leek"}
 {"name": "Leftovers", "spritenum": 242, "fling": {"basePower": 10}, "onResidualOrder": 5, "onResidualSubOrder": 4, "num": 234, "gen": 2, "id": "leftovers"}
-{"name": "Legend Plate", "num": 1828, "gen": 8, "isNonstandard": "Legends", "id": "legendplate"}
 {"name": "Leppa Berry", "spritenum": 244, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Fighting"}, "num": 154, "gen": 3, "id": "leppaberry"}
 {"name": "Life Orb", "spritenum": 249, "fling": {"basePower": 30}, "num": 270, "gen": 4, "id": "lifeorb"}
 {"name": "Light Ball", "spritenum": 251, "fling": {"basePower": 30, "status": "par"}, "onModifyAtkPriority": 1, "onModifySpAPriority": 1, "itemUser": ["Pikachu", "Pikachu-Cosplay", "Pikachu-Rock-Star", "Pikachu-Belle", "Pikachu-Pop-Star", "Pikachu-PhD", "Pikachu-Libre", "Pikachu-Original", "Pikachu-Hoenn", "Pikachu-Sinnoh", "Pikachu-Unova", "Pikachu-Kalos", "Pikachu-Alola", "Pikachu-Partner", "Pikachu-Starter", "Pikachu-World"], "num": 236, "gen": 2, "id": "lightball"}
@@ -100,7 +97,7 @@
 {"name": "Mawilite", "spritenum": 598, "megaStone": {"Mawile": "Mawile-Mega"}, "itemUser": ["Mawile"], "num": 681, "gen": 6, "isNonstandard": null, "id": "mawilite"}
 {"name": "Medichamite", "spritenum": 599, "megaStone": {"Medicham": "Medicham-Mega"}, "itemUser": ["Medicham"], "num": 665, "gen": 6, "isNonstandard": null, "id": "medichamite"}
 {"name": "Meganiumite", "spritenum": 548, "megaStone": {"Meganium": "Meganium-Mega"}, "itemUser": ["Meganium"], "num": 2563, "gen": 9, "isNonstandard": null, "id": "meganiumite"}
-{"name": "Mental Herb", "spritenum": 285, "fling": "{", "num": 219, "gen": 3, "id": "mentalherb"}
+{"name": "Mental Herb", "spritenum": 285, "fling": {"basePower": 10}, "num": 219, "gen": 3, "id": "mentalherb"}
 {"name": "Meowsticite", "spritenum": 506, "megaStone": {"Meowstic": "Meowstic-M-Mega", "Meowstic-F": "Meowstic-F-Mega"}, "itemUser": ["Meowstic", "Meowstic-F"], "num": 2643, "gen": 9, "isNonstandard": null, "id": "meowsticite"}
 {"name": "Metagrossite", "spritenum": 618, "megaStone": {"Metagross": "Metagross-Mega"}, "itemUser": ["Metagross"], "num": 758, "gen": 6, "isNonstandard": null, "id": "metagrossite"}
 {"name": "Metal Coat", "spritenum": 286, "fling": {"basePower": 30}, "onBasePowerPriority": 15, "num": 233, "gen": 2, "id": "metalcoat"}
@@ -115,7 +112,6 @@
 {"name": "Oran Berry", "spritenum": 319, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Poison"}, "num": 155, "gen": 3, "id": "oranberry"}
 {"name": "Passho Berry", "spritenum": 329, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Water"}, "num": 185, "gen": 4, "id": "passhoberry"}
 {"name": "Payapa Berry", "spritenum": 330, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Psychic"}, "num": 193, "gen": 4, "id": "payapaberry"}
-{"name": "Peat Block", "num": 1692, "gen": 8, "isNonstandard": "Legends", "id": "peatblock"}
 {"name": "Pecha Berry", "spritenum": 333, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Electric"}, "num": 151, "gen": 3, "id": "pechaberry"}
 {"name": "Persim Berry", "spritenum": 334, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Ground"}, "num": 156, "gen": 3, "id": "persimberry"}
 {"name": "Pidgeotite", "spritenum": 622, "megaStone": {"Pidgeot": "Pidgeot-Mega"}, "itemUser": ["Pidgeot"], "num": 762, "gen": 6, "isNonstandard": null, "id": "pidgeotite"}
@@ -163,10 +159,8 @@
 {"name": "Venusaurite", "spritenum": 608, "megaStone": {"Venusaur": "Venusaur-Mega"}, "itemUser": ["Venusaur"], "num": 659, "gen": 6, "isNonstandard": null, "id": "venusaurite"}
 {"name": "Victreebelite", "spritenum": 545, "megaStone": {"Victreebel": "Victreebel-Mega"}, "itemUser": ["Victreebel"], "num": 2560, "gen": 9, "isNonstandard": null, "id": "victreebelite"}
 {"name": "Wacan Berry", "spritenum": 526, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Electric"}, "num": 186, "gen": 4, "id": "wacanberry"}
-{"name": "White Herb", "spritenum": 535, "fling": "{", "onAnySwitchInPriority": -2, "onResidualOrder": 29, "num": 214, "gen": 3, "id": "whiteherb"}
+{"name": "White Herb", "spritenum": 535, "fling": {"basePower": 10}, "onAnySwitchInPriority": -2, "onResidualOrder": 29, "num": 214, "gen": 3, "id": "whiteherb"}
 {"name": "Wide Lens", "spritenum": 537, "fling": {"basePower": 10}, "onSourceModifyAccuracyPriority": -2, "num": 265, "gen": 4, "id": "widelens"}
 {"name": "Wise Glasses", "spritenum": 539, "fling": {"basePower": 10}, "onBasePowerPriority": 16, "num": 267, "gen": 4, "id": "wiseglasses"}
 {"name": "Yache Berry", "spritenum": 567, "isBerry": true, "naturalGift": {"basePower": 80, "type": "Ice"}, "num": 188, "gen": 4, "id": "yacheberry"}
 {"name": "Zoom Lens", "spritenum": 574, "fling": {"basePower": 10}, "onSourceModifyAccuracyPriority": -2, "num": 276, "gen": 4, "id": "zoomlens"}
-{"name": "Crucibellite", "spritenum": 577, "megaStone": {"Crucibelle": "Crucibelle-Mega"}, "itemUser": ["Crucibelle"], "num": -1, "gen": 6, "isNonstandard": "CAP", "id": "crucibellite"}
-{"name": "Vile Vial", "spritenum": 752, "fling": {"basePower": 60}, "onBasePowerPriority": 15, "forcedForme": "Venomicon-Epilogue", "itemUser": ["Venomicon-Epilogue"], "num": -2, "gen": 8, "isNonstandard": "CAP", "id": "vilevial"}

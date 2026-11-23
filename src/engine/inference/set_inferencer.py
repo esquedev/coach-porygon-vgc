@@ -38,39 +38,22 @@ from .tournament_db import (
 
 TYPE_BOOSTING_ITEMS: Dict[str, str] = {
     "Miracle Seed": "Grass",
-    "Meadow Plate": "Grass",
     "Charcoal": "Fire",
-    "Flame Plate": "Fire",
     "Mystic Water": "Water",
-    "Splash Plate": "Water",
     "Magnet": "Electric",
-    "Zap Plate": "Electric",
     "Never-Melt Ice": "Ice",
-    "Icicle Plate": "Ice",
     "Black Belt": "Fighting",
-    "Fist Plate": "Fighting",
     "Poison Barb": "Poison",
-    "Toxic Plate": "Poison",
     "Soft Sand": "Ground",
-    "Earth Plate": "Ground",
     "Sharp Beak": "Flying",
-    "Sky Plate": "Flying",
     "Twisted Spoon": "Psychic",
-    "Mind Plate": "Psychic",
     "Silver Powder": "Bug",
-    "Insect Plate": "Bug",
     "Hard Stone": "Rock",
-    "Stone Plate": "Rock",
     "Spell Tag": "Ghost",
-    "Spooky Plate": "Ghost",
     "Dragon Fang": "Dragon",
-    "Draco Plate": "Dragon",
     "Black Glasses": "Dark",
-    "Dread Plate": "Dark",
     "Metal Coat": "Steel",
-    "Iron Plate": "Steel",
     "Fairy Feather": "Fairy",
-    "Pixie Plate": "Fairy",
     "Silk Scarf": "Normal",
 }
 
@@ -296,7 +279,7 @@ class OpponentSetInferencer:
             for cand_item in profile.items.keys():
                 if not allow_mega and cand_item in self.repo.mega_stone_to_species:
                     continue
-                if used_multiple_moves and cand_item in ("Choice Band", "Choice Specs", "Choice Scarf"):
+                if used_multiple_moves and cand_item == "Choice Scarf":
                     continue
                 # Respect Item Clause on the team if battle is provided
                 if battle and any(
@@ -722,12 +705,6 @@ class OpponentSetInferencer:
         # Ability modifiers (Huge Power / Pure Power)
         if is_phys and attacker.ability in ("Huge Power", "Pure Power"):
             atk_val *= 2
-
-        # Item stat modifiers
-        if is_phys and attacker.item == "Choice Band":
-            atk_val = (atk_val * 3) // 2
-        elif not is_phys and attacker.item == "Choice Specs":
-            atk_val = (atk_val * 3) // 2
 
         base_dmg = ((22 * bp * atk_val) // max(1, def_val)) // 50 + 2
 

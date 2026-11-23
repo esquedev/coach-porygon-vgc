@@ -42,7 +42,7 @@ from .models import (
     TurnState,
 )
 
-CHOICE_ITEMS: Set[str] = {"Choice Band", "Choice Specs", "Choice Scarf"}
+CHOICE_ITEMS: Set[str] = {"Choice Scarf"}
 
 
 def compute_level_50_stats_from_base(

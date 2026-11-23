@@ -126,9 +126,9 @@ class TestSchemaAndTables(unittest.TestCase):
         """Verify exact tensor dimensions and ensure zero overlapping feature channels."""
         self.assertEqual(FIELD_DIM, 24)
         self.assertEqual(ROSTER_SLOTS, 8)
-        self.assertEqual(MON_DIM, 86)
+        self.assertEqual(MON_DIM, 87)
         self.assertEqual(MOVES_PER_MON, 4)
-        self.assertEqual(MOVE_DIM, 56)
+        self.assertEqual(MOVE_DIM, 59)
 
         self.assertEqual(MonIdx.TYPE1_END - MonIdx.TYPE1_START, 18)
         self.assertEqual(MonIdx.TYPE2_END - MonIdx.TYPE2_START, 18)
@@ -136,17 +136,21 @@ class TestSchemaAndTables(unittest.TestCase):
         self.assertEqual(MonIdx.TYPE2_END, MonIdx.VOLATILE_START)
         self.assertEqual(MonIdx.MEGA_ABILITY_ID, 83)
         self.assertEqual(MonIdx.MEGA_TYPE2, 85)
+        self.assertEqual(MonIdx.ITEM_BOOST_TYPE, 86)
+        self.assertEqual(MoveIdx.IS_CONTACT, 56)
+        self.assertEqual(MoveIdx.IS_SLICING, 57)
+        self.assertEqual(MoveIdx.IS_PUNCH, 58)
 
         self._log("\n[TEST 01] TENSOR DIMENSIONS & MEMORY LAYOUT VERIFICATION")
         self._log("-" * 96)
-        self._log(f"  Global Field Tensor F       : shape=(24,)          | float32 bytes={FIELD_DIM * 4} B")
-        self._log(f"  8-Slot Roster Tensor P      : shape=(8, 84)        | float32 bytes={ROSTER_SLOTS * MON_DIM * 4} B")
-        self._log(f"  8-Slot Move Tensor M_moves  : shape=(8, 4, 52)     | float32 bytes={ROSTER_SLOTS * MOVES_PER_MON * MOVE_DIM * 4} B")
-        self._log(f"  Full 100x100 Turn Grid Size : F=960 KB, P=26.9 MB, M_moves=66.6 MB (or 1.28 MB shared palette)")
+        self._log(f"  Global Field Tensor F       : shape=({FIELD_DIM},)          | float32 bytes={FIELD_DIM * 4} B")
+        self._log(f"  8-Slot Roster Tensor P      : shape=({ROSTER_SLOTS}, {MON_DIM})        | float32 bytes={ROSTER_SLOTS * MON_DIM * 4} B")
+        self._log(f"  8-Slot Move Tensor M_moves  : shape=({ROSTER_SLOTS}, {MOVES_PER_MON}, {MOVE_DIM})     | float32 bytes={ROSTER_SLOTS * MOVES_PER_MON * MOVE_DIM * 4} B")
+        self._log(f"  Full 100x100 Turn Grid Size : F=960 KB, P=27.8 MB, M_moves=75.5 MB (bounded O(1) via 2D Tiling)")
         self._log(f"  MonIdx Slice Check          : HP[0:3], Stats[3:8], Boosts[8:15], Status[15:22], "
                   f"Type1[{MonIdx.TYPE1_START}:{MonIdx.TYPE1_END}], Type2[{MonIdx.TYPE2_START}:{MonIdx.TYPE2_END}], "
-                  f"Volatiles[{MonIdx.VOLATILE_START}:{MonIdx.VOLATILE_END}], Equip/Mega[68:84]")
-        self._log(f"  Switch Persist Mask [0..83] : {_to_list(self.tables.switch_persist_mask)}")
+                  f"Volatiles[{MonIdx.VOLATILE_START}:{MonIdx.VOLATILE_END}], Equip/Mega[68:{MON_DIM}]")
+        self._log(f"  Switch Persist Mask [0..{MON_DIM - 1}] : {_to_list(self.tables.switch_persist_mask)}")
         self._log("  Result: PASS (Zero overlapping channels)")
 
     def test_02_weather_column_overwrite_transition_matrices(self) -> None:

@@ -348,7 +348,7 @@ ssooner won the battle!
         self.assertIn("Grassy Glide", rillaboom.moves)
         self.assertIn("Swords Dance", rillaboom.moves)
         self.assertEqual(len(rillaboom.moves), 4)
-        self.assertNotEqual(rillaboom.item, "Assault Vest")  # Ruled out by Swords Dance!
+        self.assertNotEqual(rillaboom.item, "Choice Scarf")  # Ruled out by using multiple moves!
         self.assertEqual(rillaboom.spread.total_sp, 66)
 
         # 4. Verify Golisopod kept Red Card and is NOT Mega (since Starmie already Mega Evolved)
