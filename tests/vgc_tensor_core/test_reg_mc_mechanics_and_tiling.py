@@ -61,9 +61,9 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         cls.state_machine = VgcTensorStateMachine(backend="torch", device="cpu")
 
     def test_01_standalone_decoupling_and_schema_dimensions(self) -> None:
-        """Verify vgc_tensor_core has zero imports from engine.inference and uses 87/59 dims."""
-        self.assertEqual(MON_DIM, 87)
-        self.assertEqual(MOVE_DIM, 59)
+        """Verify vgc_tensor_core has zero imports from engine.inference and uses 88/60 dims."""
+        self.assertEqual(MON_DIM, 88)
+        self.assertEqual(MOVE_DIM, 60)
 
         core_dir = SRC_DIR / "engine" / "vgc_tensor_core"
         for py_file in core_dir.glob("*.py"):

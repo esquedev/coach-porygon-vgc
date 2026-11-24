@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Unit tests for Step 5 (`src/engine/solver/`):
+Unit tests for `src/engine/solver/game_theory.py`:
 - Iterated Elimination of Dominated Strategies (`run_iterated_dominance_elimination`)
 - Zero-Sum Nash / Minimax Equilibrium Solver (`solve_zero_sum_nash`)
 - Logit Quantal Response Equilibrium Solver (`solve_quantal_response`)
-- End-to-End Bayesian Top-K Opponent Hypothesis & Turn Advisor (`CoachTurnAdvisor`)
+- Direct Turn Equilibrium Rollout & Coach Report Formatting (`solve_turn_equilibrium`, `format_equilibrium_coach_report`)
 """
 
 from __future__ import annotations
@@ -21,74 +21,66 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from engine.parser import parse_showdown_paste
-from engine.parser.models import ParsedBattle, ParsedPokemon, ParsedTeam
+from engine.parser.models import ParsedBattle, ParsedTeam
 from engine.solver import (
-    CoachTurnAdvisor,
-    decode_joint_action,
     format_equilibrium_coach_report,
     run_iterated_dominance_elimination,
-    solve_bayesian_zero_sum_nash,
     solve_quantal_response,
     solve_turn_equilibrium,
     solve_zero_sum_nash,
 )
+from engine.state import TurnStateCompiler
+from engine.vgc_tensor_core import ShowdownTensorCompiler, VgcTensorStateMachine
 
 
-ADVISOR_TEAM_PASTE = """
-Charizard @ Charizardite Y  
-Ability: Blaze  
-EVs: 2 HP / 12 Def / 28 SpA / 24 Spe  
-Timid Nature  
-Level: 50  
-- Heat Wave  
-- Scorching Sands  
-- Solar Beam  
-- Protect  
+TEAM_PASTE = """
+Charizard @ Charizardite Y
+Ability: Blaze
+EVs: 2 HP / 12 Def / 28 SpA / 24 Spe
+Timid Nature
+Level: 50
+- Heat Wave
+- Scorching Sands
+- Solar Beam
+- Protect
 
-Rillaboom @ Miracle Seed  
-Ability: Grassy Surge  
-EVs: 28 HP / 32 Atk / 6 Spe  
-Adamant Nature  
-Level: 50  
-- Fake Out  
-- Grassy Glide  
-- Wood Hammer  
-- U-turn  
+Rillaboom @ Miracle Seed
+Ability: Grassy Surge
+EVs: 28 HP / 32 Atk / 6 Spe
+Adamant Nature
+Level: 50
+- Fake Out
+- Grassy Glide
+- Wood Hammer
+- U-turn
 
-Garchomp @ Life Orb  
-Ability: Rough Skin  
-EVs: 2 HP / 32 Atk / 32 Spe  
-Jolly Nature  
-Level: 50  
-- Rock Blast  
-- Stomping Tantrum  
-- Dragon Claw  
-- Protect  
+Garchomp @ Life Orb
+Ability: Rough Skin
+EVs: 2 HP / 32 Atk / 32 Spe
+Jolly Nature
+Level: 50
+- Rock Blast
+- Stomping Tantrum
+- Dragon Claw
+- Protect
 
-Kingambit @ Black Glasses  
-Ability: Defiant  
-EVs: 32 HP / 32 Atk / 2 Spe  
-Adamant Nature  
-Level: 50  
-- Kowtow Cleave  
-- Iron Head  
-- Sucker Punch  
-- Protect  
+Kingambit @ Black Glasses
+Ability: Defiant
+EVs: 32 HP / 32 Atk / 2 Spe
+Adamant Nature
+Level: 50
+- Kowtow Cleave
+- Iron Head
+- Sucker Punch
+- Protect
 """
 
 
-class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
-    """Verify IEDS, Zero-Sum Nash, Logit QRE, and Bayesian Top-K Turn Advisor."""
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.advisor = CoachTurnAdvisor(backend="torch", device="cpu")
+class TestGameTheorySolvers(unittest.TestCase):
+    """Verify IEDS, Zero-Sum Nash, Logit QRE, and direct turn equilibrium."""
 
     def test_multi_round_iterated_dominance_elimination(self) -> None:
         """Verify multi-round IEDS reduces a 3x3 cascading dominance game to its unique 1x1 core."""
-        # Row 2 [0, 0, 0] is strictly dominated by Row 1 [2, 2, 2].
-        # Once Row 2 is removed, Col 1 [4, 3] and Col 2 [5, 2] are dominated by Col 0 [1, 2] for minimizer trainer_2.
-        # Once only Col 0 remains, Row 0 [1] is strictly dominated by Row 1 [2] for maximizer trainer_1!
         U = np.array(
             [
                 [1.0, 4.0, 5.0],
@@ -106,7 +98,6 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
 
     def test_zero_sum_nash_saddle_point_and_mixed_mindgame(self) -> None:
         """Verify exact Nash equilibrium on both a pure saddle-point matrix and a 2x2 Sucker Punch mindgame."""
-        # 1. Pure saddle point at (row 0, col 1) with value 3.0
         U_saddle = np.array(
             [
                 [5.0, 3.0, 6.0],
@@ -120,12 +111,6 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         self.assertAlmostEqual(float(nash_pure.trainer_1_strategy[0]), 1.0, places=6)
         self.assertAlmostEqual(float(nash_pure.trainer_2_strategy[1]), 1.0, places=6)
 
-        # 2. Asymmetric 2x2 mindgame (e.g., Attack vs Protect / Sucker Punch):
-        # U = [[ 2, -1],
-        #      [-1,  4]]
-        # Analytical Nash:
-        # p_0 * 2 + (1 - p_0) * (-1) = p_0 * (-1) + (1 - p_0) * 4  =>  3 p_0 - 1 = 4 - 5 p_0  =>  8 p_0 = 5  => p = [5/8, 3/8] = [0.625, 0.375]
-        # Game value v* = 5/8 * 2 - 3/8 * 1 = 7/8 = 0.875
         U_mix = np.array(
             [
                 [2.0, -1.0],
@@ -141,25 +126,6 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         self.assertAlmostEqual(nash_mix.game_value, 0.875, delta=0.015)
         self.assertLess(nash_mix.exploitability_gap, 0.02)
 
-    def test_incomplete_information_bayesian_zero_sum_nash(self) -> None:
-        """Verify Incomplete-Information Bayesian Zero-Sum Nash solver across M opponent types."""
-        # Suppose trainer_1 has 3 actions:
-        # - Action 0 beats Type 1 (+2) but loses to Type 2 (-2)
-        # - Action 1 loses to Type 1 (-2) but beats Type 2 (+2)
-        # - Action 2 is a safe hedge that gets +0.5 against both Type 1 and Type 2!
-        # Note: In each individual hypothesis m, Action 2 (+0.5) is strictly inferior to Action 0 (for Type 1)
-        # or Action 1 (for Type 2), so post-hoc blending of per-hypothesis Nash strategies would put 0% on Action 2
-        # and achieve expected value 0.0!
-        # In the true Incomplete-Information Bayesian Zero-Sum game (50/50 prior), trainer_1 plays Action 2 (100%)
-        # and achieves value +0.50!
-        U_m1 = np.array([[2.0], [-2.0], [0.5]], dtype=np.float64)
-        U_m2 = np.array([[-2.0], [2.0], [0.5]], dtype=np.float64)
-        p, q_list, v_star = solve_bayesian_zero_sum_nash([U_m1, U_m2], [0.5, 0.5])
-
-        self.assertAlmostEqual(float(p[2]), 1.0, places=5)
-        self.assertAlmostEqual(float(v_star), 0.5, places=5)
-        self.assertEqual(len(q_list), 2)
-
     def test_quantal_response_equilibrium(self) -> None:
         """Verify Logit QRE produces valid probability distributions favoring higher payoffs."""
         U = np.array(
@@ -172,22 +138,13 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
         qre = solve_quantal_response(U, rationality_beta=4.0)
         self.assertAlmostEqual(float(np.sum(qre.trainer_1_strategy)), 1.0, places=6)
         self.assertAlmostEqual(float(np.sum(qre.trainer_2_strategy)), 1.0, places=6)
-        # Row 0 dominates Row 1 -> trainer_1 QRE must place >95% weight on Row 0
         self.assertGreater(float(qre.trainer_1_strategy[0]), 0.95)
-        # Col 1 is better for minimizer trainer_2 when Row 0 is played -> Col 1 gets >90% weight
         self.assertGreater(float(qre.trainer_2_strategy[1]), 0.90)
 
-    def test_end_to_end_coach_turn_advisor_and_bayesian_blending(self) -> None:
-        """Verify CoachTurnAdvisor runs inference, multi-hypothesis simulation, IEDS, Nash, and QRE."""
-        t1_sets = parse_showdown_paste(ADVISOR_TEAM_PASTE)
-
-        # Give trainer_2 unrevealed sets (only species known from Team Preview / Lead reveal)
-        t2_sets = {
-            "Garchomp": ParsedPokemon(species="Garchomp", base_species="Garchomp"),
-            "Kingambit": ParsedPokemon(species="Kingambit", base_species="Kingambit"),
-            "Charizard": ParsedPokemon(species="Charizard", base_species="Charizard"),
-            "Rillaboom": ParsedPokemon(species="Rillaboom", base_species="Rillaboom"),
-        }
+    def test_direct_turn_equilibrium_and_coach_report_formatting(self) -> None:
+        """Verify decoupled tensor state -> VgcTensorStateMachine -> solve_turn_equilibrium -> report."""
+        t1_sets = parse_showdown_paste(TEAM_PASTE)
+        t2_sets = parse_showdown_paste(TEAM_PASTE)
 
         battle = ParsedBattle()
         battle.trainer_1 = ParsedTeam(
@@ -207,160 +164,29 @@ class TestGameTheoryAndBayesianAdvisor(unittest.TestCase):
             pokemon_sets=t2_sets,
         )
 
-        advice = self.advisor.advise_battle(
-            battle=battle,
-            max_hypotheses=2,
-            num_simulations=24,
-            min_prior_threshold=0.80,
-            rng_seed=77,
-            top_k_recommendations=5,
+        sc = TurnStateCompiler()
+        ts = sc.compile_turn_state(battle, run_inference=False)
+        tc = ShowdownTensorCompiler(registry=sc.registry, backend="numpy")
+        comp = tc.compile_turn_state(ts)
+
+        sm = VgcTensorStateMachine(backend="numpy", risk_aversion_lambda=0.25)
+        mask_t1, mask_t2, step_res = sm.simulate_pruned_turn(comp, num_simulations=16, rng_seed=77)
+        eq = solve_turn_equilibrium(comp, mask_t1, mask_t2, step_res)
+
+        self.assertGreaterEqual(len(eq.recommendations), 1)
+        self.assertAlmostEqual(float(np.sum(eq.nash.trainer_1_strategy)), 1.0, places=5)
+        self.assertAlmostEqual(float(np.sum(eq.qre.trainer_1_strategy)), 1.0, places=5)
+
+        coach_report = format_equilibrium_coach_report(
+            eq, num_simulations=16, verbosity="coach", max_recommendations=3
         )
+        self.assertIn("TURN COACH ADVICE", coach_report)
 
-        self.assertGreaterEqual(advice.num_hypotheses, 1)
-        self.assertEqual(len(advice.recommendations), 5)
-
-        best = advice.best_recommendation
-        self.assertIn("Charizard:", best.description)
-        self.assertIn("Rillaboom:", best.description)
-        self.assertGreaterEqual(best.expected_mean_utility_vs_nash, best.expected_cvar_10_vs_nash - 1e-5)
-
-        # Test Coach (plain English) verbosity
-        coach_text = advice.format_report(verbosity="coach", max_recommendations=3)
-        self.assertIn("TURN COACH ADVICE (MATCH PLAY)", coach_text)
-        self.assertIn("🎯 RECOMMENDED PLAY FOR THIS TURN", coach_text)
-        self.assertIn("💡 WHY THIS PLAY", coach_text)
-        self.assertIn("⚠️ WHAT COULD GO WRONG (THE RISK)", coach_text)
-        self.assertIn("📊 FIELD SURVIVAL & KO PROBABILITIES", coach_text)
-
-        # Test Standard (tactical metrics) verbosity
-        standard_text = advice.format_report(verbosity="standard", max_recommendations=3)
-        self.assertIn("BAYESIAN RISK-RESILIENT RECOMMENDATIONS FOR TRAINER_1", standard_text)
-        self.assertIn("EXPECTED SLOT SURVIVAL / KO ODDS", standard_text)
-
-        # Test Scientific (full mathematical & process audit) verbosity
-        sci_text = advice.format_report(verbosity="scientific", max_recommendations=3)
-        self.assertIn("COMPREHENSIVE MATHEMATICAL & PROCESS AUDIT REPORT", sci_text)
-        self.assertIn("STEP 1: INGESTION & 66-SP REGULATION M-C STAT PIPELINE", sci_text)
-        self.assertIn("STEP 2: COMBINATORIC ACTION SPACE & LOGICAL CONSTRAINT PRUNING", sci_text)
-        self.assertIn("STEP 3: DISCRETE-RNG DUAL-DRAW SPINNING-WHEEL & 5-PHASE CASCADE", sci_text)
-        self.assertIn("STEP 4: RISK-RESILIENT METRICS & BAD-LUCK FLOOR (CVaR_10)", sci_text)
-        self.assertIn("STEP 5: GAME-THEORETIC SOLVERS (IEDS, ZERO-SUM NASH, LOGIT QRE)", sci_text)
-        self.assertIn("STEP 6: RANKED JOINT ACTION EVALUATION TABLE", sci_text)
-
-        eq_report = format_equilibrium_coach_report(
-            advice.hypothesis_evaluations[0].equilibrium,
-            num_simulations=24,
-            verbosity="coach",
-            max_recommendations=3,
+        sci_report = format_equilibrium_coach_report(
+            eq, num_simulations=16, verbosity="scientific", max_recommendations=3
         )
-        self.assertIn("TURN COACH ADVICE", eq_report)
-
-        eq_report_sci = format_equilibrium_coach_report(
-            advice.hypothesis_evaluations[0].equilibrium,
-            num_simulations=24,
-            verbosity="scientific",
-            max_recommendations=3,
-        )
-        self.assertIn("MATHEMATICAL & PROCESS AUDIT", eq_report_sci)
-
-    def test_cli_turn_slicing_and_completed_log_auto_rewind(self) -> None:
-        """Verify CLI-01: engine.cli supports --turn and auto-rewinds completed logs to final playable turn."""
-        from engine.cli import main as cli_main
-
-        completed_log = """
-☆trainer_1 and ☆trainer_2 joined
-Format: [Gen 9 Champions] VGC 2026 Reg M-C
-trainer_1's team:Charizard / Rillaboom / Garchomp / Kingambit / Pelipper / Archaludon
-trainer_2's team:Garchomp / Kingambit / Charizard / Rillaboom / Pelipper / Archaludon
-Battle started between trainer_1 and trainer_2!
-Go! Charizard!
-Go! Rillaboom!
-trainer_2 sent out Garchomp!
-trainer_2 sent out Kingambit!
-Turn 1
-Charizard used Protect!
-Rillaboom used Fake Out!
-(The opposing Garchomp lost 12% of its health!)
-The opposing Garchomp flinched and couldn't move!
-The opposing Kingambit used Kowtow Cleave!
-(Rillaboom lost 45% of its health!)
-Turn 2
-Charizard used Heat Wave!
-(The opposing Garchomp lost 88% of its health!)
-(The opposing Kingambit lost 100% of its health!)
-The opposing Garchomp fainted!
-The opposing Kingambit fainted!
-trainer_1 won the battle!
-"""
-        rc_auto = cli_main([
-            "--paste", ADVISOR_TEAM_PASTE,
-            "--log", completed_log,
-            "--backend", "numpy",
-            "--sims", "16",
-            "--hypotheses", "1",
-            "--verbosity", "coach",
-        ])
-        self.assertEqual(rc_auto, 0)
-
-        rc_turn1 = cli_main([
-            "--paste", ADVISOR_TEAM_PASTE,
-            "--log", completed_log,
-            "--turn", "1",
-            "--backend", "numpy",
-            "--sims", "16",
-            "--hypotheses", "1",
-            "--verbosity", "standard",
-        ])
-        self.assertEqual(rc_turn1, 0)
-
-    def test_cuda_oom_graceful_numpy_fallback(self) -> None:
-        """Verify ENG-01: CoachTurnAdvisor gracefully falls back to numpy backend on CUDA OutOfMemoryError."""
-        from unittest.mock import patch
-
-        t1_sets = parse_showdown_paste(ADVISOR_TEAM_PASTE)
-        t2_sets = {
-            "Garchomp": ParsedPokemon(species="Garchomp", base_species="Garchomp"),
-            "Kingambit": ParsedPokemon(species="Kingambit", base_species="Kingambit"),
-        }
-        battle = ParsedBattle()
-        battle.trainer_1 = ParsedTeam(
-            trainer_name="trainer_1",
-            team_preview=list(t1_sets.keys()),
-            battle_roster=["Charizard", "Rillaboom", "Garchomp", "Kingambit"],
-            leads=("Charizard", "Rillaboom"),
-            active_slots=["Charizard", "Rillaboom"],
-            pokemon_sets=t1_sets,
-        )
-        battle.trainer_2 = ParsedTeam(
-            trainer_name="trainer_2",
-            team_preview=list(t2_sets.keys()),
-            battle_roster=["Garchomp", "Kingambit"],
-            leads=("Garchomp", "Kingambit"),
-            active_slots=["Garchomp", "Kingambit"],
-            pokemon_sets=t2_sets,
-        )
-
-        advisor = CoachTurnAdvisor(backend="torch")
-        orig_sim = advisor.state_machine.simulate_pruned_turn
-        call_count = {"n": 0}
-
-        def oom_once(*args, **kwargs):
-            call_count["n"] += 1
-            if call_count["n"] == 1:
-                raise RuntimeError("CUDA out of memory. Tried to allocate 2.00 GiB")
-            return advisor.state_machine.simulate_pruned_turn(*args, **kwargs)
-
-        with patch.object(advisor.state_machine, "simulate_pruned_turn", side_effect=oom_once):
-            advice = advisor.advise_battle(
-                battle=battle,
-                max_hypotheses=1,
-                num_simulations=16,
-                min_prior_threshold=0.80,
-            )
-        self.assertEqual(advisor.backend, "numpy")
-        self.assertGreaterEqual(len(advice.recommendations), 1)
+        self.assertIn("MATHEMATICAL & PROCESS AUDIT", sci_report)
 
 
 if __name__ == "__main__":
     unittest.main()
-

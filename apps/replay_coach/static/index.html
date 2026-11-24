@@ -54,6 +54,9 @@
         <button class="seg-btn active" id="btn-style-vgc" type="button">VGC</button>
         <button class="seg-btn" id="btn-style-sci" type="button">Científico</button>
       </div>
+      <button class="btn btn-ghost btn-prep" id="btn-open-prep-view" type="button" title="Generar tablas offline Base64 de Velocidades y Matriz de Daño (Cero IA)">
+        <span id="lbl-prep-btn">Herramientas Prep</span>
+      </button>
       <button class="btn btn-ghost btn-analytics" id="btn-open-analytics-modal" type="button" title="Ver analítica histórica Bo3 y sesiones guardadas en CSV">
         <span id="lbl-analytics-btn">Analítica</span>
       </button>
@@ -87,11 +90,11 @@
       <div class="panel">
         <div class="panel-body replay-panel-body">
           <div class="dropzone" id="replay-dropzone">
-            <div class="dropzone-title" id="lbl-dropzone-title">Arrastra aquí tu archivo de Replay (.html, .log, .txt)</div>
-            <div class="muted-sm" id="lbl-dropzone-sub">o selecciona un archivo local descargado desde Pokémon Showdown</div>
+            <div class="dropzone-title" id="lbl-dropzone-title">Arrastra aquí 1 a 3 Replays (Bo1 o serie Bo3: .html, .log, .txt)</div>
+            <div class="muted-sm" id="lbl-dropzone-sub">Sube Game 1, Game 2 y Game 3 juntos para combinar todas las pistas de daño y velocidad en un solo 66-SP rival</div>
             <label class="btn btn-greatball" style="margin-top:10px;display:inline-flex">
-              <span id="lbl-pick-file">Seleccionar archivo</span>
-              <input type="file" id="replay-file-input" accept=".html,.htm,.txt,.log" hidden />
+              <span id="lbl-pick-file">Seleccionar replay(s)</span>
+              <input type="file" id="replay-file-input" accept=".html,.htm,.txt,.log" multiple hidden />
             </label>
           </div>
 
@@ -109,7 +112,7 @@
               <strong id="detected-players-label">trainer_1 vs. trainer_2</strong>
               <span class="tag-neutral" id="detected-format-badge">Reg M-C</span>
               <span class="muted-sm" id="detected-turns-label">10 turnos</span>
-              <button class="btn-link" id="btn-change-replay" type="button">Cambiar replay</button>
+              <button class="btn-link" id="btn-change-replay" type="button">Cambiar replay(s)</button>
             </div>
             <div class="match-meta-right">
               <label class="field-inline">
@@ -132,6 +135,9 @@
               </label>
             </div>
           </div>
+
+          <!-- Unified Bo3 Game Switcher Strip (auto-shown when 2-3 games are loaded) -->
+          <div class="bo3-tabs-bar" id="setup-bo3-tabs" style="display:none"></div>
         </div>
       </div>
 
@@ -190,7 +196,7 @@
             <div class="saved-teams-box" id="t2-saved-teams"></div>
 
             <div id="t2-paste-drawer" class="paste-drawer" style="display:none">
-              <textarea id="t2-paste-input" rows="8" placeholder="Pega el Showdown Paste completo (66-SP) de trainer_2..."></textarea>
+              <textarea id="t2-paste-input" rows="8" placeholder="Pega el OTS del rival (con o sin EVs/SPs — Species, Item, Ability, Nature, Moves)..."></textarea>
               <div class="save-db-row">
                 <label class="check-inline">
                   <input type="checkbox" id="t2-save-db-check" />
@@ -199,6 +205,24 @@
                 <input type="text" id="t2-save-name" class="grow" placeholder="Nombre del equipo rival" />
                 <button class="btn btn-greatball" id="btn-t2-validate" type="button">Aplicar</button>
               </div>
+            </div>
+
+            <!-- Ephemeral Clamped Champions 66-SP Slider Workbench (Bo1 & Bo3) -->
+            <div id="t2-clamped-sp-panel" class="clamped-sp-panel" style="display:none">
+              <div class="clamped-sp-toolbar">
+                <div class="clamped-sp-meta">
+                  <span class="tag-solver" id="t2-solver-meta-badge">OTS 66-SP</span>
+                  <span class="muted-xs" id="t2-solver-meta-sub"></span>
+                </div>
+                <div class="btn-row">
+                  <button class="btn btn-ghost btn-xs" id="btn-t2-autofill-all" type="button" title="Restaurar los valores óptimos sugeridos dentro de los límites observados">Auto-Completar</button>
+                  <button class="btn btn-ghost btn-xs" id="btn-t2-save-ephemeral" type="button" title="Guardar opcionalmente esta hoja 66-SP en tu biblioteca DuckDB">Guardar en Biblioteca</button>
+                </div>
+              </div>
+              <div class="clamped-sp-hint muted-xs" id="t2-clamped-sp-hint">
+                Los límites bloqueados (🔒) y acotados provienen de daño/velocidad reales del replay y no se pueden anular. Ajusta los SP restantes libremente.
+              </div>
+              <div class="clamped-sp-list" id="t2-clamped-sp-list"></div>
             </div>
 
             <div class="ots-roster-list" id="t2-ots-mon-grid"></div>
@@ -220,6 +244,7 @@
             <span class="muted-sm" id="pipeline-sub-meta"></span>
           </div>
           <div class="btn-row">
+            <div class="bo3-tabs-inline" id="pipeline-bo3-tabs" style="display:none"></div>
             <span class="tag-neutral" id="pipeline-progress-pill">0 / 0</span>
             <button class="btn btn-greatball" id="btn-resume-stream" type="button" style="display:none">Continuar ▶</button>
             <button class="btn" id="btn-restart-stream" type="button" style="display:none">Reiniciar</button>
@@ -262,6 +287,7 @@
   <section class="studio-view" id="view-review">
     <div class="review-bar">
       <div class="review-bar-group">
+        <div class="bo3-tabs-inline" id="review-bo3-tabs" style="display:none"></div>
         <div class="acc-readout">
           <span class="muted-xs" id="lbl-bar-acc">PRECISIÓN</span>
           <strong id="bar-acc-val">--%</strong>
@@ -292,21 +318,25 @@
     </div>
 
     <main class="review-grid">
-      <!-- Left: Official Showdown Player + Turn Scrubber -->
+      <!-- Left: Unified Controls + Turn Scrubber + Official Showdown Player -->
       <section class="panel player-panel">
         <div class="panel-head">
           <span class="panel-title" id="match-title">Pokémon Showdown Replay</span>
           <span class="muted-xs" id="ots-match-indicator"></span>
         </div>
-        <div class="player-frame-wrap">
-          <iframe id="showdown-iframe" src="about:blank" title="Official Pokémon Showdown Replay Engine"></iframe>
-        </div>
         <div class="player-controls">
           <div class="btn-row">
-            <button class="btn btn-ghost" id="btn-prev-turn" type="button">&larr;</button>
-            <button class="btn btn-greatball" id="btn-play-pause" type="button">Play / Pausa</button>
-            <button class="btn btn-ghost" id="btn-next-turn" type="button">&rarr;</button>
+            <button class="btn btn-ghost" id="btn-prev-turn" type="button" title="Turno anterior (←)">&larr;</button>
+            <button class="btn btn-greatball" id="btn-play-pause" type="button" title="Play / Pausa (Espacio)">&#9654; Play</button>
+            <button class="btn btn-ghost" id="btn-next-turn" type="button" title="Turno siguiente (→)">&rarr;</button>
             <button class="btn btn-ghost" id="btn-flip-pov" type="button">Invertir</button>
+            <select id="player-speed-select" class="speed-select" title="Velocidad de reproducción">
+              <option value="hyperfast">Hyperfast</option>
+              <option value="fast">Fast</option>
+              <option value="normal" selected>Normal</option>
+              <option value="slow">Slow</option>
+              <option value="reallyslow">Really Slow</option>
+            </select>
           </div>
           <div class="btn-row">
             <span class="muted-xs" id="stream-status"></span>
@@ -314,6 +344,9 @@
           </div>
         </div>
         <div class="turn-scrubber" id="turn-pills"></div>
+        <div class="player-frame-wrap">
+          <iframe id="showdown-iframe" src="about:blank" title="Official Pokémon Showdown Replay Engine"></iframe>
+        </div>
       </section>
 
       <!-- Right: Focused Coach Advice Panel with 3 Clean Tabs -->
@@ -335,6 +368,64 @@
         <div class="panel-body coach-body" id="coach-panel-body"></div>
       </section>
     </main>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- DEDICATED VIEW: ZERO-AI OFFLINE PREP TOOLS (SPEED TIERS & DAMAGE)  -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-prep">
+    <div class="prep-wrap">
+      <div class="prep-toolbar panel">
+        <div class="prep-toolbar-row">
+          <div class="prep-toolbar-group">
+            <button class="btn btn-ghost" id="btn-prep-back" type="button">&larr; Studio</button>
+            <strong class="prep-heading" id="lbl-prep-heading">Herramientas Prep Offline (Cero IA)</strong>
+            <div class="seg-group" aria-label="Prep tool type">
+              <button class="seg-btn active" id="btn-prep-kind-speed" type="button">⚡ Velocidades</button>
+              <button class="seg-btn" id="btn-prep-kind-damage" type="button">💥 Matriz de Daño</button>
+            </div>
+          </div>
+          <div class="prep-toolbar-group">
+            <select id="prep-roster-select" class="prep-select" title="Equipo guardado en DuckDB"></select>
+            <button class="btn btn-ghost" id="btn-prep-toggle-paste" type="button">Pegar 66-SP</button>
+            <select id="prep-topn-select" class="prep-select-sm" title="Profundidad del meta DuckDB">
+              <option value="50" selected>Top 50</option>
+              <option value="35">Top 35</option>
+              <option value="20">Top 20</option>
+            </select>
+            <button class="btn btn-greatball" id="btn-prep-generate" type="button">
+              <span id="lbl-prep-generate">Generar</span>
+            </button>
+            <a class="btn btn-prep-dl disabled" id="btn-prep-download" href="#" aria-disabled="true">
+              <span id="lbl-prep-download">⬇ Descargar HTML Offline</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="prep-paste-drawer" id="prep-paste-drawer" style="display:none">
+          <div class="prep-paste-head">
+            <input type="text" id="prep-paste-name" class="grow" placeholder="Nombre del equipo (ej. Rain Archaludon Reg M-C)" />
+            <span class="muted-xs" id="lbl-prep-paste-hint">Pega cualquier Showdown Paste Reg M-C (66-SP o OTS)</span>
+          </div>
+          <textarea id="prep-paste-input" rows="6" placeholder="Charizard @ Charizardite Y&#10;Ability: Blaze&#10;Level: 50&#10;Modest Nature&#10;EVs: 22 HP / 19 Def / 3 SpA / 1 SpD / 21 Spe&#10;- Heat Wave..."></textarea>
+        </div>
+
+        <div class="prep-status-bar">
+          <span class="muted-xs" id="prep-status-msg">Selecciona un equipo DuckDB o pega tu 66-SP y pulsa Generar.</span>
+          <span class="tag-neutral" id="prep-meta-pill" style="display:none"></span>
+        </div>
+      </div>
+
+      <div class="panel prep-stage-panel">
+        <div class="prep-empty-state" id="prep-empty-state">
+          <div class="prep-empty-title" id="lbl-prep-empty-title">Generador Instantáneo de Tablas Móviles Offline</div>
+          <div class="muted-sm" id="lbl-prep-empty-sub">
+            Calcula Velocidades Lv.50 (31 IVs) y Matrices de Daño con 16 rolls exactos de Smogon Champions (5 Climas × 5 Campos) sin suscripción de IA y descárgalos en un solo HTML Base64 para tu teléfono.
+          </div>
+        </div>
+        <iframe id="prep-preview-iframe" class="prep-iframe" src="about:blank" title="Offline Base64 Prep Tool Live Preview" style="display:none"></iframe>
+      </div>
+    </div>
   </section>
 
   <!-- Session / Bo3 Tournament Analytics Dashboard Modal -->

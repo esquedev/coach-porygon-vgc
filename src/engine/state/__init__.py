@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Regulation M-C Turn State Compiler Package."""
 
+from engine.game_rules import STANDARD_IV, trunc
+
 from .models import (
     ActionType,
     CompiledMove,
@@ -14,11 +16,9 @@ from .models import (
 )
 from .state_compiler import (
     CHOICE_ITEMS,
-    STANDARD_IV,
     TurnStateCompiler,
     calculate_level_50_stats,
     compute_level_50_stats_from_base,
-    trunc,
 )
 
 __all__ = [

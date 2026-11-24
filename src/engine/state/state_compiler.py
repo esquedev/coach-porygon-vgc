@@ -13,15 +13,12 @@ stats, types, abilities, and move metadata directly from the in-memory DuckDB
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
-from engine.db_registry import VGCDataRegistry, get_registry
+from engine.db_registry import VGCDataRegistry
 from engine.game_rules import (
-    NATURE_MODS,
-    STANDARD_IV,
     TYPE_CHART,
     compute_champions_level_50_stats,
-    trunc,
 )
 from engine.inference.tournament_db import (
     TournamentUsageRepository,
@@ -112,30 +109,18 @@ class TurnStateCompiler:
     def compile_turn_state(
         self,
         battle: ParsedBattle,
-        run_inference: bool = True,
+        run_inference: bool = False,
         trainer_1_bench_override: Optional[Sequence[str]] = None,
         trainer_2_bench_override: Optional[Sequence[str]] = None,
     ) -> TurnState:
-        """Compile a `ParsedBattle` into a concrete `TurnState` for the next decision point.
+        """Compile a deterministic, OTS-resolved `ParsedBattle` into a concrete `TurnState`.
 
-        Args:
-            battle: ParsedBattle model from `parse_showdown_chat_log`.
-            run_inference: If True, runs `OpponentSetInferencer` when `trainer_2` sets
-                           have unrevealed natures, spreads, or moves.
-            trainer_1_bench_override: Optional explicit bench species list for `trainer_1`.
-            trainer_2_bench_override: Optional explicit bench species list for `trainer_2`.
-
-        Returns:
-            Compiled `TurnState` containing `trainer_1`, `trainer_2`, and `field`.
+        Note: `TurnStateCompiler` is strictly decoupled from `engine.inference` — both
+        `trainer_1` and `trainer_2` must already have resolved OTS + 66-SP spreads
+        before compiling into `(F, P, M)` tensors. The `run_inference` flag is retained
+        strictly as a no-op parameter for caller signature compatibility.
         """
-        if run_inference and (
-            self._needs_inference(battle.trainer_2)
-            or self._needs_inference(battle.trainer_1)
-        ):
-            from engine.inference.set_inferencer import OpponentSetInferencer
-
-            inferencer = OpponentSetInferencer(repo=self.repo)
-            inferencer.infer_battle(battle)
+        _ = run_inference
 
         trainer_1_side = self._compile_trainer_side(
             trainer_id="trainer_1",
@@ -171,15 +156,6 @@ class TurnStateCompiler:
             trainer_2=trainer_2_side,
             field=field_state,
         )
-
-    def _needs_inference(self, team: ParsedTeam) -> bool:
-        """Check whether any Pokémon on `team` is missing a spread, nature, or moves."""
-        if not team.pokemon_sets:
-            return False
-        for pkm in team.pokemon_sets.values():
-            if not pkm.nature or pkm.spread.total_sp == 0 or len(pkm.moves) < 2:
-                return True
-        return False
 
     # ------------------------------------------------------------------
     # Side & Roster Compilation
@@ -556,6 +532,7 @@ class TurnStateCompiler:
             locked_move=locked_move,
             taunt_turns=getattr(pkm, "taunt_turns", 0),
             encore_move=getattr(pkm, "encore_move", None),
+            must_recharge=bool(getattr(pkm, "must_recharge", False)),
         )
 
     def compile_move(self, move_name: str) -> Optional[CompiledMove]:

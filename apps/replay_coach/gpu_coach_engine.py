@@ -11,7 +11,6 @@ into `commentary_engine.py` (100% deterministic, zero LLM calls).
 from __future__ import annotations
 
 import copy
-import hashlib
 import math
 import threading
 import time
@@ -42,7 +41,6 @@ from engine.vgc_tensor_core.compiler import CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_
 from .commentary_engine import (
     _classify_verdict_key,
     generate_all_commentary_variants,
-    generate_deterministic_commentary,
 )
 from .ots_db import OTSRosterDatabase, resolve_sprite_urls
 from .protocol_parser import ParsedReplay, RecordedSlotAction, TurnSnapshot
@@ -152,6 +150,7 @@ class GPUReplayCoachEngine:
                     P[s_idx, MonIdx.ALIVE_FLAG] = 1.0
                 P[s_idx, MonIdx.ACTIVE_TURNS] = float(mon.active_turns)
                 P[s_idx, MonIdx.PROTECT_COUNTER] = 1.0 if mon.used_protect_last_turn else 0.0
+                P[s_idx, MonIdx.MUST_RECHARGE] = 1.0 if getattr(mon, "must_recharge", False) else 0.0
                 if mon.item is None:
                     P[s_idx, MonIdx.ITEM_ACTIVE] = 0.0
                     P[s_idx, MonIdx.ITEM_ID] = 0.0
@@ -177,6 +176,8 @@ class GPUReplayCoachEngine:
         """Map a recorded replay slot action (`RecordedSlotAction`) into tensor choice `0..25`."""
         if rec is None or rec.kind in ("none", "fainted"):
             return fallback_choice, False
+        if rec.kind == "recharge":
+            return 0, False
         if rec.kind == "flinched":
             return fallback_choice, True
 

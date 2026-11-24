@@ -10,11 +10,11 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 import duckdb
 
-from engine.parser.models import ParsedPokemon, StatSpread
+from engine.parser.models import ParsedPokemon
 from engine.parser.showdown_parser import parse_showdown_paste
 from engine.sp_validator import validate_and_calculate_sp
 
@@ -93,7 +93,7 @@ class OTSRosterDatabase:
         self._seed_defaults()
 
     def _init_schema(self) -> None:
-        """Create persistent DuckDB tables for OTS rosters and turn analysis cache."""
+        """Create persistent DuckDB table for OTS rosters."""
         self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS ots_rosters (
@@ -103,17 +103,6 @@ class OTSRosterDatabase:
                 paste_text VARCHAR NOT NULL,
                 species_json VARCHAR NOT NULL,
                 updated_at VARCHAR NOT NULL
-            );
-            """
-        )
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS analysis_cache (
-                cache_key VARCHAR PRIMARY KEY,
-                replay_id VARCHAR NOT NULL,
-                turn_number INTEGER NOT NULL,
-                payload_json VARCHAR NOT NULL,
-                created_at VARCHAR NOT NULL
             );
             """
         )
@@ -136,7 +125,7 @@ class OTSRosterDatabase:
             )
 
     def validate_paste(self, paste_text: str) -> Dict[str, Any]:
-        """Parse and validate a Showdown paste under Regulation M-C 66-SP rules."""
+        """Parse and validate a Showdown paste under Regulation M-C 66-SP or EV-less OTS rules."""
         pokemon_dict = parse_showdown_paste(paste_text)
         unique_mons: List[ParsedPokemon] = []
         seen_ids = set()
@@ -146,6 +135,18 @@ class OTSRosterDatabase:
                 unique_mons.append(mon)
         mons_summary: List[Dict[str, Any]] = []
         warnings: List[str] = []
+        all_zero_sp = len(unique_mons) > 0 and all(m.spread.total_sp == 0 for m in unique_mons)
+        all_66_sp = len(unique_mons) > 0 and all(m.spread.total_sp == 66 for m in unique_mons)
+        has_full_ots_metadata = len(unique_mons) > 0 and all(
+            bool(m.nature) and bool(m.ability) and len(m.moves) > 0 for m in unique_mons
+        )
+        if all_66_sp:
+            mode = "complete_66sp"
+        elif all_zero_sp:
+            mode = "evless_ots"
+        else:
+            mode = "partial_sp"
+
         for mon in unique_mons:
             sp_dict = mon.spread.to_dict()
             total_sp = mon.spread.total_sp
@@ -160,7 +161,8 @@ class OTSRosterDatabase:
                     sp_dict,
                     mon.nature or "Serious",
                 )
-                if not ok_sp and msg_sp:
+                # EV-less OTS pastes intentionally have 0 SPs until solved by the Bo1/Bo3 inferencer.
+                if not ok_sp and msg_sp and not (mode == "evless_ots" and total_sp == 0):
                     warnings.append(f"{mon.species}: {msg_sp}")
             except Exception:
                 stats_l50 = {}
@@ -183,6 +185,8 @@ class OTSRosterDatabase:
             "count": len(mons_summary),
             "pokemon": mons_summary,
             "warnings": warnings,
+            "mode": mode,
+            "has_full_ots_metadata": has_full_ots_metadata,
             "valid": len(mons_summary) > 0 and len(warnings) == 0,
         }
 
@@ -217,8 +221,6 @@ class OTSRosterDatabase:
                 now,
             ],
         )
-        # Invalidate cached turn evaluations because spreads may have changed
-        self.conn.execute("DELETE FROM analysis_cache;")
         return self.get_roster(roster_id.strip()) or {}
 
     def get_roster(self, roster_id: str) -> Optional[Dict[str, Any]]:
@@ -295,46 +297,10 @@ class OTSRosterDatabase:
             out[_canon_species(mon.species)] = mon
         return out
 
-    def get_cached_turn(self, cache_key: str) -> Optional[Dict[str, Any]]:
-        """Retrieve a previously computed GPU turn audit payload from DuckDB."""
-        row = self.conn.execute(
-            "SELECT payload_json FROM analysis_cache WHERE cache_key = ?;",
-            [cache_key],
-        ).fetchone()
-        return json.loads(row[0]) if row else None
-
-    def put_cached_turn(
-        self,
-        cache_key: str,
-        replay_id: str,
-        turn_number: int,
-        payload: Dict[str, Any],
-    ) -> None:
-        """Persist a GPU turn audit payload in DuckDB."""
-        self.conn.execute(
-            """
-            INSERT OR REPLACE INTO analysis_cache
-            (cache_key, replay_id, turn_number, payload_json, created_at)
-            VALUES (?, ?, ?, ?, ?);
-            """,
-            [
-                cache_key,
-                replay_id,
-                int(turn_number),
-                json.dumps(payload),
-                datetime.now(timezone.utc).isoformat(),
-            ],
-        )
-
     def delete_roster(self, roster_id: str) -> bool:
-        """Delete a stored OTS roster by ID and invalidate turn analysis cache."""
+        """Delete a stored OTS roster by ID."""
         clean_id = (roster_id or "").strip()
         if not clean_id or self.get_roster(clean_id) is None:
             return False
         self.conn.execute("DELETE FROM ots_rosters WHERE roster_id = ?;", [clean_id])
-        self.conn.execute("DELETE FROM analysis_cache;")
         return True
-
-    def clear_cache(self) -> None:
-        """Clear cached turn analyses."""
-        self.conn.execute("DELETE FROM analysis_cache;")

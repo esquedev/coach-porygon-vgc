@@ -27,10 +27,8 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from engine.telemetry import (
-    batch_update_comments,
     extract_turn_telemetry,
     save_telemetry_to_csv,
-    update_telemetry_comment,
 )
 
 

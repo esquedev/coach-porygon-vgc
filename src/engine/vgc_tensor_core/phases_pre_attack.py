@@ -694,6 +694,7 @@ def execute_barrier1_switches(
             ((c_grid == target_c) * 1.0)
             * P[..., act_slot, MonIdx.ALIVE_FLAG]
             * P[..., bench_slot, MonIdx.ALIVE_FLAG]
+            * (1.0 - P[..., act_slot, MonIdx.MUST_RECHARGE])
         )
         if HAS_TORCH and isinstance(sw_gate, torch.Tensor):
             if float(sw_gate.max().item()) <= 0.0:
@@ -739,10 +740,10 @@ def execute_barrier1_switches(
 
         P[..., act_slot, MonIdx.ACTIVE_TURNS] = P[..., act_slot, MonIdx.ACTIVE_TURNS] * (1.0 - sw_gate)
 
-    sw_t1a = (((c_t1a == CHOICE_SWITCH_BENCH1) | (c_t1a == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_t1b = (((c_t1b == CHOICE_SWITCH_BENCH1) | (c_t1b == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_t2a = (((c_t2a == CHOICE_SWITCH_BENCH1) | (c_t2a == CHOICE_SWITCH_BENCH2)) * 1.0)
-    sw_t2b = (((c_t2b == CHOICE_SWITCH_BENCH1) | (c_t2b == CHOICE_SWITCH_BENCH2)) * 1.0)
+    sw_t1a = (((c_t1a == CHOICE_SWITCH_BENCH1) | (c_t1a == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_1_A, MonIdx.MUST_RECHARGE])
+    sw_t1b = (((c_t1b == CHOICE_SWITCH_BENCH1) | (c_t1b == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_1_B, MonIdx.MUST_RECHARGE])
+    sw_t2a = (((c_t2a == CHOICE_SWITCH_BENCH1) | (c_t2a == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_2_A, MonIdx.MUST_RECHARGE])
+    sw_t2b = (((c_t2b == CHOICE_SWITCH_BENCH1) | (c_t2b == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_2_B, MonIdx.MUST_RECHARGE])
 
     if HAS_TORCH and isinstance(P, torch.Tensor):
         switched_mask = torch.stack([sw_t1a, sw_t1b, sw_t2a, sw_t2b], dim=-1)
@@ -806,9 +807,10 @@ def execute_barrier2_mega_evolution(
         alive = P[..., r_slot, MonIdx.ALIVE_FLAG]
         can_mega = P[..., r_slot, MonIdx.CAN_MEGA]
         not_mega = 1.0 - P[..., r_slot, MonIdx.IS_MEGA]
+        not_recharging = 1.0 - P[..., r_slot, MonIdx.MUST_RECHARGE]
         side_avail = 1.0 - F[..., side_mega_idx]
 
-        m_gate = wants_mega * alive * can_mega * not_mega * side_avail
+        m_gate = wants_mega * alive * can_mega * not_mega * not_recharging * side_avail
         m_gate_exp = m_gate[..., None]
 
         # Transform all 5 active stats (ATK, DEF, SPA, SPD, SPE) -> MEGA_ATK..MEGA_SPE (78..82)

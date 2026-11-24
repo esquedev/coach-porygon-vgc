@@ -48,13 +48,11 @@ from .compiler import (
     CHOICE_SWITCH_BENCH2,
 )
 from .phases_pre_attack import (
-    ACTIVE_SLOT_NAMES,
     ACTIVE_SLOTS,
     PreAttackPhaseResult,
     T_ELECTRIC,
     T_GRASSY,
     T_MISTY,
-    T_NONE,
     T_PSYCHIC,
     W_CLEAR,
     W_RAIN,
@@ -176,16 +174,6 @@ def _acc_stage_ratio_torch(stage: "torch.Tensor") -> "torch.Tensor":
     b = torch.clamp(torch.round(stage), min=-6.0, max=6.0)
     three = torch.tensor(3.0, dtype=torch.float32, device=stage.device)
     return torch.maximum(three, three + b) / torch.maximum(three, three - b)
-
-
-def _stage_ratio_numpy(stage: np.ndarray) -> np.ndarray:
-    b = np.clip(np.round(stage), -6.0, 6.0)
-    return (np.maximum(2.0, 2.0 + b) / np.maximum(2.0, 2.0 - b)).astype(np.float32)
-
-
-def _acc_stage_ratio_numpy(stage: np.ndarray) -> np.ndarray:
-    b = np.clip(np.round(stage), -6.0, 6.0)
-    return (np.maximum(3.0, 3.0 + b) / np.maximum(3.0, 3.0 - b)).astype(np.float32)
 
 
 def _check_white_herb_and_unburden_torch(
@@ -576,6 +564,9 @@ def _execute_attack_cascade_torch(
             extra_volatiles_dict[key] = t
         return t
 
+    # Track slots that started this turn locked in forced recharge (to clear ONLY them after the turn)
+    started_recharging = P_mc[:, :, :, :, MonIdx.MUST_RECHARGE] > 0.5
+
     for step_idx in range(4):
         if step_idx == 0:
             actor_act_idx = exec_order_k[:, :, :, 0].long()  # [B1, B2, K] in {0, 1, 2, 3}
@@ -611,7 +602,8 @@ def _execute_attack_cascade_torch(
 
         actor_hp = p_actor[:, :, :, MonIdx.HP_CUR]
         actor_flinched = p_actor[:, :, :, MonIdx.FLINCHED] > 0.5
-        can_act = (actor_hp > 0.0) & (~actor_flinched) & (~switched) & (~is_switch_choice)
+        actor_recharging = p_actor[:, :, :, MonIdx.MUST_RECHARGE] > 0.5
+        can_act = (actor_hp > 0.0) & (~actor_flinched) & (~actor_recharging) & (~switched) & (~is_switch_choice)
 
         if not torch.any(can_act):
             continue
@@ -2545,6 +2537,17 @@ def _execute_attack_cascade_torch(
                 act_unv_end = _is_side_unnerved_torch(P_mc, actor_slot) if flags.has_unnerve else None
                 _check_sitrus_berry_and_unburden_torch(P_mc, actor_slot, blocked_mask=act_unv_end)
 
+            # Post-Attack Forced Recharge Flag (Hyper Beam, Giga Impact, Blast Burn, Hydro Cannon, etc.)
+            is_recharge_move = chosen_move[:, :, :, MoveIdx.IS_RECHARGE_MOVE] > 0.5
+            inflicts_recharge = actor_connected_any & is_recharge_move & (cur_a_hp > 0.0)
+            if torch.any(inflicts_recharge):
+                cur_rech = torch.gather(P_mc[:, :, :, :, MonIdx.MUST_RECHARGE], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.MUST_RECHARGE].scatter_(
+                    3,
+                    actor_slot.unsqueeze(-1),
+                    torch.where(inflicts_recharge, torch.ones_like(cur_rech), cur_rech).unsqueeze(-1),
+                )
+
             # Mid-Turn Self-Pivot Moves (U-turn, Volt Switch, Flip Turn, Parting Shot)
             sw_mode = chosen_move[:, :, :, MoveIdx.SWITCH_MODE]
             is_pivot = actor_connected_any & (sw_mode == 1.0) & (cur_a_hp > 0.0)
@@ -2579,6 +2582,15 @@ def _execute_attack_cascade_torch(
                     piv_m_exp = can_pivot.view(B1, B2, K, 1, 1)
                     M_mc.scatter_(3, act_m_exp, torch.where(piv_m_exp, m_bn_cur, m_act_cur).unsqueeze(3))
                     M_mc.scatter_(3, bn_m_exp, torch.where(piv_m_exp, m_act_cur, m_bn_cur).unsqueeze(3))
+
+    # Clear spent recharge lock ONLY for slots that started this turn recharging
+    # (Preserves newly inflicted MUST_RECHARGE = 1.0 from Hyper Beam/Giga Impact into EOT & Ply-2!)
+    if torch.any(started_recharging):
+        P_mc[:, :, :, :, MonIdx.MUST_RECHARGE] = torch.where(
+            started_recharging,
+            torch.zeros_like(P_mc[:, :, :, :, MonIdx.MUST_RECHARGE]),
+            P_mc[:, :, :, :, MonIdx.MUST_RECHARGE],
+        )
 
     # -------------------------------------------------------------------------
     # STATISTICAL AGGREGATION ACROSS ALL K SIMULATION THREADS

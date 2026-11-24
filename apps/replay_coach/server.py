@@ -11,21 +11,31 @@ GPU Tensor Core logs & Nash/IEDS turn audits over Server-Sent Events (SSE).
 from __future__ import annotations
 
 import argparse
-import copy
 import csv
 from datetime import datetime
+import hashlib
 import html as html_lib
 import json
 import mimetypes
 from pathlib import Path
 import re
 import threading
+import time
 import urllib.parse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from engine.inference.set_inferencer import OpponentSetInferencer
+from engine.damage_calc.bridge import get_champions_calc
+from engine.inference.set_inferencer import (
+    MissingOTSError,
+    OpponentSetInferencer,
+    SeriesSPInferenceReport,
+)
+from engine.prep_tools import (
+    build_damage_matrix_html,
+    build_speed_tiers_html,
+)
 from engine.telemetry.extractor import (
     CSV_COLUMNS,
     TurnTelemetryRecord,
@@ -35,8 +45,12 @@ from engine.terminology import export_glossary_payload
 from engine.vgc_tensor_core.state_machine import AnalysisCancelledError
 
 from .gpu_coach_engine import GPUReplayCoachEngine, compute_match_summary
-from .ots_db import OTSRosterDatabase, get_sprite_lookup, resolve_sprite_urls
-from .protocol_parser import ParsedReplay, parse_showdown_replay
+from .ots_db import OTSRosterDatabase, resolve_sprite_urls
+from .protocol_parser import (
+    ParsedReplay,
+    format_evless_ots_paste,
+    parse_showdown_replay,
+)
 
 APP_ROOT = Path(__file__).resolve().parent
 REPO_ROOT = APP_ROOT.parents[1]
@@ -70,9 +84,30 @@ class ReplayCoachAppState:
         self.t1_paste_text: str = ""
         self.t2_paste_text: str = ""
         self.replay: Optional[ParsedReplay] = None
+        # Unified Bo1/Bo3 bundle & ephemeral clamped 66-SP inference session state
+        self.bo3_games: List[Dict[str, Any]] = []
+        self.active_game_index: int = 0
+        self.ephemeral_t2_inference: Optional[SeriesSPInferenceReport] = None
+        self.ephemeral_t2_spreads: Dict[str, Dict[str, int]] = {}
+        # Zero-AI Offline Base64 Prep Tools in-memory token cache
+        self._prep_cache_lock = threading.Lock()
+        self._prep_cache: Dict[str, Dict[str, Any]] = {}
+        self._prep_cache_order: List[str] = []
+        # Warm SmogonChampionsCalc on the main thread so MiniRacer V8 teardown is always thread-safe
+        get_champions_calc()
 
         if preload_sample and SAMPLE_REPLAY_PATH.exists():
-            self.load_sample_replay()
+            self.load_bo3_bundle(
+                replays=[
+                    {
+                        "filename": SAMPLE_REPLAY_PATH.name,
+                        "raw_input": SAMPLE_REPLAY_PATH.read_text(encoding="utf-8"),
+                    }
+                ],
+                pov_trainer="treces_gc",
+                t1_roster_id="treces_gc_char_y_v4",
+                t2_roster_id="matchagotme_camerupt_tr",
+            )
 
     def start_new_stream_cancel_event(self) -> threading.Event:
         """Cancel any previously running SSE analysis and register a fresh cancellation event."""
@@ -103,31 +138,402 @@ class ReplayCoachAppState:
                 teams.append(default_team)
         return teams
 
-    def preview_replay(
+    def _enrich_inference_payload(
         self,
-        raw_input: str,
-        pov_trainer: Optional[str] = None,
+        report: SeriesSPInferenceReport,
+        override_spreads: Optional[Dict[str, Dict[str, int]]] = None,
     ) -> Dict[str, Any]:
-        """Fast (<50ms, zero GPU) parse of a replay returning metadata, preview sprites, and auto-matched OTS IDs."""
-        prelim = parse_showdown_replay(raw_input, pov_trainer=pov_trainer)
-        r1 = self.ots_db.match_best_roster(prelim.trainer_1_name, prelim.trainer_1_preview)
-        r2 = self.ots_db.match_best_roster(prelim.trainer_2_name, prelim.trainer_2_preview)
+        """Serialize a `SeriesSPInferenceReport` with local Pokémon & item sprite URLs."""
+        raw = report.to_dict()
+        enriched_mons: List[Dict[str, Any]] = []
+        for m in raw.get("pokemon", []):
+            sprites = resolve_sprite_urls(m.get("base_species") or m.get("species"), m.get("item"))
+            m_copy = dict(m)
+            m_copy["sprite_url"] = sprites["sprite_url"]
+            m_copy["item_sprite_url"] = sprites["item_sprite_url"]
+            if override_spreads:
+                cand = (
+                    override_spreads.get(m_copy["base_species"])
+                    or override_spreads.get(m_copy["species"])
+                )
+                if cand:
+                    m_copy["active_spread"] = dict(cand)
+            if "active_spread" not in m_copy:
+                m_copy["active_spread"] = dict(m_copy["default_spread"])
+            enriched_mons.append(m_copy)
+        paste_text = report.build_paste(override_spreads=override_spreads)
+        raw["pokemon"] = enriched_mons
+        raw["paste_text"] = paste_text
+        raw["validation"] = self.ots_db.validate_paste(paste_text) if paste_text else None
+        return raw
+
+    def preview_bo3_bundle(
+        self,
+        replays: Sequence[Dict[str, Any]],
+        pov_trainer: Optional[str] = None,
+        use_sample: bool = False,
+    ) -> Dict[str, Any]:
+        """Preview 1..3 Showdown replays as a unified Bo1/Bo3 bundle, extracting `|showteam|` OTS."""
+        items: List[Dict[str, str]] = []
+        if use_sample and SAMPLE_REPLAY_PATH.exists():
+            items.append(
+                {
+                    "filename": SAMPLE_REPLAY_PATH.name,
+                    "raw_input": SAMPLE_REPLAY_PATH.read_text(encoding="utf-8"),
+                }
+            )
+        else:
+            for idx, entry in enumerate(list(replays or [])[:3], 1):
+                raw_txt = str(entry.get("raw_input") or "").strip()
+                if not raw_txt:
+                    continue
+                fname = str(entry.get("filename") or f"Game {idx}").strip()
+                items.append({"filename": fname, "raw_input": raw_txt})
+
+        if not items:
+            raise ValueError("Provide 1 to 3 non-empty Showdown replay files.")
+
+        parsed_list: List[ParsedReplay] = []
+        resolved_pov = pov_trainer
+        for idx, it in enumerate(items, 1):
+            p = parse_showdown_replay(it["raw_input"], pov_trainer=resolved_pov, game_index=idx)
+            if idx == 1 and not resolved_pov:
+                resolved_pov = p.trainer_1_name
+            parsed_list.append(p)
+
+        first = parsed_list[0]
+        # Pool |showteam| EV-less OTS across all games
+        t2_showteam: Dict[str, Any] = {}
+        t1_showteam: Dict[str, Any] = {}
+        for p in parsed_list:
+            for k, v in (p.trainer_2_showteam_ots or {}).items():
+                if k not in t2_showteam:
+                    t2_showteam[k] = v
+            for k, v in (p.trainer_1_showteam_ots or {}).items():
+                if k not in t1_showteam:
+                    t1_showteam[k] = v
+
+        t2_evless_paste = format_evless_ots_paste(t2_showteam)
+        t1_evless_paste = format_evless_ots_paste(t1_showteam)
+        r1 = self.ots_db.match_best_roster(first.trainer_1_name, first.trainer_1_preview)
+        r2 = self.ots_db.match_best_roster(first.trainer_2_name, first.trainer_2_preview)
+
+        games_meta: List[Dict[str, Any]] = []
+        with self.lock:
+            self.bo3_games = []
+            for idx, (it, p) in enumerate(zip(items, parsed_list), 1):
+                is_win = bool(p.winner and p.winner.lower() == p.trainer_1_name.lower())
+                g_rec = {
+                    "game_index": idx,
+                    "filename": it["filename"],
+                    "raw_input": it["raw_input"],
+                    "replay_id": p.replay_id,
+                    "format_name": p.format_name,
+                    "winner": p.winner,
+                    "is_t1_win": is_win,
+                    "num_turns": len(p.turns),
+                    "has_showteam": bool(p.trainer_2_showteam_ots),
+                    "parsed": p,
+                }
+                self.bo3_games.append(g_rec)
+                games_meta.append(
+                    {
+                        "game_index": idx,
+                        "filename": it["filename"],
+                        "replay_id": p.replay_id,
+                        "format_name": p.format_name,
+                        "winner": p.winner,
+                        "is_t1_win": is_win,
+                        "num_turns": len(p.turns),
+                        "has_showteam": bool(p.trainer_2_showteam_ots),
+                    }
+                )
+            self.active_game_index = 0
+            self.raw_replay_html = items[0]["raw_input"]
+            self.pov_trainer = first.trainer_1_name
+            self.ephemeral_t2_inference = None
+            self.ephemeral_t2_spreads = {}
+
         return {
-            "replay_id": prelim.replay_id,
-            "format_name": prelim.format_name,
-            "trainer_1_name": prelim.trainer_1_name,
-            "trainer_2_name": prelim.trainer_2_name,
-            "winner": prelim.winner,
-            "num_turns": len(prelim.turns),
+            "ok": True,
+            "is_bo3": len(games_meta) > 1,
+            "games_count": len(games_meta),
+            "active_game_index": 0,
+            "games": games_meta,
+            "replay_id": first.replay_id,
+            "format_name": first.format_name,
+            "trainer_1_name": first.trainer_1_name,
+            "trainer_2_name": first.trainer_2_name,
+            "winner": first.winner,
+            "num_turns": len(first.turns),
             "trainer_1_preview": [
-                {"species": sp, **resolve_sprite_urls(sp)} for sp in prelim.trainer_1_preview
+                {"species": sp, **resolve_sprite_urls(sp)} for sp in first.trainer_1_preview
             ],
             "trainer_2_preview": [
-                {"species": sp, **resolve_sprite_urls(sp)} for sp in prelim.trainer_2_preview
+                {"species": sp, **resolve_sprite_urls(sp)} for sp in first.trainer_2_preview
             ],
             "suggested_t1_roster_id": r1["roster_id"] if r1 else None,
             "suggested_t2_roster_id": r2["roster_id"] if r2 else None,
+            "has_showteam_ots": bool(t2_showteam),
+            "trainer_2_evless_ots_paste": t2_evless_paste,
+            "trainer_1_evless_ots_paste": t1_evless_paste,
         }
+
+    def infer_bo3_opponent_sp(
+        self,
+        replays: Optional[Sequence[Dict[str, Any]]] = None,
+        pov_trainer: Optional[str] = None,
+        t1_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_ots_paste_text: Optional[str] = None,
+        use_sample: bool = False,
+    ) -> Dict[str, Any]:
+        """Pool 1..3 replays + `trainer_1` 66-SP + `trainer_2` OTS to solve exact clamped SP bounds."""
+        raw_items: List[str] = []
+        if replays:
+            for entry in list(replays)[:3]:
+                raw_txt = str(entry.get("raw_input") or "").strip() if isinstance(entry, dict) else str(entry or "").strip()
+                if raw_txt:
+                    raw_items.append(raw_txt)
+        elif use_sample and SAMPLE_REPLAY_PATH.exists():
+            raw_items.append(SAMPLE_REPLAY_PATH.read_text(encoding="utf-8"))
+        else:
+            with self.lock:
+                if self.bo3_games:
+                    raw_items = [g["raw_input"] for g in self.bo3_games if g.get("raw_input")]
+                elif self.raw_replay_html:
+                    raw_items = [self.raw_replay_html]
+
+        if not raw_items:
+            raise ValueError("Load 1 to 3 Showdown replays first before running 66-SP inference.")
+
+        # Resolve POV trainer
+        prelim0 = parse_showdown_replay(raw_items[0], pov_trainer=pov_trainer or self.pov_trainer or None, game_index=1)
+        resolved_pov = prelim0.trainer_1_name
+
+        # Resolve trainer_1 exact 66-SP sets
+        paste1 = (t1_paste_text or "").strip()
+        if not paste1 and t1_roster_id:
+            r1 = self.ots_db.get_roster(t1_roster_id)
+            paste1 = r1["paste_text"] if r1 else ""
+        if not paste1:
+            r1_auto = self.ots_db.match_best_roster(prelim0.trainer_1_name, prelim0.trainer_1_preview)
+            paste1 = r1_auto["paste_text"] if r1_auto else ""
+        t1_sets = self.ots_db.get_parsed_sets_by_species(paste1) if paste1 else {}
+        if not t1_sets and prelim0.trainer_1_showteam_ots:
+            t1_sets = dict(prelim0.trainer_1_showteam_ots)
+
+        # Parse all 1..N replays with trainer_1 exact sets for lossless damage/speed extraction
+        parsed_replays: List[ParsedReplay] = []
+        t2_showteam_pooled: Dict[str, Any] = {}
+        for idx, raw_txt in enumerate(raw_items, 1):
+            pr = parse_showdown_replay(
+                raw_txt,
+                pov_trainer=resolved_pov,
+                trainer_1_ots_sets=t1_sets,
+                game_index=idx,
+            )
+            parsed_replays.append(pr)
+            for k, v in (pr.trainer_2_showteam_ots or {}).items():
+                if k not in t2_showteam_pooled:
+                    t2_showteam_pooled[k] = v
+
+        # Resolve trainer_2 EV-less OTS (explicit paste overrides |showteam| if provided)
+        t2_ots_paste = (t2_ots_paste_text or "").strip()
+        if t2_ots_paste:
+            t2_ots_sets = self.ots_db.get_parsed_sets_by_species(t2_ots_paste)
+        else:
+            t2_ots_sets = t2_showteam_pooled
+
+        inferencer = OpponentSetInferencer()
+        report = inferencer.infer_series(
+            trainer_1_sets=t1_sets,
+            trainer_2_ots_sets=t2_ots_sets,
+            replays=parsed_replays,
+            trainer_1_name=prelim0.trainer_1_name,
+            trainer_2_name=prelim0.trainer_2_name,
+        )
+
+        default_spreads = {
+            inf.base_species: inf.default_spread.to_dict()
+            for inf in report.pokemon_inferences.values()
+        }
+        with self.lock:
+            self.ephemeral_t2_inference = report
+            self.ephemeral_t2_spreads = default_spreads
+
+        payload = self._enrich_inference_payload(report, override_spreads=default_spreads)
+        payload["ok"] = True
+        payload["t1_has_66sp"] = bool(t1_sets) and all(
+            m.spread.total_sp == 66 for m in t1_sets.values()
+        )
+        return payload
+
+    def load_bo3_bundle(
+        self,
+        replays: Optional[Sequence[Dict[str, Any]]] = None,
+        pov_trainer: Optional[str] = None,
+        t1_roster_id: Optional[str] = None,
+        t2_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_paste_text: Optional[str] = None,
+        t2_user_spreads: Optional[Dict[str, Dict[str, int]]] = None,
+        active_game_index: int = 0,
+        t1_save_meta: Optional[Dict[str, Any]] = None,
+        t2_save_meta: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Finalize 1..3 Bo3 replays with validated clamped 66-SP opponent spreads & load active game."""
+        with self.lock:
+            raw_items: List[Dict[str, str]] = []
+            if replays:
+                for idx, entry in enumerate(list(replays)[:3], 1):
+                    rt = str(entry.get("raw_input") or "").strip() if isinstance(entry, dict) else str(entry or "").strip()
+                    if rt:
+                        fn = str(entry.get("filename") or f"Game {idx}").strip() if isinstance(entry, dict) else f"Game {idx}"
+                        raw_items.append({"filename": fn, "raw_input": rt})
+            elif self.bo3_games:
+                raw_items = [
+                    {"filename": g["filename"], "raw_input": g["raw_input"]}
+                    for g in self.bo3_games
+                    if g.get("raw_input")
+                ]
+            elif self.raw_replay_html:
+                raw_items = [{"filename": "Game 1", "raw_input": self.raw_replay_html}]
+            elif SAMPLE_REPLAY_PATH.exists():
+                raw_items = [
+                    {
+                        "filename": SAMPLE_REPLAY_PATH.name,
+                        "raw_input": SAMPLE_REPLAY_PATH.read_text(encoding="utf-8"),
+                    }
+                ]
+
+            if not raw_items:
+                raise ValueError("No replay files available to load.")
+
+            prelim0 = parse_showdown_replay(
+                raw_items[0]["raw_input"],
+                pov_trainer=pov_trainer or self.pov_trainer or None,
+                game_index=1,
+            )
+            resolved_pov = prelim0.trainer_1_name
+
+            # Strict backend clamp validation when user submits slider spreads for ephemeral inference!
+            finalized_t2_paste = (t2_paste_text or "").strip()
+            if t2_user_spreads is not None and self.ephemeral_t2_inference is not None:
+                ok_sp, errs_sp = self.ephemeral_t2_inference.validate_user_spreads(t2_user_spreads)
+                if not ok_sp:
+                    raise ValueError(
+                        "Invalid opponent 66-SP allocation (deterministic bounds cannot be overridden): "
+                        + " | ".join(errs_sp)
+                    )
+                finalized_t2_paste = self.ephemeral_t2_inference.build_paste(
+                    override_spreads=t2_user_spreads
+                )
+                self.ephemeral_t2_spreads = {
+                    k: dict(v) for k, v in t2_user_spreads.items()
+                }
+                t2_roster_id = None
+            elif not finalized_t2_paste and not t2_roster_id and self.ephemeral_t2_inference is not None:
+                finalized_t2_paste = self.ephemeral_t2_inference.build_paste(
+                    override_spreads=self.ephemeral_t2_spreads or None
+                )
+
+            # Optional explicit save to DuckDB (never auto-saved!)
+            if t1_paste_text and t1_paste_text.strip() and t1_save_meta and t1_save_meta.get("save_to_db"):
+                rid1 = str(t1_save_meta.get("roster_id") or f"{prelim0.trainer_1_name.lower()}_ots").strip()
+                rid1 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid1)
+                dname1 = str(t1_save_meta.get("display_name") or f"{prelim0.trainer_1_name} — Full OTS").strip()
+                self.ots_db.save_roster(rid1, dname1, prelim0.trainer_1_name, t1_paste_text)
+                t1_roster_id = rid1
+
+            if finalized_t2_paste and t2_save_meta and t2_save_meta.get("save_to_db"):
+                rid2 = str(t2_save_meta.get("roster_id") or f"{prelim0.trainer_2_name.lower()}_ots").strip()
+                rid2 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid2)
+                dname2 = str(t2_save_meta.get("display_name") or f"{prelim0.trainer_2_name} — Full OTS").strip()
+                self.ots_db.save_roster(rid2, dname2, prelim0.trainer_2_name, finalized_t2_paste)
+                t2_roster_id = rid2
+
+            # Resolve Trainer 1 paste
+            paste1 = ""
+            if t1_paste_text and t1_paste_text.strip() and not t1_roster_id:
+                paste1 = t1_paste_text.strip()
+                self.t1_roster_id = "inline_ots"
+            else:
+                r1 = (
+                    self.ots_db.get_roster(t1_roster_id)
+                    if t1_roster_id
+                    else self.ots_db.match_best_roster(prelim0.trainer_1_name, prelim0.trainer_1_preview)
+                )
+                paste1 = r1["paste_text"] if r1 else ""
+                self.t1_roster_id = r1["roster_id"] if r1 else None
+
+            # Resolve Trainer 2 paste
+            paste2 = ""
+            if finalized_t2_paste and not t2_roster_id:
+                paste2 = finalized_t2_paste
+                self.t2_roster_id = "inferred_ephemeral" if self.ephemeral_t2_inference is not None else "inline_ots"
+            else:
+                r2 = (
+                    self.ots_db.get_roster(t2_roster_id)
+                    if t2_roster_id
+                    else self.ots_db.match_best_roster(prelim0.trainer_2_name, prelim0.trainer_2_preview)
+                )
+                paste2 = r2["paste_text"] if r2 else ""
+                self.t2_roster_id = r2["roster_id"] if r2 else None
+
+            t1_sets = self.ots_db.get_parsed_sets_by_species(paste1) if paste1 else {}
+            t2_sets = self.ots_db.get_parsed_sets_by_species(paste2) if paste2 else {}
+
+            # Parse every game in the bundle with exact finalized sets
+            new_bo3: List[Dict[str, Any]] = []
+            for idx, it in enumerate(raw_items, 1):
+                pr = parse_showdown_replay(
+                    it["raw_input"],
+                    pov_trainer=resolved_pov,
+                    trainer_1_ots_sets=t1_sets,
+                    trainer_2_ots_sets=t2_sets,
+                    game_index=idx,
+                )
+                is_win = bool(pr.winner and pr.winner.lower() == pr.trainer_1_name.lower())
+                new_bo3.append(
+                    {
+                        "game_index": idx,
+                        "filename": it["filename"],
+                        "raw_input": it["raw_input"],
+                        "replay_id": pr.replay_id,
+                        "format_name": pr.format_name,
+                        "winner": pr.winner,
+                        "is_t1_win": is_win,
+                        "num_turns": len(pr.turns),
+                        "has_showteam": bool(pr.trainer_2_showteam_ots),
+                        "parsed": pr,
+                    }
+                )
+
+            self.bo3_games = new_bo3
+            sel_idx = max(0, min(len(new_bo3) - 1, int(active_game_index)))
+            self.active_game_index = sel_idx
+            self.raw_replay_html = new_bo3[sel_idx]["raw_input"]
+            self.pov_trainer = resolved_pov
+            self.t1_paste_text = paste1
+            self.t2_paste_text = paste2
+            self.replay = new_bo3[sel_idx]["parsed"]
+            return self.get_state_summary_unlocked()
+
+    def select_bo3_game(self, game_index: int) -> Dict[str, Any]:
+        """Switch active game tab (`0..N-1`) inside the currently loaded Bo3 bundle."""
+        self.cancel_active_stream()
+        with self.lock:
+            if not self.bo3_games:
+                raise ValueError("No Bo3 bundle is currently loaded.")
+            idx = int(game_index)
+            if idx < 0 or idx >= len(self.bo3_games):
+                raise ValueError(f"Game index {idx} out of range (loaded {len(self.bo3_games)} games).")
+            self.active_game_index = idx
+            g = self.bo3_games[idx]
+            self.raw_replay_html = g["raw_input"]
+            self.replay = g["parsed"]
+            return self.get_state_summary_unlocked()
 
     def infer_ots_from_replay(
         self,
@@ -135,8 +541,10 @@ class ReplayCoachAppState:
         side: str = "t2",
         pov_trainer: Optional[str] = None,
         use_sample: bool = False,
+        t1_paste_text: Optional[str] = None,
+        t2_ots_paste_text: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Auto-infer a full Regulation M-C 66-SP Showdown OTS paste from observed replay reveals + DuckDB usage."""
+        """Solve exact Regulation M-C 66-SP bounds from replay telemetry + OTS (`|showteam|` or paste)."""
         raw_text = (raw_input or "").strip()
         if (use_sample or not raw_text) and SAMPLE_REPLAY_PATH.exists():
             if use_sample or not self.raw_replay_html:
@@ -144,75 +552,75 @@ class ReplayCoachAppState:
             else:
                 raw_text = self.raw_replay_html
         if not raw_text:
-            raise ValueError("Load or paste a replay first before running DuckDB Auto-Infer.")
+            raise ValueError("Load or paste a replay first before running OTS 66-SP Solver.")
 
-        prelim = parse_showdown_replay(raw_text, pov_trainer=pov_trainer or self.pov_trainer or None)
+        prelim = parse_showdown_replay(raw_text, pov_trainer=pov_trainer or self.pov_trainer or None, game_index=1)
         target_side = "t1" if str(side).lower() in ("t1", "trainer_1") else "t2"
-        # OpponentSetInferencer infers `battle.trainer_2`, so orient POV to the opposite trainer when inferring `t1`
         infer_pov = prelim.trainer_2_name if target_side == "t1" else prelim.trainer_1_name
         target_trainer = prelim.trainer_1_name if target_side == "t1" else prelim.trainer_2_name
 
-        oriented = parse_showdown_replay(raw_text, pov_trainer=infer_pov)
-        if not oriented.turns:
-            raise ValueError("Replay contains no parsed turns for OTS inference.")
-        parsed_battle = copy.deepcopy(oriented.turns[-1].battle_state)
-        # Merge any moves revealed on the final turn itself into trainer_2 sets
-        last_snap = oriented.turns[-1]
-        for slot_act in (last_snap.trainer_2_slot_a_action, last_snap.trainer_2_slot_b_action):
-            if slot_act and slot_act.kind == "move" and slot_act.move_name and slot_act.actor_species:
-                m_obj = parsed_battle.trainer_2.get_pokemon(slot_act.actor_species)
-                if m_obj is not None and slot_act.move_name not in m_obj.moves:
-                    m_obj.moves.append(slot_act.move_name)
+        # Build the exact reference sets for the opposite side + OTS for target side
+        if target_side == "t2":
+            res = self.infer_bo3_opponent_sp(
+                replays=[{"filename": "Game 1", "raw_input": raw_text}],
+                pov_trainer=infer_pov,
+                t1_paste_text=t1_paste_text or self.t1_paste_text or None,
+                t2_ots_paste_text=t2_ots_paste_text,
+            )
+            paste_text = res["paste_text"]
+            validation = res["validation"]
+            inferred_count = len(res.get("pokemon") or [])
+            speed_bounds_out = {
+                m["base_species"]: [m["bounds"]["spe"]["min_sp"], m["bounds"]["spe"]["max_sp"]]
+                for m in (res.get("pokemon") or [])
+                if m.get("bounds", {}).get("spe")
+            }
+            return {
+                "ok": True,
+                "side": target_side,
+                "trainer_name": target_trainer,
+                "inferred_count": inferred_count,
+                "paste_text": paste_text,
+                "validation": validation,
+                "speed_bounds": speed_bounds_out,
+                "inference": res,
+            }
+
+        # target_side == "t1": orient POV to trainer_2 so trainer_1 is solved symmetrically
+        ref_paste = self.t2_paste_text or ""
+        if not ref_paste:
+            r_ref = self.ots_db.match_best_roster(prelim.trainer_2_name, prelim.trainer_2_preview)
+            ref_paste = r_ref["paste_text"] if r_ref else ""
+        ref_sets = self.ots_db.get_parsed_sets_by_species(ref_paste) if ref_paste else {}
+        oriented = parse_showdown_replay(raw_text, pov_trainer=infer_pov, trainer_1_ots_sets=ref_sets, game_index=1)
+        if not ref_sets and oriented.trainer_1_showteam_ots:
+            ref_sets = dict(oriented.trainer_1_showteam_ots)
+        target_ots = (
+            self.ots_db.get_parsed_sets_by_species(t2_ots_paste_text)
+            if t2_ots_paste_text and t2_ots_paste_text.strip()
+            else oriented.trainer_2_showteam_ots
+        )
         inferencer = OpponentSetInferencer()
-        report = inferencer.infer_battle(parsed_battle)
-
-        stat_labels = (("hp", "HP"), ("atk", "Atk"), ("def", "Def"), ("spa", "SpA"), ("spd", "SpD"), ("spe", "Spe"))
-        blocks: List[str] = []
-        preview_order = list(parsed_battle.trainer_2.team_preview) or list(report.primary_sets.keys())
-        seen_species: set[str] = set()
-
-        for sp in preview_order:
-            mon = parsed_battle.trainer_2.get_pokemon(sp) or report.primary_sets.get(sp)
-            if mon is None:
-                continue
-            sp_key = (mon.base_species or mon.species).split("-Mega")[0].lower()
-            if sp_key in seen_species:
-                continue
-            seen_species.add(sp_key)
-
-            display_sp = mon.base_species or mon.species.split("-Mega")[0]
-            header = f"{display_sp} @ {mon.item}" if mon.item else display_sp
-            lines = [header, f"Ability: {mon.ability or 'None'}", "Level: 50"]
-
-            sp_dict = mon.spread.to_dict()
-            ev_parts: List[str] = []
-            for sk, lbl in stat_labels:
-                sp_val = int(sp_dict.get(sk, 0))
-                if sp_val > 0:
-                    ev_val = 4 + 8 * (sp_val - 1)
-                    ev_parts.append(f"{ev_val} {lbl}")
-            if ev_parts:
-                lines.append("EVs: " + " / ".join(ev_parts))
-            lines.append(f"{mon.nature or 'Serious'} Nature")
-            for mv in (mon.moves or [])[:4]:
-                lines.append(f"- {mv}")
-            blocks.append("\n".join(lines))
-
-        paste_text = "\n\n".join(blocks).strip()
-        validation = self.ots_db.validate_paste(paste_text) if paste_text else None
-        speed_bounds_out = {
-            k: [v[0], v[1]]
-            for k, v in (report.speed_bounds_by_species or {}).items()
-            if v and (v[0] is not None or v[1] is not None)
-        }
+        report = inferencer.infer_series(
+            trainer_1_sets=ref_sets,
+            trainer_2_ots_sets=target_ots,
+            replays=[oriented],
+            trainer_1_name=oriented.trainer_1_name,
+            trainer_2_name=target_trainer,
+        )
+        enriched = self._enrich_inference_payload(report)
         return {
             "ok": True,
             "side": target_side,
             "trainer_name": target_trainer,
-            "inferred_count": len(blocks),
-            "paste_text": paste_text,
-            "validation": validation,
-            "speed_bounds": speed_bounds_out,
+            "inferred_count": len(enriched["pokemon"]),
+            "paste_text": enriched["paste_text"],
+            "validation": enriched["validation"],
+            "speed_bounds": {
+                m["base_species"]: [m["bounds"]["spe"]["min_sp"], m["bounds"]["spe"]["max_sp"]]
+                for m in enriched["pokemon"]
+            },
+            "inference": enriched,
         }
 
     def get_telemetry_session_summary(self, team_folder: Optional[str] = None) -> Dict[str, Any]:
@@ -379,92 +787,6 @@ class ReplayCoachAppState:
             "lead_stats": lead_stats,
             "matches": list(reversed(matches_list)),
         }
-
-    def load_sample_replay(self) -> Dict[str, Any]:
-        """Load the bundled sample match (`treces_gc` vs. `MatchaGotMe`) with both pre-seeded OTS rosters."""
-        raw = SAMPLE_REPLAY_PATH.read_text(encoding="utf-8") if SAMPLE_REPLAY_PATH.exists() else ""
-        return self.load_replay(
-            raw_input=raw,
-            pov_trainer="treces_gc",
-            t1_roster_id="treces_gc_char_y_v4",
-            t2_roster_id="matchagotme_camerupt_tr",
-        )
-
-    def load_replay(
-        self,
-        raw_input: str,
-        pov_trainer: Optional[str] = None,
-        t1_roster_id: Optional[str] = None,
-        t2_roster_id: Optional[str] = None,
-        t1_paste_text: Optional[str] = None,
-        t2_paste_text: Optional[str] = None,
-        t1_save_meta: Optional[Dict[str, Any]] = None,
-        t2_save_meta: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """Parse replay, bind DuckDB or inline pasted Full OTS rosters, and store active state."""
-        with self.lock:
-            prelim = parse_showdown_replay(raw_input, pov_trainer=pov_trainer or self.pov_trainer or None)
-
-            # Optional save-to-DuckDB for inline pasted OTS
-            if t1_paste_text and t1_paste_text.strip() and t1_save_meta and t1_save_meta.get("save_to_db"):
-                rid1 = str(t1_save_meta.get("roster_id") or f"{prelim.trainer_1_name.lower()}_ots").strip()
-                rid1 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid1)
-                dname1 = str(t1_save_meta.get("display_name") or f"{prelim.trainer_1_name} — Full OTS").strip()
-                self.ots_db.save_roster(rid1, dname1, prelim.trainer_1_name, t1_paste_text)
-                t1_roster_id = rid1
-
-            if t2_paste_text and t2_paste_text.strip() and t2_save_meta and t2_save_meta.get("save_to_db"):
-                rid2 = str(t2_save_meta.get("roster_id") or f"{prelim.trainer_2_name.lower()}_ots").strip()
-                rid2 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid2)
-                dname2 = str(t2_save_meta.get("display_name") or f"{prelim.trainer_2_name} — Full OTS").strip()
-                self.ots_db.save_roster(rid2, dname2, prelim.trainer_2_name, t2_paste_text)
-                t2_roster_id = rid2
-
-            # Resolve Trainer 1 OTS (inline paste -> explicit roster_id -> auto-match)
-            r1 = None
-            paste1 = ""
-            if t1_paste_text and t1_paste_text.strip() and not t1_roster_id:
-                paste1 = t1_paste_text.strip()
-                self.t1_roster_id = "inline_ots"
-            else:
-                r1 = (
-                    self.ots_db.get_roster(t1_roster_id)
-                    if t1_roster_id
-                    else self.ots_db.match_best_roster(prelim.trainer_1_name, prelim.trainer_1_preview)
-                )
-                paste1 = r1["paste_text"] if r1 else ""
-                self.t1_roster_id = r1["roster_id"] if r1 else None
-
-            # Resolve Trainer 2 OTS (inline paste -> explicit roster_id -> auto-match)
-            r2 = None
-            paste2 = ""
-            if t2_paste_text and t2_paste_text.strip() and not t2_roster_id:
-                paste2 = t2_paste_text.strip()
-                self.t2_roster_id = "inline_ots"
-            else:
-                r2 = (
-                    self.ots_db.get_roster(t2_roster_id)
-                    if t2_roster_id
-                    else self.ots_db.match_best_roster(prelim.trainer_2_name, prelim.trainer_2_preview)
-                )
-                paste2 = r2["paste_text"] if r2 else ""
-                self.t2_roster_id = r2["roster_id"] if r2 else None
-
-            t1_sets = self.ots_db.get_parsed_sets_by_species(paste1) if paste1 else {}
-            t2_sets = self.ots_db.get_parsed_sets_by_species(paste2) if paste2 else {}
-
-            parsed = parse_showdown_replay(
-                raw_input,
-                pov_trainer=pov_trainer or prelim.trainer_1_name,
-                trainer_1_ots_sets=t1_sets,
-                trainer_2_ots_sets=t2_sets,
-            )
-            self.raw_replay_html = raw_input
-            self.pov_trainer = parsed.trainer_1_name
-            self.t1_paste_text = paste1
-            self.t2_paste_text = paste2
-            self.replay = parsed
-            return self.get_state_summary_unlocked()
 
     def export_match_telemetry_csv(
         self,
@@ -753,6 +1075,28 @@ class ReplayCoachAppState:
             "t2_validation": self.ots_db.validate_paste(self.t2_paste_text) if self.t2_paste_text else None,
             "telemetry_teams": self.list_telemetry_teams(),
             "terminology": export_glossary_payload(),
+            "active_game_index": self.active_game_index,
+            "bo3_games": [
+                {
+                    "game_index": g["game_index"],
+                    "filename": g["filename"],
+                    "replay_id": g["replay_id"],
+                    "format_name": g["format_name"],
+                    "winner": g["winner"],
+                    "is_t1_win": g["is_t1_win"],
+                    "num_turns": g["num_turns"],
+                    "has_showteam": g["has_showteam"],
+                }
+                for g in self.bo3_games
+            ],
+            "ephemeral_t2_inference": (
+                self._enrich_inference_payload(
+                    self.ephemeral_t2_inference,
+                    override_spreads=self.ephemeral_t2_spreads or None,
+                )
+                if self.ephemeral_t2_inference is not None
+                else None
+            ),
             "replay": None
             if rep is None
             else {
@@ -799,22 +1143,27 @@ class ReplayCoachAppState:
   html, body {{
     margin: 0;
     padding: 0;
-    background: #0f172a;
+    background: #0b101b;
     color: #e2e8f0;
     font-family: Verdana, sans-serif;
     overflow-x: hidden;
   }}
   .wrapper.replay-wrapper {{
+    position: relative !important;
     max-width: 100% !important;
+    min-height: 376px !important;
+    overflow: visible !important;
     margin: 0 auto !important;
-    padding: 6px 8px 12px 8px;
+    padding: 4px 6px 6px 6px !important;
   }}
   .battle-log {{
-    max-height: 290px !important;
+    height: 360px !important;
+    max-height: 360px !important;
     border-radius: 6px;
   }}
+  /* Hide Showdown's duplicate native controls — Coach Porygon provides unified controls & turn scrubber */
   .replay-controls, .replay-controls-2 {{
-    margin-top: 6px;
+    display: none !important;
   }}
 </style>
 </head>
@@ -833,8 +1182,30 @@ class ReplayCoachAppState:
   const SHOULD_FLIP = {flip_js};
   let flippedOnce = false;
   let lastTurnPosted = -1;
+  let lastPausedPosted = null;
+
+  function postPlayerState() {{
+    if (!window.Replays || !window.Replays.battle) return;
+    const isPaused = !!window.Replays.battle.paused;
+    if (isPaused !== lastPausedPosted) {{
+      lastPausedPosted = isPaused;
+      window.parent.postMessage({{ type: 'PLAYER_STATE', paused: isPaused }}, '*');
+    }}
+  }}
+
+  function postIframeHeight() {{
+    const wrap = document.querySelector('.wrapper.replay-wrapper');
+    const battleEl = document.querySelector('.battle');
+    const logEl = document.querySelector('.battle-log');
+    const hWrap = wrap ? wrap.getBoundingClientRect().bottom : 0;
+    const hBattle = battleEl ? battleEl.getBoundingClientRect().bottom : 0;
+    const hLog = logEl ? logEl.getBoundingClientRect().bottom : 0;
+    const h = Math.ceil(Math.max(376, hWrap, hBattle, hLog) + 8);
+    window.parent.postMessage({{ type: 'IFRAME_HEIGHT', height: h }}, '*');
+  }}
 
   function notifyParentTurn(turnVal) {{
+    postPlayerState();
     if (typeof turnVal === 'number' && turnVal !== lastTurnPosted) {{
       lastTurnPosted = turnVal;
       window.parent.postMessage({{ type: 'TURN_CHANGED', turn: turnVal, paused: !!(window.Replays && window.Replays.battle && window.Replays.battle.paused) }}, '*');
@@ -860,7 +1231,12 @@ class ReplayCoachAppState:
       battle.seekTurn(1);
       notifyParentTurn(battle.turn);
     }} catch (e) {{}}
-    window.parent.postMessage({{ type: 'PLAYER_READY', turn: battle.turn }}, '*');
+    postIframeHeight();
+    if (typeof ResizeObserver !== 'undefined') {{
+      const wrap = document.querySelector('.wrapper.replay-wrapper');
+      if (wrap) new ResizeObserver(postIframeHeight).observe(wrap);
+    }}
+    window.parent.postMessage({{ type: 'PLAYER_READY', turn: battle.turn, paused: !!battle.paused }}, '*');
   }}
 
   window.addEventListener('message', function(ev) {{
@@ -881,19 +1257,24 @@ class ReplayCoachAppState:
       }} catch (e) {{}}
     }} else if (msg.type === 'SWITCH_VIEWPOINT') {{
       try {{ battle.switchViewpoint(); }} catch (e) {{}}
+    }} else if (msg.type === 'SET_SPEED' && typeof msg.speed === 'string') {{
+      try {{ window.Replays.changeSetting('speed', msg.speed); }} catch (e) {{}}
     }} else if (msg.type === 'TOGGLE_PLAY') {{
       try {{
         if (battle.paused) battle.play();
         else battle.pause();
+        postPlayerState();
       }} catch (e) {{}}
     }} else if (msg.type === 'PLAY') {{
       try {{
         if (typeof msg.turn === 'number') battle.seekTurn(msg.turn);
         if (battle.paused) battle.play();
+        postPlayerState();
       }} catch (e) {{}}
     }} else if (msg.type === 'PAUSE') {{
       try {{
         if (!battle.paused) battle.pause();
+        postPlayerState();
       }} catch (e) {{}}
     }}
   }});
@@ -906,6 +1287,132 @@ class ReplayCoachAppState:
 </body>
 </html>
 """
+
+
+    def generate_prep_tool(
+        self,
+        kind: str = "speed_tiers",
+        roster_id: Optional[str] = None,
+        paste_text: Optional[str] = None,
+        team_name: Optional[str] = None,
+        top_n: int = 50,
+        lang: str = "es",
+    ) -> Dict[str, Any]:
+        """Generate and cache a zero-AI standalone Base64 HTML Prep Tool report."""
+        norm_kind = (kind or "speed_tiers").strip().lower()
+        if norm_kind not in ("speed_tiers", "damage_matrix"):
+            raise ValueError(f"Unsupported prep tool kind: '{norm_kind}'")
+        norm_top_n = int(top_n) if int(top_n) in (20, 35, 50) else 50
+        norm_lang = "es" if (lang or "es").lower().startswith("es") else "en"
+
+        resolved_paste = (paste_text or "").strip()
+        resolved_name = (team_name or "").strip()
+        if not resolved_paste and roster_id:
+            roster = self.ots_db.get_roster(str(roster_id).strip())
+            if roster is None:
+                raise ValueError(f"Saved DuckDB roster not found: '{roster_id}'")
+            resolved_paste = str(roster.get("paste_text") or "").strip()
+            if not resolved_name:
+                resolved_name = str(roster.get("display_name") or roster.get("roster_id") or "My Team")
+
+        if not resolved_paste:
+            raise ValueError("Provide a saved DuckDB roster_id or a Regulation M-C 66-SP Showdown paste.")
+        if not resolved_name:
+            resolved_name = "My Reg M-C Team"
+
+        cache_seed = f"{norm_kind}|{norm_top_n}|{norm_lang}|{resolved_name}|{resolved_paste}"
+        token = hashlib.sha256(cache_seed.encode("utf-8")).hexdigest()[:24]
+
+        with self._prep_cache_lock:
+            existing = self._prep_cache.get(token)
+            if existing is not None:
+                return {
+                    "ok": True,
+                    "token": token,
+                    "kind": existing["kind"],
+                    "filename": existing["filename"],
+                    "team_name": existing["team_name"],
+                    "top_n": existing["top_n"],
+                    "lang": existing["lang"],
+                    "meta_count": existing["meta_count"],
+                    "calc_count": existing["calc_count"],
+                    "size_kb": existing["size_kb"],
+                    "elapsed_ms": 0.0,
+                    "cached": True,
+                    "preview_url": f"/api/prep-tools/preview?token={token}",
+                    "download_url": f"/api/prep-tools/download?token={token}",
+                }
+
+        t0 = time.perf_counter()
+        slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", resolved_name).strip("_").lower() or "team"
+        if norm_kind == "speed_tiers":
+            html_doc, payload = build_speed_tiers_html(
+                paste_text=resolved_paste,
+                team_name=resolved_name,
+                top_n=norm_top_n,
+                lang=norm_lang,
+            )
+            filename = f"speed_tiers_{slug}_top{norm_top_n}_mobile.html"
+            calc_count = 0
+            meta_count = payload.total_teams
+        else:
+            html_doc, payload = build_damage_matrix_html(
+                paste_text=resolved_paste,
+                team_name=resolved_name,
+                top_n=norm_top_n,
+                lang=norm_lang,
+            )
+            filename = f"damage_calcs_{slug}_top{norm_top_n}_mobile.html"
+            calc_count = payload.calc_count
+            meta_count = payload.total_teams
+
+        elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+        html_bytes = html_doc.encode("utf-8")
+        size_kb = round(len(html_bytes) / 1024.0, 1)
+
+        entry = {
+            "token": token,
+            "kind": norm_kind,
+            "filename": filename,
+            "team_name": resolved_name,
+            "top_n": norm_top_n,
+            "lang": norm_lang,
+            "meta_count": meta_count,
+            "calc_count": calc_count,
+            "size_kb": size_kb,
+            "html_bytes": html_bytes,
+        }
+        with self._prep_cache_lock:
+            self._prep_cache[token] = entry
+            if token not in self._prep_cache_order:
+                self._prep_cache_order.append(token)
+            while len(self._prep_cache_order) > 24:
+                evict = self._prep_cache_order.pop(0)
+                self._prep_cache.pop(evict, None)
+
+        return {
+            "ok": True,
+            "token": token,
+            "kind": norm_kind,
+            "filename": filename,
+            "team_name": resolved_name,
+            "top_n": norm_top_n,
+            "lang": norm_lang,
+            "meta_count": meta_count,
+            "calc_count": calc_count,
+            "size_kb": size_kb,
+            "elapsed_ms": elapsed_ms,
+            "cached": False,
+            "preview_url": f"/api/prep-tools/preview?token={token}",
+            "download_url": f"/api/prep-tools/download?token={token}",
+        }
+
+    def get_prep_tool_cached(self, token: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a previously generated offline Base64 HTML report by cache token."""
+        if not token:
+            return None
+        with self._prep_cache_lock:
+            return self._prep_cache.get(token)
 
 
 def make_handler(app_state: ReplayCoachAppState):
@@ -973,12 +1480,6 @@ def make_handler(app_state: ReplayCoachAppState):
             if path == "/api/rosters":
                 self._send_json({"rosters": app_state.ots_db.list_rosters()})
                 return
-            if path == "/api/sprites":
-                self._send_json(get_sprite_lookup())
-                return
-            if path == "/api/telemetry/teams":
-                self._send_json({"teams": app_state.list_telemetry_teams()})
-                return
             if path == "/api/telemetry/summary":
                 try:
                     team_q = qs.get("team", [None])[0]
@@ -990,6 +1491,30 @@ def make_handler(app_state: ReplayCoachAppState):
                 with app_state.lock:
                     html_doc = app_state.render_official_showdown_player_html()
                 self._send_bytes(html_doc.encode("utf-8"), "text/html; charset=utf-8")
+                return
+            if path == "/api/prep-tools/preview":
+                token = str(qs.get("token", [""])[0]).strip()
+                cached = app_state.get_prep_tool_cached(token)
+                if cached is None:
+                    self._send_json({"error": "Prep report expired or not found"}, status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_bytes(cached["html_bytes"], "text/html; charset=utf-8")
+                return
+            if path == "/api/prep-tools/download":
+                token = str(qs.get("token", [""])[0]).strip()
+                cached = app_state.get_prep_tool_cached(token)
+                if cached is None:
+                    self._send_json({"error": "Prep report expired or not found"}, status=HTTPStatus.NOT_FOUND)
+                    return
+                data = cached["html_bytes"]
+                fname = re.sub(r"[^a-zA-Z0-9._-]+", "_", str(cached["filename"]))
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(data)
                 return
             if path == "/api/analyze/turn":
                 try:
@@ -1100,46 +1625,60 @@ def make_handler(app_state: ReplayCoachAppState):
                 self._send_json({"error": f"Invalid JSON: {exc}"}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            if path == "/api/replay/preview":
-                raw_html = str(body.get("raw_input") or "")
-                if body.get("use_sample") and SAMPLE_REPLAY_PATH.exists():
-                    raw_html = SAMPLE_REPLAY_PATH.read_text(encoding="utf-8")
-                if not raw_html.strip():
-                    self._send_json({"error": "Empty replay content"}, status=HTTPStatus.BAD_REQUEST)
-                    return
+            if path == "/api/bo3/preview":
                 try:
-                    preview = app_state.preview_replay(raw_html, pov_trainer=body.get("pov_trainer"))
+                    preview = app_state.preview_bo3_bundle(
+                        replays=body.get("replays") or [],
+                        pov_trainer=body.get("pov_trainer"),
+                        use_sample=bool(body.get("use_sample")),
+                    )
                     self._send_json(preview)
                 except Exception as exc:
                     self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            if path == "/api/replay/load-sample":
+            if path == "/api/bo3/infer-sp":
                 try:
-                    summary = app_state.load_sample_replay()
-                    self._send_json(summary)
+                    res = app_state.infer_bo3_opponent_sp(
+                        replays=body.get("replays"),
+                        pov_trainer=body.get("pov_trainer"),
+                        t1_roster_id=body.get("t1_roster_id"),
+                        t1_paste_text=body.get("t1_paste_text"),
+                        t2_ots_paste_text=body.get("t2_ots_paste_text"),
+                        use_sample=bool(body.get("use_sample")),
+                    )
+                    self._send_json(res)
+                except MissingOTSError as exc:
+                    self._send_json(
+                        {"ok": False, "missing_ots": True, "error": str(exc)},
+                        status=HTTPStatus.UNPROCESSABLE_ENTITY,
+                    )
                 except Exception as exc:
-                    self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            if path == "/api/replay/load":
-                raw_html = str(body.get("raw_input") or "")
-                if not raw_html.strip():
-                    with app_state.lock:
-                        raw_html = app_state.raw_replay_html
-                if not raw_html.strip() and SAMPLE_REPLAY_PATH.exists():
-                    raw_html = SAMPLE_REPLAY_PATH.read_text(encoding="utf-8")
+            if path == "/api/bo3/load":
                 try:
-                    summary = app_state.load_replay(
-                        raw_input=raw_html,
+                    summary = app_state.load_bo3_bundle(
+                        replays=body.get("replays"),
                         pov_trainer=body.get("pov_trainer"),
                         t1_roster_id=body.get("t1_roster_id"),
                         t2_roster_id=body.get("t2_roster_id"),
                         t1_paste_text=body.get("t1_paste_text"),
                         t2_paste_text=body.get("t2_paste_text"),
+                        t2_user_spreads=body.get("t2_user_spreads"),
+                        active_game_index=int(body.get("active_game_index", 0) or 0),
                         t1_save_meta=body.get("t1_save_meta"),
                         t2_save_meta=body.get("t2_save_meta"),
                     )
+                    self._send_json(summary)
+                except Exception as exc:
+                    self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/bo3/select-game":
+                try:
+                    summary = app_state.select_bo3_game(int(body.get("game_index", 0)))
                     self._send_json(summary)
                 except Exception as exc:
                     self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
@@ -1160,10 +1699,17 @@ def make_handler(app_state: ReplayCoachAppState):
                         side=str(body.get("side") or "t2"),
                         pov_trainer=body.get("pov_trainer"),
                         use_sample=bool(body.get("use_sample")),
+                        t1_paste_text=body.get("t1_paste_text"),
+                        t2_ots_paste_text=body.get("t2_ots_paste_text"),
                     )
                     self._send_json(res)
+                except MissingOTSError as exc:
+                    self._send_json(
+                        {"ok": False, "missing_ots": True, "error": str(exc)},
+                        status=HTTPStatus.UNPROCESSABLE_ENTITY,
+                    )
                 except Exception as exc:
-                    self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
             if path == "/api/rosters":
@@ -1202,6 +1748,21 @@ def make_handler(app_state: ReplayCoachAppState):
                     self._send_json(res)
                 except Exception as exc:
                     self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/prep-tools/generate":
+                try:
+                    res = app_state.generate_prep_tool(
+                        kind=str(body.get("kind") or "speed_tiers"),
+                        roster_id=body.get("roster_id"),
+                        paste_text=body.get("paste_text"),
+                        team_name=body.get("team_name"),
+                        top_n=int(body.get("top_n") or 50),
+                        lang=str(body.get("lang") or "es"),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
             if path == "/api/telemetry/export":

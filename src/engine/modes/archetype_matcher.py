@@ -11,7 +11,7 @@ Produces:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from engine.db_registry import VGCDataRegistry, get_registry
@@ -31,20 +31,6 @@ def _select_verified_move(mon: TeamMemberData, candidates: List[str]) -> str:
             if known.strip().lower() == cand.strip().lower():
                 return known
     return mon.moves[0] if mon.moves else "Protect"
-
-
-def _describe_verified_mon_action(mon: TeamMemberData, preferred_moves: List[str], target_note: str) -> str:
-    """Builds a 100% species-verified Turn 1 command string using only `mon`'s actual moves and ability."""
-    mv = _select_verified_move(mon, preferred_moves)
-    prefix = ""
-    if mon.is_mega and mon.mega_form:
-        if "charizard" in mon.species.lower():
-            prefix = "Mega Evolve into Mega-Y (Drought sets Sun at Priority +5.5) + "
-        elif "raichu" in mon.species.lower():
-            prefix = f"Mega Evolve into {mon.mega_form} + "
-        else:
-            prefix = f"Mega Evolve into {mon.mega_form} + "
-    return f"{prefix}{mv} ({target_note})"
 
 
 @dataclass

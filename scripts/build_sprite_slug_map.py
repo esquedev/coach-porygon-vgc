@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import re
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ASSETS_DIR = ROOT_DIR / "assets"

@@ -140,19 +140,22 @@ def test_studio_pipeline_logs_sprites_inline_ots_and_telemetry_export(tmp_path: 
     assert db.delete_roster("temp_roster") is True
     assert db.get_roster("temp_roster") is None
 
-    # 2. Clean boot on Step 1 (replay=None), preview_replay, and inline OTS loading
+    # 2. Clean boot on Step 1 (replay=None), unified Bo1/Bo3 preview, and inline OTS loading
     state = ReplayCoachAppState(preload_sample=False, db_path=tmp_path / "studio_ots.duckdb")
     assert state.replay is None
 
     raw_html = SAMPLE_REPLAY.read_text(encoding="utf-8")
-    prev = state.preview_replay(raw_html, pov_trainer="treces_gc")
+    prev = state.preview_bo3_bundle(
+        replays=[{"filename": "matchagotme_g1.html", "raw_input": raw_html}],
+        pov_trainer="treces_gc",
+    )
     assert prev["trainer_1_name"] == "treces_gc"
     assert prev["trainer_2_name"] == "MatchaGotMe"
     assert prev["num_turns"] == 10
     assert prev["trainer_1_preview"][0]["sprite_url"] is not None
 
-    loaded = state.load_replay(
-        raw_input=raw_html,
+    loaded = state.load_bo3_bundle(
+        replays=[{"filename": "matchagotme_g1.html", "raw_input": raw_html}],
         pov_trainer="treces_gc",
         t1_paste_text=SAMPLE_T1_PASTE.read_text(encoding="utf-8"),
         t2_paste_text=SAMPLE_T2_PASTE.read_text(encoding="utf-8"),
@@ -240,8 +243,8 @@ def test_4mode_bilingual_separation_cpu_fallback_and_cancellation(tmp_path: Path
     assert summary["device_type"] == "cpu"
     assert summary["recommended_k"] == 64
 
-    cpu_state.load_replay(
-        raw_input=SAMPLE_REPLAY.read_text(encoding="utf-8"),
+    cpu_state.load_bo3_bundle(
+        replays=[{"filename": "matchagotme_g1.html", "raw_input": SAMPLE_REPLAY.read_text(encoding="utf-8")}],
         pov_trainer="treces_gc",
         t1_paste_text=SAMPLE_T1_PASTE.read_text(encoding="utf-8"),
         t2_paste_text=SAMPLE_T2_PASTE.read_text(encoding="utf-8"),
@@ -343,13 +346,15 @@ def test_two_ply_lookahead_auto_infer_and_session_analytics(tmp_path: Path, monk
     assert res_2ply["two_ply"]["cells_evaluated"] >= 1
     assert any(lg["phase"] == "PLY_2" for lg in res_2ply["pipeline_logs"])
 
-    # 2. Opportunity 4: 1-Click Auto-Infer Opponent OTS from Regional DuckDB
+    # 2. Opportunity 4: OTS-Enforced 66-SP Mathematical Solver (`infer_ots_from_replay`)
     inf = st.infer_ots_from_replay(raw_input="", side="t2", pov_trainer="treces_gc", use_sample=True)
     assert inf["ok"] is True
     assert inf["side"] == "t2"
     assert inf["inferred_count"] == 6
     assert inf["validation"]["valid"] is True
     assert inf["validation"]["count"] == 6
+    assert "inference" in inf
+    assert inf["inference"]["total_smogon_calcs"] > 100
     for mon in inf["validation"]["pokemon"]:
         assert mon["total_sp"] == 66
         assert len(mon["moves"]) == 4
@@ -373,6 +378,122 @@ def test_two_ply_lookahead_auto_infer_and_session_analytics(tmp_path: Path, monk
     assert "lead" in summary["mistakes_by_phase"]
     assert "midgame" in summary["mistakes_by_phase"]
     assert "endgame" in summary["mistakes_by_phase"]
+
+
+def test_bo3_bundle_clamped_sp_slider_and_strict_validation(tmp_path: Path) -> None:
+    """Verify Milestone 4 Bo3 bundle preview, ephemeral clamped 66-SP inference, strict clamp rejection, and game switching."""
+    import pytest
+
+    db = OTSRosterDatabase(db_path=tmp_path / "bo3_ots.duckdb")
+    initial_roster_count = len(db.list_rosters())
+
+    # 1. Verify EV-less OTS validates cleanly with mode == 'evless_ots'
+    evless_paste = """
+Incineroar @ White Herb
+Ability: Intimidate
+Level: 50
+Adamant Nature
+- Flare Blitz
+- Darkest Lariat
+- Fake Out
+- Parting Shot
+"""
+    val_evless = db.validate_paste(evless_paste)
+    assert val_evless["valid"] is True
+    assert val_evless["mode"] == "evless_ots"
+    assert val_evless["has_full_ots_metadata"] is True
+
+    # 2. Preview 2-game Bo3 bundle (duplicating matchagotme_g1 as G1 & G2)
+    raw_html = SAMPLE_REPLAY.read_text(encoding="utf-8")
+    st = ReplayCoachAppState(preload_sample=False, db_path=tmp_path / "bo3_ots.duckdb", device="cpu")
+    prev = st.preview_bo3_bundle(
+        replays=[
+            {"filename": "matchagotme_g1.html", "raw_input": raw_html},
+            {"filename": "matchagotme_g2.html", "raw_input": raw_html},
+        ],
+        pov_trainer="treces_gc",
+    )
+    assert prev["ok"] is True
+    assert prev["is_bo3"] is True
+    assert prev["games_count"] == 2
+    assert prev["has_showteam_ots"] is True
+    assert "Incineroar @ White Herb" in prev["trainer_2_evless_ots_paste"]
+
+    # 3. Solve pooled Bo3 66-SP clamped bounds (ephemeral — must NOT write to DuckDB!)
+    inf = st.infer_bo3_opponent_sp(
+        t1_paste_text=SAMPLE_T1_PASTE.read_text(encoding="utf-8"),
+        pov_trainer="treces_gc",
+    )
+    assert inf["ok"] is True
+    assert inf["games_pooled"] == 2
+    assert len(inf["pokemon"]) == 6
+    assert len(st.ots_db.list_rosters()) == initial_roster_count  # Strictly ephemeral!
+
+    inc_entry = next(m for m in inf["pokemon"] if m["base_species"] == "Incineroar")
+    assert inc_entry["sprite_url"] is not None
+    assert inc_entry["bounds"]["atk"]["min_sp"] >= 24
+
+    # 4. Strict Backend Clamp Enforcement: attempting to override Incineroar Atk below min_sp MUST raise ValueError!
+    user_spreads = {m["base_species"]: dict(m["default_spread"]) for m in inf["pokemon"]}
+    bad_spreads = {k: dict(v) for k, v in user_spreads.items()}
+    bad_spreads["Incineroar"] = {"hp": 32, "atk": 0, "def": 32, "spa": 0, "spd": 2, "spe": 0}
+    with pytest.raises(ValueError, match="deterministic bounds"):
+        st.load_bo3_bundle(
+            pov_trainer="treces_gc",
+            t1_paste_text=SAMPLE_T1_PASTE.read_text(encoding="utf-8"),
+            t2_user_spreads=bad_spreads,
+        )
+
+    # 5. Valid in-clamp spreads load cleanly across both Bo3 games & support seamless game switching!
+    loaded = st.load_bo3_bundle(
+        pov_trainer="treces_gc",
+        t1_paste_text=SAMPLE_T1_PASTE.read_text(encoding="utf-8"),
+        t2_user_spreads=user_spreads,
+        active_game_index=0,
+    )
+    assert loaded["active_t2_roster_id"] == "inferred_ephemeral"
+    assert len(loaded["bo3_games"]) == 2
+    assert loaded["active_game_index"] == 0
+    assert len(st.ots_db.list_rosters()) == initial_roster_count  # Still ephemeral!
+
+    switched = st.select_bo3_game(1)
+    assert switched["active_game_index"] == 1
+    assert switched["replay"]["num_turns"] == 10
+
+
+def test_coach_bo3_cli_headless_and_flags(tmp_path: Path, capsys) -> None:
+    """Verify `scripts/coach_bo3.py` uses `--rng-samples` (never `--mc`) and outputs GFM tables."""
+    import scripts.coach_bo3 as cli_mod
+
+    parser = cli_mod.build_arg_parser()
+    option_strings = set(parser._option_string_actions.keys())
+    assert "--rng-samples" in option_strings
+    assert "--mc" not in option_strings
+
+    out_paste = tmp_path / "solved_opp.txt"
+    rc = cli_mod.main(
+        [
+            "--team",
+            str(SAMPLE_T1_PASTE),
+            "--replays",
+            str(SAMPLE_REPLAY),
+            "--pov",
+            "treces_gc",
+            "--rng-samples",
+            "16",
+            "--save-opp-paste",
+            str(out_paste),
+            "--no-sim",
+        ]
+    )
+    assert rc == 0
+    captured = capsys.readouterr().out
+    assert "## Inferred Opponent 66-SP Sheet" in captured
+    assert "| Pokémon | Nature & Item |" in captured
+    assert out_paste.exists()
+    assert "Incineroar @ White Herb" in out_paste.read_text(encoding="utf-8")
+
+
 
 
 

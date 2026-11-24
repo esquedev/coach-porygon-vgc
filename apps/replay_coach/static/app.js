@@ -8,20 +8,64 @@
     lang: localStorage.getItem("porygon_lang") || "es",
     style: localStorage.getItem("porygon_style") || "vgc",
     rawReplayText: "",
+    bo3Replays: [],
+    bo3GamesMeta: [],
+    activeGameIndex: 0,
+    bo3TurnCache: {},
     previewData: null,
     selectedRosterId: { t1: null, t2: null },
     searchQuery: { t1: "", t2: "" },
     t1Validation: null,
     t2Validation: null,
+    t2Inference: null,
+    t2UserSpreads: {},
     currentTurn: 1,
     turnResults: {},
     pipelineLogs: [],
     matchSummary: null,
     activeStream: null,
     autoPausedTurns: {},
+    playerPaused: true,
     jsErrors: [],
     lastBugReport: null,
+    prevStepBeforePrep: "setup",
+    prep: {
+      kind: "speed_tiers",
+      topN: 50,
+      usePaste: false,
+      token: null,
+      filename: "",
+      generating: false,
+      meta: null,
+    },
   };
+
+  const STAT_KEYS = ["hp", "atk", "def", "spa", "spd", "spe"];
+  const STAT_LABELS = { hp: "HP", atk: "Atk", def: "Def", spa: "SpA", spd: "SpD", spe: "Spe" };
+  const NATURE_MODS = {
+    Lonely: ["atk", "def"], Brave: ["atk", "spe"], Adamant: ["atk", "spa"], Naughty: ["atk", "spd"],
+    Bold: ["def", "atk"], Relaxed: ["def", "spe"], Impish: ["def", "spa"], Lax: ["def", "spd"],
+    Timid: ["spe", "atk"], Hasty: ["spe", "def"], Jolly: ["spe", "spa"], Naive: ["spe", "spd"],
+    Modest: ["spa", "atk"], Mild: ["spa", "def"], Quiet: ["spa", "spe"], Rash: ["spa", "spd"],
+    Calm: ["spd", "atk"], Gentle: ["spd", "def"], Sassy: ["spd", "spe"], Careful: ["spd", "spa"],
+  };
+
+  function getNatureDelta(natureName, statKey) {
+    const pair = NATURE_MODS[natureName || ""];
+    if (!pair) return 0;
+    if (pair[0] === statKey) return 1;
+    if (pair[1] === statKey) return -1;
+    return 0;
+  }
+
+  function calcChampionsL50Stat(statKey, baseVal, spVal, natureName) {
+    const b = Number(baseVal || 80);
+    const sp = Number(spVal || 0);
+    if (statKey === "hp") return b + sp + 75;
+    const d = getNatureDelta(natureName, statKey);
+    const mult = d > 0 ? 1.1 : d < 0 ? 0.9 : 1.0;
+    return Math.floor((b + sp + 20) * mult);
+  }
 
   window.addEventListener("error", (ev) => {
     if (ev && ev.message) state.jsErrors.push(`${ev.message} (${ev.lineno || 0})`);
@@ -87,13 +131,18 @@
   // Navigation & Full 4-Mode Translation (ES/EN x VGC/Scientific)
   // -------------------------------------------------------------------------
   function setStep(stepName) {
+    if (stepName === "prep" && state.activeStep !== "prep") {
+      state.prevStepBeforePrep = state.activeStep || "setup";
+    }
     state.activeStep = stepName;
-    ["setup", "pipeline", "review"].forEach((s) => {
+    ["setup", "pipeline", "review", "prep"].forEach((s) => {
       const view = $(`view-${s}`);
       const btn = $(`nav-step-${s}`);
       if (view) view.classList.toggle("active", s === stepName);
       if (btn) btn.classList.toggle("active", s === stepName);
     });
+    const prepTopBtn = $("btn-open-prep-view");
+    if (prepTopBtn) prepTopBtn.classList.toggle("active", stepName === "prep");
   }
 
   function setCoachTab(tabName) {
@@ -136,6 +185,17 @@
     }
   }
 
+  function updatePlayPauseButton() {
+    const btn = $("btn-play-pause");
+    if (!btn) return;
+    const isEs = state.lang === "es";
+    if (state.playerPaused) {
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor" style="vertical-align:-1px;margin-right:4px" aria-hidden="true"><polygon points="2,1 11,6 2,11"/></svg>${isEs ? "Reproducir" : "Play"}`;
+    } else {
+      btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor" style="vertical-align:-1px;margin-right:4px" aria-hidden="true"><rect x="2" y="1" width="3" height="10"/><rect x="7" y="1" width="3" height="10"/></svg>${isEs ? "Pausar" : "Pause"}`;
+    }
+  }
+
   function applyAllTranslations() {
     const isEs = state.lang === "es";
     const isSci = state.style === "scientific";
@@ -156,13 +216,13 @@
     $("btn-toggle-raw-replay").textContent = isEs ? "Pegar Log / HTML" : "Paste Log / HTML";
     $("btn-load-sample").textContent = isEs ? "Partida de Ejemplo" : "Sample Match";
     $("lbl-dropzone-title").textContent = isEs
-      ? "Arrastra aquí tu archivo de Replay (.html, .log, .txt)"
-      : "Drop your Replay file (.html, .log, .txt) here";
+      ? "Arrastra aquí 1 a 3 Replays (Bo1 o serie Bo3: .html, .log, .txt)"
+      : "Drop 1 to 3 Replay files (Bo1 or Bo3 series: .html, .log, .txt)";
     $("lbl-dropzone-sub").textContent = isEs
-      ? "o selecciona un archivo local descargado desde Pokémon Showdown"
-      : "or pick a local file downloaded from Pokémon Showdown";
-    $("lbl-pick-file").textContent = isEs ? "Seleccionar archivo" : "Choose file";
-    $("btn-change-replay").textContent = isEs ? "Cambiar replay" : "Change replay";
+      ? "Sube Game 1, Game 2 y Game 3 juntos para combinar todas las pistas de daño y velocidad en un solo 66-SP rival"
+      : "Upload Game 1, Game 2, and Game 3 together to pool all damage & speed clues into one shared 66-SP opponent sheet";
+    $("lbl-pick-file").textContent = isEs ? "Seleccionar replay(s)" : "Choose replay(s)";
+    $("btn-change-replay").textContent = isEs ? "Cambiar replay(s)" : "Change replay(s)";
     $("lbl-pov-select").textContent = isEs ? "Perspectiva:" : "Coach POV:";
     $("lbl-k-select").textContent = getTermInfo("rng_samples", "RNG", true).label + ":";
     if ($("lbl-two-ply")) {
@@ -175,12 +235,26 @@
         ? "Filtrar por Pokémon o nombre (ej. Charizard Garchomp)..."
         : "Filter by Pokémon or team name (e.g. Charizard Garchomp)...";
       if ($(`btn-${side}-infer`)) {
-        $(`btn-${side}-infer`).textContent = isEs ? "Auto-Inferir" : "Auto-Infer";
+        $(`btn-${side}-infer`).textContent =
+          side === "t2"
+            ? (isEs ? "Resolver 66-SP" : "Solve 66-SP")
+            : (isEs ? "Resolver 66-SP" : "Solve 66-SP");
       }
       $(`btn-${side}-toggle-paste`).textContent = isEs ? "Pegar OTS" : "Paste OTS";
       $(`btn-${side}-clear`).textContent = isEs ? "Limpiar" : "Clear";
       $(`btn-${side}-validate`).textContent = isEs ? "Aplicar" : "Apply";
     });
+    if ($("btn-t2-autofill-all")) {
+      $("btn-t2-autofill-all").textContent = isEs ? "Auto-Completar" : "Auto-Fill Defaults";
+    }
+    if ($("btn-t2-save-ephemeral")) {
+      $("btn-t2-save-ephemeral").textContent = isEs ? "Guardar en Biblioteca" : "Save to Library";
+    }
+    if ($("t2-clamped-sp-hint")) {
+      $("t2-clamped-sp-hint").textContent = isEs
+        ? "Los límites bloqueados (🔒) y acotados provienen de daño/velocidad reales del replay y no se pueden anular. Ajusta los SP restantes libremente."
+        : "Locked (🔒) and bounded intervals come directly from observed replay damage & speed proofs and cannot be overridden. Adjust remaining SP freely.";
+    }
 
     $("lbl-pipeline-title").textContent = isEs
       ? "Ejecución del Pipeline Tensor Core"
@@ -195,7 +269,7 @@
     $("lbl-autopause").textContent = isEs ? "Auto-Pausa en errores" : "Auto-Pause on mistakes";
     $("lbl-export-csv").textContent = isEs ? "Exportar CSV" : "Export CSV";
     $("btn-back-to-log").textContent = "Log";
-    $("btn-play-pause").textContent = isEs ? "Play / Pausa" : "Play / Pause";
+    updatePlayPauseButton();
     $("btn-flip-pov").textContent = isEs ? "Invertir" : "Flip";
     $("btn-recompute-turn").textContent = isEs ? "Recalcular" : "Recompute";
 
@@ -205,6 +279,58 @@
       : (isEs ? "Todas las Jugadas" : "All Plays");
     $("tab-btn-board").textContent = isEs ? "Tablero y Curva" : "Board & Graph";
 
+    if ($("lbl-prep-btn")) {
+      $("lbl-prep-btn").textContent = isEs ? "Herramientas Prep" : "Prep Tools";
+    }
+    if ($("btn-prep-back")) {
+      $("btn-prep-back").textContent = isEs ? "← Volver al Studio" : "← Back to Studio";
+    }
+    if ($("lbl-prep-heading")) {
+      $("lbl-prep-heading").textContent = isEs
+        ? "Herramientas Prep Offline (Cero IA)"
+        : "Offline Mobile Prep Tools (Zero-AI)";
+    }
+    if ($("btn-prep-kind-speed")) {
+      $("btn-prep-kind-speed").textContent = isEs ? "⚡ Velocidades" : "⚡ Speed Tiers";
+    }
+    if ($("btn-prep-kind-damage")) {
+      $("btn-prep-kind-damage").textContent = isEs ? "💥 Matriz de Daño" : "💥 Damage & KO Matrix";
+    }
+    if ($("btn-prep-toggle-paste")) {
+      $("btn-prep-toggle-paste").textContent = state.prep.usePaste
+        ? (isEs ? "Usar DuckDB" : "Use Saved Roster")
+        : (isEs ? "Pegar 66-SP" : "Paste 66-SP");
+    }
+    if ($("lbl-prep-generate")) {
+      $("lbl-prep-generate").textContent = state.prep.generating
+        ? (isEs ? "Calculando..." : "Computing...")
+        : (isEs ? "Generar" : "Generate");
+    }
+    if ($("lbl-prep-download")) {
+      $("lbl-prep-download").textContent = isEs
+        ? "⬇ Descargar HTML Offline"
+        : "⬇ Download Offline HTML";
+    }
+    if ($("lbl-prep-paste-hint")) {
+      $("lbl-prep-paste-hint").textContent = isEs
+        ? "Pega cualquier Showdown Paste Reg M-C (66-SP o OTS)"
+        : "Paste any Regulation M-C 66-SP or OTS Showdown team";
+    }
+    if ($("prep-paste-name")) {
+      $("prep-paste-name").placeholder = isEs
+        ? "Nombre del equipo (ej. Rain Archaludon Reg M-C)"
+        : "Team display name (e.g. Rain Archaludon Reg M-C)";
+    }
+    if ($("lbl-prep-empty-title")) {
+      $("lbl-prep-empty-title").textContent = isEs
+        ? "Generador Instantáneo de Tablas Móviles Offline"
+        : "Instant Offline Mobile Prep Generator";
+    }
+    if ($("lbl-prep-empty-sub")) {
+      $("lbl-prep-empty-sub").textContent = isEs
+        ? "Calcula Velocidades Lv.50 (31 IVs) y Matrices de Daño con 16 rolls exactos de Smogon Champions (5 Climas × 5 Campos) sin suscripción de IA y descárgalos en un solo HTML Base64 para tu teléfono."
+        : "Compute exact Lv.50 31-IV Speed Tiers and Smogon Champions 16-roll Damage Matrices (all 5 Weathers × 5 Terrains) with zero AI subscription and download a single-file Base64 HTML for your phone.";
+    }
     if ($("lbl-analytics-btn")) {
       $("lbl-analytics-btn").textContent = isEs ? "Analítica" : "Analytics";
     }
@@ -234,10 +360,16 @@
     $("btn-copy-bug-log").textContent = isEs ? "Copiar" : "Copy";
 
     updateKOptions();
+    renderBo3GameTabs();
     renderSavedTeamsList("t1");
     renderSavedTeamsList("t2");
+    populatePrepRosterSelect();
     renderOtsMonGrid("t1-ots-mon-grid", "t1-sp-status", state.t1Validation);
-    renderOtsMonGrid("t2-ots-mon-grid", "t2-sp-status", state.t2Validation);
+    if (state.t2Inference) {
+      renderClampedSpPanel();
+    } else {
+      renderOtsMonGrid("t2-ots-mon-grid", "t2-sp-status", state.t2Validation);
+    }
     renderPipelineLogs();
     if (state.matchSummary) {
       renderMatchSummaryUI(state.matchSummary);
@@ -373,6 +505,12 @@
     state.selectedRosterId[side] = found.roster_id;
     $(`${side}-paste-input`).value = found.paste_text;
     $(`${side}-paste-drawer`).style.display = "none";
+    if (side === "t2") {
+      state.t2Inference = null;
+      state.t2UserSpreads = {};
+      if ($("t2-clamped-sp-panel")) $("t2-clamped-sp-panel").style.display = "none";
+      if ($("t2-ots-mon-grid")) $("t2-ots-mon-grid").style.display = "flex";
+    }
     renderSavedTeamsList(side);
     validateAndRenderSide(side, found.paste_text);
   }
@@ -380,10 +518,381 @@
   function clearSideSelection(side) {
     state.selectedRosterId[side] = null;
     $(`${side}-paste-input`).value = "";
-    if (side === "t1") state.t1Validation = null;
-    else state.t2Validation = null;
+    if (side === "t1") {
+      state.t1Validation = null;
+    } else {
+      state.t2Validation = null;
+      state.t2Inference = null;
+      state.t2UserSpreads = {};
+      if ($("t2-clamped-sp-panel")) $("t2-clamped-sp-panel").style.display = "none";
+      if ($("t2-ots-mon-grid")) $("t2-ots-mon-grid").style.display = "flex";
+    }
     renderSavedTeamsList(side);
     renderOtsMonGrid(`${side}-ots-mon-grid`, `${side}-sp-status`, null);
+  }
+
+  // -------------------------------------------------------------------------
+  // Bo3 Game Switcher & Ephemeral Clamped 66-SP Slider Workbench
+  // -------------------------------------------------------------------------
+  function renderBo3GameTabs() {
+    const games =
+      (state.app && state.app.bo3_games && state.app.bo3_games.length
+        ? state.app.bo3_games
+        : state.bo3GamesMeta) || [];
+    const isEs = state.lang === "es";
+    const containers = [$("setup-bo3-tabs"), $("pipeline-bo3-tabs"), $("review-bo3-tabs")];
+    if (games.length <= 1) {
+      containers.forEach((el) => {
+        if (el) {
+          el.style.display = "none";
+          el.innerHTML = "";
+        }
+      });
+      return;
+    }
+
+    const html = games
+      .map((g, idx) => {
+        const isAct = idx === state.activeGameIndex;
+        const resCls = g.is_t1_win ? "win" : g.winner ? "loss" : "unk";
+        const resTxt = g.is_t1_win ? "W" : g.winner ? "L" : "—";
+        const lbl = isEs ? `Juego ${g.game_index}` : `Game ${g.game_index}`;
+        return `<button type="button" class="bo3-tab-btn ${isAct ? "active" : ""}" data-bo3-idx="${idx}" title="${escapeHtml(g.filename || lbl)}">
+          <span>${lbl}</span>
+          <span class="bo3-res-dot ${resCls}">${resTxt}</span>
+          <span class="muted-xs">${g.num_turns}t</span>
+        </button>`;
+      })
+      .join("");
+
+    containers.forEach((el) => {
+      if (!el) return;
+      el.style.display = el.classList.contains("bo3-tabs-inline") ? "inline-flex" : "flex";
+      el.innerHTML = html;
+      el.querySelectorAll("[data-bo3-idx]").forEach((btn) => {
+        btn.addEventListener("click", () => switchBo3Game(parseInt(btn.dataset.bo3Idx, 10)));
+      });
+    });
+  }
+
+  async function switchBo3Game(targetIdx) {
+    if (targetIdx === state.activeGameIndex) return;
+    if (state.activeStep === "setup" || !state.app || !state.app.bo3_games || !state.app.bo3_games.length) {
+      state.activeGameIndex = targetIdx;
+      const g = state.bo3GamesMeta[targetIdx];
+      if (g && $("detected-turns-label")) {
+        $("detected-turns-label").textContent = `${g.num_turns} ${state.lang === "es" ? "turnos" : "turns"}`;
+      }
+      renderBo3GameTabs();
+      return;
+    }
+
+    // Save current game's computed turn results into client Bo3 cache
+    state.bo3TurnCache[state.activeGameIndex] = {
+      turnResults: state.turnResults,
+      pipelineLogs: state.pipelineLogs,
+      matchSummary: state.matchSummary,
+      currentTurn: state.currentTurn,
+      autoPausedTurns: state.autoPausedTurns,
+    };
+
+    if (state.activeStream) {
+      await cancelActiveStream();
+    }
+
+    const res = await fetch("/api/bo3/select-game", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ game_index: targetIdx }),
+    });
+    const summary = await res.json();
+    if (summary.error) {
+      $("setup-status-msg").textContent = `Error: ${summary.error}`;
+      return;
+    }
+
+    state.app = summary;
+    state.activeGameIndex = summary.active_game_index || 0;
+    const cached = state.bo3TurnCache[state.activeGameIndex];
+    if (cached) {
+      state.turnResults = cached.turnResults || {};
+      state.pipelineLogs = cached.pipelineLogs || [];
+      state.matchSummary = cached.matchSummary || null;
+      state.currentTurn = cached.currentTurn || 1;
+      state.autoPausedTurns = cached.autoPausedTurns || {};
+    } else {
+      state.turnResults = {};
+      state.pipelineLogs = [];
+      state.matchSummary = null;
+      state.currentTurn = 1;
+      state.autoPausedTurns = {};
+    }
+
+    renderBo3GameTabs();
+    updateReviewHeaderMeta();
+    $("showdown-iframe").src = `/api/replay-player?ts=${Date.now()}`;
+    renderPipelineLogs();
+    renderTimeline();
+
+    if (cached && Object.keys(cached.turnResults || {}).length >= (summary.replay ? summary.replay.num_turns : 1)) {
+      if (cached.matchSummary) renderMatchSummaryUI(cached.matchSummary);
+      if (state.activeStep === "review") {
+        selectTurn(state.currentTurn || 1, true, false);
+      }
+    } else if (state.activeStep === "pipeline" || state.activeStep === "review") {
+      setStep("pipeline");
+      openPipelineStream(1);
+    }
+  }
+
+  function updateClampedStatusBadge() {
+    const statusEl = $("t2-sp-status");
+    const inf = state.t2Inference;
+    if (!statusEl || !inf || !inf.pokemon) return;
+    const isEs = state.lang === "es";
+    let allComplete = true;
+    let remainingTotal = 0;
+    inf.pokemon.forEach((m) => {
+      const sp = state.t2UserSpreads[m.base_species] || m.default_spread || {};
+      const sum = STAT_KEYS.reduce((acc, k) => acc + Number(sp[k] || 0), 0);
+      if (sum !== 66) {
+        allComplete = false;
+        remainingTotal += Math.max(0, 66 - sum);
+      }
+    });
+    if (allComplete) {
+      statusEl.className = "sp-status ok";
+      statusEl.textContent = isEs
+        ? `${inf.pokemon.length} Pokémon · 66-SP Resuelto`
+        : `${inf.pokemon.length} Pokémon · 66-SP Solved`;
+    } else {
+      statusEl.className = "sp-status warn";
+      statusEl.textContent = isEs
+        ? `Faltan ${remainingTotal} SP por asignar`
+        : `${remainingTotal} SP left to assign`;
+    }
+  }
+
+  function renderClampedSpPanel() {
+    const panel = $("t2-clamped-sp-panel");
+    const grid = $("t2-ots-mon-grid");
+    const list = $("t2-clamped-sp-list");
+    const inf = state.t2Inference;
+    if (!panel || !list) return;
+
+    if (!inf || !inf.pokemon || !inf.pokemon.length) {
+      panel.style.display = "none";
+      if (grid) grid.style.display = "flex";
+      return;
+    }
+
+    const isEs = state.lang === "es";
+    panel.style.display = "block";
+    if (grid) grid.style.display = "none";
+
+    const gLbl = inf.games_pooled > 1 ? `Bo3 (${inf.games_pooled}G)` : "Bo1 (1G)";
+    if ($("t2-solver-meta-badge")) {
+      $("t2-solver-meta-badge").textContent = `${gLbl} · OTS 66-SP`;
+    }
+    if ($("t2-solver-meta-sub")) {
+      $("t2-solver-meta-sub").textContent = `${inf.total_smogon_calcs} calcs · ${inf.elapsed_ms}ms`;
+    }
+
+    list.innerHTML = inf.pokemon
+      .map((m, mIdx) => {
+        const spObj = state.t2UserSpreads[m.base_species] || Object.assign({}, m.default_spread);
+        state.t2UserSpreads[m.base_species] = spObj;
+        const totSp = STAT_KEYS.reduce((a, k) => a + Number(spObj[k] || 0), 0);
+        const remSp = 66 - totSp;
+        const budCls = remSp === 0 ? "ok" : "warn";
+        const budTxt = remSp === 0 ? "66 / 66 SP" : isEs ? `${totSp}/66 (Faltan ${remSp})` : `${totSp}/66 (${remSp} left)`;
+
+        const rowsHtml = STAT_KEYS.map((sk) => {
+          const b = (m.bounds && m.bounds[sk]) || { min_sp: 0, max_sp: 32, locked: false, status: "unobserved", evidence: [] };
+          const curVal = Number(spObj[sk] || 0);
+          const l50 = calcChampionsL50Stat(sk, (m.base_stats || {})[sk], curVal, m.nature);
+          const natDelta = getNatureDelta(m.nature, sk);
+          const natCls = natDelta > 0 ? "nat-up" : natDelta < 0 ? "nat-down" : "";
+          const natMark = natDelta > 0 ? "+" : natDelta < 0 ? "-" : "";
+
+          let pillTxt = "";
+          if (b.locked) pillTxt = `🔒 ${b.min_sp}`;
+          else if (b.status === "bounded") pillTxt = `${b.min_sp}..${b.max_sp}`;
+          else pillTxt = isEs ? "Libre" : "Open";
+
+          const evTooltip = (b.evidence && b.evidence.length)
+            ? b.evidence.join("\n")
+            : (isEs ? "Sin restricción directa en el replay — ajusta libremente dentro del presupuesto de 66 SP." : "No direct replay constraint — adjust freely within the 66-SP budget.");
+
+          const leftPct = (b.min_sp / 32.0) * 100.0;
+          const widthPct = b.locked ? 4.0 : Math.max(3.0, ((b.max_sp - b.min_sp) / 32.0) * 100.0);
+
+          return `<div class="sp-stat-row">
+            <span class="sp-stat-lbl ${natCls}">${STAT_LABELS[sk]}${natMark}</span>
+            <span class="sp-bound-pill ${b.status}" title="${escapeHtml(evTooltip)}">${escapeHtml(pillTxt)}</span>
+            <div class="sp-slider-wrap">
+              <div class="sp-track-bg">
+                <div class="sp-track-feasible ${b.locked ? "pinned" : ""}" style="left:${leftPct.toFixed(1)}%;width:${Math.min(100 - leftPct, widthPct).toFixed(1)}%"></div>
+              </div>
+              <input type="range" class="sp-range"
+                min="0" max="32" step="1" value="${curVal}"
+                data-mon-idx="${mIdx}" data-species="${escapeHtml(m.base_species)}" data-stat="${sk}"
+                data-min-sp="${b.min_sp}" data-max-sp="${b.max_sp}"
+                ${b.locked ? "disabled" : ""} />
+            </div>
+            <span class="sp-val-cell" id="sp-val-${mIdx}-${sk}">${curVal} SP</span>
+            <span class="sp-l50-cell" id="sp-l50-${mIdx}-${sk}">(${l50})</span>
+          </div>`;
+        }).join("");
+
+        return `<div class="sp-mon-card" data-sp-card="${mIdx}">
+          <div class="sp-mon-head">
+            <div class="sp-mon-head-left">
+              ${spritePairHtml(m.sprite_url, m.item_sprite_url, m.base_species, m.item)}
+              <div class="ots-row-info">
+                <div class="ots-row-name">${escapeHtml(m.base_species)} <span class="muted-xs">· ${escapeHtml(m.nature || "")}</span></div>
+                <div class="ots-row-sub">${escapeHtml(m.item || "No Item")} · ${escapeHtml(m.ability || "")} · ${escapeHtml((m.moves || []).join(", "))}</div>
+              </div>
+            </div>
+            <div class="sp-mon-head-right">
+              <span class="sp-budget-pill ${budCls}" id="sp-budget-${mIdx}">${budTxt}</span>
+              <button type="button" class="btn btn-ghost btn-xs" data-reset-mon="${escapeHtml(m.base_species)}" title="${isEs ? "Restaurar spread sugerido dentro de los límites" : "Reset to suggested default spread within clamps"}">↺</button>
+            </div>
+          </div>
+          <div class="sp-rows">${rowsHtml}</div>
+        </div>`;
+      })
+      .join("");
+
+    // Wire strict clamped slider input listeners (zero full DOM rebuild during drag)
+    list.querySelectorAll(".sp-range").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        const mIdx = parseInt(inp.dataset.monIdx, 10);
+        const spName = inp.dataset.species;
+        const sk = inp.dataset.stat;
+        const minSp = parseInt(inp.dataset.minSp, 10);
+        const maxSp = parseInt(inp.dataset.maxSp, 10);
+        const mon = state.t2Inference.pokemon[mIdx];
+        const curObj = state.t2UserSpreads[spName];
+        if (!mon || !curObj) return;
+
+        let rawV = parseInt(inp.value, 10);
+        // 1. Strictly enforce deterministic inferred bounds [minSp, maxSp]
+        let clamped = Math.max(minSp, Math.min(maxSp, rawV));
+        // 2. Strictly enforce 66-SP total budget ceiling
+        const otherSum = STAT_KEYS.reduce((a, k) => a + (k === sk ? 0 : Number(curObj[k] || 0)), 0);
+        const budgetCap = Math.max(minSp, Math.min(maxSp, 66 - otherSum));
+        clamped = Math.min(clamped, budgetCap);
+
+        if (clamped !== rawV) {
+          inp.value = String(clamped);
+        }
+        curObj[sk] = clamped;
+
+        const l50 = calcChampionsL50Stat(sk, (mon.base_stats || {})[sk], clamped, mon.nature);
+        const valCell = $(`sp-val-${mIdx}-${sk}`);
+        const l50Cell = $(`sp-l50-${mIdx}-${sk}`);
+        if (valCell) valCell.textContent = `${clamped} SP`;
+        if (l50Cell) l50Cell.textContent = `(${l50})`;
+
+        const totSp = STAT_KEYS.reduce((a, k) => a + Number(curObj[k] || 0), 0);
+        const remSp = 66 - totSp;
+        const bPill = $(`sp-budget-${mIdx}`);
+        if (bPill) {
+          bPill.className = `sp-budget-pill ${remSp === 0 ? "ok" : "warn"}`;
+          bPill.textContent =
+            remSp === 0
+              ? "66 / 66 SP"
+              : state.lang === "es"
+                ? `${totSp}/66 (Faltan ${remSp})`
+                : `${totSp}/66 (${remSp} left)`;
+        }
+        updateClampedStatusBadge();
+      });
+    });
+
+    // Wire per-mon reset button
+    list.querySelectorAll("[data-reset-mon]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const spName = btn.dataset.resetMon;
+        const mon = state.t2Inference.pokemon.find((x) => x.base_species === spName);
+        if (!mon) return;
+        state.t2UserSpreads[spName] = Object.assign({}, mon.default_spread);
+        renderClampedSpPanel();
+      });
+    });
+
+    updateClampedStatusBadge();
+  }
+
+  async function runBo3OpponentInference(t2OtsPasteOverride) {
+    const isEs = state.lang === "es";
+    if (!state.bo3Replays.length && !state.rawReplayText) {
+      $("setup-status-msg").textContent = isEs
+        ? "Primero carga 1 a 3 replays para resolver el 66-SP rival."
+        : "Load 1 to 3 replays first before solving opponent 66-SP.";
+      return;
+    }
+
+    const btn = $("btn-t2-infer");
+    const prevTxt = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = isEs ? "Resolviendo..." : "Solving...";
+    }
+    try {
+      const pov = $("setup-pov-select") ? $("setup-pov-select").value || null : null;
+      const t1Paste = $("t1-paste-input") ? $("t1-paste-input").value || "" : "";
+      const t2OtsPaste =
+        t2OtsPasteOverride !== undefined
+          ? t2OtsPasteOverride
+          : ($("t2-paste-input") ? $("t2-paste-input").value || "" : "");
+
+      const res = await fetch("/api/bo3/infer-sp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          replays: state.bo3Replays.length ? state.bo3Replays : null,
+          use_sample: state.rawReplayText === "__SAMPLE__" && !state.bo3Replays.length,
+          pov_trainer: pov,
+          t1_roster_id: state.selectedRosterId.t1 || null,
+          t1_paste_text: t1Paste || null,
+          t2_ots_paste_text: t2OtsPaste || null,
+        }),
+      });
+      const d = await res.json();
+      if (!d.ok) {
+        if (d.missing_ots) {
+          $("t2-paste-drawer").style.display = "block";
+          $("setup-status-msg").textContent = isEs
+            ? "Este replay no incluye |showteam|. Pega el OTS sin EVs del rival (Especie, Objeto, Habilidad, Naturaleza, Movimientos) y pulsa Aplicar."
+            : "This replay does not contain |showteam|. Paste the opponent's EV-less OTS (Species, Item, Ability, Nature, Moves) and click Apply.";
+        } else {
+          $("setup-status-msg").textContent = `Error: ${d.error || "66-SP solver failed"}`;
+        }
+        return;
+      }
+
+      state.selectedRosterId.t2 = null;
+      state.t2Inference = d;
+      state.t2UserSpreads = {};
+      (d.pokemon || []).forEach((m) => {
+        state.t2UserSpreads[m.base_species] = Object.assign({}, m.active_spread || m.default_spread);
+      });
+      state.t2Validation = d.validation || null;
+      $("t2-paste-drawer").style.display = "none";
+      renderSavedTeamsList("t2");
+      renderClampedSpPanel();
+
+      $("setup-status-msg").textContent = isEs
+        ? `66-SP resuelto para ${d.trainer_2_name} (${d.games_pooled} partida(s) · ${d.total_smogon_calcs} calcs Smogon en ${d.elapsed_ms}ms). Ajusta los sliders si lo deseas y pulsa "Iniciar Análisis Tensor Core".`
+        : `Solved 66-SP bounds for ${d.trainer_2_name} (${d.games_pooled} game(s) · ${d.total_smogon_calcs} Smogon calcs in ${d.elapsed_ms}ms). Adjust open SP sliders if desired and click "Run Tensor Core Analysis".`;
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = prevTxt || (isEs ? "Resolver 66-SP" : "Solve 66-SP");
+      }
+    }
   }
 
   function renderOtsMonGrid(containerId, statusId, validation) {
@@ -403,7 +912,10 @@
 
     if (validation.valid) {
       statusEl.className = "sp-status ok";
-      statusEl.textContent = `${validation.count} Pokémon · 66-SP OK`;
+      statusEl.textContent =
+        validation.mode === "evless_ots"
+          ? `${validation.count} Pokémon · OTS (0 SP)`
+          : `${validation.count} Pokémon · 66-SP OK`;
     } else {
       statusEl.className = "sp-status warn";
       statusEl.textContent = `${validation.count} Pokémon · ${(validation.warnings || [])[0] || "SP"}`;
@@ -447,18 +959,43 @@
     const val = await res.json();
     if (side === "t1") state.t1Validation = val;
     else state.t2Validation = val;
+
+    // If user pasted an EV-less OTS for trainer_2 while replays are loaded, auto-solve 66-SP bounds!
+    if (
+      side === "t2" &&
+      val &&
+      val.mode === "evless_ots" &&
+      val.has_full_ots_metadata &&
+      (state.bo3Replays.length > 0 || state.rawReplayText)
+    ) {
+      await runBo3OpponentInference(pasteText);
+      return;
+    }
+
+    if (side === "t2") {
+      state.t2Inference = null;
+      state.t2UserSpreads = {};
+      if ($("t2-clamped-sp-panel")) $("t2-clamped-sp-panel").style.display = "none";
+      if ($("t2-ots-mon-grid")) $("t2-ots-mon-grid").style.display = "flex";
+    }
     renderOtsMonGrid(`${side}-ots-mon-grid`, `${side}-sp-status`, val);
   }
 
-  function renderPreviewBanner(prev) {
+  async function renderPreviewBanner(prev) {
     state.previewData = prev;
+    state.bo3GamesMeta = prev.games || [];
+    state.activeGameIndex = prev.active_game_index || 0;
+    state.t2Inference = null;
+    state.t2UserSpreads = {};
+
     $("replay-dropzone").style.display = "none";
     $("raw-replay-box").style.display = "none";
     $("detected-match-bar").style.display = "flex";
 
     $("detected-format-badge").textContent = prev.format_name || "Regulation M-C";
     $("detected-players-label").textContent = `${prev.trainer_1_name} vs. ${prev.trainer_2_name}`;
-    $("detected-turns-label").textContent = `${prev.num_turns} ${state.lang === "es" ? "turnos" : "turns"}`;
+    const gamesBadge = prev.games_count > 1 ? `Bo3 (${prev.games_count}G) · ` : "";
+    $("detected-turns-label").textContent = `${gamesBadge}${prev.num_turns} ${state.lang === "es" ? "turnos" : "turns"}`;
 
     $("t1-card-title").textContent = `${prev.trainer_1_name} (trainer_1)`;
     $("t2-card-title").textContent = `${prev.trainer_2_name} (trainer_2)`;
@@ -473,33 +1010,52 @@
       povSel.appendChild(opt);
     });
 
+    renderBo3GameTabs();
+
     if (prev.suggested_t1_roster_id) {
       selectSavedRoster("t1", prev.suggested_t1_roster_id);
     } else {
       renderSavedTeamsList("t1");
     }
+
+    $("btn-launch-analysis").disabled = false;
+
+    // Auto-run Zero-AI Clamped 66-SP Solver whenever |showteam| OTS is present in the replay(s)!
+    if (prev.has_showteam_ots) {
+      $("t2-paste-input").value = prev.trainer_2_evless_ots_paste || "";
+      renderSavedTeamsList("t2");
+      await runBo3OpponentInference(prev.trainer_2_evless_ots_paste || "");
+      return;
+    }
+
     if (prev.suggested_t2_roster_id) {
       selectSavedRoster("t2", prev.suggested_t2_roster_id);
     } else {
       renderSavedTeamsList("t2");
+      renderOtsMonGrid("t2-ots-mon-grid", "t2-sp-status", null);
     }
 
-    $("btn-launch-analysis").disabled = false;
     $("setup-status-msg").textContent =
       state.lang === "es"
-        ? `Replay detectado (${prev.num_turns} turnos). Confirma ambos equipos y pulsa "Iniciar Análisis Tensor Core".`
-        : `Replay ready (${prev.num_turns} turns). Confirm both teams and click "Run Tensor Core Analysis".`;
+        ? `Replay detectado (${prev.num_turns} turnos). Selecciona tu equipo y pega el OTS del rival o elige uno guardado.`
+        : `Replay ready (${prev.num_turns} turns). Confirm your 66-SP roster and paste the opponent's OTS or pick a saved sheet.`;
   }
 
-  async function handleReplayInput(rawText, useSample, povOverride) {
-    if (!useSample && (!rawText || !rawText.trim())) return;
-    if (rawText) state.rawReplayText = rawText;
+  async function handleBo3ReplayFiles(replayItems, useSample, povOverride) {
+    if (!useSample && (!replayItems || !replayItems.length)) return;
+    if (useSample) {
+      state.bo3Replays = [];
+      state.rawReplayText = "__SAMPLE__";
+    } else {
+      state.bo3Replays = replayItems.slice(0, 3);
+      state.rawReplayText = state.bo3Replays[0].raw_input;
+    }
 
-    const res = await fetch("/api/replay/preview", {
+    const res = await fetch("/api/bo3/preview", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        raw_input: state.rawReplayText,
+        replays: state.bo3Replays,
         use_sample: !!useSample,
         pov_trainer: povOverride || null,
       }),
@@ -509,10 +1065,15 @@
       $("setup-status-msg").textContent = `Error: ${data.error}`;
       return;
     }
+    await renderPreviewBanner(data);
+  }
+
+  async function handleReplayInput(rawText, useSample, povOverride) {
     if (useSample) {
-      state.rawReplayText = "__SAMPLE__";
+      return handleBo3ReplayFiles([], true, povOverride);
     }
-    renderPreviewBanner(data);
+    if (!rawText || !rawText.trim()) return;
+    return handleBo3ReplayFiles([{ filename: "Game 1", raw_input: rawText }], false, povOverride);
   }
 
   // -------------------------------------------------------------------------
@@ -775,22 +1336,40 @@
       await cancelActiveStream();
     }
 
+    // Verify all 6 opponent Pokémon sum to exactly 66 SP when in Clamped Slider mode
+    if (state.t2Inference && state.t2Inference.pokemon) {
+      const incomplete = state.t2Inference.pokemon.filter((m) => {
+        const sp = state.t2UserSpreads[m.base_species] || {};
+        return STAT_KEYS.reduce((a, k) => a + Number(sp[k] || 0), 0) !== 66;
+      });
+      if (incomplete.length > 0) {
+        const names = incomplete.map((m) => m.base_species).join(", ");
+        $("setup-status-msg").textContent =
+          state.lang === "es"
+            ? `Completa exactamente 66 SP para: ${names} (o pulsa "Auto-Completar").`
+            : `Assign exactly 66 SP for: ${names} (or click "Auto-Fill Defaults").`;
+        return;
+      }
+    }
+
     const pov = $("setup-pov-select").value || null;
     const t1Id = state.selectedRosterId.t1 || null;
-    const t2Id = state.selectedRosterId.t2 || null;
+    const t2Id = state.t2Inference ? null : (state.selectedRosterId.t2 || null);
     const t1Paste = $("t1-paste-input").value || "";
-    const t2Paste = $("t2-paste-input").value || "";
+    const t2Paste = state.t2Inference ? "" : ($("t2-paste-input").value || "");
 
-    const loadRes = await fetch("/api/replay/load", {
+    const loadRes = await fetch("/api/bo3/load", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        raw_input: state.rawReplayText === "__SAMPLE__" ? "" : state.rawReplayText,
+        replays: state.bo3Replays.length ? state.bo3Replays : null,
         pov_trainer: pov,
         t1_roster_id: t1Id,
         t2_roster_id: t2Id,
         t1_paste_text: t1Paste,
         t2_paste_text: t2Paste,
+        t2_user_spreads: state.t2Inference ? state.t2UserSpreads : null,
+        active_game_index: state.activeGameIndex || 0,
         t1_save_meta: {
           save_to_db: $("t1-save-db-check").checked,
           display_name: $("t1-save-name").value,
@@ -807,8 +1386,12 @@
       return;
     }
     state.app = appSummary;
+    state.bo3TurnCache = {};
+    state.activeGameIndex = appSummary.active_game_index || 0;
     renderSavedTeamsList("t1");
     renderSavedTeamsList("t2");
+    populatePrepRosterSelect();
+    renderBo3GameTabs();
 
     $("nav-step-pipeline").disabled = false;
     $("nav-step-setup").classList.add("done");
@@ -1173,7 +1756,35 @@
   // -------------------------------------------------------------------------
   window.addEventListener("message", (ev) => {
     const msg = ev.data || {};
+    if (msg.type === "IFRAME_HEIGHT" && typeof msg.height === "number") {
+      const frame = $("showdown-iframe");
+      const wrap = frame && frame.parentElement;
+      const clampedH = Math.max(372, Math.min(680, Math.ceil(msg.height)));
+      if (frame) frame.style.height = `${clampedH}px`;
+      if (wrap) wrap.style.minHeight = `${clampedH}px`;
+      return;
+    }
+    if (msg.type === "PLAYER_READY") {
+      if (typeof msg.paused === "boolean") {
+        state.playerPaused = msg.paused;
+        updatePlayPauseButton();
+      }
+      const spSel = $("player-speed-select");
+      if (spSel && spSel.value) {
+        postToShowdown({ type: "SET_SPEED", speed: spSel.value });
+      }
+      return;
+    }
+    if (msg.type === "PLAYER_STATE" && typeof msg.paused === "boolean") {
+      state.playerPaused = msg.paused;
+      updatePlayPauseButton();
+      return;
+    }
     if (msg.type === "TURN_CHANGED" && typeof msg.turn === "number" && msg.turn >= 1) {
+      if (typeof msg.paused === "boolean") {
+        state.playerPaused = msg.paused;
+        updatePlayPauseButton();
+      }
       if (msg.turn !== state.currentTurn) {
         selectTurn(msg.turn, false, false);
         const tr = state.turnResults[msg.turn];
@@ -1244,7 +1855,19 @@
     applyAllTranslations();
   };
 
-  // Drag & Drop + File Input
+  // Multi-File Drag & Drop + File Input (1 to 3 Showdown Replays: Bo1 or Bo3)
+  async function readUploadedFiles(fileList) {
+    const arr = Array.from(fileList || []).slice(0, 3);
+    arr.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true }));
+    const items = [];
+    for (const f of arr) {
+      items.push({ filename: f.name, raw_input: await f.text() });
+    }
+    if (items.length) {
+      await handleBo3ReplayFiles(items, false, null);
+    }
+  }
+
   const dz = $("replay-dropzone");
   dz.addEventListener("dragover", (e) => {
     e.preventDefault();
@@ -1254,16 +1877,15 @@
   dz.addEventListener("drop", async (e) => {
     e.preventDefault();
     dz.classList.remove("dragover");
-    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (file) {
-      handleReplayInput(await file.text(), false, null);
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      await readUploadedFiles(e.dataTransfer.files);
     }
   });
 
   $("replay-file-input").onchange = async (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      handleReplayInput(await file.text(), false, null);
+    if (e.target.files && e.target.files.length) {
+      await readUploadedFiles(e.target.files);
+      e.target.value = "";
     }
   };
 
@@ -1281,31 +1903,100 @@
   };
 
   $("btn-load-sample").onclick = () => {
-    handleReplayInput("", true, "treces_gc");
+    handleBo3ReplayFiles([], true, "treces_gc");
   };
 
   $("setup-pov-select").onchange = (e) => {
-    handleReplayInput(
-      state.rawReplayText === "__SAMPLE__" ? "" : state.rawReplayText,
-      state.rawReplayText === "__SAMPLE__",
-      e.target.value
-    );
+    if (state.bo3Replays.length) {
+      handleBo3ReplayFiles(state.bo3Replays, false, e.target.value);
+    } else {
+      handleReplayInput(
+        state.rawReplayText === "__SAMPLE__" ? "" : state.rawReplayText,
+        state.rawReplayText === "__SAMPLE__",
+        e.target.value
+      );
+    }
   };
 
-  // Side-by-side OTS Search, Auto-Infer (DuckDB), Clear, and Inline Paste controls
+  // Ephemeral Clamped 66-SP Workbench Actions (Auto-Fill & Optional Save to DuckDB Library)
+  if ($("btn-t2-autofill-all")) {
+    $("btn-t2-autofill-all").onclick = () => {
+      if (!state.t2Inference || !state.t2Inference.pokemon) return;
+      state.t2Inference.pokemon.forEach((m) => {
+        state.t2UserSpreads[m.base_species] = Object.assign({}, m.default_spread);
+      });
+      renderClampedSpPanel();
+    };
+  }
+
+  if ($("btn-t2-save-ephemeral")) {
+    $("btn-t2-save-ephemeral").onclick = async () => {
+      if (!state.t2Inference || !state.t2Inference.pokemon) return;
+      const isEs = state.lang === "es";
+      const oppName = state.t2Inference.trainer_2_name || "Opponent";
+      const defaultTitle = `${oppName} — Solved 66-SP`;
+      const displayName = window.prompt(
+        isEs
+          ? "Nombre para guardar esta hoja 66-SP en tu biblioteca DuckDB:"
+          : "Display name to save this 66-SP opponent sheet to your DuckDB library:",
+        defaultTitle
+      );
+      if (!displayName || !displayName.trim()) return;
+
+      // Build finalized paste from current clamped slider values
+      const blocks = state.t2Inference.pokemon.map((m) => {
+        const sp = state.t2UserSpreads[m.base_species] || m.default_spread;
+        const header = m.item ? `${m.base_species} @ ${m.item}` : m.base_species;
+        const spParts = STAT_KEYS.filter((k) => Number(sp[k] || 0) > 0).map(
+          (k) => `${sp[k]} ${STAT_LABELS[k]}`
+        );
+        const lines = [header, `Ability: ${m.ability || "None"}`, "Level: 50"];
+        if (spParts.length) lines.push(`EVs: ${spParts.join(" / ")}`);
+        lines.push(`${m.nature || "Serious"} Nature`);
+        (m.moves || []).slice(0, 4).forEach((mv) => lines.push(`- ${mv}`));
+        return lines.join("\n");
+      });
+      const pasteText = blocks.join("\n\n");
+      const rosterId = `${normStr(oppName) || "opp"}_${Date.now().toString(36)}`;
+      const res = await fetch("/api/rosters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roster_id: rosterId,
+          display_name: displayName.trim(),
+          trainer_hint: oppName,
+          paste_text: pasteText,
+        }),
+      });
+      const d = await res.json();
+      if (d.rosters && state.app) {
+        state.app.rosters = d.rosters;
+        renderSavedTeamsList("t1");
+        renderSavedTeamsList("t2");
+        $("setup-status-msg").textContent = isEs
+          ? `Guardado "${displayName.trim()}" en tu biblioteca DuckDB.`
+          : `Saved "${displayName.trim()}" to your DuckDB library.`;
+      }
+    };
+  }
+
+  // Side-by-side OTS Search, 66-SP Solver, Clear, and Inline Paste controls
   async function autoInferSideFromReplay(side) {
+    if (side === "t2") {
+      return runBo3OpponentInference();
+    }
     const isEs = state.lang === "es";
     if (!state.rawReplayText) {
       $("setup-status-msg").textContent = isEs
-        ? "Primero carga un replay para usar Auto-Inferir (DuckDB)."
-        : "Load a replay first before using Auto-Infer (DuckDB).";
+        ? "Primero carga un replay para resolver el 66-SP."
+        : "Load a replay first before running the 66-SP solver.";
       return;
     }
     const btn = $(`btn-${side}-infer`);
     const prevTxt = btn ? btn.textContent : "";
     if (btn) {
       btn.disabled = true;
-      btn.textContent = isEs ? "Infiriendo..." : "Inferring...";
+      btn.textContent = isEs ? "Resolviendo..." : "Solving...";
     }
     try {
       const pov = $("setup-pov-select") ? $("setup-pov-select").value || null : null;
@@ -1321,7 +2012,7 @@
       });
       const d = await res.json();
       if (!d.ok) {
-        $("setup-status-msg").textContent = `Error: ${d.error || "Inference failed"}`;
+        $("setup-status-msg").textContent = `Error: ${d.error || "Solver failed"}`;
         return;
       }
       state.selectedRosterId[side] = null;
@@ -1331,12 +2022,12 @@
       renderSavedTeamsList(side);
       renderOtsMonGrid(`${side}-ots-mon-grid`, `${side}-sp-status`, d.validation);
       $("setup-status-msg").textContent = isEs
-        ? `Auto-inferido ${d.trainer_name} (${d.inferred_count} Pokémon 66-SP desde DuckDB regional + pistas del replay).`
-        : `Auto-inferred ${d.trainer_name} (${d.inferred_count} Pokémon 66-SP from regional DuckDB + replay reveals).`;
+        ? `66-SP resuelto para ${d.trainer_name} (${d.inferred_count} Pokémon desde OTS + telemetría del replay).`
+        : `Solved 66-SP for ${d.trainer_name} (${d.inferred_count} Pokémon from OTS + replay telemetry).`;
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = prevTxt || (isEs ? "Auto-Inferir" : "Auto-Infer");
+        btn.textContent = prevTxt || (isEs ? "Resolver 66-SP" : "Solve 66-SP");
       }
     }
   }
@@ -1406,6 +2097,11 @@
     postToShowdown({ type: "TOGGLE_PLAY" });
   };
   $("btn-flip-pov").onclick = () => postToShowdown({ type: "SWITCH_VIEWPOINT" });
+  if ($("player-speed-select")) {
+    $("player-speed-select").onchange = (e) => {
+      postToShowdown({ type: "SET_SPEED", speed: e.target.value });
+    };
+  }
   $("btn-recompute-turn").onclick = () => selectTurn(state.currentTurn, false, true);
 
   $("btn-export-telemetry").onclick = async () => {
@@ -1711,6 +2407,212 @@
     } catch (_) {}
   };
 
+  // -------------------------------------------------------------------------
+  // Dedicated Topbar View: Zero-AI Offline Base64 Prep Tools
+  // -------------------------------------------------------------------------
+  function populatePrepRosterSelect() {
+    const sel = $("prep-roster-select");
+    if (!sel) return;
+    const isEs = state.lang === "es";
+    const rosters = (state.app && state.app.rosters) || [];
+    const prevVal = sel.value;
+    if (!rosters.length) {
+      sel.innerHTML = `<option value="">${isEs ? "(Sin equipos DuckDB)" : "(No saved rosters)"}</option>`;
+      return;
+    }
+    sel.innerHTML = rosters
+      .map((r) => `<option value="${escapeHtml(r.roster_id)}">${escapeHtml(r.display_name || r.roster_id)}</option>`)
+      .join("");
+    if (prevVal && rosters.some((r) => r.roster_id === prevVal)) {
+      sel.value = prevVal;
+    } else if (state.selectedRosterId.t1 && rosters.some((r) => r.roster_id === state.selectedRosterId.t1)) {
+      sel.value = state.selectedRosterId.t1;
+    }
+  }
+
+  function updatePrepControlsUI() {
+    const isSpeed = state.prep.kind === "speed_tiers";
+    if ($("btn-prep-kind-speed")) $("btn-prep-kind-speed").classList.toggle("active", isSpeed);
+    if ($("btn-prep-kind-damage")) $("btn-prep-kind-damage").classList.toggle("active", !isSpeed);
+    if ($("prep-paste-drawer")) $("prep-paste-drawer").style.display = state.prep.usePaste ? "flex" : "none";
+    if ($("prep-roster-select")) $("prep-roster-select").style.display = state.prep.usePaste ? "none" : "inline-block";
+    if ($("btn-prep-toggle-paste")) {
+      const isEs = state.lang === "es";
+      $("btn-prep-toggle-paste").textContent = state.prep.usePaste
+        ? (isEs ? "Usar DuckDB" : "Use Saved Roster")
+        : (isEs ? "Pegar 66-SP" : "Paste 66-SP");
+    }
+    if ($("btn-prep-generate")) {
+      $("btn-prep-generate").disabled = state.prep.generating;
+    }
+    if ($("lbl-prep-generate")) {
+      const isEs = state.lang === "es";
+      $("lbl-prep-generate").textContent = state.prep.generating
+        ? (isEs ? "Calculando..." : "Computing...")
+        : (isEs ? "Generar" : "Generate");
+    }
+    const dl = $("btn-prep-download");
+    if (dl) {
+      if (state.prep.token) {
+        dl.href = `/api/prep-tools/download?token=${encodeURIComponent(state.prep.token)}`;
+        dl.setAttribute("download", state.prep.filename || "prep_tool_mobile.html");
+        dl.classList.remove("disabled");
+        dl.setAttribute("aria-disabled", "false");
+      } else {
+        dl.href = "#";
+        dl.classList.add("disabled");
+        dl.setAttribute("aria-disabled", "true");
+      }
+    }
+  }
+
+  async function generatePrepToolPreview() {
+    const isEs = state.lang === "es";
+    const statusEl = $("prep-status-msg");
+    const pillEl = $("prep-meta-pill");
+    const rosterId = $("prep-roster-select") ? $("prep-roster-select").value : "";
+    const pasteText = $("prep-paste-input") ? $("prep-paste-input").value.trim() : "";
+    const teamName = $("prep-paste-name") ? $("prep-paste-name").value.trim() : "";
+    const topN = parseInt(($("prep-topn-select") && $("prep-topn-select").value) || "50", 10);
+    state.prep.topN = topN;
+
+    if (state.prep.usePaste && !pasteText) {
+      if (statusEl) {
+        statusEl.textContent = isEs
+          ? "Pega un equipo 66-SP de Regulation M-C antes de generar."
+          : "Paste a Regulation M-C 66-SP team before generating.";
+      }
+      return;
+    }
+    if (!state.prep.usePaste && !rosterId) {
+      if (statusEl) {
+        statusEl.textContent = isEs
+          ? "No hay equipos guardados en DuckDB. Usa 'Pegar 66-SP'."
+          : "No saved DuckDB rosters found. Click 'Paste 66-SP'.";
+      }
+      return;
+    }
+
+    state.prep.generating = true;
+    updatePrepControlsUI();
+    if (statusEl) {
+      statusEl.textContent =
+        state.prep.kind === "damage_matrix"
+          ? (isEs
+              ? `Precomputando 16 rolls exactos con Smogon Champions (Top ${topN}, 5 Climas × 5 Campos)...`
+              : `Pre-computing exact Smogon Champions 16-roll tables (Top ${topN}, 5 Weathers × 5 Terrains)...`)
+          : (isEs
+              ? `Generando tabla de velocidades Lv.50 (Top ${topN} DuckDB)...`
+              : `Building Lv.50 31-IV Speed Tiers (Top ${topN} DuckDB)...`);
+    }
+
+    try {
+      const payload = {
+        kind: state.prep.kind,
+        top_n: topN,
+        lang: state.lang,
+      };
+      if (state.prep.usePaste) {
+        payload.paste_text = pasteText;
+        if (teamName) payload.team_name = teamName;
+      } else {
+        payload.roster_id = rosterId;
+      }
+
+      const res = await fetch("/api/prep-tools/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) {
+        if (statusEl) statusEl.textContent = `Error: ${d.error || "Generation failed"}`;
+        return;
+      }
+
+      state.prep.token = d.token;
+      state.prep.filename = d.filename;
+      state.prep.meta = d;
+      if ($("prep-empty-state")) $("prep-empty-state").style.display = "none";
+      const frame = $("prep-preview-iframe");
+      if (frame) {
+        frame.style.display = "block";
+        frame.src = d.preview_url;
+      }
+      if (statusEl) {
+        const cacheNote = d.cached ? (isEs ? " · caché" : " · cached") : ` · ${(d.elapsed_ms / 1000).toFixed(2)}s`;
+        statusEl.textContent = isEs
+          ? `Listo: ${d.team_name} — 100% offline Base64 (${d.size_kb} KB${cacheNote})`
+          : `Ready: ${d.team_name} — 100% offline Base64 (${d.size_kb} KB${cacheNote})`;
+      }
+      if (pillEl) {
+        pillEl.style.display = "inline-flex";
+        pillEl.textContent =
+          d.kind === "damage_matrix"
+            ? `Top ${d.top_n} · ${Number(d.calc_count || 0).toLocaleString()} Smogon calcs · ${d.size_kb} KB`
+            : `Top ${d.top_n} / ${Number(d.meta_count || 0).toLocaleString()} teams · ${d.size_kb} KB`;
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = `Error: ${String(err)}`;
+    } finally {
+      state.prep.generating = false;
+      updatePrepControlsUI();
+    }
+  }
+
+  function openPrepToolsView() {
+    if (state.activeStep === "prep") {
+      setStep(state.prevStepBeforePrep || "setup");
+      return;
+    }
+    populatePrepRosterSelect();
+    setStep("prep");
+    updatePrepControlsUI();
+    if (!state.prep.token && !state.prep.usePaste && $("prep-roster-select") && $("prep-roster-select").value) {
+      generatePrepToolPreview();
+    }
+  }
+
+  if ($("btn-open-prep-view")) $("btn-open-prep-view").onclick = openPrepToolsView;
+  if ($("btn-prep-back")) {
+    $("btn-prep-back").onclick = () => setStep(state.prevStepBeforePrep || "setup");
+  }
+  if ($("btn-prep-kind-speed")) {
+    $("btn-prep-kind-speed").onclick = () => {
+      state.prep.kind = "speed_tiers";
+      updatePrepControlsUI();
+      if (!state.prep.usePaste || ($("prep-paste-input") && $("prep-paste-input").value.trim())) {
+        generatePrepToolPreview();
+      }
+    };
+  }
+  if ($("btn-prep-kind-damage")) {
+    $("btn-prep-kind-damage").onclick = () => {
+      state.prep.kind = "damage_matrix";
+      updatePrepControlsUI();
+      if (!state.prep.usePaste || ($("prep-paste-input") && $("prep-paste-input").value.trim())) {
+        generatePrepToolPreview();
+      }
+    };
+  }
+  if ($("btn-prep-toggle-paste")) {
+    $("btn-prep-toggle-paste").onclick = () => {
+      state.prep.usePaste = !state.prep.usePaste;
+      updatePrepControlsUI();
+    };
+  }
+  if ($("btn-prep-generate")) $("btn-prep-generate").onclick = generatePrepToolPreview;
+  if ($("prep-roster-select")) {
+    $("prep-roster-select").onchange = () => {
+      if (!state.prep.usePaste) generatePrepToolPreview();
+    };
+  }
+  if ($("prep-topn-select")) {
+    $("prep-topn-select").onchange = () => {
+      if (state.prep.token) generatePrepToolPreview();
+    };
+  }
+
   // Boot on Step 1
   (async function init() {
     const res = await fetch("/api/state");
@@ -1719,6 +2621,7 @@
     $("hw-badge").textContent = `${prefix}: ${state.app.device}`;
     renderSavedTeamsList("t1");
     renderSavedTeamsList("t2");
+    populatePrepRosterSelect();
     applyAllTranslations();
   })();
 })();

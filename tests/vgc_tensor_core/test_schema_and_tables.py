@@ -126,9 +126,9 @@ class TestSchemaAndTables(unittest.TestCase):
         """Verify exact tensor dimensions and ensure zero overlapping feature channels."""
         self.assertEqual(FIELD_DIM, 24)
         self.assertEqual(ROSTER_SLOTS, 8)
-        self.assertEqual(MON_DIM, 87)
+        self.assertEqual(MON_DIM, 88)
         self.assertEqual(MOVES_PER_MON, 4)
-        self.assertEqual(MOVE_DIM, 59)
+        self.assertEqual(MOVE_DIM, 60)
 
         self.assertEqual(MonIdx.TYPE1_END - MonIdx.TYPE1_START, 18)
         self.assertEqual(MonIdx.TYPE2_END - MonIdx.TYPE2_START, 18)
@@ -137,9 +137,11 @@ class TestSchemaAndTables(unittest.TestCase):
         self.assertEqual(MonIdx.MEGA_ABILITY_ID, 83)
         self.assertEqual(MonIdx.MEGA_TYPE2, 85)
         self.assertEqual(MonIdx.ITEM_BOOST_TYPE, 86)
+        self.assertEqual(MonIdx.MUST_RECHARGE, 87)
         self.assertEqual(MoveIdx.IS_CONTACT, 56)
         self.assertEqual(MoveIdx.IS_SLICING, 57)
         self.assertEqual(MoveIdx.IS_PUNCH, 58)
+        self.assertEqual(MoveIdx.IS_RECHARGE_MOVE, 59)
 
         self._log("\n[TEST 01] TENSOR DIMENSIONS & MEMORY LAYOUT VERIFICATION")
         self._log("-" * 96)

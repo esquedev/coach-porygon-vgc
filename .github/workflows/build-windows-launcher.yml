@@ -1,0 +1,81 @@
+name: Build & Release Windows Studio Launcher (.exe)
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows-launcher:
+    name: Compile CoachPorygonStudio.exe & Package Windows Bundle
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller
+
+      - name: Build lightweight CoachPorygonStudio.exe
+        run: python scripts/build_windows_launcher.py
+
+      - name: Verify lightweight binary size (< 30 MB)
+        shell: pwsh
+        run: |
+          $exe = Get-Item "dist/CoachPorygonStudio.exe"
+          $mb = [math]::Round($exe.Length / 1MB, 2)
+          Write-Host "Built CoachPorygonStudio.exe: $mb MB"
+          if ($mb -gt 30) {
+            Write-Error "Launcher binary unexpectedly exceeded 30 MB ($mb MB)."
+            exit 1
+          }
+
+      - name: Package ready-to-run CoachPorygonVGC-windows-x64.zip
+        shell: pwsh
+        run: |
+          git archive --format=zip --prefix=CoachPorygonVGC/ -o dist/CoachPorygonVGC-windows-x64.zip HEAD
+          python -c "import zipfile; z = zipfile.ZipFile('dist/CoachPorygonVGC-windows-x64.zip', 'a', compression=zipfile.ZIP_DEFLATED); z.write('dist/CoachPorygonStudio.exe', 'CoachPorygonVGC/CoachPorygonStudio.exe'); z.close()"
+          $zip = Get-Item "dist/CoachPorygonVGC-windows-x64.zip"
+          Write-Host "Packaged bundle: $([math]::Round($zip.Length / 1MB, 2)) MB"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoachPorygonStudio-windows-x64
+          path: |
+            dist/CoachPorygonStudio.exe
+            dist/CoachPorygonVGC-windows-x64.zip
+          if-no-files-found: error
+
+      - name: Publish public GitHub Release (on v* tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag `
+              dist/CoachPorygonVGC-windows-x64.zip `
+              dist/CoachPorygonStudio.exe `
+              --clobber
+          } else {
+            gh release create $tag `
+              dist/CoachPorygonVGC-windows-x64.zip `
+              dist/CoachPorygonStudio.exe `
+              --title "Coach Porygon VGC $tag" `
+              --generate-notes
+          }

@@ -41,9 +41,7 @@ from .compiler import (
     CHOICE_SWITCH_BENCH1,
     CHOICE_SWITCH_BENCH2,
     CompiledBattleState,
-    ShowdownTensorCompiler,
     _parse_structured_field,
-    _to_id,
 )
 from .schema_and_tables import (
     AbilityID,
@@ -328,18 +326,6 @@ class LogicalConstraintEngine:
             ],
             recommended_prior_scale=0.11,
         )
-
-    def prune_impossible_actions(
-        self,
-        candidate_actions: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """Filter a list of candidate actions down to those that remain mechanically valid."""
-        valid_actions: List[Dict[str, Any]] = []
-        for action_kwargs in candidate_actions:
-            result = self.evaluate_slot_action(**action_kwargs)
-            if result.is_mechanically_valid:
-                valid_actions.append(action_kwargs)
-        return valid_actions
 
     def evaluate_slot_action(
         self,
@@ -719,6 +705,15 @@ class LogicalConstraintEngine:
         if user_vec[MonIdx.ALIVE_FLAG] <= 0.0:
             return valid_26, prior_26, risk_26, upside_26
 
+        # Hard Mechanical Invariant: Forced Recharge Turn (Hyper Beam, Giga Impact, Blast Burn, etc.)
+        # Pokémon cannot click any move, cannot Mega Evolve, and cannot voluntarily switch out.
+        if user_vec[MonIdx.MUST_RECHARGE] > 0.5:
+            valid_26[0] = 1.0
+            prior_26[0] = 1.0
+            risk_26[0] = 0.0
+            upside_26[0] = 0.0
+            return valid_26, prior_26, risk_26, upside_26
+
         moves_4 = m_np[user_slot]  # [4, 59]
         partner_vec = p_np[partner_slot]
         opp_a_vec = p_np[opp_a_slot]
@@ -815,6 +810,8 @@ class LogicalConstraintEngine:
         opp_has_prio_threat = False
         for opp_act_s in (opp_a_slot, opp_b_slot):
             if p_np[opp_act_s, MonIdx.ALIVE_FLAG] <= 0.0:
+                continue
+            if p_np[opp_act_s, MonIdx.MUST_RECHARGE] > 0.5:
                 continue
             opp_s_vec = p_np[opp_act_s]
             opp_s_ab = int(round(float(opp_s_vec[MonIdx.ABILITY_ID])))
@@ -1271,11 +1268,16 @@ class LogicalConstraintEngine:
         joint_valid[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH1] = 0.0
         joint_valid[CHOICE_SWITCH_BENCH2, CHOICE_SWITCH_BENCH2] = 0.0
 
-        # Cross-Slot Invariant 3: Helping Hand + Partner Status / Switch Zero-Effect Pruning
+        # Cross-Slot Invariant 3: Helping Hand + Partner Status / Switch / Recharge Zero-Effect Pruning
         from .schema_and_tables import FieldOpID
+        slot_a_recharging = p_np[slot_a, MonIdx.MUST_RECHARGE] > 0.5
+        slot_b_recharging = p_np[slot_b, MonIdx.MUST_RECHARGE] > 0.5
         for c_a in range(24):
             m_a = m_np[slot_a, (c_a % 12) % 4]
             if int(round(float(m_a[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                if slot_b_recharging:
+                    joint_valid[c_a, :] = 0.0
+                    continue
                 joint_valid[c_a, CHOICE_SWITCH_BENCH1] = 0.0
                 joint_valid[c_a, CHOICE_SWITCH_BENCH2] = 0.0
                 for c_b in range(24):
@@ -1286,6 +1288,9 @@ class LogicalConstraintEngine:
         for c_b in range(24):
             m_b = m_np[slot_b, (c_b % 12) % 4]
             if int(round(float(m_b[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                if slot_a_recharging:
+                    joint_valid[:, c_b] = 0.0
+                    continue
                 joint_valid[CHOICE_SWITCH_BENCH1, c_b] = 0.0
                 joint_valid[CHOICE_SWITCH_BENCH2, c_b] = 0.0
                 for c_a in range(24):

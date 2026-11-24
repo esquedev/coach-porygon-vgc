@@ -957,6 +957,7 @@ class ShowdownTensorCompiler:
         vec[MoveIdx.IS_CONTACT] = float(ovr.get("is_contact", 1.0 if flags.get("contact") else 0.0))
         vec[MoveIdx.IS_SLICING] = float(ovr.get("is_slicing", 1.0 if flags.get("slicing") else 0.0))
         vec[MoveIdx.IS_PUNCH] = float(ovr.get("is_punch", 1.0 if flags.get("punch") else 0.0))
+        vec[MoveIdx.IS_RECHARGE_MOVE] = float(ovr.get("is_recharge", 1.0 if flags.get("recharge") else 0.0))
 
         return vec
 
@@ -1226,6 +1227,7 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.ENCORE_TURNS] = 1.0 if mon.encore_move else 0.0
         p_vec[MonIdx.SUBSTITUTE_HP] = 0.0
         p_vec[MonIdx.HELPING_HAND_MULT] = 1.0
+        p_vec[MonIdx.MUST_RECHARGE] = 1.0 if getattr(mon, "must_recharge", False) else 0.0
 
         # Item & Ability IDs
         item_raw = str(mon.item or "").strip()
@@ -1379,6 +1381,7 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.ENCORE_TURNS] = float(mon_spec.get("encore_turns", 0.0))
         p_vec[MonIdx.SUBSTITUTE_HP] = float(mon_spec.get("substitute_hp", 0.0))
         p_vec[MonIdx.HELPING_HAND_MULT] = float(mon_spec.get("helping_hand_mult", 1.0))
+        p_vec[MonIdx.MUST_RECHARGE] = float(mon_spec.get("must_recharge", 0.0))
 
         # Grounded, Item, Ability, Mega
         item_raw = str(mon_spec.get("item", "none")).strip()

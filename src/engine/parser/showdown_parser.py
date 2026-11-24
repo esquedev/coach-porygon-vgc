@@ -8,8 +8,6 @@ Enforces strict trainer_1 (POV/User) and trainer_2 (Opponent) identifiers.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 

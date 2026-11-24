@@ -503,12 +503,12 @@ class FieldIdx:
     TRAINER_2_MEGA_USED: int = 23
 
 
-# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 87] ---
-MON_DIM: int = 87
+# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 88] ---
+MON_DIM: int = 88
 
 
 class MonIdx:
-    """Exact indices for the 87-Float Per-Pokémon Feature Vector `[..., 8, 87]`."""
+    """Exact indices for the 88-Float Per-Pokémon Feature Vector `[..., 8, 88]`."""
 
     # 0..2 (3 floats): HP Channels
     HP_CUR: int = 0
@@ -590,15 +590,16 @@ class MonIdx:
     MEGA_TYPE1: int = 84          # Type index 0..17 for Mega primary type (or -1.0 if unchanged)
     MEGA_TYPE2: int = 85          # Type index 0..17 for Mega secondary type (or -1.0 if single-type)
     ITEM_BOOST_TYPE: int = 86     # Type index 0..17 boosted by held type-boosting item (or -1.0 if none)
+    MUST_RECHARGE: int = 87       # 1.0 if Pokémon must spend this turn recharging (Hyper Beam, Giga Impact, etc.)
 
 
-# --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 59] ---
+# --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 60] ---
 MOVES_PER_MON: int = 4
-MOVE_DIM: int = 59
+MOVE_DIM: int = 60
 
 
 class MoveIdx:
-    """Exact indices for the 59-Float Programmatic Move Vector `[..., 8, 4, 59]`."""
+    """Exact indices for the 60-Float Programmatic Move Vector `[..., 8, 4, 60]`."""
 
     # 0..4 (5 floats): Core Numeric Parameters
     BASE_POWER: int = 0
@@ -655,6 +656,7 @@ class MoveIdx:
     IS_CONTACT: int = 56          # 1.0 when flags.contact == 1 (Tough Claws, Rough Skin, Rocky Helmet, Flame Body, Poison Touch)
     IS_SLICING: int = 57          # 1.0 when flags.slicing == 1 (Sharpness 1.5x)
     IS_PUNCH: int = 58            # 1.0 when flags.punch == 1 (Iron Fist 1.2x)
+    IS_RECHARGE_MOVE: int = 59    # 1.0 when flags.recharge == 1 (Hyper Beam, Giga Impact, Blast Burn, etc.)
 
 
 # =============================================================================
@@ -753,6 +755,7 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
     switch_persist_np[MonIdx.VOLATILE_START:MonIdx.VOLATILE_END] = 0.0
     switch_persist_np[MonIdx.HELPING_HAND_MULT] = 1.0
     switch_persist_np[MonIdx.UNBURDEN_ACTIVE] = 0.0
+    switch_persist_np[MonIdx.MUST_RECHARGE] = 0.0
 
     # Branchless lookup table from ItemID (0..63) -> resisted type index (0..17) or -1
     resist_berry_lut_np = np.full((64,), -1, dtype=np.int64)

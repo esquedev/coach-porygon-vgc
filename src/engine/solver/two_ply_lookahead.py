@@ -214,14 +214,14 @@ def evaluate_two_ply_on_ieds_core(
                     win_code = int(eot1_prom.winner[ci, cj].item())
                     v2 = 4.0 if win_code == 1 else (-4.0 if win_code == 2 else 0.0)
                 else:
-                    f2 = eot1_prom.F[ci, cj, k_rep]
-                    p2 = eot1_prom.P[ci, cj, k_rep]
-                    m2 = eot1_prom.M_moves[ci, cj, k_rep]
+                    f_ply2 = eot1_prom.F[ci, cj, k_rep]
+                    roster_ply2 = eot1_prom.P[ci, cj, k_rep]
+                    moves_ply2 = eot1_prom.M_moves[ci, cj, k_rep]
 
                     comp2 = CompiledBattleState(
-                        field_tensor=f2,
-                        roster_tensor=p2,
-                        moves_tensor=m2,
+                        field_tensor=f_ply2,
+                        roster_tensor=roster_ply2,
+                        moves_tensor=moves_ply2,
                         backend="torch",
                         device=dev,
                         slot_species=comp.slot_species,
@@ -237,9 +237,9 @@ def evaluate_two_ply_on_ieds_core(
                     ch2_t2 = _top_prior_choices(mask2_t2, max_ply2_actions, dev)
 
                     res2 = sm.step(
-                        f2,
-                        p2,
-                        m2,
+                        f_ply2,
+                        roster_ply2,
+                        moves_ply2,
                         ch2_t1,
                         ch2_t2,
                         num_mc_samples=max(4, int(k_ply2)),

@@ -28,12 +28,10 @@ from .logic_engine import (
     PrunedSideActionTensorMask,
 )
 from .phases_pre_attack import (
-    ACTIVE_SLOT_NAMES,
     ACTIVE_SLOTS,
     PreAttackPhaseResult,
     T_ELECTRIC,
     T_GRASSY,
-    T_MISTY,
     T_NONE,
     T_PSYCHIC,
     W_CLEAR,
@@ -46,23 +44,15 @@ from .phases_pre_attack import (
 from .schema_and_tables import (
     AbilityID,
     BilinearLookupTables,
-    FIELD_DIM,
     FieldIdx,
     HAS_TORCH,
     ItemID,
-    MON_DIM,
-    MOVE_DIM,
-    MOVES_PER_MON,
     MonIdx,
     ROSTER_SLOTS,
     SLOT_TRAINER_1_A,
     SLOT_TRAINER_1_B,
-    SLOT_TRAINER_1_BENCH1,
-    SLOT_TRAINER_1_BENCH2,
     SLOT_TRAINER_2_A,
     SLOT_TRAINER_2_B,
-    SLOT_TRAINER_2_BENCH1,
-    SLOT_TRAINER_2_BENCH2,
     TYPE_TO_IDX,
     build_bilinear_lookup_tables,
 )
@@ -424,6 +414,11 @@ def _execute_end_of_turn_torch(
     P[:, :, :, active_slot_tensor, MonIdx.ENCORE_TURNS] = torch.clamp(
         P[:, :, :, active_slot_tensor, MonIdx.ENCORE_TURNS] - 1.0, min=0.0
     )
+    # Keep newly triggered MUST_RECHARGE for surviving active mons; clear on fainted slots
+    cur_rech_eot = P[:, :, :, active_slot_tensor, MonIdx.MUST_RECHARGE]
+    P[:, :, :, active_slot_tensor, MonIdx.MUST_RECHARGE] = torch.where(
+        active_hp_cur > 0.0, cur_rech_eot, torch.zeros_like(cur_rech_eot)
+    )
 
     act_turns = P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS]
     P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS] = torch.where(
@@ -773,9 +768,13 @@ def compute_per_thread_board_utility_torch(
     mon_synergy = (sun_syn + rain_syn + sand_syn + snow_syn + terrain_syn) * alive
     synergy_diff = 0.08 * (torch.sum(mon_synergy[:, :, :, 0:4], dim=-1) - torch.sum(mon_synergy[:, :, :, 4:8], dim=-1))
 
-    # 8. Active Tactical Disruption Differential (Encore, Leech Seed, Salt Cure, Yawn, Disable, Perish Song)
+    # 8. Active Tactical Disruption Differential (Encore, Recharge Lock, Leech Seed, Salt Cure, Yawn, Disable, Perish Song)
     enc_active = (P_eot[:, :, :, :, MonIdx.ENCORE_TURNS] > 0.0).float() * alive
     vol_diff = 0.12 * (torch.sum(enc_active[:, :, :, 4:6], dim=-1) - torch.sum(enc_active[:, :, :, 0:2], dim=-1))
+    rech_active = (P_eot[:, :, :, :, MonIdx.MUST_RECHARGE] > 0.5).float() * alive
+    vol_diff = vol_diff + 0.40 * (
+        torch.sum(rech_active[:, :, :, 4:6], dim=-1) - torch.sum(rech_active[:, :, :, 0:2], dim=-1)
+    )
     if extra_volatiles:
         for v_key, v_weight in (
             ("leech_seed_src", 0.16),
