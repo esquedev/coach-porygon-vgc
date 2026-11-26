@@ -30,7 +30,7 @@ _WEATHER_NORMALIZE: Dict[str, str] = {
     "sandstorm": "Sand",
     "snow": "Snow",
     "snowscape": "Snow",
-    "hail": "Snow",
+    "hail": "Snow",  # Legacy Showdown replay compatibility
 }
 
 _TERRAIN_NORMALIZE: Dict[str, str] = {
@@ -45,19 +45,14 @@ _TERRAIN_NORMALIZE: Dict[str, str] = {
 }
 
 _SPECIES_ALIASES: Dict[str, str] = {
+    "Aegislash": "Aegislash-Shield",
     "Maushold-Three": "Maushold",
     "Maushold-Four": "Maushold",
-    "Tatsugiri-Curly": "Tatsugiri",
-    "Tatsugiri-Droopy": "Tatsugiri",
-    "Tatsugiri-Stretchy": "Tatsugiri",
-    "Dudunsparce-Two-Segment": "Dudunsparce",
-    "Dudunsparce-Three-Segment": "Dudunsparce",
     "Squawkabilly-Blue": "Squawkabilly",
     "Squawkabilly-Yellow": "Squawkabilly",
     "Squawkabilly-White": "Squawkabilly",
     "Indeedee-M": "Indeedee",
     "Meowstic-M": "Meowstic",
-    "Oinkologne-M": "Oinkologne",
     "Basculegion-M": "Basculegion",
     "Palafin-Zero": "Palafin",
     "Mimikyu-Disguised": "Mimikyu",

@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 460" width="1120" height="460" role="img" aria-label="Coach Porygon VGC 3-Tensor Anatomy v2.1">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#060a14"/>
+      <stop offset="100%" stop-color="#0d1526"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="35%" stop-color="#3b82f6"/>
+      <stop offset="68%" stop-color="#f43f5e"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <style>
+      .title { font: 800 20px 'Segoe UI', Inter, system-ui, sans-serif; fill: #f8fafc; }
+      .sub { font: 500 12px 'Segoe UI', Inter, system-ui, sans-serif; fill: #94a3b8; }
+      .cardTitle { font: 800 15px 'Segoe UI', Inter, system-ui, sans-serif; }
+      .shape { font: 700 12px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #facc15; }
+      .lbl { font: 600 11.5px 'Segoe UI', Inter, system-ui, sans-serif; fill: #e2e8f0; }
+      .dim { font: 600 10.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #94a3b8; }
+      .pill { font: 700 10px 'Segoe UI', Inter, system-ui, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="1120" height="460" rx="14" fill="url(#bgGrad)" stroke="#1e2d4d" stroke-width="2"/>
+  <rect x="0" y="0" width="1120" height="4" rx="2" fill="url(#ribbon)"/>
+
+  <text x="28" y="38" class="title">Coach Porygon VGC — 3-Tensor Vectorized Board State (v2.1 · Regulation M-C)</text>
+  <text x="28" y="58" class="sub">Zero Python object branching · All rules execute simultaneously across [Strats_1 × Strats_2 × K] discrete SplitMix64 RNG worlds on GPU/CPU</text>
+
+  <!-- Tensor F -->
+  <rect x="28" y="78" width="320" height="248" rx="12" fill="#0d1526" stroke="#22d3ee" stroke-width="1.6"/>
+  <text x="44" y="104" class="cardTitle" fill="#22d3ee">1. Field Tensor (F)</text>
+  <text x="44" y="124" class="shape">[Strats_1, Strats_2, K, 26]</text>
+  <rect x="44" y="138" width="288" height="32" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="54" y="158" class="lbl">0..5 · Weather One-Hot + Timer</text>
+  <text x="255" y="158" class="dim">Clear/Sun/Rain/Sand/Snow</text>
+  <rect x="44" y="176" width="288" height="32" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="54" y="196" class="lbl">6..11 · Terrain One-Hot + Timer</text>
+  <text x="255" y="196" class="dim">Elec/Grass/Psy/Misty</text>
+  <rect x="44" y="214" width="288" height="32" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="54" y="234" class="lbl">12..19 · Speed &amp; Screen Timers</text>
+  <text x="235" y="234" class="dim">TR · Gravity · TW · Veil</text>
+  <rect x="44" y="252" width="288" height="58" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="54" y="272" class="lbl">20..25 · Mega Locks &amp; Hazards</text>
+  <text x="54" y="292" class="dim">trainer_1 / trainer_2 Mega Used · Toxic Spikes</text>
+  <text x="54" y="304" class="dim">Zero Terastallization slots (forbidden in Reg M-C)</text>
+
+  <!-- Tensor P -->
+  <rect x="370" y="78" width="380" height="248" rx="12" fill="#0d1526" stroke="#f43f5e" stroke-width="1.6"/>
+  <text x="386" y="104" class="cardTitle" fill="#fda4af">2. Roster Tensor (P)</text>
+  <text x="386" y="124" class="shape">[Strats_1, Strats_2, K, 8, 96]</text>
+  <text x="386" y="142" class="dim">Slots 0–3: trainer_1 (Active A/B + Bench 1/2) | Slots 4–7: trainer_2</text>
+
+  <rect x="386" y="152" width="170" height="40" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="396" y="169" class="lbl">0..27 · Stats &amp; Boosts</text>
+  <text x="396" y="184" class="dim">HP, L50 66-SP Stats, -6..+6</text>
+
+  <rect x="564" y="152" width="170" height="40" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="574" y="169" class="lbl">28..59 · Types &amp; Status</text>
+  <text x="574" y="184" class="dim">18-Type Pair, BRN/PAR/SLP</text>
+
+  <rect x="386" y="198" width="170" height="44" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="396" y="216" class="lbl">60..87 · Items &amp; Mega</text>
+  <text x="396" y="232" class="dim">Item/Ability IDs, Mega Stat Swap</text>
+
+  <rect x="564" y="198" width="170" height="44" rx="6" fill="#2b1224" stroke="#facc15" stroke-width="1.3"/>
+  <text x="574" y="216" class="lbl" fill="#fef08a">88..95 · 2-Turn State ★</text>
+  <text x="574" y="232" class="dim" fill="#fde047">STOMPING · FAILED · ENCORE</text>
+
+  <rect x="386" y="250" width="348" height="60" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="396" y="270" class="lbl">NEW Persistent 2-Turn Tracking (MON_DIM 88 → 96)</text>
+  <text x="396" y="287" class="dim">Tracks Stomping Tantrum 2× prime, Metronome/Fury Cutter streaks,</text>
+  <text x="396" y="301" class="dim">Recharge, Charging, Encore locks &amp; Disguise across 2-Ply Rollouts</text>
+
+  <!-- Tensor M -->
+  <rect x="772" y="78" width="320" height="248" rx="12" fill="#0d1526" stroke="#818cf8" stroke-width="1.6"/>
+  <text x="788" y="104" class="cardTitle" fill="#a5b4fc">3. Move Tensor (M)</text>
+  <text x="788" y="124" class="shape">[Strats_1, Strats_2, K, 8, 4, 60]</text>
+  <rect x="788" y="138" width="288" height="36" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="798" y="159" class="lbl">Compiled 100% from DuckDB (moves)</text>
+  <rect x="788" y="180" width="288" height="40" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="798" y="197" class="lbl">Base Power · Accuracy · Priority · Split</text>
+  <text x="798" y="212" class="dim">Phys / Spec / Status · Spread 0.75× · Target</text>
+  <rect x="788" y="226" width="288" height="40" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="798" y="243" class="lbl">18-Type One-Hot + Multi-Hit Wheel</text>
+  <text x="798" y="258" class="dim">35/35/15/15 cartridge draw (or Skill Link 5)</text>
+  <rect x="788" y="272" width="288" height="38" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="798" y="289" class="lbl">Mechanic Flags &amp; Secondary Procs</text>
+  <text x="798" y="303" class="dim">Contact · Slicing · Punch · Pulse · Flinch · Recoil</text>
+
+  <!-- Bottom 8-Pillar Equity & CVaR Bar -->
+  <rect x="28" y="344" width="1064" height="92" rx="12" fill="#0b1323" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="46" y="368" class="cardTitle" fill="#86efac">Terminal Evaluation: 8-Pillar Victory Equity + Risk-Resilient Downside Floor (CVaR₀.₁₀)</text>
+  <text x="46" y="390" class="lbl">① Material (HP/KOs) · ② Lethal Threat · ③ Enemy Mal-Positioning · ④ Option Restriction · ⑤ Status/Boosts · ⑥ 2-Turn Prime · ⑦ Shields/Items · ⑧ Field Tempo</text>
+  <text x="46" y="416" class="shape">U_risk = 0.75 · E[U] + 0.25 · CVaR₀.₁₀[U]   →   Strict IEDS   →   Selective 2-Ply Lookahead   →   HiGHS Nash LP + Adjustable-β LQRE</text>
+</svg>

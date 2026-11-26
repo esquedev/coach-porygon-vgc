@@ -39,39 +39,66 @@ def normalize_dash_slug(text: str) -> str:
 
 # Explicit canonical overrides for non-standard regional/forme filename conventions
 EXPLICIT_SPECIES_FILE_OVERRIDES: Dict[str, str] = {
+    "basculegion": "basculegion-male.png",
+    "basculegionf": "basculegion-female.png",
+    "basculegion-f": "basculegion-female.png",
+    "indeedee": "indeedee-male.png",
     "indeedeef": "indeedee-female.png",
     "indeedee-f": "indeedee-female.png",
-    "floette": "floette-eternal.png",
-    "floettemega": "eternal-floette-mega.png",
-    "floette-mega": "eternal-floette-mega.png",
-    "raichualola": "alolan-raichu.png",
-    "persianalola": "alolan-persian.png",
-    "decidueyehisui": "hisuian-decidueye.png",
-    "avalugghisui": "hisuian-avalugg.png",
-    "typhlosionhisui": "hisuian-typhlosion.png",
-    "samurotthisui": "hisuian-samurott.png",
-    "goodrahisui": "hisuian-goodra.png",
-    "slowkinggalar": "galarian-slowking.png",
-    "stunfiskgalar": "galarian-stunfisk.png",
+    "meowstic": "meowstic-male.png",
+    "meowsticf": "meowstic-female.png",
+    "meowstic-f": "meowstic-female.png",
+    "meowsticfmega": "meowstic-mega.png",
+    "meowstic-f-mega": "meowstic-mega.png",
+    "meowsticmmega": "meowstic-mega.png",
+    "meowstic-m-mega": "meowstic-mega.png",
+    "pyroar": "pyroar-male.png",
+    "maushold": "maushold.png",
+    "mausholdfour": "maushold.png",
+    "maushold-four": "maushold.png",
+    "floette": "floette-red.png",
+    "floetteeternal": "floette-eternal.png",
+    "floette-eternal": "floette-eternal.png",
+    "floettemega": "floette-mega.png",
+    "floette-mega": "floette-mega.png",
+    "raichualola": "raichu-alolan.png",
+    "ninetalesalola": "ninetales-alolan.png",
+    "persianalola": "persian-alolan.png",
+    "arcaninehisui": "arcanine-hisuian.png",
+    "decidueyehisui": "decidueye-hisuian.png",
+    "avalugghisui": "avalugg-hisuian.png",
+    "typhlosionhisui": "typhlosion-hisuian.png",
+    "samurotthisui": "samurott-hisuian.png",
+    "goodrahisui": "goodra-hisuian.png",
+    "zoroarkhisui": "zoroark-hisuian.png",
+    "slowbrogalar": "slowbro-galarian.png",
+    "slowkinggalar": "slowking-galarian.png",
+    "stunfiskgalar": "stunfisk-galarian.png",
+    "taurospaldeaaqua": "tauros-paldean-aqua.png",
+    "taurospaldeablaze": "tauros-paldean-blaze.png",
+    "taurospaldeacombat": "tauros-paldean-combat.png",
     "squawkabillyyellow": "squawkabilly-yellow-plumage.png",
     "squawkabillyblue": "squawkabilly-blue-plumage.png",
     "squawkabillywhite": "squawkabilly-white-plumage.png",
     "gourgeistsmall": "gourgeist-small-variety.png",
     "gourgeistlarge": "gourgeist-large-variety.png",
     "gourgeistsuper": "gourgeist-jumbo-variety.png",
-    "vivillon": "vivillon-high-plains-pattern.png",
     "lycanrocdusk": "lycanroc-dusk-form.png",
     "lycanrocmidnight": "lycanroc-midnight-form.png",
-    "taurospaldeaaqua": "paldean-tauros-aqua-breed.png",
-    "taurospaldeablaze": "paldean-tauros-blaze-breed.png",
-    "taurospaldeacombat": "paldean-tauros.png",
     "toxtricitylowkey": "toxtricity-low-key-form.png",
+    "mimikyubusted": "mimikyu-busted.png",
+    "polteageistantique": "polteageist-antique.png",
+    "sinistchamasterpiece": "sinistcha-masterpiece.png",
+    "vivillonfancy": "vivillon-fancy.png",
+    "vivillonpokeball": "vivillon-pokeball.png",
 }
 
 
 def build_slug_map() -> Dict[str, Dict[str, str]]:
-    """Builds and returns the complete slug_map dictionary (recursively scanning subfolders like Reg_M-C / Reg_M-D)."""
-    sprite_paths = sorted(SPRITES_DIR.rglob("*.png"))
+    """Builds and returns the complete slug_map dictionary (scanning Reg_M-C & confirmed Reg_M-D, excluding rumored assets)."""
+    sprite_paths = sorted(
+        p for p in SPRITES_DIR.rglob("*.png") if "Reg_M-D_rumored" not in p.parts
+    )
     sprite_files: Dict[str, str] = {
         p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
         for p in sprite_paths
@@ -84,18 +111,27 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
         p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
         for p in sorted(ITEMS_DIR.rglob("*.png"))
     }
+    item_by_norm: Dict[str, str] = {
+        normalize_slug(stem): rel_path for stem, rel_path in item_files.items()
+    }
     megastone_files: Dict[str, str] = {
         p.stem.lower(): p.relative_to(ROOT_DIR).as_posix()
         for p in sorted(MEGASTONES_DIR.rglob("*.png"))
+    }
+    megastone_by_norm: Dict[str, str] = {
+        normalize_slug(stem): rel_path for stem, rel_path in megastone_files.items()
     }
 
     species_map: Dict[str, str] = {}
     items_map: Dict[str, str] = {}
 
-    # 1. Register direct file stems first
+    # 1. Register direct file stems + Title-Case & normalized keys (covers Reg_M-C & Reg_M-D differential folders)
     for stem, rel_path in sprite_files.items():
         species_map[stem] = rel_path
         species_map[normalize_slug(stem)] = rel_path
+        title_dash = "-".join(part.capitalize() for part in stem.split("-"))
+        if title_dash and title_dash not in species_map:
+            species_map[title_dash] = rel_path
 
     # 2. Register all Pokédex entries with strict precedence
     pokedex_path = SHOWDOWN_DIR / "pokedex.jsonl"
@@ -124,25 +160,40 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
                             resolved_rel = sprite_files[candidate]
                             break
 
-                # Regional prefix patterns (e.g. hisuian-X, alolan-X, galarian-X)
+                # Regional prefix/suffix patterns (e.g. X-hisuian / hisuian-X, X-alolan / alolan-X, X-galarian / galarian-X)
                 if not resolved_rel:
                     if dash.endswith("-hisui"):
                         base = dash[:-6]
-                        if f"hisuian-{base}" in sprite_files:
-                            resolved_rel = sprite_files[f"hisuian-{base}"]
+                        for cand in (f"{base}-hisuian", f"hisuian-{base}"):
+                            if cand in sprite_files:
+                                resolved_rel = sprite_files[cand]
+                                break
                     elif dash.endswith("-alola"):
                         base = dash[:-6]
-                        if f"alolan-{base}" in sprite_files:
-                            resolved_rel = sprite_files[f"alolan-{base}"]
+                        for cand in (f"{base}-alolan", f"alolan-{base}"):
+                            if cand in sprite_files:
+                                resolved_rel = sprite_files[cand]
+                                break
                     elif dash.endswith("-galar"):
                         base = dash[:-6]
-                        if f"galarian-{base}" in sprite_files:
-                            resolved_rel = sprite_files[f"galarian-{base}"]
+                        for cand in (f"{base}-galarian", f"galarian-{base}"):
+                            if cand in sprite_files:
+                                resolved_rel = sprite_files[cand]
+                                break
+                    elif "-paldea-" in dash:
+                        cand_suffix = dash.replace("-paldea-", "-paldean-")
+                        if cand_suffix in sprite_files:
+                            resolved_rel = sprite_files[cand_suffix]
+                    elif f"{dash}-male" in sprite_files:
+                        resolved_rel = sprite_files[f"{dash}-male"]
 
                 if resolved_rel:
-                    # Bind all canonical keys to this exact verified path
+                    # Bind all canonical keys (including ASCII apostrophe variants for Farfetch'd / Sirfetch'd)
+                    ascii_name = name.replace("\u2019", "'").replace("\u2018", "'")
                     species_map[name] = resolved_rel
                     species_map[name.lower()] = resolved_rel
+                    species_map[ascii_name] = resolved_rel
+                    species_map[ascii_name.lower()] = resolved_rel
                     species_map[dash] = resolved_rel
                     species_map[sid] = resolved_rel
 
@@ -160,6 +211,9 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
     for stem, rel_path in megastone_files.items():
         items_map[stem] = rel_path
         items_map[normalize_slug(stem)] = rel_path
+        title_ms = " ".join(part.capitalize() for part in stem.split("-"))
+        if title_ms and title_ms not in items_map:
+            items_map[title_ms] = rel_path
 
     items_jsonl = SHOWDOWN_DIR / "items.jsonl"
     if items_jsonl.exists():
@@ -171,22 +225,33 @@ def build_slug_map() -> Dict[str, Dict[str, str]]:
                 iname: str = entry.get("name", "")
                 iid: str = entry.get("id", "")
                 idash = normalize_dash_slug(iname)
+                inorm = normalize_slug(iname)
+                ascii_iname = iname.replace("\u2019", "'").replace("\u2018", "'")
+                matched_rel: Optional[str] = None
                 for candidate in (idash, iid):
                     if candidate in megastone_files:
-                        items_map[iname] = megastone_files[candidate]
-                        items_map[iname.lower()] = megastone_files[candidate]
-                        items_map[idash] = megastone_files[candidate]
-                        items_map[iid] = megastone_files[candidate]
+                        matched_rel = megastone_files[candidate]
                         break
                     if candidate in item_files:
-                        items_map[iname] = item_files[candidate]
-                        items_map[iname.lower()] = item_files[candidate]
-                        items_map[idash] = item_files[candidate]
-                        items_map[iid] = item_files[candidate]
+                        matched_rel = item_files[candidate]
                         break
+                if not matched_rel:
+                    matched_rel = (
+                        megastone_by_norm.get(iid)
+                        or megastone_by_norm.get(inorm)
+                        or item_by_norm.get(iid)
+                        or item_by_norm.get(inorm)
+                    )
+                if matched_rel:
+                    items_map[iname] = matched_rel
+                    items_map[iname.lower()] = matched_rel
+                    items_map[ascii_iname] = matched_rel
+                    items_map[ascii_iname.lower()] = matched_rel
+                    items_map[idash] = matched_rel
+                    items_map[iid] = matched_rel
 
     payload = {
-        "version": "2.0-reg-mc",
+        "version": "2.1-reg-mc-md-diff",
         "species": species_map,
         "items": items_map,
     }

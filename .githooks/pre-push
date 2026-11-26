@@ -1,0 +1,57 @@
+#!/bin/sh
+# ==============================================================================
+# Coach Porygon VGC — Git Pre-Push Hook
+# - Pushing to `develop` or `main`: runs FULL Anti-Hallucination Scanner,
+#   Acceptance Test & Model Fuzzer, AND the complete Unit/Integration pytest suite.
+# - Pushing to feature branches: runs Anti-Hallucination Scanner + Acceptance
+#   Model Fuzzer Gate so pushes stay fast while keeping invariants enforced.
+# Activate locally with: git config core.hooksPath .githooks
+# ==============================================================================
+
+set -e
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if [ -f "./.venv/Scripts/python.exe" ]; then
+    PY="./.venv/Scripts/python.exe"
+elif [ -f "./.venv/bin/python" ]; then
+    PY="./.venv/bin/python"
+else
+    PY="python3"
+fi
+
+PROTECTED_PUSH=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+    case "$remote_ref" in
+        refs/heads/main|refs/heads/develop)
+            PROTECTED_PUSH=1
+            ;;
+    esac
+done
+
+CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "develop" ]; then
+    PROTECTED_PUSH=1
+fi
+
+echo ""
+echo "=========================================================================="
+echo " [GIT PRE-PUSH] Coach Porygon VGC Verification Gate"
+echo "=========================================================================="
+
+# 1. Always enforce repo-wide Anti-Hallucination, Zero p1/p2 & JS syntax gate
+"$PY" scripts/scan_repo_hallucinations.py
+
+# 2. Enforce full pytest suite + Acceptance Fuzzer on develop/main, or Acceptance Gate on feature branches
+if [ "$PROTECTED_PUSH" = "1" ]; then
+    echo " [GIT PRE-PUSH] Protected branch (develop/main) -> Running FULL pytest + Acceptance Fuzzer..."
+    PYTHONPATH="src:." "$PY" -m pytest tests/ -q
+else
+    echo " [GIT PRE-PUSH] Feature branch ($CURRENT_BRANCH) -> Running Acceptance & Model Fuzzer Gate..."
+    PYTHONPATH="src:." "$PY" -m pytest tests/test_acceptance_anti_hallucination.py tests/vgc_tensor_core/test_adversarial_fuzzer.py -q
+fi
+
+echo "=========================================================================="
+echo " [GIT PRE-PUSH: APPROVED] All tests and anti-hallucination fuzzers passed."
+echo "=========================================================================="
+exit 0

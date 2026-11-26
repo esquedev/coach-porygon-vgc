@@ -3,7 +3,7 @@
 
 Queries tournament usage and standings from in-memory DuckDB (`VGCDataRegistry`)
 to benchmark team modes and lead pairs against the format's canonical Regulation M-C
-archetypes (strictly grounded in the 350-Pokémon Regulation M-C Pokédex).
+archetypes (strictly grounded in the 359-Pokémon Regulation M-C Pokédex).
 Produces:
 1. A 4-Step 90-Second Team Preview Execution Protocol.
 2. An If-Then-Else Decision-Tree Rulebook with strictly move-grounded Turn 1 commands.
@@ -474,7 +474,7 @@ class TournamentArchetypeMatcher:
             turn_1_plan_a = f"Mega Evolve {lead_mon_1.species} to cancel Snow (Aurora Veil fails!) and click {m1}; {lead_mon_2.species} clicks {m2}."
             turn_1_plan_b = "If opponent switches Ninetales out to reset Snow later: preserve Kingambit Iron Head for the re-entry."
             win_con = "Drought activates at Priority +5.5 on Mega Evolution, denying Aurora Veil and melting Ice types with Heat Wave."
-            risk_factors = ["Baxcalibur Glaive Rush / High Horsepower", "Manual Hail/Chilly Reception"]
+            risk_factors = ["Baxcalibur Glaive Rush / High Horsepower", "Manual Snowscape / Chilly Reception"]
             rating = "Highly Favorable"
 
         return ArchetypeMatchupPlan(

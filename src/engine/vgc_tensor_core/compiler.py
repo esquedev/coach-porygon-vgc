@@ -195,6 +195,8 @@ ITEM_NAME_TO_ID: Dict[str, ItemID] = {
     "shellbell": ItemID.SHELL_BELL,
     "bright powder": ItemID.BRIGHT_POWDER,
     "brightpowder": ItemID.BRIGHT_POWDER,
+    "quick claw": ItemID.QUICK_CLAW,
+    "quickclaw": ItemID.QUICK_CLAW,
 }
 ITEM_NAME_TO_BOOST_TYPE: Dict[str, int] = {}
 for _tb_item, _tb_type_idx in TYPE_BOOST_ITEM_TO_TYPE_IDX.items():
@@ -400,6 +402,12 @@ ABILITY_NAME_TO_ID: Dict[str, AbilityID] = {
     "stalwart": AbilityID.STALWART,
     "innards out": AbilityID.INNARDS_OUT,
     "innardsout": AbilityID.INNARDS_OUT,
+    "oblivious": AbilityID.OBLIVIOUS,
+    "limber": AbilityID.LIMBER,
+    "unaware": AbilityID.UNAWARE,
+    "disguise": AbilityID.DISGUISE,
+    "water bubble": AbilityID.WATER_BUBBLE,
+    "waterbubble": AbilityID.WATER_BUBBLE,
 }
 
 
@@ -1016,8 +1024,34 @@ class ShowdownTensorCompiler:
         """Resolve `FieldOpID` programmatically from Showdown move attributes."""
         if move_id == "fakeout":
             return FieldOpID.FAKE_OUT
-        if move_id in ("suckerpunch", "upperhand"):
+        if move_id == "suckerpunch":
             return FieldOpID.SUCKER_PUNCH
+        if move_id == "upperhand":
+            return FieldOpID.UPPER_HAND
+        if move_id == "taunt" or vol_status == "taunt":
+            return FieldOpID.TAUNT
+        if move_id == "expandingforce":
+            return FieldOpID.EXPANDING_FORCE
+        if move_id == "knockoff":
+            return FieldOpID.KNOCK_OFF
+        if move_id == "freezedry":
+            return FieldOpID.FREEZE_DRY
+        if move_id == "direclaw":
+            return FieldOpID.DIRE_CLAW
+        if side_cond == "toxicspikes" or move_id == "toxicspikes":
+            return FieldOpID.TOXIC_SPIKES
+        if move_id in ("mortalspin", "rapidspin"):
+            return FieldOpID.HAZARD_CLEAR
+        if move_id in ("stompingtantrum", "temperflare"):
+            return FieldOpID.STOMPING_TANTRUM
+        if move_id == "throatchop":
+            return FieldOpID.THROAT_CHOP
+        if move_id == "glaiverush":
+            return FieldOpID.GLAIVE_RUSH
+        if move_id == "charge":
+            return FieldOpID.CHARGE
+        if move_id in ("phantomforce", "shadowforce", "fly", "dig", "bounce", "dive"):
+            return FieldOpID.PHANTOM_FORCE
         if vol_status in ("followme", "ragepowder") or move_id in ("followme", "ragepowder"):
             return FieldOpID.FOLLOW_ME
         if vol_status == "helpinghand" or move_id == "helpinghand":
@@ -1056,7 +1090,7 @@ class ShowdownTensorCompiler:
             return FieldOpID.SET_RAIN
         if weather in ("sandstorm", "sand"):
             return FieldOpID.SET_SAND
-        if weather in ("snow", "hail", "chillyreception") or move_id == "chillyreception":
+        if weather in ("snow", "snowscape", "chillyreception") or move_id in ("snowscape", "chillyreception"):
             return FieldOpID.SET_SNOW
         if terrain in ("electricterrain", "electric"):
             return FieldOpID.SET_ELECTRIC_TERRAIN
@@ -1258,6 +1292,11 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.ABILITY_ID] = float(ability_id)
         p_vec[MonIdx.UNBURDEN_ACTIVE] = 0.0
         p_vec[MonIdx.TOXIC_COUNTER] = 1.0
+        p_vec[MonIdx.DISGUISE_INTACT] = (
+            1.0
+            if (ability_id == AbilityID.DISGUISE and "busted" not in str(mon.species or "").lower())
+            else 0.0
+        )
         p_vec[MonIdx.ITEM_BOOST_TYPE] = float(
             ITEM_NAME_TO_BOOST_TYPE.get(
                 item_lower,
@@ -1408,6 +1447,19 @@ class ShowdownTensorCompiler:
         p_vec[MonIdx.CHOICE_LOCKED_MOVE] = float(mon_spec.get("choice_locked_move", -1.0))
         p_vec[MonIdx.LAST_MOVE_IDX] = float(mon_spec.get("last_move_idx", -1.0))
         p_vec[MonIdx.TOXIC_COUNTER] = float(mon_spec.get("toxic_counter", 1.0))
+        disguise_default = (
+            1.0
+            if (ability_id == AbilityID.DISGUISE and "busted" not in str(mon_spec.get("species", "")).lower())
+            else 0.0
+        )
+        p_vec[MonIdx.DISGUISE_INTACT] = float(mon_spec.get("disguise_intact", disguise_default))
+        p_vec[MonIdx.LAST_MOVE_FAILED] = float(mon_spec.get("last_move_failed", 0.0))
+        p_vec[MonIdx.CHARGED_MOVE_IDX] = float(mon_spec.get("charged_move_idx", 0.0))
+        p_vec[MonIdx.SEMI_INVULN] = float(mon_spec.get("semi_invuln", 0.0))
+        p_vec[MonIdx.THROAT_CHOP_TURNS] = float(mon_spec.get("throat_chop_turns", 0.0))
+        p_vec[MonIdx.YAWN_ACTIVE] = float(mon_spec.get("yawn_active", 0.0))
+        p_vec[MonIdx.GLAIVE_RUSH_VULN] = float(mon_spec.get("glaive_rush_vuln", 0.0))
+        p_vec[MonIdx.CHARGE_ACTIVE] = float(mon_spec.get("charge_active", 0.0))
         p_vec[MonIdx.ITEM_BOOST_TYPE] = float(
             mon_spec.get(
                 "item_boost_type",
@@ -1488,6 +1540,12 @@ class ShowdownTensorCompiler:
         f_np[FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] = float(f_spec.get("trainer_2_light_screen_turns", 0.0))
         f_np[FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] = float(f_spec.get("trainer_2_aurora_veil_turns", 0.0))
         f_np[FieldIdx.TRAINER_2_MEGA_USED] = float(f_spec.get("trainer_2_mega_used", 0.0))
+        f_np[FieldIdx.TRAINER_1_TOXIC_SPIKES] = float(
+            max(0.0, min(2.0, float(f_spec.get("trainer_1_toxic_spikes", 0.0))))
+        )
+        f_np[FieldIdx.TRAINER_2_TOXIC_SPIKES] = float(
+            max(0.0, min(2.0, float(f_spec.get("trainer_2_toxic_spikes", 0.0))))
+        )
 
         p_np = np.zeros((ROSTER_SLOTS, MON_DIM), dtype=np.float32)
         m_np = np.zeros((ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)

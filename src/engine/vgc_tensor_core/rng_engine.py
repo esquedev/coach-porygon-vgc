@@ -82,6 +82,9 @@ class RNGEventID(IntEnum):
     SECONDARY_STATUS = 10
     STAT_STAGE_PROC = 11
     FLINCH_PROC = 12
+    QUICK_CLAW = 13
+    CURSED_BODY = 14
+    DIRE_CLAW_TRI_STATUS = 15
 
 
 # Official Gen 9 / Champions Cartridge Critical Hit Probability Percentages by Stage (0..3+)

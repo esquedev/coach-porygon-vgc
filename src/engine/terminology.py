@@ -267,24 +267,50 @@ TERM_GLOSSARY: Dict[str, Dict[Language, Dict[Style, Dict[str, str]]]] = {
             "vgc": {
                 "label": "Prob. en humanos %",
                 "short": "Prob. humanos %",
-                "desc": "Qué tan probable es que un jugador humano competitivo fuerte elija esta jugada.",
+                "desc": "Qué tan probable es que un jugador humano competitivo elija esta jugada según el nivel de precisión seleccionado.",
             },
             "scientific": {
                 "label": "Human_QRE_%",
                 "short": "Human_QRE_%",
-                "desc": "Probabilidad de respuesta en Equilibrio de Respuesta Cuantal Logit (QRE_Rationality_Beta = 4.0).",
+                "desc": "Probabilidad de respuesta en Equilibrio de Respuesta Cuantal Logit (LQRE con temperatura racional β ajustable).",
             },
         },
         "en": {
             "vgc": {
                 "label": "Human likeliness %",
                 "short": "Human likeliness %",
-                "desc": "How likely a strong competitive human player is to pick this play.",
+                "desc": "How likely a human competitive player is to pick this play at the selected rival skill level.",
             },
             "scientific": {
                 "label": "Human_QRE_%",
                 "short": "Human_QRE_%",
-                "desc": "Choice probability under Logit Quantal Response Equilibrium (QRE_Rationality_Beta = 4.0).",
+                "desc": "Choice probability under Logit Quantal Response Equilibrium (LQRE with adjustable rationality β).",
+            },
+        },
+    },
+    "qre_beta": {
+        "es": {
+            "vgc": {
+                "label": "Precisión del rival humano",
+                "short": "Nivel rival",
+                "desc": "Ajusta qué tan disciplinado es tu rival: valores bajos modelan ladder impredecible; valores altos modelan jugadores de Top Cut.",
+            },
+            "scientific": {
+                "label": "LQRE Rationality (β)",
+                "short": "LQRE β",
+                "desc": "Inversa de temperatura de racionalidad acotada β > 0 en p_i ∝ exp(+β (Uq)_i), q_j ∝ exp(-β (pᵀU)_j).",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Human opponent precision",
+                "short": "Rival skill",
+                "desc": "Controls how disciplined your human opponent is: lower = unpredictable ladder clicks; higher = Regional Top Cut precision.",
+            },
+            "scientific": {
+                "label": "LQRE Rationality (β)",
+                "short": "LQRE β",
+                "desc": "Bounded-rationality inverse temperature β > 0 in p_i ∝ exp(+β (Uq)_i), q_j ∝ exp(-β (pᵀU)_j).",
             },
         },
     },

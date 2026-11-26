@@ -14,6 +14,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -26,6 +27,24 @@ import webbrowser
 CORE_IMPORT_CHECK = "import torch, numpy, scipy, duckdb, py_mini_racer"
 PYTORCH_CU124_INDEX = "https://download.pytorch.org/whl/cu124"
 STAMP_REL_PATH = Path(".venv") / ".requirements.sha256"
+_SAFE_HOST_RE = re.compile(r"^[a-zA-Z0-9.:\[\]-]{1,64}$")
+_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1"}
+
+
+def _harden_windows_exe_search() -> None:
+    """Prevent Windows CWD binary planting (`python.exe` / `nvidia-smi.exe` in working dir)."""
+    if os.name == "nt":
+        os.environ["NoDefaultCurrentDirectoryInExePath"] = "1"
+
+
+def validate_bind_host_port(host: str, port: int) -> tuple[str, int]:
+    """Validate bind host and port to prevent URL/command injection or invalid ports."""
+    clean_host = str(host).strip() if host is not None else ""
+    if not clean_host or not _SAFE_HOST_RE.match(clean_host):
+        raise ValueError(f"Invalid --host value: {host!r}")
+    if not (1 <= int(port) <= 65535):
+        raise ValueError(f"Invalid --port value (must be 1..65535): {port}")
+    return clean_host, int(port)
 
 
 def find_repo_root(start_path: Optional[Path] = None) -> Path:
@@ -71,8 +90,9 @@ def compute_requirements_hash(requirements_path: Path) -> str:
     return hashlib.sha256(requirements_path.read_bytes()).hexdigest()
 
 
-def find_system_python() -> Optional[List[str]]:
-    """Find a system Python 3.10+ interpreter suitable for creating `.venv`."""
+def find_system_python(repo_root: Optional[Path] = None) -> Optional[List[str]]:
+    """Find a system Python 3.10+ interpreter suitable for creating `.venv` (ignoring CWD plants)."""
+    _harden_windows_exe_search()
     probes: List[List[str]] = (
         [["py", "-3"], ["python"], ["python3"]]
         if os.name == "nt"
@@ -80,37 +100,47 @@ def find_system_python() -> Optional[List[str]]:
     )
     frozen = bool(getattr(sys, "frozen", False))
     current_exe = Path(sys.executable).resolve()
+    resolved_root = repo_root.resolve() if repo_root is not None else None
 
     for cmd in probes:
         exe = shutil.which(cmd[0])
         if not exe:
             continue
-        if frozen and Path(exe).resolve() == current_exe:
+        exe_path = Path(exe).resolve()
+        if frozen and exe_path == current_exe:
+            continue
+        # Never trust a python.exe planted loosely inside the repo root (outside .venv)
+        if resolved_root is not None and exe_path.is_relative_to(resolved_root):
             continue
         try:
             proc = subprocess.run(
-                [*cmd, "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"],
+                [str(exe_path), *cmd[1:], "-c", "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)"],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=10,
                 check=False,
             )
             if proc.returncode == 0:
-                return cmd
+                return [str(exe_path), *cmd[1:]]
         except Exception:
             continue
     return None
 
 
-def has_nvidia_gpu() -> bool:
-    """Return True if `nvidia-smi` is available and exits cleanly on Windows/Linux."""
+def has_nvidia_gpu(repo_root: Optional[Path] = None) -> bool:
+    """Return True if system `nvidia-smi` is available and exits cleanly on Windows/Linux."""
     if sys.platform == "darwin":
         return False
-    if shutil.which("nvidia-smi") is None:
+    _harden_windows_exe_search()
+    exe = shutil.which("nvidia-smi")
+    if exe is None:
+        return False
+    exe_path = Path(exe).resolve()
+    if repo_root is not None and exe_path.is_relative_to(repo_root.resolve()):
         return False
     try:
         proc = subprocess.run(
-            ["nvidia-smi"],
+            [str(exe_path)],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             timeout=10,
@@ -158,7 +188,7 @@ def ensure_venv_and_deps(repo_root: Path) -> Path:
     stamp_path = repo_root / STAMP_REL_PATH
 
     if not venv_py.is_file():
-        sys_py = find_system_python()
+        sys_py = find_system_python(repo_root=repo_root)
         if sys_py is None:
             raise RuntimeError(
                 "Python 3.10+ was not found on your PATH.\n"
@@ -174,13 +204,23 @@ def ensure_venv_and_deps(repo_root: Path) -> Path:
 
     if needs_dependency_sync(venv_py, req_path, stamp_path):
         print("[3/4] Syncing runtime dependencies into .venv (first launch may take a few minutes)...", flush=True)
-        subprocess.run([str(venv_py), "-m", "pip", "install", "--upgrade", "pip"], cwd=str(repo_root), check=True)
+        pip_env = dict(os.environ)
+        pip_env["VIRTUAL_ENV"] = str(repo_root / ".venv")
+        pip_env["PIP_REQUIRE_VIRTUALENV"] = "1"
+        pip_env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
+        subprocess.run(
+            [str(venv_py), "-m", "pip", "install", "--upgrade", "pip"],
+            cwd=str(repo_root),
+            env=pip_env,
+            check=True,
+        )
 
-        if has_nvidia_gpu():
+        if has_nvidia_gpu(repo_root=repo_root):
             print("      NVIDIA GPU detected — installing CUDA 12.4 PyTorch wheel...", flush=True)
             cuda_res = subprocess.run(
                 [str(venv_py), "-m", "pip", "install", "torch", "--index-url", PYTORCH_CU124_INDEX],
                 cwd=str(repo_root),
+                env=pip_env,
                 check=False,
             )
             if cuda_res.returncode != 0:
@@ -191,6 +231,7 @@ def ensure_venv_and_deps(repo_root: Path) -> Path:
         subprocess.run(
             [str(venv_py), "-m", "pip", "install", "-r", str(req_path)],
             cwd=str(repo_root),
+            env=pip_env,
             check=True,
         )
         stamp_path.parent.mkdir(parents=True, exist_ok=True)
@@ -252,8 +293,16 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print("  Coach Porygon VGC - Replay Coach Studio Launcher", flush=True)
     print("============================================================================\n", flush=True)
 
+    _harden_windows_exe_search()
     args = build_arg_parser().parse_args(list(argv) if argv is not None else None)
     try:
+        clean_host, clean_port = validate_bind_host_port(args.host, args.port)
+        if clean_host not in _LOOPBACK_HOSTS:
+            print(
+                f"[WARN] Non-loopback host '{clean_host}' requested; Studio enforces loopback Host headers for CSRF/DNS-rebinding protection.",
+                file=sys.stderr,
+                flush=True,
+            )
         repo_root = find_repo_root()
         venv_py = ensure_venv_and_deps(repo_root)
     except Exception as exc:
@@ -262,7 +311,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             input("\nPress Enter to close...")
         return 1
 
-    studio_url = f"http://{args.host}:{args.port}/"
+    url_host = f"[{clean_host}]" if ":" in clean_host and not clean_host.startswith("[") else clean_host
+    studio_url = f"http://{url_host}:{clean_port}/"
     stop_event = threading.Event()
     if not args.no_browser and os.environ.get("COACH_NO_BROWSER") != "1":
         threading.Thread(

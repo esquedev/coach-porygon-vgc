@@ -29,6 +29,7 @@ from engine.vgc_tensor_core.schema_and_tables import (
     CANONICAL_TYPES,
     CANONICAL_WEATHERS,
     FIELD_DIM,
+    FieldIdx,
     HAS_TORCH,
     MON_DIM,
     MOVES_PER_MON,
@@ -124,12 +125,14 @@ class TestSchemaAndTables(unittest.TestCase):
 
     def test_01_tensor_dimensions_and_non_overlapping_layout(self) -> None:
         """Verify exact tensor dimensions and ensure zero overlapping feature channels."""
-        self.assertEqual(FIELD_DIM, 24)
+        self.assertEqual(FIELD_DIM, 26)
         self.assertEqual(ROSTER_SLOTS, 8)
-        self.assertEqual(MON_DIM, 88)
+        self.assertEqual(MON_DIM, 96)
         self.assertEqual(MOVES_PER_MON, 4)
         self.assertEqual(MOVE_DIM, 60)
 
+        self.assertEqual(FieldIdx.TRAINER_1_TOXIC_SPIKES, 24)
+        self.assertEqual(FieldIdx.TRAINER_2_TOXIC_SPIKES, 25)
         self.assertEqual(MonIdx.TYPE1_END - MonIdx.TYPE1_START, 18)
         self.assertEqual(MonIdx.TYPE2_END - MonIdx.TYPE2_START, 18)
         self.assertEqual(MonIdx.TYPE1_END, MonIdx.TYPE2_START)
@@ -138,6 +141,18 @@ class TestSchemaAndTables(unittest.TestCase):
         self.assertEqual(MonIdx.MEGA_TYPE2, 85)
         self.assertEqual(MonIdx.ITEM_BOOST_TYPE, 86)
         self.assertEqual(MonIdx.MUST_RECHARGE, 87)
+        self.assertEqual(MonIdx.DISGUISE_INTACT, 88)
+        self.assertEqual(MonIdx.LAST_MOVE_FAILED, 89)
+        self.assertEqual(MonIdx.CHARGED_MOVE_IDX, 90)
+        self.assertEqual(MonIdx.SEMI_INVULN, 91)
+        self.assertEqual(MonIdx.THROAT_CHOP_TURNS, 92)
+        self.assertEqual(MonIdx.YAWN_ACTIVE, 93)
+        self.assertEqual(MonIdx.GLAIVE_RUSH_VULN, 94)
+        self.assertEqual(MonIdx.CHARGE_ACTIVE, 95)
+        mask_list = _to_list(self.tables.switch_persist_mask)
+        self.assertEqual(mask_list[MonIdx.DISGUISE_INTACT], 1.0)
+        for ch_idx in range(MonIdx.LAST_MOVE_FAILED, MON_DIM):
+            self.assertEqual(mask_list[ch_idx], 0.0)
         self.assertEqual(MoveIdx.IS_CONTACT, 56)
         self.assertEqual(MoveIdx.IS_SLICING, 57)
         self.assertEqual(MoveIdx.IS_PUNCH, 58)

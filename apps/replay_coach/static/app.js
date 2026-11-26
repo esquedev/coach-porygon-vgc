@@ -3,10 +3,13 @@
 
   const state = {
     app: null,
-    activeStep: "setup",
+    activeStep: "home",
     activeCoachTab: "advice",
     lang: localStorage.getItem("porygon_lang") || "es",
     style: localStorage.getItem("porygon_style") || "vgc",
+    qreBeta: Math.max(0.5, Math.min(20.0, Number(localStorage.getItem("porygon_qre_beta")) || 4.0)),
+    qreFormulaOpen: false,
+    mdScoutLoaded: false,
     rawReplayText: "",
     bo3Replays: [],
     bo3GamesMeta: [],
@@ -28,7 +31,7 @@
     playerPaused: true,
     jsErrors: [],
     lastBugReport: null,
-    prevStepBeforePrep: "setup",
+    prevStepBeforePrep: "home",
     prep: {
       kind: "speed_tiers",
       topN: 50,
@@ -37,6 +40,35 @@
       filename: "",
       generating: false,
       meta: null,
+    },
+    leadLab: {
+      t1UsePaste: false,
+      t2Mode: "full", // "full" | "scout"
+      t2UsePaste: false,
+      scoutReplays: [],
+      t2Inference: null,
+      t2UserSpreads: {},
+      running: false,
+      activeStream: null,
+      jobId: null,
+      jobMeta: null,
+      result: null,
+      selectedLead1: null,
+      selectedLead2: null,
+      selectedBench1: 0,
+      selectedBench2: 0,
+      deepAudit: null,
+      vaultOpen: false,
+      vaultRuns: [],
+      vaultTotal: 0,
+      vaultT1Teams: [],
+      vaultFilterAdv: "",
+      vaultFilterT1: "",
+      vaultSearch: "",
+      cacheHit: null,
+      cachedDeepAuditKeys: new Set(),
+      currentMatchupHash: "",
+      lookupTimer: null,
     },
   };
 
@@ -86,6 +118,199 @@
       .replace(/[^a-z0-9]/g, "");
   }
 
+  // Exact Logit Quantal Response Equilibrium (LQRE) fixed-point solver matching
+  // `src/engine/solver/game_theory.py:solve_quantal_response` (< 0.5 ms in browser).
+  function _stableSoftmax(logits) {
+    let maxVal = -Infinity;
+    for (let i = 0; i < logits.length; i += 1) {
+      if (logits[i] > maxVal) maxVal = logits[i];
+    }
+    const exps = new Float64Array(logits.length);
+    let sum = 0.0;
+    for (let i = 0; i < logits.length; i += 1) {
+      const e = Math.exp(Math.max(-500.0, Math.min(500.0, logits[i] - maxVal)));
+      exps[i] = e;
+      sum += e;
+    }
+    const denom = sum > 0.0 ? sum : 1.0;
+    for (let i = 0; i < logits.length; i += 1) exps[i] /= denom;
+    return exps;
+  }
+
+  function solveLogitQreClient(U, betaRaw, maxIter, damping, tol) {
+    const M = (U && U.length) || 0;
+    const N = M > 0 && U[0] ? U[0].length : 0;
+    if (M === 0 || N === 0) return { p: [], q: [], expected_value: 0.0 };
+    const beta = Math.max(0.01, Number(betaRaw || 4.0));
+    const iters = maxIter || 250;
+    const alpha = damping || 0.35;
+    const eps = tol || 1e-7;
+    let p = new Float64Array(M);
+    let q = new Float64Array(N);
+    for (let i = 0; i < M; i += 1) p[i] = 1.0 / M;
+    for (let j = 0; j < N; j += 1) q[j] = 1.0 / N;
+
+    const pU = new Float64Array(N);
+    const Uq = new Float64Array(M);
+    for (let it = 0; it < iters; it += 1) {
+      for (let j = 0; j < N; j += 1) {
+        let acc = 0.0;
+        for (let i = 0; i < M; i += 1) acc += p[i] * U[i][j];
+        pU[j] = -beta * acc;
+      }
+      const qTarget = _stableSoftmax(pU);
+      const qNext = new Float64Array(N);
+      for (let j = 0; j < N; j += 1) qNext[j] = (1.0 - alpha) * q[j] + alpha * qTarget[j];
+
+      for (let i = 0; i < M; i += 1) {
+        let acc = 0.0;
+        const row = U[i];
+        for (let j = 0; j < N; j += 1) acc += row[j] * qNext[j];
+        Uq[i] = beta * acc;
+      }
+      const pTarget = _stableSoftmax(Uq);
+      const pNext = new Float64Array(M);
+      let diff = 0.0;
+      for (let i = 0; i < M; i += 1) {
+        pNext[i] = (1.0 - alpha) * p[i] + alpha * pTarget[i];
+        diff = Math.max(diff, Math.abs(pNext[i] - p[i]));
+      }
+      for (let j = 0; j < N; j += 1) {
+        diff = Math.max(diff, Math.abs(qNext[j] - q[j]));
+      }
+      p = pNext;
+      q = qNext;
+      if (diff < eps) break;
+    }
+
+    let ev = 0.0;
+    for (let i = 0; i < M; i += 1) {
+      const row = U[i];
+      for (let j = 0; j < N; j += 1) ev += p[i] * row[j] * q[j];
+    }
+    return { p: Array.from(p), q: Array.from(q), expected_value: ev };
+  }
+  window.__porygonSolveLogitQre = solveLogitQreClient;
+
+  function getTurnLiveQre(data) {
+    if (!data || !data.qre_matrix || !data.qre_matrix.U || !data.qre_matrix.U.length) return null;
+    if (data._cachedQreBeta === state.qreBeta && data._cachedQreRes) return data._cachedQreRes;
+    const res = solveLogitQreClient(data.qre_matrix.U, state.qreBeta);
+    data._cachedQreBeta = state.qreBeta;
+    data._cachedQreRes = res;
+    return res;
+  }
+
+  function getLeadLabLiveQre(res) {
+    if (!res || !res.payoff_matrix || !res.payoff_matrix.length) return null;
+    if (res._cachedQreBeta === state.qreBeta && res._cachedQreRes) return res._cachedQreRes;
+    const qRes = solveLogitQreClient(res.payoff_matrix, state.qreBeta, 180, 0.35, 1e-6);
+    res._cachedQreBeta = state.qreBeta;
+    res._cachedQreRes = qRes;
+    return qRes;
+  }
+
+  function renderQreBetaControlHtml(scope) {
+    const isEs = state.lang === "es";
+    const isSci = state.style === "scientific";
+    const beta = state.qreBeta;
+    const presets = isSci
+      ? [
+          { v: 1.0, lbl: "β=1.0" },
+          { v: 4.0, lbl: "β=4.0" },
+          { v: 8.0, lbl: "β=8.0" },
+          { v: 16.0, lbl: "β=16.0" },
+        ]
+      : isEs
+        ? [
+            { v: 1.0, lbl: "Casual (1)" },
+            { v: 4.0, lbl: "Ladder (4)" },
+            { v: 8.0, lbl: "Top Cut (8)" },
+            { v: 16.0, lbl: "Óptimo (16)" },
+          ]
+        : [
+            { v: 1.0, lbl: "Casual (1)" },
+            { v: 4.0, lbl: "Ladder (4)" },
+            { v: 8.0, lbl: "Top Cut (8)" },
+            { v: 16.0, lbl: "Optimal (16)" },
+          ];
+    const presetBtns = presets
+      .map(
+        (pr) =>
+          `<button type="button" class="qre-preset-btn ${Math.abs(beta - pr.v) < 0.25 ? "active" : ""}" data-qre-preset="${pr.v}">${escapeHtml(pr.lbl)}</button>`
+      )
+      .join("");
+
+    const titleLbl = isSci
+      ? (isEs ? "LQRE Racionalidad (β):" : "LQRE Rationality (β):")
+      : (isEs ? "Nivel del rival humano:" : "Human rival precision:");
+    const valLbl = isSci
+      ? `β = ${beta.toFixed(1)}`
+      : beta <= 2.0
+        ? (isEs ? `Casual (${beta.toFixed(1)})` : `Casual (${beta.toFixed(1)})`)
+        : beta <= 5.5
+          ? (isEs ? `Ladder (${beta.toFixed(1)})` : `Ladder (${beta.toFixed(1)})`)
+          : beta <= 11.0
+            ? (isEs ? `Top Cut (${beta.toFixed(1)})` : `Top Cut (${beta.toFixed(1)})`)
+            : (isEs ? `Élite (${beta.toFixed(1)})` : `Elite (${beta.toFixed(1)})`);
+    const helpBtnLbl = isSci
+      ? (isEs ? "? Fórmula LQRE" : "? LQRE Formula")
+      : (isEs ? "? ¿Cómo funciona?" : "? How it works");
+
+    const formulaBody = isSci
+      ? isEs
+        ? `<div class="qre-formula-math">pᵢ ∝ exp(+β · Σⱼ Uᵢⱼ qⱼ) &nbsp;|&nbsp; qⱼ ∝ exp(−β · Σᵢ pᵢ Uᵢⱼ)</div>
+           <div><strong>Interpretación LQRE:</strong> β &gt; 0 es la inversa de temperatura de racionalidad acotada. Cuando <strong>β → 0</strong> ambos jugadores eligen casi al azar (uniforme); con <strong>β ≈ 4</strong> modela errores humanos típicos de ladder; cuando <strong>β → ∞</strong> converge al Equilibrio de Nash exacto sin ruido.</div>`
+        : `<div class="qre-formula-math">pᵢ ∝ exp(+β · Σⱼ Uᵢⱼ qⱼ) &nbsp;|&nbsp; qⱼ ∝ exp(−β · Σᵢ pᵢ Uᵢⱼ)</div>
+           <div><strong>LQRE Interpretation:</strong> β &gt; 0 is the bounded-rationality inverse temperature. As <strong>β → 0</strong> play approaches uniform random; <strong>β ≈ 4</strong> models strong ladder human error; as <strong>β → ∞</strong> probabilities converge toward exact zero-noise Nash Equilibrium.</div>`
+      : isEs
+        ? `<div><strong>¿Cómo leer la Probabilidad Humana?</strong> Este control ajusta qué tan disciplinado es tu rival. Un valor <strong>bajo (1–2)</strong> asume un rival de ladder que hace clics arriesgados o impredecibles; <strong>4</strong> refleja juego competitivo estándar; <strong>8–16</strong> refleja un jugador de Regional Top Cut que casi siempre encuentra las mejores respuestas del turno.</div>`
+        : `<div><strong>How to read Human Likeliness:</strong> This slider adjusts how disciplined your opponent is. A <strong>low setting (1–2)</strong> models an unpredictable ladder opponent taking wild reads; <strong>4</strong> models solid competitive play; <strong>8–16</strong> models a Regional Top Cut specialist who almost always clicks the strongest turn responses.</div>`;
+
+    return `<div class="qre-beta-bar" data-qre-scope="${escapeHtml(scope)}">
+      <div class="qre-beta-top">
+        <div class="qre-beta-slider-wrap">
+          <strong style="font-size:11px;white-space:nowrap">${escapeHtml(titleLbl)}</strong>
+          <input class="qre-beta-slider" type="range" min="0.5" max="20.0" step="0.5" value="${beta.toFixed(1)}" aria-label="${escapeHtml(titleLbl)}" />
+          <span class="qre-beta-val">${escapeHtml(valLbl)}</span>
+        </div>
+        <div class="qre-presets">
+          ${presetBtns}
+          <button type="button" class="btn btn-ghost btn-xs qre-help-toggle">${escapeHtml(helpBtnLbl)}</button>
+        </div>
+      </div>
+      <div class="qre-formula-card" style="display:${state.qreFormulaOpen ? "block" : "none"}">${formulaBody}</div>
+    </div>`;
+  }
+
+  function bindQreBetaControl(rootEl, onChange) {
+    if (!rootEl) return;
+    const slider = rootEl.querySelector(".qre-beta-slider");
+    if (slider) {
+      slider.addEventListener("input", () => {
+        const nextVal = Math.max(0.5, Math.min(20.0, Number(slider.value) || 4.0));
+        state.qreBeta = nextVal;
+        localStorage.setItem("porygon_qre_beta", String(nextVal));
+        onChange();
+      });
+    }
+    rootEl.querySelectorAll(".qre-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nextVal = Math.max(0.5, Math.min(20.0, Number(btn.dataset.qrePreset) || 4.0));
+        state.qreBeta = nextVal;
+        localStorage.setItem("porygon_qre_beta", String(nextVal));
+        onChange();
+      });
+    });
+    const toggle = rootEl.querySelector(".qre-help-toggle");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        state.qreFormulaOpen = !state.qreFormulaOpen;
+        onChange();
+      });
+    }
+  }
+
   function escapeHtml(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -132,28 +357,72 @@
   // -------------------------------------------------------------------------
   function setStep(stepName) {
     if (stepName === "prep" && state.activeStep !== "prep") {
-      state.prevStepBeforePrep = state.activeStep || "setup";
+      state.prevStepBeforePrep = state.activeStep || "home";
     }
     state.activeStep = stepName;
-    ["setup", "pipeline", "review", "prep"].forEach((s) => {
+    ["home", "setup", "pipeline", "review", "prep", "lead-lab", "analytics", "md-scout"].forEach((s) => {
       const view = $(`view-${s}`);
-      const btn = $(`nav-step-${s}`);
       if (view) view.classList.toggle("active", s === stepName);
+    });
+    ["setup", "pipeline", "review"].forEach((s) => {
+      const btn = $(`nav-step-${s}`);
       if (btn) btn.classList.toggle("active", s === stepName);
     });
-    const prepTopBtn = $("btn-open-prep-view");
-    if (prepTopBtn) prepTopBtn.classList.toggle("active", stepName === "prep");
+    const bo3Sub = $("bo3-stepper-bar");
+    const isBo3 = stepName === "setup" || stepName === "pipeline" || stepName === "review";
+    if (bo3Sub) bo3Sub.style.display = isBo3 ? "block" : "none";
+
+    // Sync topbar Quick Tool Switcher active pill & brand Home highlight
+    const activeHubKey =
+      stepName === "home"
+        ? "home"
+        : isBo3
+          ? "bo3"
+          : stepName === "lead-lab"
+            ? "lead-lab"
+            : stepName === "analytics"
+              ? "analytics"
+              : stepName === "md-scout"
+                ? "md-scout"
+                : stepName === "prep"
+                  ? (state.prep.kind === "damage_matrix" ? "damage" : "speed")
+                  : "home";
+    if ($("btn-go-home")) $("btn-go-home").classList.toggle("active", activeHubKey === "home");
+    ["speed", "damage", "bo3", "lead-lab", "analytics", "md-scout"].forEach((k) => {
+      const pill = $(`nav-hub-${k}`);
+      if (pill) pill.classList.toggle("active", k === activeHubKey);
+    });
+    if (stepName === "review") {
+      requestAnimationFrame(syncCoachPanelHeight);
+    }
+  }
+
+  const COACH_TABS = ["advice", "details", "matrix", "board", "graph"];
+
+  function syncCoachPanelHeight() {
+    const playerPanel = $("review-player-panel");
+    const coachPanel = $("review-coach-panel");
+    if (!playerPanel || !coachPanel) return;
+    if (window.innerWidth <= 1100) {
+      coachPanel.style.height = "";
+      return;
+    }
+    const h = playerPanel.offsetHeight;
+    if (h > 200) {
+      coachPanel.style.height = `${h}px`;
+    }
   }
 
   function setCoachTab(tabName) {
-    state.activeCoachTab = tabName;
-    ["advice", "matrix", "board"].forEach((t) => {
+    state.activeCoachTab = COACH_TABS.includes(tabName) ? tabName : "advice";
+    COACH_TABS.forEach((t) => {
       const btn = $(`tab-btn-${t}`);
-      if (btn) btn.classList.toggle("active", t === tabName);
+      if (btn) btn.classList.toggle("active", t === state.activeCoachTab);
     });
     if (state.turnResults[state.currentTurn]) {
       renderTurnPanel(state.turnResults[state.currentTurn]);
     }
+    syncCoachPanelHeight();
   }
 
   function updateKOptions() {
@@ -273,17 +542,146 @@
     $("btn-flip-pov").textContent = isEs ? "Invertir" : "Flip";
     $("btn-recompute-turn").textContent = isEs ? "Recalcular" : "Recompute";
 
-    $("tab-btn-advice").textContent = isEs ? "Consejos" : "Advice";
-    $("tab-btn-matrix").textContent = isSci
-      ? (isEs ? "Matriz Nash / IEDS" : "Nash / IEDS Matrix")
-      : (isEs ? "Todas las Jugadas" : "All Plays");
-    $("tab-btn-board").textContent = isEs ? "Tablero y Curva" : "Board & Graph";
+    if ($("tab-btn-advice")) $("tab-btn-advice").textContent = isEs ? "Resumen" : "Summary";
+    if ($("tab-btn-details")) {
+      $("tab-btn-details").textContent = isSci
+        ? (isEs ? "Auditoría" : "Audit")
+        : (isEs ? "Claves" : "Takeaways");
+    }
+    if ($("tab-btn-matrix")) {
+      $("tab-btn-matrix").textContent = isSci
+        ? "Nash / IEDS"
+        : (isEs ? "Jugadas" : "Plays");
+    }
+    if ($("tab-btn-board")) $("tab-btn-board").textContent = isEs ? "Tablero" : "Board";
+    if ($("tab-btn-graph")) $("tab-btn-graph").textContent = isEs ? "Curva" : (isSci ? "Curve" : "Graph");
 
     if ($("lbl-prep-btn")) {
       $("lbl-prep-btn").textContent = isEs ? "Herramientas Prep" : "Prep Tools";
     }
+    if ($("lbl-nav-speed")) $("lbl-nav-speed").textContent = isEs ? "Velocidades" : "Speed Tiers";
+    if ($("lbl-nav-damage")) $("lbl-nav-damage").textContent = isEs ? "Daño & KO" : "Damage Calcs";
+    if ($("lbl-nav-bo3")) $("lbl-nav-bo3").textContent = "Bo3 Coach";
+    if ($("lbl-nav-lead-lab")) $("lbl-nav-lead-lab").textContent = isEs ? "Lead Lab 90×90" : "90×90 Lead Lab";
+    if ($("lbl-nav-analytics")) $("lbl-nav-analytics").textContent = isEs ? "Analítica" : "Analytics";
+    if ($("lbl-bo3-subtag")) $("lbl-bo3-subtag").textContent = isEs ? "🧠 BO3 REPLAY COACH" : "🧠 BO3 REPLAY COACH";
+
+    // Home Hub Hero + 4 CTA Cards bilingual copy
+    if ($("lbl-home-title")) {
+      $("lbl-home-title").textContent = isEs
+        ? "Coach Porygon VGC — Command Hub"
+        : "Coach Porygon VGC — Command Hub";
+    }
+    if ($("lbl-home-sub")) {
+      $("lbl-home-sub").textContent = isEs
+        ? "Suite competitiva local de Regulation M-C: tablas móviles offline Base64, auditoría Bo3 con Equilibrio de Nash / IEDS y Laboratorio Turno 1 de 90×90 modos."
+        : "Local Regulation M-C competitive suite: offline Base64 mobile prep tables, Bo3 Nash / IEDS replay audits, and a Factored 90×90 Turn-1 Lead & Bring Lab.";
+    }
+    if ($("lbl-cta1-badge")) $("lbl-cta1-badge").textContent = isEs ? "HTML DINÁMICO · OFFLINE" : "DYNAMIC HTML · OFFLINE";
+    if ($("lbl-cta1-title")) $("lbl-cta1-title").textContent = isEs ? "Speed Tiers Dinámicos" : "Dynamic Speed Tiers";
+    if ($("lbl-cta1-desc")) {
+      $("lbl-cta1-desc").textContent = isEs
+        ? "Genera una tabla interactiva de velocidades Lv.50 (31 IVs) contra el Top 50 DuckDB con Tailwind, Icy Wind, Choice Scarf, Unburden, climas y cambios de Mega al instante."
+        : "Generate an interactive Lv.50 (31-IV) Speed Tiers table vs Top 50 DuckDB with Tailwind, Icy Wind, Choice Scarf, Unburden, Weather, and Mega speed shifts.";
+    }
+    if ($("lbl-cta1-meta")) $("lbl-cta1-meta").textContent = isEs ? "1-Click HTML móvil Base64 · Cero IA" : "1-Click Mobile Base64 HTML · Zero-AI";
+
+    if ($("lbl-cta2-badge")) $("lbl-cta2-badge").textContent = isEs ? "16 ROLLS SMOGON · OFFLINE" : "SMOGON 16-ROLL · OFFLINE";
+    if ($("lbl-cta2-title")) $("lbl-cta2-title").textContent = isEs ? "Matriz de Daño & KOs" : "Damage & KO Matrix";
+    if ($("lbl-cta2-desc")) {
+      $("lbl-cta2-desc").textContent = isEs
+        ? "Precalcula todos los rangos OHKO/2HKO exactos de tu equipo con Smogon Champions (5 Climas × 5 Campos × Pantallas) y llévalos en un HTML autónomo al torneo."
+        : "Pre-compute exact Smogon Champions 16-roll OHKO/2HKO ranges across all 5 Weathers × 5 Terrains & Screens and export a single-file tournament HTML.";
+    }
+    if ($("lbl-cta2-meta")) $("lbl-cta2-meta").textContent = isEs ? "1-Click HTML móvil Base64 · Cero IA" : "1-Click Mobile Base64 HTML · Zero-AI";
+
+    if ($("lbl-cta3-badge")) $("lbl-cta3-badge").textContent = isEs ? "TENSOR CORE · BO1 / BO3" : "TENSOR CORE · BO1 / BO3";
+    if ($("lbl-cta3-title")) $("lbl-cta3-title").textContent = "Bo3 Replay Coach";
+    if ($("lbl-cta3-desc")) {
+      $("lbl-cta3-desc").textContent = isEs
+        ? "Sube 1 a 3 replays de Showdown, deduce el 66-SP rival con límites exactos bloqueados y audita cada turno con el reproductor oficial sincronizado, IEDS, Nash y CVaR₁₀."
+        : "Upload 1–3 Showdown replays, infer opponent 66-SP with locked deterministic bounds, and audit every turn alongside the synced Showdown player, IEDS, Nash & CVaR₁₀.";
+    }
+    if ($("lbl-cta3-meta")) $("lbl-cta3-meta").textContent = isEs ? "Reproductor Showdown + Explicación VGC/Científica" : "Synced Showdown Player + VGC / Scientific Coach";
+
+    if ($("lbl-cta4-badge")) $("lbl-cta4-badge").textContent = isEs ? "NUEVO · 90×90 (8,100 MODOS)" : "NEW · 90×90 (8,100 MODES)";
+    if ($("lbl-cta4-title")) $("lbl-cta4-title").textContent = isEs ? "Simulador de Leads Turno 1" : "Turn-1 Lead & Bring Lab";
+    if ($("lbl-cta4-desc")) {
+      $("lbl-cta4-desc").textContent = isEs
+        ? "Enfrenta dos equipos de 6 Pokémon (66-SP o OTS + logs Bo3) y simula el Turno 1 para los 15×15 leads × 6×6 bancas en GPU para obtener tu Equilibrio de Nash de Team Preview."
+        : "Pit any two 6-Pokémon teams (Full 66-SP or OTS + Bo3 scouting logs) and simulate Turn 1 across all 15×15 leads × 6×6 benches on GPU for your Team-Preview Nash Equilibrium.";
+    }
+    if ($("lbl-cta4-meta")) $("lbl-cta4-meta").textContent = isEs ? "Heatmap 15×15 en vivo + Drilldown 6×6 + Audit K=128" : "Live 15×15 Heatmap + 6×6 Drilldown + Deep K=128 Audit";
+
+    if ($("lbl-cta5-badge")) $("lbl-cta5-badge").textContent = isEs ? "TELEMETRÍA LOCAL · CSV POR EQUIPO" : "LOCAL TELEMETRY · PER-TEAM CSV";
+    if ($("lbl-cta5-title")) $("lbl-cta5-title").textContent = isEs ? "Analítica de Sesiones y Torneos Bo3" : "Bo3 Session & Tournament Analytics";
+    if ($("lbl-cta5-desc")) {
+      $("lbl-cta5-desc").textContent = isEs
+        ? "Crea carpetas por equipo, registra tus partidas auditadas desde Bo3 Coach y sigue tu Win Rate, curva de precisión Nash, errores por fase (Lead / Mid / Endgame) y efectividad por par de Leads."
+        : "Create team folders, log your audited Bo3 Coach matches, and track your Win Rate, Nash accuracy trendline, phase mistakes (Lead / Mid / Endgame), and Turn-1 lead pair win rates.";
+    }
+    if ($("lbl-cta5-meta")) $("lbl-cta5-meta").textContent = isEs ? "Guía paso a paso + Carpetas locales en data/telemetry/" : "Step-by-step walkthrough + Local folders in data/telemetry/";
+
+    // Lead Lab bilingual labels
+    if ($("lbl-ll-title")) {
+      $("lbl-ll-title").textContent = isEs
+        ? "🎯 Simulador de Leads & Brings Turno 1 (90×90 Nash)"
+        : "🎯 Turn-1 Lead & Bring Lab (Factored 90×90 Nash)";
+    }
+    if ($("lbl-ll-launch")) {
+      $("lbl-ll-launch").textContent = state.leadLab.running
+        ? (isEs ? "Simulando..." : "Simulating...")
+        : (isEs ? "Simular 90×90 Leads →" : "Run 90×90 Lead Nash →");
+    }
+    if ($("btn-ll-cancel")) $("btn-ll-cancel").textContent = isEs ? "■ Detener" : "■ Stop";
+    if ($("btn-ll-cancel-bar")) $("btn-ll-cancel-bar").textContent = isEs ? "■ Detener" : "■ Stop";
+    if ($("lbl-ll-t1-title")) $("lbl-ll-t1-title").textContent = isEs ? "Tu Equipo (trainer_1 · 66-SP)" : "Your Team (trainer_1 · Full 66-SP)";
+    if ($("lbl-ll-t2-title")) $("lbl-ll-t2-title").textContent = isEs ? "Equipo Rival (trainer_2)" : "Opponent Team (trainer_2)";
+    if ($("btn-ll-t2-mode-full")) $("btn-ll-t2-mode-full").textContent = "Full 66-SP";
+    if ($("btn-ll-t2-mode-scout")) $("btn-ll-t2-mode-scout").textContent = isEs ? "OTS + Logs Bo3" : "OTS + Bo3 Logs";
+    if ($("lbl-ll-scout-hint")) {
+      $("lbl-ll-scout-hint").textContent = isEs
+        ? "Sube 1 a 3 replays Bo3 del rival (.html, .log, .txt) para acotar su 66-SP con Smogon Champions"
+        : "Upload 1–3 opponent Bo3 replays (.html, .log, .txt) to infer clamped 66-SP via Smogon Champions";
+    }
+    if ($("lbl-ll-scout-pick")) $("lbl-ll-scout-pick").textContent = isEs ? "Seleccionar logs Bo3" : "Select Bo3 Logs";
+    if ($("lbl-ll-solve-sp")) $("lbl-ll-solve-sp").textContent = isEs ? "Resolver 66-SP Rival" : "Solve Opponent 66-SP";
+    if ($("lbl-ll-podium-t1")) $("lbl-ll-podium-t1").textContent = isEs ? "🏆 Mejores Brings (Equilibrio de Nash 90×90)" : "🏆 Optimal Brings (Global 90×90 Nash)";
+    if ($("lbl-ll-podium-t2")) $("lbl-ll-podium-t2").textContent = isEs ? "🛡 Brings Más Peligrosos del Rival & Tu Counter" : "🛡 Opponent Top Brings & Best Counter-Lead";
+    if ($("lbl-ll-heatmap-title")) {
+      $("lbl-ll-heatmap-title").textContent = isEs
+        ? "Mapa de Calor de Leads (15×15 · Click en cualquier celda para ver sus 6×6 bancas)"
+        : "Lead-Pair Heatmap (15×15 · Click any cell to inspect its 6×6 Back-2 bench matrix)";
+    }
+    if ($("lbl-ll-leg-win")) $("lbl-ll-leg-win").textContent = isEs ? "+ Ventaja T1" : "+ T1 Adv";
+    if ($("lbl-ll-leg-even")) $("lbl-ll-leg-even").textContent = isEs ? "Parejo" : "Even";
+    if ($("lbl-ll-leg-lose")) $("lbl-ll-leg-lose").textContent = isEs ? "- Ventaja Rival" : "- Opp Adv";
+    if ($("lbl-ll-deep-btn")) {
+      $("lbl-ll-deep-btn").textContent = isEs
+        ? "⚡ Auditoría Profunda Turno 1 (Sin Poda · K=128)"
+        : "⚡ Run Deep Unpruned Turn-1 Audit (K=128)";
+    }
+    if ($("lbl-ll-vault-btn")) $("lbl-ll-vault-btn").textContent = isEs ? "Matchup Vault" : "Matchup Vault";
+    if ($("lbl-ll-vault-title")) {
+      $("lbl-ll-vault-title").textContent = isEs
+        ? "📚 Matchup Vault — Simulaciones 90×90 Guardadas (DuckDB)"
+        : "📚 Matchup Vault — Saved 90×90 Sweeps (DuckDB)";
+    }
+    if ($("ll-vault-search")) {
+      $("ll-vault-search").placeholder = isEs
+        ? "Buscar por Pokémon, nombre de equipo o etiqueta (ej. Incineroar, Regional)..."
+        : "Search by Pokémon, team name, or tag (e.g. Incineroar, Regional)...";
+    }
+    if ($("btn-ll-adv-all")) $("btn-ll-adv-all").textContent = isEs ? "Todos" : "All";
+    if ($("btn-ll-adv-win")) $("btn-ll-adv-win").textContent = isEs ? "+ Ventaja" : "+ Advantage";
+    if ($("btn-ll-adv-even")) $("btn-ll-adv-even").textContent = isEs ? "Parejo" : "Even";
+    if ($("btn-ll-adv-lose")) $("btn-ll-adv-lose").textContent = isEs ? "- Desventaja" : "- Disadvantage";
+    renderLeadLabCacheHitBar();
+    renderLeadLabVaultT1Select();
+    if (state.leadLab.vaultOpen) renderLeadLabVaultList();
+    updateLegalFooterAndModalCopy();
     if ($("btn-prep-back")) {
-      $("btn-prep-back").textContent = isEs ? "← Volver al Studio" : "← Back to Studio";
+      $("btn-prep-back").textContent = isEs ? "← Volver al Hub" : "← Back to Hub";
     }
     if ($("lbl-prep-heading")) {
       $("lbl-prep-heading").textContent = isEs
@@ -305,6 +703,32 @@
       $("lbl-prep-generate").textContent = state.prep.generating
         ? (isEs ? "Calculando..." : "Computing...")
         : (isEs ? "Generar" : "Generate");
+    }
+    if ($("lbl-nav-md-scout")) $("lbl-nav-md-scout").textContent = "Reg M-D";
+    if ($("lbl-cta6-badge")) {
+      $("lbl-cta6-badge").textContent = isEs ? "PREVIEW M-D · HTML BASE64 OFFLINE" : "REG M-D PREVIEW · OFFLINE BASE64";
+    }
+    if ($("lbl-cta6-title")) {
+      $("lbl-cta6-title").textContent = isEs ? "Scout del Meta Regulation M-D" : "Regulation M-D Meta Scout";
+    }
+    if ($("lbl-cta6-desc")) {
+      $("lbl-cta6-desc").textContent = isEs
+        ? "Tier List proyectada combinando los añadidos oficiales confirmados de Regulation M-D y la ola de pronóstico comunitario, cruzados contra equipos reales Top Cut de DuckDB (incl. LAIC 2027)."
+        : "Projected Tier List combining confirmed Regulation M-D additions and the community forecast wave, cross-referenced against real DuckDB Top Cut teams (incl. LAIC 2027).";
+    }
+    if ($("lbl-cta6-meta")) {
+      $("lbl-cta6-meta").textContent = isEs
+        ? "Confirmados vs. Rumor · 6 Blueprints DuckDB · 1-Click HTML"
+        : "Confirmed vs. Rumored · 6 DuckDB Blueprints · 1-Click HTML";
+    }
+    if ($("btn-md-scout-back")) $("btn-md-scout-back").textContent = isEs ? "← Volver al Hub" : "← Back to Hub";
+    if ($("lbl-md-scout-heading")) {
+      $("lbl-md-scout-heading").textContent = isEs
+        ? "🔮 Scout del Meta Regulation M-D (HTML Offline Base64)"
+        : "🔮 Regulation M-D Meta Scout (Offline Base64 HTML)";
+    }
+    if ($("lbl-md-scout-download")) {
+      $("lbl-md-scout-download").textContent = isEs ? "⬇ Descargar HTML Offline" : "⬇ Download Offline HTML";
     }
     if ($("lbl-prep-download")) {
       $("lbl-prep-download").textContent = isEs
@@ -331,18 +755,50 @@
         ? "Calcula Velocidades Lv.50 (31 IVs) y Matrices de Daño con 16 rolls exactos de Smogon Champions (5 Climas × 5 Campos) sin suscripción de IA y descárgalos en un solo HTML Base64 para tu teléfono."
         : "Compute exact Lv.50 31-IV Speed Tiers and Smogon Champions 16-roll Damage Matrices (all 5 Weathers × 5 Terrains) with zero AI subscription and download a single-file Base64 HTML for your phone.";
     }
-    if ($("lbl-analytics-btn")) {
-      $("lbl-analytics-btn").textContent = isEs ? "Analítica" : "Analytics";
-    }
     if ($("lbl-analytics-modal-title")) {
       $("lbl-analytics-modal-title").textContent = isEs
-        ? "Analítica de Sesiones y Torneos Bo3"
-        : "Bo3 & Tournament Session Analytics";
+        ? "📊 Analítica de Sesiones y Torneos Bo3"
+        : "📊 Bo3 Session & Tournament Analytics";
+    }
+    if ($("lbl-analytics-sub")) {
+      $("lbl-analytics-sub").textContent = isEs
+        ? "Registra tus partidas por carpeta de equipo en data/telemetry/ y detecta tendencias de precisión, leads y errores por fase."
+        : "Log audited replays by team folder in data/telemetry/ to track Win Rate, accuracy trends, lead performance, and phase mistakes.";
+    }
+    if ($("analytics-new-team-input")) {
+      $("analytics-new-team-input").placeholder = isEs
+        ? "Nueva carpeta (ej. mi_equipo_v1)"
+        : "New folder (e.g. my_team_v1)";
+    }
+    if ($("btn-analytics-create-team")) $("btn-analytics-create-team").textContent = isEs ? "+ Crear" : "+ Create";
+    if ($("btn-analytics-toggle-guide")) $("btn-analytics-toggle-guide").textContent = isEs ? "? Cómo funciona" : "? How it works";
+    if ($("btn-analytics-hide-guide")) $("btn-analytics-hide-guide").textContent = isEs ? "Ocultar" : "Hide";
+    if ($("lbl-analytics-guide-title")) {
+      $("lbl-analytics-guide-title").textContent = isEs
+        ? "🧭 Guía Rápida: Cómo usar Analítica y Telemetría de Sesiones"
+        : "🧭 Quick Walkthrough: How Session Analytics & Telemetry Work";
+    }
+    if ($("btn-analytics-go-bo3")) {
+      $("btn-analytics-go-bo3").textContent = isEs ? "🧠 Ir a Bo3 Replay Coach →" : "🧠 Open Bo3 Replay Coach →";
+    }
+    if ($("lbl-analytics-storage-note")) {
+      $("lbl-analytics-storage-note").textContent = isEs
+        ? "Los CSVs se guardan 100% localmente en data/telemetry/<equipo>/battles_telemetry.csv (sin nube)."
+        : "CSVs are stored 100% locally in data/telemetry/<team>/battles_telemetry.csv (no cloud upload).";
     }
     if ($("btn-refresh-analytics")) {
       $("btn-refresh-analytics").textContent = isEs ? "Actualizar" : "Refresh";
     }
-    $("lbl-bug-btn").textContent = isEs ? "Reportar Bug" : "Report Bug";
+    renderAnalyticsGuideSteps();
+    if (state.activeStep === "analytics") {
+      loadAndRenderAnalytics();
+    }
+    if ($("lbl-bug-btn")) $("lbl-bug-btn").textContent = isEs ? "Reportar Bug" : "Report Bug";
+    if ($("btn-open-bug-modal")) {
+      const bugTip = isEs ? "Reportar Bug / Log Diagnóstico" : "Report Bug / Diagnostic Log";
+      $("btn-open-bug-modal").title = bugTip;
+      $("btn-open-bug-modal").setAttribute("aria-label", bugTip);
+    }
     $("lbl-bug-modal-title").textContent = isEs
       ? "Reportar Bug / Generar Log Diagnóstico"
       : "Report Bug / Generate Diagnostic Log";
@@ -378,6 +834,14 @@
       renderTurnPanel(state.turnResults[state.currentTurn]);
     }
     renderTimeline();
+    updateLeadLabControlsUI();
+    if (state.leadLab.t2Inference) {
+      renderLeadLabClampedSpPanel();
+    }
+    if (state.leadLab.result) {
+      renderLeadLabPodium(state.leadLab.result);
+      renderLeadLabDrilldown();
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -1413,7 +1877,11 @@
 
     const tSel = $("telemetry-team-select");
     tSel.innerHTML = "";
-    (state.app.telemetry_teams || ["char_y_v4", "char_y_v3"]).forEach((tf) => {
+    const tList =
+      state.app.telemetry_teams && state.app.telemetry_teams.length
+        ? state.app.telemetry_teams
+        : ["my_team"];
+    tList.forEach((tf) => {
       const opt = document.createElement("option");
       opt.value = tf;
       opt.textContent = tf;
@@ -1501,6 +1969,12 @@
     const rep = state.app.replay;
 
     $("coach-panel-title").textContent = isEs ? `Turno ${data.turn}` : `Turn ${data.turn}`;
+    const headBadge = $("coach-head-badge");
+    if (headBadge && com) {
+      headBadge.style.display = "inline-flex";
+      headBadge.className = `verdict-pill ${com.badge_class || ""}`;
+      headBadge.textContent = `${com.symbol || ""} ${com.badge || ""}`.trim();
+    }
     $("turn-compute-meta").textContent = isSci
       ? `[${data.matrix_shape[0]}×${data.matrix_shape[1]}] · ${(data.total_timelines / 1000).toFixed(0)}k · ${data.elapsed_s}s`
       : `${data.elapsed_s}s`;
@@ -1516,35 +1990,116 @@
     const sameAsBest = best && JSON.stringify(best.choice_pair) === JSON.stringify(act.choice_pair);
     const lossVal = act.nash_regret;
     const fmtScore = (v) => `${v >= 0 ? "+" : ""}${v.toFixed(isSci ? 3 : 2)}`;
+    const liveQre = getTurnLiveQre(data);
+    const getLiveT1QrePct = (row) => {
+      if (liveQre && typeof row.row_idx === "number" && row.row_idx >= 0 && row.row_idx < liveQre.p.length) {
+        return liveQre.p[row.row_idx] * 100.0;
+      }
+      return Number(row.qre_pct || 0);
+    };
+    const getLiveT2QrePct = (row) => {
+      if (liveQre && typeof row.col_idx === "number" && row.col_idx >= 0 && row.col_idx < liveQre.q.length) {
+        return liveQre.q[row.col_idx] * 100.0;
+      }
+      return Number(row.qre_pct || 0);
+    };
+
+    const activeT1SpritesHtml = ((data.board && data.board.trainer_1) || [])
+      .filter((m) => m.role === "Active" && m.sprite_url)
+      .slice(0, 2)
+      .map((m) => `<img src="${escapeHtml(m.sprite_url)}" alt="${escapeHtml(m.species)}" title="${escapeHtml(m.species)}" />`)
+      .join("");
+
+    const tPunish = getTermInfo("security_floor", isEs ? "Counter más fuerte" : "Counter That Punishes", true);
+    const showPunish = act.worst_counter_desc && act.worst_counter_desc !== "N/A";
+    const punishHtml = showPunish
+      ? `<div class="punish-callout" title="${escapeHtml(tPunish.tooltip)}">
+          <span><strong>${escapeHtml(tPunish.label)}:</strong> ${escapeHtml(act.worst_counter_desc)}</span>
+          <span class="compare-delta">${fmtScore(act.security_floor)}</span>
+        </div>`
+      : "";
 
     const heroHtml = `
       <div class="verdict-hero ${com.badge_class}">
         <div class="verdict-row">
           <span class="verdict-pill ${com.badge_class}">${escapeHtml(com.symbol)} ${escapeHtml(com.badge)}</span>
-          <span class="muted-xs">${escapeHtml(fieldStr)}</span>
+          <span class="muted-xs">${escapeHtml(fieldStr)} · #${act.rank}/${act.total_actions}</span>
         </div>
         <div class="verdict-headline">${escapeHtml(com.headline)}</div>
 
-        <div class="compare-box">
-          <div class="compare-line">
-            <span class="compare-label">${isEs ? "Tu jugada" : "Your play"}</span>
-            <span class="compare-play">${escapeHtml(act.desc)}</span>
-            <span class="compare-delta">${fmtScore(act.risk_ev)}</span>
+        <div class="tactical-compare-grid ${sameAsBest ? "single" : ""}">
+          <div class="tactical-play-card played">
+            <div class="tactical-card-head">
+              <span>${isEs ? "Tu jugada" : "Your play"}</span>
+              <span class="compare-delta">${fmtScore(act.risk_ev)}</span>
+            </div>
+            <div class="tactical-card-sprites">
+              ${activeT1SpritesHtml}
+              <span class="tactical-play-desc">${escapeHtml(act.desc)}</span>
+            </div>
           </div>
           ${
             !sameAsBest
-              ? `<div class="compare-line">
-                  <span class="compare-label">${isEs ? "Recomendada #1" : "#1 Best line"}</span>
-                  <span class="compare-play">${escapeHtml(best.desc)}</span>
-                  <span class="compare-delta">${fmtScore(best.risk_ev)} (${lossVal > 0 ? "-" : ""}${lossVal.toFixed(isSci ? 3 : 2)})</span>
+              ? `<div class="tactical-play-card best">
+                  <div class="tactical-card-head">
+                    <span>${isEs ? "Recomendada #1" : "#1 Recommended"}</span>
+                    <span class="compare-delta">${fmtScore(best.risk_ev)} (${lossVal > 0 ? "-" : ""}${lossVal.toFixed(isSci ? 3 : 2)})</span>
+                  </div>
+                  <div class="tactical-card-sprites">
+                    ${activeT1SpritesHtml}
+                    <span class="tactical-play-desc">${escapeHtml(best.desc)}</span>
+                  </div>
                 </div>`
               : ""
           }
-          <div class="compare-line">
-            <span class="compare-label">${isEs ? "Rival jugó" : "Opponent"}</span>
-            <span class="compare-play muted-sm">${escapeHtml(act.opp_actual_desc)}</span>
-            <span class="compare-delta">#${act.rank}/${act.total_actions}</span>
-          </div>
+        </div>
+        ${punishHtml}
+      </div>
+    `;
+
+    const pillarLabelMap = isSci
+      ? {
+          material: isEs ? "Material_KO" : "Material_KO",
+          threat: isEs ? "Amenaza_Letal" : "Lethal_Threat",
+          malposition: isEs ? "Mal_Posicionamiento" : "Mal_Positioning",
+          restriction: isEs ? "Restriccion_Opciones" : "Option_Restriction",
+          status_boost: isEs ? "Estados_Boosts" : "Status_Boosts",
+          two_turn_prime: isEs ? "Primed_2Turn" : "Two_Turn_Prime",
+          resources: isEs ? "Recursos_Escudos" : "Resource_Shields",
+          field_tempo: isEs ? "Tempo_Campo" : "Field_Tempo",
+        }
+      : {
+          material: isEs ? "Material (HP/KO)" : "Material (HP/KO)",
+          threat: isEs ? "Presión de KO" : "KO Pressure",
+          malposition: isEs ? "Mal Posicionamiento" : "Enemy Position",
+          restriction: isEs ? "Bloqueo Opciones" : "Option Lock",
+          status_boost: isEs ? "Estados y Boosts" : "Status & Boosts",
+          two_turn_prime: isEs ? "Jugada 2 Turnos" : "2-Turn Setup",
+          resources: isEs ? "Escudos y Objetos" : "Shields & Items",
+          field_tempo: isEs ? "Control de Campo" : "Field & Speed",
+        };
+
+    const tVal = getTermInfo("nash_value", "Turn Advantage", false);
+    const tLoss = getTermInfo("nash_regret", "Play Cost", false);
+    const tCvar = getTermInfo("cvar_10", "Bad-Luck Floor", false);
+    const tSurv = getTermInfo("ieds_survivors", "Viable Plays", false);
+    const kpiStripHtml = `
+      <div class="kpi-strip">
+        <div class="kpi-card" title="${escapeHtml(tVal.tooltip)}">
+          <div class="kpi-name">${escapeHtml(tVal.label)}</div>
+          <div class="kpi-value">${fmtScore(data.nash_value)}</div>
+        </div>
+        <div class="kpi-card" title="${escapeHtml(tLoss.tooltip)}">
+          <div class="kpi-name">${escapeHtml(tLoss.label)}</div>
+          <div class="kpi-value">${act.nash_regret.toFixed(isSci ? 3 : 2)}</div>
+        </div>
+        <div class="kpi-card" title="${escapeHtml(tCvar.tooltip)}">
+          <div class="kpi-name">${escapeHtml(tCvar.label)}</div>
+          <div class="kpi-value">${fmtScore(act.cvar10)}</div>
+        </div>
+        <div class="kpi-card" title="${escapeHtml(tSurv.tooltip)}">
+          <div class="kpi-name">${escapeHtml(tSurv.label)}</div>
+          <div class="kpi-value">${data.ieds.t1_strict}/${data.ieds.t1_total}</div>
         </div>
       </div>
     `;
@@ -1552,7 +2107,54 @@
     let tabHtml = "";
 
     if (state.activeCoachTab === "advice") {
-      const bulletsHtml = (com.bullets || [])
+      const tMix = getTermInfo("nash_mix", "Mix %", true);
+      const tQre = getTermInfo("human_qre", "Human %", true);
+      const top3 = (data.top_actions || []).slice(0, 3);
+      const top3Html = top3
+        .map(
+          (r, i) => `<div class="top3-row ${r.is_played ? "is-played" : ""}">
+            <span class="top3-rank">#${i + 1}</span>
+            <span class="top3-desc">${escapeHtml(r.desc)}</span>
+            <span class="top3-meta">${fmtScore(r.risk_ev)} · ${r.nash_pct.toFixed(0)}% / ${getLiveT1QrePct(r).toFixed(0)}%</span>
+          </div>`
+        )
+        .join("");
+
+      const eqDrv = (data.equity_breakdown && data.equity_breakdown.top_drivers) || [];
+      const eqChips = eqDrv
+        .slice(0, 3)
+        .map((d) => {
+          const v = Number(d.value || 0);
+          const cls = v > 0.02 ? "pos" : v < -0.02 ? "neg" : "";
+          const lbl = pillarLabelMap[d.pillar] || d.pillar;
+          return `<span class="eq-chip ${cls}">${v >= 0 ? "+" : ""}${v.toFixed(2)} ${escapeHtml(lbl)}</span>`;
+        })
+        .join("");
+      const bulletCount = (com.bullets || []).length;
+
+      tabHtml = `
+        ${heroHtml}
+        ${kpiStripHtml}
+        <div class="subhead">${isEs ? `Top 3 líneas (${tMix.label} / ${tQre.label})` : `Top 3 lines (${tMix.label} / ${tQre.label})`}</div>
+        <div class="top3-list">${top3Html}</div>
+        <div class="coach-summary-footer">
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">${eqChips}</div>
+          <div class="hud-bridge-row">
+            <button class="btn btn-ghost btn-xs" type="button" data-hud-bridge="prep">⚡ Prep</button>
+            <button class="btn btn-ghost btn-xs" type="button" data-hud-bridge="lead-lab">🎯 Leads</button>
+            ${
+              bulletCount > 0
+                ? `<button class="btn btn-ghost btn-xs" type="button" data-jump-coach-tab="details">${
+                    isEs ? `Ver ${bulletCount} claves →` : `View ${bulletCount} takeaways →`
+                  }</button>`
+                : ""
+            }
+          </div>
+        </div>
+      `;
+    } else if (state.activeCoachTab === "details") {
+      const bullets = com.bullets || [];
+      const bulletsHtml = bullets
         .map(
           (b) => `<li class="advice-item ${b.tone}">
             <div class="advice-tag">${escapeHtml(b.tag)}</div>
@@ -1561,30 +2163,42 @@
         )
         .join("");
 
-      const tMix = getTermInfo("nash_mix", "Mix %", true);
-      const top3 = (data.top_actions || []).slice(0, 3);
-      const top3Html = top3
-        .map(
-          (r, i) => `<div class="top3-row ${r.is_played ? "is-played" : ""}">
-            <span class="top3-rank">#${i + 1}</span>
-            <span class="top3-desc">${escapeHtml(r.desc)}</span>
-            <span class="top3-meta">${fmtScore(r.risk_ev)} · ${r.nash_pct.toFixed(0)}%</span>
+      const eqP = (data.equity_breakdown && data.equity_breakdown.nash_pillars) || null;
+      const eqEntries = eqP
+        ? Object.entries(eqP).filter(([, val]) => Math.abs(Number(val || 0)) >= 0.01)
+        : [];
+      const maxAbs = Math.max(0.25, ...eqEntries.map(([, val]) => Math.abs(Number(val || 0))));
+      const eqBarHtml = eqEntries.length
+        ? `<div class="pillar-tug-box">
+            <div class="subhead" style="margin:0 0 2px">${
+              isSci
+                ? (isEs ? "Desglose 8 Pilares de Equidad (U_risk)" : "8-Pillar Victory Equity Breakdown")
+                : (isEs ? "Por qué gana la jugada recomendada (8 Pilares)" : "Why the recommended play wins (8 Pillars)")
+            }</div>
+            ${eqEntries
+              .map(([k, val]) => {
+                const n = Number(val || 0);
+                const pctW = Math.min(50, Math.round((Math.abs(n) / maxAbs) * 50));
+                const cls = n >= 0 ? "pos" : "neg";
+                return `<div class="pillar-tug-row">
+                  <span class="pillar-tug-lbl">${escapeHtml(pillarLabelMap[k] || k)}</span>
+                  <div class="pillar-tug-track">
+                    <div class="pillar-tug-mid"></div>
+                    <div class="pillar-tug-fill ${cls}" style="width:${pctW}%"></div>
+                  </div>
+                  <span class="pillar-tug-val ${cls}">${n >= 0 ? "+" : ""}${n.toFixed(2)}</span>
+                </div>`;
+              })
+              .join("")}
           </div>`
-        )
-        .join("");
+        : "";
 
       tabHtml = `
-        <div class="subhead">${isEs ? "Claves del turno" : "Key takeaways"}</div>
-        <ul class="advice-list">${bulletsHtml}</ul>
-
-        <div class="subhead">${isEs ? `Top 3 líneas (${tMix.label})` : `Top 3 lines (${tMix.label})`}</div>
-        <div class="top3-list">${top3Html}</div>
+        <div class="subhead">${isEs ? `Claves tácticas — Turno ${data.turn}` : `Tactical takeaways — Turn ${data.turn}`}</div>
+        <ul class="advice-list ${bullets.length <= 2 ? "single-col" : ""}">${bulletsHtml}</ul>
+        ${eqBarHtml}
       `;
     } else if (state.activeCoachTab === "matrix") {
-      const tVal = getTermInfo("nash_value", "Turn Advantage", false);
-      const tLoss = getTermInfo("nash_regret", "Play Cost", false);
-      const tCvar = getTermInfo("cvar_10", "Bad-Luck Floor", false);
-      const tSurv = getTermInfo("ieds_survivors", "Viable Plays", false);
       const tRisk = getTermInfo("risk_utility", "Score", true);
       const tCvarShort = getTermInfo("cvar_10", "10% RNG", true);
       const tMix = getTermInfo("nash_mix", "Mix %", true);
@@ -1603,14 +2217,16 @@
             ? `<span class="status-pill-sm ok">${okLbl}</span>`
             : `<span class="status-pill-sm bad">${badLbl}</span>`;
           const rk = r.is_played && idx >= data.top_actions.length ? `#${act.rank}` : `#${idx + 1}`;
+          const mixPct = Number(r.nash_pct || 0);
+          const humPct = getLiveT1QrePct(r);
           return `<tr class="${r.is_played ? "played-row" : ""}">
             <td>${rk}</td>
             <td>${escapeHtml(r.desc)}</td>
             <td>${stPill}</td>
             <td class="num">${fmtScore(r.risk_ev)}</td>
             <td class="num">${fmtScore(r.cvar10)}</td>
-            <td class="num">${r.nash_pct.toFixed(1)}%</td>
-            <td class="num">${r.qre_pct.toFixed(1)}%</td>
+            <td class="num"><span class="prob-mini-wrap"><span class="prob-mini-track"><span class="prob-mini-fill" style="width:${Math.min(100, mixPct).toFixed(0)}%"></span></span>${mixPct.toFixed(1)}%</span></td>
+            <td class="num"><span class="prob-mini-wrap"><span class="prob-mini-track"><span class="prob-mini-fill human" style="width:${Math.min(100, humPct).toFixed(0)}%"></span></span>${humPct.toFixed(1)}%</span></td>
           </tr>`;
         })
         .join("");
@@ -1627,25 +2243,7 @@
         .join("");
 
       tabHtml = `
-        <div class="kpi-strip">
-          <div class="kpi-card" title="${escapeHtml(tVal.tooltip)}">
-            <div class="kpi-name">${escapeHtml(tVal.label)}</div>
-            <div class="kpi-value">${fmtScore(data.nash_value)}</div>
-          </div>
-          <div class="kpi-card" title="${escapeHtml(tLoss.tooltip)}">
-            <div class="kpi-name">${escapeHtml(tLoss.label)}</div>
-            <div class="kpi-value">${act.nash_regret.toFixed(isSci ? 4 : 2)}</div>
-          </div>
-          <div class="kpi-card" title="${escapeHtml(tCvar.tooltip)}">
-            <div class="kpi-name">${escapeHtml(tCvar.label)}</div>
-            <div class="kpi-value">${fmtScore(act.cvar10)}</div>
-          </div>
-          <div class="kpi-card" title="${escapeHtml(tSurv.tooltip)}">
-            <div class="kpi-name">${escapeHtml(tSurv.label)}</div>
-            <div class="kpi-value">${data.ieds.t1_strict} / ${data.ieds.t1_total}</div>
-          </div>
-        </div>
-
+        ${renderQreBetaControlHtml("review-matrix")}
         <table class="data-table">
           <thead>
             <tr>
@@ -1667,7 +2265,7 @@
               ? (isEs ? `Inspector IEDS (${data.ieds.t1_strict_elim} dominadas en ${data.ieds.strict_rounds} rondas)` : `IEDS Inspector (${data.ieds.t1_strict_elim} dominated in ${data.ieds.strict_rounds} rounds)`)
               : (isEs ? `Jugadas descartadas (${data.ieds.t1_strict_elim} siempre inferiores)` : `Pruned plays (${data.ieds.t1_strict_elim} always outclassed)`)
           }</summary>
-          <div style="margin-top:8px">
+          <div style="margin-top:6px">
             ${
               elimRows
                 ? `<table class="data-table">
@@ -1679,7 +2277,7 @@
           </div>
         </details>
       `;
-    } else {
+    } else if (state.activeCoachTab === "board") {
       const renderSide = (title, mons) => {
         const rows = (mons || [])
           .map((m) => {
@@ -1688,10 +2286,11 @@
             if (m.spa_boost) boosts.push(`SpA${m.spa_boost > 0 ? "+" : ""}${m.spa_boost}`);
             if (m.spd_boost) boosts.push(`SpD${m.spd_boost > 0 ? "+" : ""}${m.spd_boost}`);
             const bStr = boosts.length ? ` [${boosts.join(",")}]` : "";
+            const protTag = m.protect_prev ? " 🛡" : "";
             return `<div class="board-mon ${m.hp_cur <= 0 ? "fainted" : ""}">
               <span class="board-mon-left">
                 ${spritePairHtml(m.sprite_url, m.item_sprite_url, m.species, m.item)}
-                <span><strong>${m.role === "Active" ? "ACT" : "BNC"}</strong> ${escapeHtml(m.species)}${escapeHtml(bStr)}</span>
+                <span><strong>${m.role === "Active" ? "ACT" : "BNC"}</strong> ${escapeHtml(m.species)}${escapeHtml(bStr)}${protTag}</span>
               </span>
               <span class="muted-xs">${m.hp_pct}% · ${m.spe} Spe</span>
             </div>`;
@@ -1700,24 +2299,68 @@
         return `<div class="side-card"><div class="side-head">${escapeHtml(title)}</div>${rows}</div>`;
       };
 
-      const valLabel = getTermInfo("nash_value", "Turn Advantage", false).label;
+      const koEntries = Object.entries(act.ko_probs_vs_actual_opp || {});
+      const koStrip = koEntries.length
+        ? `<div class="equity-drivers-strip">
+            <span class="muted-xs" style="font-weight:700">${isEs ? "Prob. KO:" : "KO Odds:"}</span>
+            ${koEntries
+              .map(([sp, pct]) => `<span class="eq-chip">${escapeHtml(sp)} ${Number(pct).toFixed(0)}%</span>`)
+              .join("")}
+          </div>`
+        : "";
+
       tabHtml = `
-        <div class="subhead">${isEs ? `Estado al inicio del Turno ${data.turn}` : `Board at start of Turn ${data.turn}`}</div>
+        <div class="subhead" style="display:flex;justify-content:space-between;align-items:center">
+          <span>${isEs ? `Tablero al inicio del Turno ${data.turn}` : `Board at start of Turn ${data.turn}`}</span>
+          <span class="muted-xs" style="text-transform:none">${escapeHtml(fieldStr)}</span>
+        </div>
         <div class="board-columns">
           ${renderSide(rep.trainer_1_name, data.board.trainer_1)}
           ${renderSide(rep.trainer_2_name, data.board.trainer_2)}
         </div>
+        ${koStrip}
+      `;
+    } else {
+      const valLabel = getTermInfo("nash_value", "Turn Advantage", false).label;
+      const oppHumLbl = isSci ? "QRE" : (isEs ? "Hum." : "Hum.");
+      const oppTopRows = (data.opp_top_actions || [])
+        .slice(0, 4)
+        .map(
+          (o, idx) => `<div class="opp-top-row ${o.is_played ? "is-played" : ""}">
+            <span><strong>#${idx + 1}</strong> ${escapeHtml(o.desc)}${o.is_played ? ` <span class="muted-xs">(${isEs ? "jugada" : "played"})</span>` : ""}</span>
+            <span class="top3-meta">${o.nash_pct.toFixed(0)}% · ${oppHumLbl} ${getLiveT2QrePct(o).toFixed(0)}%</span>
+          </div>`
+        )
+        .join("");
 
-        <div class="subhead">${escapeHtml(valLabel)} — ${isEs ? "Evolución de la partida" : "Match progression"}</div>
-        ${buildEvalChartSvg()}
+      tabHtml = `
+        <div class="subhead">${escapeHtml(valLabel)} — ${isEs ? "Evolución de la partida (click en un punto para saltar)" : "Match progression (click any dot to jump)"}</div>
+        <div class="graph-svg-box">${buildEvalChartSvg()}</div>
+        <div class="subhead">${isEs ? `Respuestas principales del rival (Turno ${data.turn})` : `Top opponent responses (Turn ${data.turn})`}</div>
+        <div class="opp-top-strip">${oppTopRows || `<span class="muted-xs">—</span>`}</div>
       `;
     }
 
     const body = $("coach-panel-body");
-    body.innerHTML = heroHtml + tabHtml;
+    body.innerHTML = tabHtml;
+    body.scrollTop = 0;
     body.querySelectorAll("circle[data-chart-turn]").forEach((el) => {
       el.addEventListener("click", () => selectTurn(parseInt(el.dataset.chartTurn, 10), true, false));
     });
+    body.querySelectorAll("[data-jump-coach-tab]").forEach((el) => {
+      el.addEventListener("click", () => setCoachTab(el.dataset.jumpCoachTab));
+    });
+    body.querySelectorAll("[data-hud-bridge]").forEach((el) => {
+      el.addEventListener("click", () => {
+        if (el.dataset.hudBridge === "prep") openPrepToolsView("speed_tiers");
+        else if (el.dataset.hudBridge === "lead-lab") openLeadLabView();
+      });
+    });
+    bindQreBetaControl(body, () => {
+      renderTurnPanel(data);
+      if (state.leadLab.result) renderLeadLabPodium(state.leadLab.result);
+    });
+    syncCoachPanelHeight();
   }
 
   async function selectTurn(turnNum, syncShowdown, forceRecompute) {
@@ -1762,6 +2405,7 @@
       const clampedH = Math.max(372, Math.min(680, Math.ceil(msg.height)));
       if (frame) frame.style.height = `${clampedH}px`;
       if (wrap) wrap.style.minHeight = `${clampedH}px`;
+      requestAnimationFrame(syncCoachPanelHeight);
       return;
     }
     if (msg.type === "PLAYER_READY") {
@@ -1830,9 +2474,16 @@
     };
   });
 
-  ["advice", "matrix", "board"].forEach((t) => {
-    $(`tab-btn-${t}`).onclick = () => setCoachTab(t);
+  COACH_TABS.forEach((t) => {
+    const btn = $(`tab-btn-${t}`);
+    if (btn) btn.onclick = () => setCoachTab(t);
   });
+
+  if (typeof ResizeObserver !== "undefined" && $("review-player-panel")) {
+    const ro = new ResizeObserver(() => syncCoachPanelHeight());
+    ro.observe($("review-player-panel"));
+  }
+  window.addEventListener("resize", syncCoachPanelHeight);
 
   $("btn-lang-es").onclick = () => {
     state.lang = "es";
@@ -2158,10 +2809,112 @@
     return `<svg class="eval-svg" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">${inner}</svg>`;
   }
 
+  function renderAnalyticsGuideSteps() {
+    const box = $("analytics-guide-steps");
+    if (!box) return;
+    const isEs = state.lang === "es";
+    const steps = isEs
+      ? [
+          {
+            n: 1,
+            t: "Crea o elige una carpeta de equipo",
+            d: "Escribe un nombre arriba (ej. rain_archaludon_v1) y pulsa '+ Crear'. Coach Porygon crea automáticamente data/telemetry/<equipo>/battles_telemetry.csv por ti.",
+          },
+          {
+            n: 2,
+            t: "Audita tus partidas en Bo3 Coach",
+            d: "Abre 🧠 Bo3 Replay Coach, carga 1 a 3 replays (o la partida de ejemplo) y ejecuta el Tensor Core para calcular Nash Regret, insignias (!! / ! / ?! / ? / ??) y eventos RNG.",
+          },
+          {
+            n: 3,
+            t: "Pulsa 'Exportar CSV' en el Paso 3",
+            d: "En la barra superior del Paso 3 elige tu carpeta de equipo y haz click en 'Exportar CSV'. Cada partida se deduplica por match_id y actualiza tus gráficas al instante.",
+          },
+        ]
+      : [
+          {
+            n: 1,
+            t: "Create or pick a team folder",
+            d: "Type a team folder name above (e.g. rain_archaludon_v1) and click '+ Create'. Coach Porygon initializes data/telemetry/<team>/battles_telemetry.csv automatically.",
+          },
+          {
+            n: 2,
+            t: "Audit replays in Bo3 Coach",
+            d: "Open 🧠 Bo3 Replay Coach, load 1–3 Showdown replays (or the built-in Sample Match), and run the Tensor Core to grade turns with Nash Regret, badges (!! / ! / ?! / ? / ??), and RNG flags.",
+          },
+          {
+            n: 3,
+            t: "Click 'Export CSV' in Step 3 Review",
+            d: "Select your team folder in Step 3's top toolbar and click 'Export CSV'. Matches deduplicate cleanly by match_id and immediately populate your Win Rate, Accuracy curve & Lead stats here.",
+          },
+        ];
+    box.innerHTML = steps
+      .map(
+        (s) => `<div class="analytics-step-card">
+          <div class="analytics-step-head">
+            <span class="analytics-step-num">${s.n}</span>
+            <span>${escapeHtml(s.t)}</span>
+          </div>
+          <div class="analytics-step-desc">${escapeHtml(s.d)}</div>
+        </div>`
+      )
+      .join("");
+  }
+
+  async function createTelemetryTeamFolder(rawName) {
+    const isEs = state.lang === "es";
+    const msgEl = $("analytics-action-msg");
+    const name = String(rawName || "").trim();
+    if (!name) {
+      if (msgEl) {
+        msgEl.style.display = "block";
+        msgEl.textContent = isEs
+          ? "Escribe un nombre para la carpeta (ej. mi_equipo_v1)."
+          : "Enter a folder name first (e.g. my_team_v1).";
+      }
+      return;
+    }
+    try {
+      const res = await fetch("/api/telemetry/create-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team_folder: name }),
+      });
+      const d = await res.json();
+      if (!res.ok || !d.ok) {
+        if (msgEl) {
+          msgEl.style.display = "block";
+          msgEl.textContent = `Error: ${d.error || "Could not create folder"}`;
+        }
+        return;
+      }
+      if (state.app) state.app.telemetry_teams = d.teams || [];
+      updateReviewHeaderMeta();
+      if ($("analytics-new-team-input")) $("analytics-new-team-input").value = "";
+      if (msgEl) {
+        msgEl.style.display = "block";
+        msgEl.textContent = d.created
+          ? (isEs
+              ? `Carpeta '${d.team_folder}' creada en ${d.csv_path}. ¡Ahora audita una partida en Bo3 Coach y pulsa 'Exportar CSV'!`
+              : `Folder '${d.team_folder}' created at ${d.csv_path}. Now audit a replay in Bo3 Coach and click 'Export CSV'!`)
+          : (isEs
+              ? `La carpeta '${d.team_folder}' ya existía (${d.csv_path}).`
+              : `Folder '${d.team_folder}' already exists (${d.csv_path}).`);
+      }
+      await loadAndRenderAnalytics(d.team_folder);
+    } catch (err) {
+      if (msgEl) {
+        msgEl.style.display = "block";
+        msgEl.textContent = `Error: ${String(err)}`;
+      }
+    }
+  }
+
   async function loadAndRenderAnalytics(teamOverride) {
     const isEs = state.lang === "es";
     const sel = $("analytics-team-select");
     const body = $("analytics-dashboard-body");
+    const guidePanel = $("analytics-guide-panel");
     if (!body) return;
     body.innerHTML = `<div class="muted-sm">${isEs ? "Cargando sesiones..." : "Loading session analytics..."}</div>`;
 
@@ -2173,20 +2926,55 @@
       return;
     }
 
+    const teams = d.teams || [];
+    if (state.app) state.app.telemetry_teams = teams;
     if (sel) {
-      const teams = d.teams || [];
       sel.innerHTML =
         `<option value="all">${isEs ? "Todos los equipos" : "All teams"}</option>` +
         teams.map((tf) => `<option value="${escapeHtml(tf)}">${escapeHtml(tf)}</option>`).join("");
-      sel.value = d.team_folder || "all";
+      sel.value = teams.includes(d.team_folder) ? d.team_folder : "all";
     }
 
     if (!d.total_matches) {
-      body.innerHTML = `<div class="muted-sm" style="padding:14px 0">${
-        isEs
-          ? "Aún no hay partidas exportadas en esta carpeta. Analiza una partida y pulsa 'Exportar CSV' en el Paso 3."
-          : "No exported matches found in this folder yet. Analyze a replay and click 'Export CSV' in Step 3."
-      }</div>`;
+      if (guidePanel) guidePanel.style.display = "block";
+      const hasFolders = teams.length > 0;
+      const folderHint = hasFolders
+        ? (isEs
+            ? `Tienes ${teams.length} carpeta(s) lista(s) (${teams.join(", ")}), pero todavía sin partidas exportadas.`
+            : `You have ${teams.length} folder(s) ready (${teams.join(", ")}), with 0 exported matches so far.`)
+        : (isEs
+            ? "Todavía no existe ninguna carpeta en data/telemetry/. Crea tu primera carpeta de equipo aquí abajo en 1 click:"
+            : "No folders exist in data/telemetry/ yet. Create your first team folder below in 1 click:");
+
+      body.innerHTML = `<div class="analytics-empty-hero">
+        <div class="analytics-empty-title">${
+          hasFolders
+            ? (isEs ? "Aún no hay partidas exportadas en esta carpeta" : "No exported matches in this folder yet")
+            : (isEs ? "Empieza tu Diario de Telemetría VGC" : "Start Your Local VGC Telemetry Log")
+        }</div>
+        <div class="muted-sm" style="max-width:620px">${escapeHtml(folderHint)}</div>
+        ${
+          !hasFolders
+            ? `<div class="analytics-empty-create">
+                <input type="text" id="analytics-empty-folder-input" class="analytics-folder-input" placeholder="${isEs ? "Ej. mi_equipo_reg_mc" : "e.g. my_reg_mc_team"}" />
+                <button class="btn btn-emerald" id="btn-analytics-empty-create" type="button">${isEs ? "+ Crear mi primera carpeta" : "+ Create First Team Folder"}</button>
+              </div>`
+            : ""
+        }
+        <div class="btn-row" style="margin-top:6px">
+          <button class="btn btn-greatball" id="btn-analytics-empty-bo3" type="button">${isEs ? "🧠 Ir a Bo3 Replay Coach →" : "🧠 Open Bo3 Replay Coach →"}</button>
+        </div>
+      </div>`;
+
+      if ($("btn-analytics-empty-create")) {
+        $("btn-analytics-empty-create").onclick = () => {
+          const v = ($("analytics-empty-folder-input") && $("analytics-empty-folder-input").value) || "my_reg_mc_team";
+          createTelemetryTeamFolder(v);
+        };
+      }
+      if ($("btn-analytics-empty-bo3")) {
+        $("btn-analytics-empty-bo3").onclick = () => openBo3CoachView();
+      }
       return;
     }
 
@@ -2287,25 +3075,43 @@
     `;
   }
 
-  function openAnalyticsModal() {
-    $("analytics-modal").style.display = "flex";
+  function openAnalyticsView() {
+    setStep("analytics");
+    renderAnalyticsGuideSteps();
     loadAndRenderAnalytics();
   }
 
-  function closeAnalyticsModal() {
-    $("analytics-modal").style.display = "none";
-  }
-
-  if ($("btn-open-analytics-modal")) $("btn-open-analytics-modal").onclick = openAnalyticsModal;
-  if ($("btn-close-analytics-modal")) $("btn-close-analytics-modal").onclick = closeAnalyticsModal;
   if ($("btn-refresh-analytics")) $("btn-refresh-analytics").onclick = () => loadAndRenderAnalytics();
   if ($("analytics-team-select")) {
     $("analytics-team-select").onchange = (e) => loadAndRenderAnalytics(e.target.value);
   }
-  if ($("analytics-modal")) {
-    $("analytics-modal").addEventListener("click", (ev) => {
-      if (ev.target === $("analytics-modal")) closeAnalyticsModal();
+  if ($("btn-analytics-create-team")) {
+    $("btn-analytics-create-team").onclick = () => {
+      createTelemetryTeamFolder($("analytics-new-team-input") ? $("analytics-new-team-input").value : "");
+    };
+  }
+  if ($("analytics-new-team-input")) {
+    $("analytics-new-team-input").addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        createTelemetryTeamFolder($("analytics-new-team-input").value);
+      }
     });
+  }
+  if ($("btn-analytics-toggle-guide")) {
+    $("btn-analytics-toggle-guide").onclick = () => {
+      const p = $("analytics-guide-panel");
+      if (!p) return;
+      p.style.display = p.style.display === "none" ? "block" : "none";
+    };
+  }
+  if ($("btn-analytics-hide-guide")) {
+    $("btn-analytics-hide-guide").onclick = () => {
+      if ($("analytics-guide-panel")) $("analytics-guide-panel").style.display = "none";
+    };
+  }
+  if ($("btn-analytics-go-bo3")) {
+    $("btn-analytics-go-bo3").onclick = () => openBo3CoachView();
   }
 
   // Bug Report Modal & Direct Email Workflow
@@ -2560,26 +3366,26 @@
     }
   }
 
-  function openPrepToolsView() {
-    if (state.activeStep === "prep") {
-      setStep(state.prevStepBeforePrep || "setup");
-      return;
+  function openPrepToolsView(targetKind) {
+    if (targetKind === "speed_tiers" || targetKind === "damage_matrix") {
+      state.prep.kind = targetKind;
     }
     populatePrepRosterSelect();
     setStep("prep");
     updatePrepControlsUI();
-    if (!state.prep.token && !state.prep.usePaste && $("prep-roster-select") && $("prep-roster-select").value) {
+    if (!state.prep.usePaste && $("prep-roster-select") && $("prep-roster-select").value) {
       generatePrepToolPreview();
     }
   }
 
-  if ($("btn-open-prep-view")) $("btn-open-prep-view").onclick = openPrepToolsView;
+  if ($("btn-open-prep-view")) $("btn-open-prep-view").onclick = () => openPrepToolsView();
   if ($("btn-prep-back")) {
-    $("btn-prep-back").onclick = () => setStep(state.prevStepBeforePrep || "setup");
+    $("btn-prep-back").onclick = () => setStep("home");
   }
   if ($("btn-prep-kind-speed")) {
     $("btn-prep-kind-speed").onclick = () => {
       state.prep.kind = "speed_tiers";
+      setStep("prep");
       updatePrepControlsUI();
       if (!state.prep.usePaste || ($("prep-paste-input") && $("prep-paste-input").value.trim())) {
         generatePrepToolPreview();
@@ -2589,6 +3395,7 @@
   if ($("btn-prep-kind-damage")) {
     $("btn-prep-kind-damage").onclick = () => {
       state.prep.kind = "damage_matrix";
+      setStep("prep");
       updatePrepControlsUI();
       if (!state.prep.usePaste || ($("prep-paste-input") && $("prep-paste-input").value.trim())) {
         generatePrepToolPreview();
@@ -2613,15 +3420,1572 @@
     };
   }
 
-  // Boot on Step 1
+  // -------------------------------------------------------------------------
+  // Coach Porygon VGC Cyber-Tactical Hub Navigation & 4 CTA Cards
+  // -------------------------------------------------------------------------
+  function openBo3CoachView() {
+    if (state.turnResults && Object.keys(state.turnResults).length > 0 && state.matchSummary) {
+      setStep("review");
+    } else {
+      setStep("setup");
+    }
+  }
+
+  function openLeadLabView() {
+    populateLeadLabRosterSelects();
+    setStep("lead-lab");
+    updateLeadLabControlsUI();
+    refreshLeadLabVault();
+    scheduleLeadLabCacheLookup(0);
+  }
+
+  function openMdScoutView() {
+    setStep("md-scout");
+    const frame = $("md-scout-iframe");
+    if (frame && !state.mdScoutLoaded) {
+      frame.src = "/api/reg-md-scout";
+      state.mdScoutLoaded = true;
+    }
+  }
+
+  if ($("btn-go-home")) $("btn-go-home").onclick = () => setStep("home");
+  if ($("nav-hub-speed")) $("nav-hub-speed").onclick = () => openPrepToolsView("speed_tiers");
+  if ($("nav-hub-damage")) $("nav-hub-damage").onclick = () => openPrepToolsView("damage_matrix");
+  if ($("nav-hub-bo3")) $("nav-hub-bo3").onclick = () => openBo3CoachView();
+  if ($("nav-hub-lead-lab")) $("nav-hub-lead-lab").onclick = () => openLeadLabView();
+  if ($("nav-hub-analytics")) $("nav-hub-analytics").onclick = () => openAnalyticsView();
+  if ($("nav-hub-md-scout")) $("nav-hub-md-scout").onclick = () => openMdScoutView();
+
+  if ($("cta-card-speed")) $("cta-card-speed").onclick = () => openPrepToolsView("speed_tiers");
+  if ($("cta-card-damage")) $("cta-card-damage").onclick = () => openPrepToolsView("damage_matrix");
+  if ($("cta-card-bo3")) $("cta-card-bo3").onclick = () => openBo3CoachView();
+  if ($("cta-card-lead-lab")) $("cta-card-lead-lab").onclick = () => openLeadLabView();
+  if ($("cta-card-analytics")) $("cta-card-analytics").onclick = () => openAnalyticsView();
+  if ($("cta-card-md-scout")) $("cta-card-md-scout").onclick = () => openMdScoutView();
+  if ($("btn-md-scout-back")) $("btn-md-scout-back").onclick = () => setStep("home");
+
+  // -------------------------------------------------------------------------
+  // Factored 90×90 Turn-1 Lead & Bring Lab Controller
+  // -------------------------------------------------------------------------
+  function scoreCellBg(score) {
+    const v = Math.max(-1.2, Math.min(1.2, Number(score || 0)));
+    if (v >= 0.08) {
+      const a = Math.min(0.62, 0.14 + (v / 1.2) * 0.48);
+      return `rgba(34, 197, 94, ${a.toFixed(2)})`;
+    }
+    if (v <= -0.08) {
+      const a = Math.min(0.62, 0.14 + (-v / 1.2) * 0.48);
+      return `rgba(244, 63, 94, ${a.toFixed(2)})`;
+    }
+    return "rgba(100, 116, 139, 0.18)";
+  }
+
+  function scoreTextColor(score) {
+    const v = Number(score || 0);
+    if (v >= 0.08) return "#bbf7d0";
+    if (v <= -0.08) return "#fecdd3";
+    return "#cbd5e1";
+  }
+
+  function miniSpriteImg(spName, spritesMap) {
+    const rec = spritesMap && spritesMap[spName];
+    const url = rec && rec.sprite_url;
+    if (!url) return "";
+    return `<img class="ll-mini-spr" src="${escapeHtml(url)}" alt="${escapeHtml(spName)}" title="${escapeHtml(spName)}" loading="lazy" />`;
+  }
+
+  function renderLeadLabRosterPreview(side) {
+    const sel = $(`ll-${side}-roster-select`);
+    const box = $(`ll-${side}-preview`);
+    if (!sel || !box) return;
+    const rosters = (state.app && state.app.rosters) || [];
+    const found = rosters.find((r) => r.roster_id === sel.value);
+    const mons = (found && (found.species_sprites || found.pokemon)) || [];
+    if (!mons.length) {
+      box.innerHTML = "";
+      return;
+    }
+    box.innerHTML = mons
+      .map(
+        (m) =>
+          `<span class="ll-mon-chip">${spritePairHtml(m.sprite_url, m.item_sprite_url, m.species, m.item)}<span>${escapeHtml(m.species)}</span></span>`
+      )
+      .join("");
+  }
+
+  function populateLeadLabRosterSelects() {
+    const rosters = (state.app && state.app.rosters) || [];
+    ["t1", "t2"].forEach((side, idx) => {
+      const sel = $(`ll-${side}-roster-select`);
+      if (!sel) return;
+      const prev = sel.value;
+      if (!rosters.length) {
+        sel.innerHTML = `<option value="">${state.lang === "es" ? "(Sin equipos DuckDB)" : "(No DuckDB rosters)"}</option>`;
+        return;
+      }
+      sel.innerHTML = rosters
+        .map((r) => `<option value="${escapeHtml(r.roster_id)}">${escapeHtml(r.display_name || r.roster_id)}</option>`)
+        .join("");
+      if (prev && rosters.some((r) => r.roster_id === prev)) {
+        sel.value = prev;
+      } else if (rosters[idx]) {
+        sel.value = rosters[idx].roster_id;
+      } else {
+        sel.value = rosters[0].roster_id;
+      }
+      renderLeadLabRosterPreview(side);
+    });
+  }
+
+  function updateLeadLabControlsUI() {
+    const isEs = state.lang === "es";
+    const ll = state.leadLab;
+    if ($("ll-t1-paste-drawer")) $("ll-t1-paste-drawer").style.display = ll.t1UsePaste ? "block" : "none";
+    if ($("ll-t1-roster-select")) $("ll-t1-roster-select").style.display = ll.t1UsePaste ? "none" : "block";
+    if ($("ll-t1-preview")) $("ll-t1-preview").style.display = ll.t1UsePaste ? "none" : "flex";
+    if ($("btn-ll-t1-paste")) {
+      $("btn-ll-t1-paste").textContent = ll.t1UsePaste
+        ? (isEs ? "Usar DuckDB" : "Use Saved Roster")
+        : (isEs ? "Pegar 66-SP" : "Paste 66-SP");
+    }
+
+    const isScout = ll.t2Mode === "scout";
+    if ($("btn-ll-t2-mode-full")) $("btn-ll-t2-mode-full").classList.toggle("active", !isScout);
+    if ($("btn-ll-t2-mode-scout")) $("btn-ll-t2-mode-scout").classList.toggle("active", isScout);
+    if ($("ll-t2-full-box")) $("ll-t2-full-box").style.display = isScout ? "none" : "block";
+    if ($("ll-t2-scout-box")) $("ll-t2-scout-box").style.display = isScout ? "block" : "none";
+
+    if ($("ll-t2-paste-drawer")) $("ll-t2-paste-drawer").style.display = ll.t2UsePaste ? "block" : "none";
+    if ($("ll-t2-roster-select")) $("ll-t2-roster-select").style.display = ll.t2UsePaste ? "none" : "block";
+    if ($("ll-t2-preview")) $("ll-t2-preview").style.display = ll.t2UsePaste ? "none" : "flex";
+    if ($("btn-ll-t2-paste")) {
+      $("btn-ll-t2-paste").textContent = ll.t2UsePaste
+        ? (isEs ? "Usar DuckDB" : "Use Saved Roster")
+        : (isEs ? "Pegar 66-SP" : "Paste 66-SP");
+    }
+
+    if ($("btn-ll-t2-solve-sp")) $("btn-ll-t2-solve-sp").disabled = ll.scoutReplays.length === 0;
+    if ($("btn-ll-launch")) $("btn-ll-launch").disabled = ll.running;
+    if ($("btn-ll-cancel")) {
+      $("btn-ll-cancel").disabled = !ll.running;
+      $("btn-ll-cancel").style.display = "inline-flex";
+    }
+    if ($("btn-ll-cancel-bar")) {
+      $("btn-ll-cancel-bar").style.display = ll.running ? "inline-flex" : "none";
+      $("btn-ll-cancel-bar").disabled = !ll.running;
+    }
+    if ($("lbl-ll-launch")) {
+      $("lbl-ll-launch").textContent = ll.running
+        ? (isEs ? "Simulando..." : "Simulating...")
+        : (isEs ? "Simular 90×90 Leads →" : "Run 90×90 Lead Nash →");
+    }
+  }
+
+  function renderLeadLabClampedSpPanel() {
+    const panel = $("ll-t2-clamped-panel");
+    const list = $("ll-t2-clamped-list");
+    const inf = state.leadLab.t2Inference;
+    if (!panel || !list) return;
+    if (!inf || !inf.pokemon || !inf.pokemon.length) {
+      panel.style.display = "none";
+      return;
+    }
+    const isEs = state.lang === "es";
+    panel.style.display = "block";
+    if ($("ll-t2-solver-badge")) {
+      $("ll-t2-solver-badge").textContent = `${inf.games_pooled > 1 ? `Bo3 (${inf.games_pooled}G)` : "Bo1"} · OTS 66-SP`;
+    }
+    if ($("ll-t2-solver-sub")) {
+      $("ll-t2-solver-sub").textContent = `${inf.total_smogon_calcs} calcs · ${inf.elapsed_ms}ms`;
+    }
+    list.innerHTML = inf.pokemon
+      .map((m, mIdx) => {
+        const spObj = state.leadLab.t2UserSpreads[m.base_species] || Object.assign({}, m.default_spread);
+        state.leadLab.t2UserSpreads[m.base_species] = spObj;
+        const totSp = STAT_KEYS.reduce((a, k) => a + Number(spObj[k] || 0), 0);
+        const remSp = 66 - totSp;
+        const budCls = remSp === 0 ? "ok" : "warn";
+        const budTxt = remSp === 0 ? "66 / 66 SP" : `${totSp}/66`;
+
+        const rowsHtml = STAT_KEYS.map((sk) => {
+          const b = (m.bounds && m.bounds[sk]) || { min_sp: 0, max_sp: 32, locked: false, status: "unobserved", evidence: [] };
+          const curVal = Number(spObj[sk] || 0);
+          const l50 = calcChampionsL50Stat(sk, (m.base_stats || {})[sk], curVal, m.nature);
+          const pillTxt = b.locked ? `🔒 ${b.min_sp}` : b.status === "bounded" ? `${b.min_sp}..${b.max_sp}` : (isEs ? "Libre" : "Open");
+          const leftPct = (b.min_sp / 32.0) * 100.0;
+          const widthPct = b.locked ? 4.0 : Math.max(3.0, ((b.max_sp - b.min_sp) / 32.0) * 100.0);
+          return `<div class="sp-stat-row">
+            <span class="sp-stat-lbl">${STAT_LABELS[sk]}</span>
+            <span class="sp-bound-pill ${b.status}">${escapeHtml(pillTxt)}</span>
+            <div class="sp-slider-wrap">
+              <div class="sp-track-bg">
+                <div class="sp-track-feasible ${b.locked ? "pinned" : ""}" style="left:${leftPct.toFixed(1)}%;width:${Math.min(100 - leftPct, widthPct).toFixed(1)}%"></div>
+              </div>
+              <input type="range" class="sp-range ll-sp-range"
+                min="0" max="32" step="1" value="${curVal}"
+                data-mon-idx="${mIdx}" data-species="${escapeHtml(m.base_species)}" data-stat="${sk}"
+                data-min-sp="${b.min_sp}" data-max-sp="${b.max_sp}"
+                ${b.locked ? "disabled" : ""} />
+            </div>
+            <span class="sp-val-cell" id="ll-sp-val-${mIdx}-${sk}">${curVal} SP</span>
+            <span class="sp-l50-cell" id="ll-sp-l50-${mIdx}-${sk}">(${l50})</span>
+          </div>`;
+        }).join("");
+
+        return `<div class="sp-mon-card">
+          <div class="sp-mon-head">
+            <div class="sp-mon-head-left">
+              ${spritePairHtml(m.sprite_url, m.item_sprite_url, m.base_species, m.item)}
+              <div class="ots-row-info">
+                <div class="ots-row-name">${escapeHtml(m.base_species)} <span class="muted-xs">· ${escapeHtml(m.nature || "")}</span></div>
+                <div class="ots-row-sub">${escapeHtml(m.item || "No Item")} · ${escapeHtml(m.ability || "")}</div>
+              </div>
+            </div>
+            <span class="sp-budget-pill ${budCls}" id="ll-sp-budget-${mIdx}">${budTxt}</span>
+          </div>
+          <div class="sp-rows">${rowsHtml}</div>
+        </div>`;
+      })
+      .join("");
+
+    list.querySelectorAll(".ll-sp-range").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        const mIdx = parseInt(inp.dataset.monIdx, 10);
+        const spName = inp.dataset.species;
+        const sk = inp.dataset.stat;
+        const minSp = parseInt(inp.dataset.minSp, 10);
+        const maxSp = parseInt(inp.dataset.maxSp, 10);
+        const mon = state.leadLab.t2Inference.pokemon[mIdx];
+        const curObj = state.leadLab.t2UserSpreads[spName];
+        if (!mon || !curObj) return;
+        let rawV = parseInt(inp.value, 10);
+        let clamped = Math.max(minSp, Math.min(maxSp, rawV));
+        const otherSum = STAT_KEYS.reduce((a, k) => a + (k === sk ? 0 : Number(curObj[k] || 0)), 0);
+        clamped = Math.min(clamped, Math.max(minSp, Math.min(maxSp, 66 - otherSum)));
+        if (clamped !== rawV) inp.value = String(clamped);
+        curObj[sk] = clamped;
+        const l50 = calcChampionsL50Stat(sk, (mon.base_stats || {})[sk], clamped, mon.nature);
+        if ($(`ll-sp-val-${mIdx}-${sk}`)) $(`ll-sp-val-${mIdx}-${sk}`).textContent = `${clamped} SP`;
+        if ($(`ll-sp-l50-${mIdx}-${sk}`)) $(`ll-sp-l50-${mIdx}-${sk}`).textContent = `(${l50})`;
+        const totSp = STAT_KEYS.reduce((a, k) => a + Number(curObj[k] || 0), 0);
+        const bp = $(`ll-sp-budget-${mIdx}`);
+        if (bp) {
+          bp.className = `sp-budget-pill ${totSp === 66 ? "ok" : "warn"}`;
+          bp.textContent = totSp === 66 ? "66 / 66 SP" : `${totSp}/66`;
+        }
+      });
+    });
+  }
+
+  function renderLeadLabHeatmapSkeleton(meta) {
+    const container = $("ll-heatmap-container");
+    if (!container || !meta) return;
+    const spr = meta.sprites || {};
+    const t1Leads = meta.t1_leads || [];
+    const t2Leads = meta.t2_leads || [];
+
+    const hdrCols = t2Leads
+      .map(
+        (pair, j) =>
+          `<th title="T2 Lead #${j + 1}: ${escapeHtml(pair[0])} + ${escapeHtml(pair[1])}">
+            <div class="ll-hm-spr-pair">${miniSpriteImg(pair[0], spr)}${miniSpriteImg(pair[1], spr)}</div>
+            <div>${escapeHtml(pair[0].slice(0, 6))}/${escapeHtml(pair[1].slice(0, 6))}</div>
+          </th>`
+      )
+      .join("");
+
+    const bodyRows = t1Leads
+      .map((pair1, i) => {
+        const cells = t2Leads
+          .map(
+            (_, j) =>
+              `<td class="ll-hm-cell" id="ll-cell-${i}-${j}" data-l1="${i}" data-l2="${j}">·</td>`
+          )
+          .join("");
+        return `<tr>
+          <th class="ll-hm-row-hdr" title="T1 Lead #${i + 1}: ${escapeHtml(pair1[0])} + ${escapeHtml(pair1[1])}">
+            <span class="ll-hm-spr-pair">${miniSpriteImg(pair1[0], spr)}${miniSpriteImg(pair1[1], spr)}</span>
+            <span>${escapeHtml(pair1[0])} + ${escapeHtml(pair1[1])}</span>
+          </th>
+          ${cells}
+        </tr>`;
+      })
+      .join("");
+
+    container.innerHTML = `<table class="ll-hm-table">
+      <thead><tr><th class="ll-hm-row-hdr">T1 Leads \\ T2 Leads</th>${hdrCols}</tr></thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+
+    container.querySelectorAll(".ll-hm-cell").forEach((td) => {
+      td.addEventListener("click", () => {
+        if (!state.leadLab.result) return;
+        const l1 = parseInt(td.dataset.l1, 10);
+        const l2 = parseInt(td.dataset.l2, 10);
+        selectLeadLabCell(l1, l2);
+      });
+    });
+  }
+
+  function updateLeadLabHeatmapCell(cellEv) {
+    const td = $(`ll-cell-${cellEv.lead_1_idx}-${cellEv.lead_2_idx}`);
+    if (!td) return;
+    const sc = Number(cellEv.score || 0);
+    td.textContent = (sc >= 0 ? "+" : "") + sc.toFixed(2);
+    td.style.background = scoreCellBg(sc);
+    td.style.color = scoreTextColor(sc);
+    td.classList.add("ready");
+    td.title = `v*=${sc >= 0 ? "+" : ""}${sc.toFixed(3)} | T1 Back: ${(cellEv.best_t1_bench || []).join(" + ")} | ${cellEv.t1_opening || ""}`;
+  }
+
+  function renderLeadLabPodium(res) {
+    const grid = $("ll-podium-grid");
+    const t1List = $("ll-t1-podium-list");
+    const t2List = $("ll-t2-counter-list");
+    if (!grid || !t1List || !t2List || !res) return;
+    const isEs = state.lang === "es";
+    const isSci = state.style === "scientific";
+    const spr = res.sprites || {};
+    grid.style.display = "grid";
+
+    const llBetaHost = $("ll-beta-bar");
+    if (llBetaHost) {
+      llBetaHost.innerHTML = renderQreBetaControlHtml("lead-lab");
+      bindQreBetaControl(llBetaHost, () => {
+        renderLeadLabPodium(res);
+        if (state.turnResults[state.currentTurn]) renderTurnPanel(state.turnResults[state.currentTurn]);
+      });
+    }
+
+    const llLiveQre = getLeadLabLiveQre(res);
+    const gv = Number(res.global_game_value || 0);
+    if ($("ll-global-value-pill")) {
+      const valPrefix = isSci ? "Nash v*" : (isEs ? "Ventaja" : "Edge");
+      $("ll-global-value-pill").textContent = `${valPrefix} = ${gv >= 0 ? "+" : ""}${gv.toFixed(isSci ? 3 : 2)}`;
+    }
+    if ($("ll-modes-meta-pill")) {
+      $("ll-modes-meta-pill").textContent = `${Number(res.total_modes_evaluated || 0).toLocaleString()} ${isEs ? "modos" : "modes"} · ${res.elapsed_s}s`;
+    }
+
+    const mixLbl = isSci ? "Nash" : "Mix";
+    const humLbl = isSci ? "QRE" : (isEs ? "Hum." : "Hum.");
+    const scoreLbl = isSci ? "EV" : (isEs ? "Vent." : "Score");
+
+    t1List.innerHTML = (res.trainer_1_top_brings || [])
+      .slice(0, 8)
+      .map((b) => {
+        const nashPct = (Number(b.nash_weight || 0) * 100).toFixed(1);
+        const liveQ =
+          llLiveQre && typeof b.mode_idx === "number" && b.mode_idx < llLiveQre.p.length
+            ? llLiveQre.p[b.mode_idx] * 100.0
+            : Number(b.qre_weight || 0) * 100.0;
+        const ev = Number(b.ev_vs_opp_nash || 0);
+        const fl = Number(b.worst_case_floor || 0);
+        return `<div class="ll-bring-row ${b.nash_weight > 0.01 ? "top-nash" : ""}" data-jump-l1="${b.lead_idx}" data-jump-b1="${b.bench_idx}">
+          <div class="ll-bring-left">
+            <span class="ll-rank-num">#${b.rank}</span>
+            <div class="ll-squad-pair">
+              <div class="ll-lead-line">
+                ${miniSpriteImg(b.lead_species[0], spr)}${miniSpriteImg(b.lead_species[1], spr)}
+                <span>${escapeHtml(b.lead_species[0])} + ${escapeHtml(b.lead_species[1])}</span>
+              </div>
+              <div class="ll-bench-line">
+                <span>${isEs ? "Banca:" : "Back:"}</span>
+                ${miniSpriteImg(b.bench_species[0], spr)}${miniSpriteImg(b.bench_species[1], spr)}
+                <span>${escapeHtml(b.bench_species[0])} + ${escapeHtml(b.bench_species[1])}</span>
+              </div>
+            </div>
+          </div>
+          <div class="ll-bring-metrics">
+            <div class="ll-metric-pill nash"><small>${mixLbl}</small><strong>${nashPct}%</strong></div>
+            <div class="ll-metric-pill"><small>${humLbl}</small><strong>${liveQ.toFixed(1)}%</strong></div>
+            <div class="ll-metric-pill ${ev >= 0 ? "pos" : "neg"}"><small>${scoreLbl}</small><strong>${ev >= 0 ? "+" : ""}${ev.toFixed(2)}</strong></div>
+            <div class="ll-metric-pill ${fl >= 0 ? "pos" : "neg"}"><small>${isEs ? "Piso" : "Floor"}</small><strong>${fl >= 0 ? "+" : ""}${fl.toFixed(2)}</strong></div>
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    t1List.querySelectorAll(".ll-bring-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const l1 = parseInt(row.dataset.jumpL1, 10);
+        const b1 = parseInt(row.dataset.jumpB1, 10);
+        const oppTop = (res.trainer_2_top_brings && res.trainer_2_top_brings[0]) || { lead_idx: 0, bench_idx: 0 };
+        selectLeadLabCell(l1, oppTop.lead_idx, b1, oppTop.bench_idx);
+      });
+    });
+
+    t2List.innerHTML = (res.trainer_2_top_brings || [])
+      .slice(0, 6)
+      .map((o) => {
+        const oppPct = (Number(o.opp_nash_weight || 0) * 100).toFixed(1);
+        const oppLiveQ =
+          llLiveQre && typeof o.mode_idx === "number" && o.mode_idx < llLiveQre.q.length
+            ? llLiveQre.q[o.mode_idx] * 100.0
+            : Number(o.opp_qre_weight || 0) * 100.0;
+        const cScore = Number(o.best_counter_score || 0);
+        const counterMode = (res.modes_t1 || [])[o.best_counter_mode_idx];
+        const cL1 = counterMode ? counterMode.lead_idx : 0;
+        const cB1 = counterMode ? counterMode.bench_idx : 0;
+        return `<div class="ll-bring-row" data-jump-l1="${cL1}" data-jump-l2="${o.lead_idx}" data-jump-b1="${cB1}" data-jump-b2="${o.bench_idx}">
+          <div class="ll-bring-left">
+            <span class="ll-rank-num">#${o.rank}</span>
+            <div class="ll-squad-pair">
+              <div class="ll-lead-line">
+                ${miniSpriteImg(o.lead_species[0], spr)}${miniSpriteImg(o.lead_species[1], spr)}
+                <span>${escapeHtml(o.lead_species[0])} + ${escapeHtml(o.lead_species[1])}</span>
+                <span class="muted-xs">(${mixLbl} ${oppPct}% · ${humLbl} ${oppLiveQ.toFixed(1)}%)</span>
+              </div>
+              <div class="ll-bench-line">
+                <strong style="color:#67e8f9">${isEs ? "Tu Counter:" : "Counter:"}</strong>
+                ${miniSpriteImg(o.best_counter_lead[0], spr)}${miniSpriteImg(o.best_counter_lead[1], spr)}
+                <span>${escapeHtml(o.best_counter_lead[0])} + ${escapeHtml(o.best_counter_lead[1])}</span>
+                <span class="muted-xs">[${escapeHtml(o.best_counter_bench.join(" / "))}]</span>
+              </div>
+            </div>
+          </div>
+          <div class="ll-bring-metrics">
+            <div class="ll-metric-pill ${cScore >= 0 ? "pos" : "neg"}"><small>Counter</small><strong>${cScore >= 0 ? "+" : ""}${cScore.toFixed(2)}</strong></div>
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    t2List.querySelectorAll(".ll-bring-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        selectLeadLabCell(
+          parseInt(row.dataset.jumpL1, 10),
+          parseInt(row.dataset.jumpL2, 10),
+          parseInt(row.dataset.jumpB1, 10),
+          parseInt(row.dataset.jumpB2, 10)
+        );
+      });
+    });
+  }
+
+  function selectLeadLabCell(l1Idx, l2Idx, optB1, optB2) {
+    const res = state.leadLab.result;
+    if (!res || !res.heatmap_cells || !res.heatmap_cells[l1Idx] || !res.heatmap_cells[l1Idx][l2Idx]) return;
+    const cell = res.heatmap_cells[l1Idx][l2Idx];
+    state.leadLab.selectedLead1 = l1Idx;
+    state.leadLab.selectedLead2 = l2Idx;
+    state.leadLab.selectedBench1 = typeof optB1 === "number" ? optB1 : Number(cell.best_t1_bench_idx || 0);
+    state.leadLab.selectedBench2 = typeof optB2 === "number" ? optB2 : Number(cell.best_t2_bench_idx || 0);
+    state.leadLab.deepAudit = null;
+
+    document.querySelectorAll(".ll-hm-cell.selected").forEach((el) => el.classList.remove("selected"));
+    const activeTd = $(`ll-cell-${l1Idx}-${l2Idx}`);
+    if (activeTd) activeTd.classList.add("selected");
+
+    renderLeadLabDrilldown();
+  }
+
+  function renderLeadLabDrilldown() {
+    const res = state.leadLab.result;
+    const panel = $("ll-drill-panel");
+    if (!res || !panel || state.leadLab.selectedLead1 === null) return;
+    const l1 = state.leadLab.selectedLead1;
+    const l2 = state.leadLab.selectedLead2;
+    const b1 = state.leadLab.selectedBench1;
+    const b2 = state.leadLab.selectedBench2;
+    const cell = res.heatmap_cells[l1][l2];
+    const spr = res.sprites || {};
+    const isEs = state.lang === "es";
+
+    panel.style.display = "block";
+    if ($("ll-drill-title")) {
+      $("ll-drill-title").innerHTML = `
+        <span>${miniSpriteImg(cell.lead_1[0], spr)}${miniSpriteImg(cell.lead_1[1], spr)} ${escapeHtml(cell.lead_1.join(" + "))}</span>
+        <span class="muted-xs">vs.</span>
+        <span>${miniSpriteImg(cell.lead_2[0], spr)}${miniSpriteImg(cell.lead_2[1], spr)} ${escapeHtml(cell.lead_2.join(" + "))}</span>
+      `;
+    }
+
+    if ($("ll-drill-turn0-strip")) {
+      const evs = cell.turn0_events || [];
+      $("ll-drill-turn0-strip").innerHTML = evs.length
+        ? evs.map((e) => `<span class="ll-t0-chip">${escapeHtml(e)}</span>`).join("")
+        : `<span class="muted-xs">${isEs ? "Sin habilidades de entrada Turno 0 en este lead." : "No Turn-0 entry abilities triggered on this lead."}</span>`;
+    }
+
+    // Render 6×6 Back-2 sub-matrix
+    const subBox = $("ll-submatrix-container");
+    if (subBox) {
+      const subM = cell.sub_matrix_6x6 || [];
+      const b1Lbls = cell.t1_bench_labels || [];
+      const b2Lbls = cell.t2_bench_labels || [];
+      const hdrs = b2Lbls
+        .map(
+          (p) =>
+            `<th><div class="ll-hm-spr-pair">${miniSpriteImg(p[0], spr)}${miniSpriteImg(p[1], spr)}</div><div>${escapeHtml(p[0].slice(0, 5))}/${escapeHtml(p[1].slice(0, 5))}</div></th>`
+        )
+        .join("");
+      const rows = b1Lbls
+        .map((pair1, rIdx) => {
+          const nb1 = b1Lbls.length || 1;
+          const nb2 = b2Lbls.length || 1;
+          const tds = b2Lbls
+            .map((_, cIdx) => {
+              const val = Number((subM[rIdx] && subM[rIdx][cIdx]) || 0);
+              const selCls = rIdx === b1 && cIdx === b2 ? "selected" : "";
+              const m1Key = `m${l1 * nb1 + rIdx}`;
+              const m2Key = `m${l2 * nb2 + cIdx}`;
+              const cachedCls =
+                state.leadLab.cachedDeepAuditKeys && state.leadLab.cachedDeepAuditKeys.has(`${m1Key}__${m2Key}`)
+                  ? "has-deep-cache"
+                  : "";
+              const cacheTip = cachedCls
+                ? (isEs ? " · ⚡ Auditoría K=128 en Vault" : " · ⚡ Cached K=128 Deep Audit")
+                : "";
+              return `<td class="ll-hm-cell ready ${selCls} ${cachedCls}" title="v*=${val >= 0 ? "+" : ""}${val.toFixed(3)}${cacheTip}" style="background:${scoreCellBg(val)};color:${scoreTextColor(val)}" data-sb1="${rIdx}" data-sb2="${cIdx}">${val >= 0 ? "+" : ""}${val.toFixed(2)}</td>`;
+            })
+            .join("");
+          return `<tr><th class="ll-hm-row-hdr">${miniSpriteImg(pair1[0], spr)}${miniSpriteImg(pair1[1], spr)} ${escapeHtml(pair1.join(" + "))}</th>${tds}</tr>`;
+        })
+        .join("");
+      subBox.innerHTML = `<table class="ll-hm-table"><thead><tr><th class="ll-hm-row-hdr">${isEs ? "Tu Back-2 \\ Rival Back-2" : "T1 Back-2 \\ T2 Back-2"}</th>${hdrs}</tr></thead><tbody>${rows}</tbody></table>`;
+      subBox.querySelectorAll("[data-sb1]").forEach((td) => {
+        td.addEventListener("click", () => {
+          state.leadLab.selectedBench1 = parseInt(td.dataset.sb1, 10);
+          state.leadLab.selectedBench2 = parseInt(td.dataset.sb2, 10);
+          state.leadLab.deepAudit = null;
+          renderLeadLabDrilldown();
+        });
+      });
+    }
+
+    // Render selected (Back-1, Back-2) opening play card
+    const openCard = $("ll-opening-card");
+    if (openCard) {
+      const sc = Number((cell.sub_matrix_6x6[b1] && cell.sub_matrix_6x6[b1][b2]) || 0);
+      const cv = Number((cell.sub_cvar_6x6[b1] && cell.sub_cvar_6x6[b1][b2]) || 0);
+      const t1Op = (cell.sub_t1_openings[b1] && cell.sub_t1_openings[b1][b2]) || "";
+      const t2Op = (cell.sub_t2_openings[b1] && cell.sub_t2_openings[b1][b2]) || "";
+      const b1Name = (cell.t1_bench_labels[b1] || []).join(" + ");
+      const b2Name = (cell.t2_bench_labels[b2] || []).join(" + ");
+      openCard.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <strong>${isEs ? "Apertura Turno 1 Óptima" : "Optimal Turn-1 Opening"}</strong>
+          <span class="cyber-pill ${sc >= 0 ? "cyan-pill" : "gold-pill"}">v* = ${sc >= 0 ? "+" : ""}${sc.toFixed(3)} · CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}</span>
+        </div>
+        <div class="muted-xs">${isEs ? "Tu Banca:" : "Your Back-2:"} <strong>${escapeHtml(b1Name)}</strong> · ${isEs ? "Banca Rival:" : "Opp Back-2:"} <strong>${escapeHtml(b2Name)}</strong></div>
+        <div class="ll-opening-line"><strong>${isEs ? "Tu Jugada #1 (Nash):" : "Your #1 Play (Nash):"}</strong><br/>${escapeHtml(t1Op)}</div>
+        <div class="ll-opening-line opp"><strong>${isEs ? "Mejor Respuesta Rival:" : "Best Opponent Counter:"}</strong><br/>${escapeHtml(t2Op)}</div>
+      `;
+    }
+
+    const deepBox = $("ll-deep-audit-box");
+    if (deepBox) {
+      if (!state.leadLab.deepAudit) {
+        deepBox.style.display = "none";
+      } else {
+        renderLeadLabDeepAuditBox(state.leadLab.deepAudit);
+      }
+    }
+  }
+
+  function renderLeadLabDeepAuditBox(audit) {
+    const deepBox = $("ll-deep-audit-box");
+    if (!deepBox || !audit) return;
+    const isEs = state.lang === "es";
+    const pk = profileKey();
+    const com = (audit.commentary_variants && (audit.commentary_variants[pk] || audit.commentary_variants.es_vgc)) || {};
+    deepBox.style.display = "flex";
+    const eqBullet = (com.bullets || []).find(
+      (b) =>
+        b &&
+        (b.tag === "Motores de Equity" ||
+          b.tag === "Equity Drivers" ||
+          b.tag === "Atribucion_Equity_8_Pilares" ||
+          b.tag === "8_Pillar_Equity_Attribution")
+    );
+    const cacheBadge = audit.from_vault_cache
+      ? `<span class="cyber-pill cyan-pill">⚡ ${isEs ? "En Vault" : "Vault Cache"}</span>`
+      : "";
+    const topRows = (audit.top_actions || [])
+      .slice(0, 5)
+      .map(
+        (a, idx) => `<div class="ll-deep-row">
+          <span><strong>#${idx + 1}</strong> ${escapeHtml(a.desc)}</span>
+          <span style="white-space:nowrap;font-family:monospace;color:#fde047">Nash ${a.nash_pct}% · EV ${a.risk_ev >= 0 ? "+" : ""}${a.risk_ev.toFixed(2)}</span>
+        </div>`
+      )
+      .join("");
+    deepBox.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <strong style="color:#fde047">⚡ ${isEs ? "Auditoría Profunda Turno 1 (Sin Poda)" : "Deep Unpruned Turn-1 Audit"}</strong>
+          ${cacheBadge}
+        </div>
+        <span class="muted-xs">[${(audit.matrix_shape || []).join("×")}] · K=${audit.num_mc} · ${audit.elapsed_s}s</span>
+      </div>
+      ${com.headline ? `<div class="muted-sm" style="color:#e2e8f0">${escapeHtml(com.headline)}</div>` : ""}
+      ${eqBullet ? `<div class="muted-xs" style="color:#67e8f9"><strong>${escapeHtml(eqBullet.tag)}:</strong> ${escapeHtml(eqBullet.text)}</div>` : ""}
+      ${topRows}
+    `;
+  }
+
+  // -------------------------------------------------------------------------
+  // DuckDB Lead Lab Matchup Vault Controller (Searchable Cache & Instant Load)
+  // -------------------------------------------------------------------------
+  function buildLeadLabCurrentPayload() {
+    const ll = state.leadLab;
+    const preset = ($("ll-preset-select") && $("ll-preset-select").value) || "balanced";
+    const payload = { preset };
+    if (ll.t1UsePaste) {
+      payload.t1_paste_text = ($("ll-t1-paste-input") && $("ll-t1-paste-input").value.trim()) || "";
+    } else {
+      payload.t1_roster_id = ($("ll-t1-roster-select") && $("ll-t1-roster-select").value) || "";
+    }
+    if (ll.t2Mode === "scout") {
+      if (ll.t2Inference) payload.t2_user_spreads = ll.t2UserSpreads;
+    } else if (ll.t2UsePaste) {
+      payload.t2_paste_text = ($("ll-t2-paste-input") && $("ll-t2-paste-input").value.trim()) || "";
+    } else {
+      payload.t2_roster_id = ($("ll-t2-roster-select") && $("ll-t2-roster-select").value) || "";
+    }
+    return payload;
+  }
+
+  function renderLeadLabCacheHitBar() {
+    const bar = $("ll-cache-hit-bar");
+    const info = $("ll-cache-hit-info");
+    if (!bar || !info) return;
+    const hit = state.leadLab.cacheHit;
+    if (!hit || !hit.found || state.leadLab.running) {
+      bar.style.display = "none";
+      return;
+    }
+    const isEs = state.lang === "es";
+    const v = Number(hit.global_nash_value || 0);
+    const vStr = `${v >= 0 ? "+" : ""}${v.toFixed(3)}`;
+    const outPill = hit.is_outdated
+      ? `<span class="cyber-pill gold-pill">⚠ ${isEs ? "Equity anterior" : "Outdated Equity"} (${escapeHtml(hit.engine_version)})</span>`
+      : `<span class="cyber-pill cyan-pill">⚡ ${isEs ? "En Vault" : "In Vault"}</span>`;
+    const deepTxt =
+      hit.cached_deep_audit_count > 0
+        ? ` · ⚡ ${hit.cached_deep_audit_count} ${isEs ? "auditorías K=128" : "K=128 audits"}`
+        : "";
+    bar.classList.toggle("outdated", Boolean(hit.is_outdated));
+    bar.style.display = "flex";
+    info.innerHTML = `
+      ${outPill}
+      <strong>${escapeHtml(hit.t1_name)} vs ${escapeHtml(hit.t2_name)}</strong>
+      <span class="cyber-pill ${v >= 0 ? "cyan-pill" : "gold-pill"}">v* = ${vStr}</span>
+      <span class="muted-xs">${escapeHtml(hit.preset)} · ${hit.elapsed_s}s${deepTxt}</span>
+    `;
+    if ($("btn-ll-cache-load")) {
+      $("btn-ll-cache-load").textContent = isEs ? "⚡ Cargar al Instante" : "⚡ Load Instantly";
+    }
+    if ($("btn-ll-cache-rerun")) {
+      $("btn-ll-cache-rerun").textContent = isEs ? "↻ Recalcular" : "↻ Recompute";
+    }
+  }
+
+  function scheduleLeadLabCacheLookup(delayMs) {
+    const ll = state.leadLab;
+    if (ll.lookupTimer) clearTimeout(ll.lookupTimer);
+    ll.lookupTimer = setTimeout(async () => {
+      try {
+        const resp = await fetch("/api/lead-lab/lookup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildLeadLabCurrentPayload()),
+        });
+        const d = await resp.json();
+        ll.cacheHit = resp.ok && d && d.found ? d : null;
+      } catch (_) {
+        ll.cacheHit = null;
+      }
+      renderLeadLabCacheHitBar();
+    }, Math.max(0, Number(delayMs || 0)));
+  }
+
+  function hydrateLeadLabCompletedResult(fullRes, isFromVault) {
+    const ll = state.leadLab;
+    const isEs = state.lang === "es";
+    ll.running = false;
+    ll.jobId = fullRes.job_id || ll.jobId;
+    ll.result = fullRes;
+    ll.currentMatchupHash = fullRes.matchup_hash || "";
+    ll.cachedDeepAuditKeys = new Set(fullRes.cached_deep_audit_keys || []);
+    ll.selectedLead1 = null;
+    ll.selectedLead2 = null;
+    ll.deepAudit = null;
+
+    const meta = {
+      job_id: fullRes.job_id,
+      t1_label: fullRes.t1_label,
+      t2_label: fullRes.t2_label,
+      t1_leads: fullRes.t1_leads || [],
+      t2_leads: fullRes.t2_leads || [],
+      num_t1_modes: fullRes.num_t1_modes || 90,
+      num_t2_modes: fullRes.num_t2_modes || 90,
+      total_lead_pairs: (fullRes.t1_leads || []).length * (fullRes.t2_leads || []).length,
+      sprites: fullRes.sprites || {},
+    };
+    ll.jobMeta = meta;
+    updateLeadLabControlsUI();
+
+    if ($("ll-results-shell")) $("ll-results-shell").style.display = "block";
+    renderLeadLabHeatmapSkeleton(meta);
+    const cellsGrid = fullRes.heatmap_cells || [];
+    for (let i = 0; i < cellsGrid.length; i++) {
+      const row = cellsGrid[i] || [];
+      for (let j = 0; j < row.length; j++) {
+        const c = row[j];
+        if (!c) continue;
+        updateLeadLabHeatmapCell({
+          lead_1_idx: i,
+          lead_2_idx: j,
+          score: c.nash_value,
+          best_t1_bench: (c.t1_bench_labels && c.t1_bench_labels[c.best_t1_bench_idx || 0]) || [],
+          t1_opening: (c.sub_t1_openings && c.sub_t1_openings[c.best_t1_bench_idx || 0] && c.sub_t1_openings[c.best_t1_bench_idx || 0][c.best_t2_bench_idx || 0]) || "",
+        });
+      }
+    }
+    renderLeadLabPodium(fullRes);
+    if (fullRes.trainer_1_top_brings && fullRes.trainer_1_top_brings.length && fullRes.trainer_2_top_brings && fullRes.trainer_2_top_brings.length) {
+      const top1 = fullRes.trainer_1_top_brings[0];
+      const top2 = fullRes.trainer_2_top_brings[0];
+      selectLeadLabCell(top1.lead_idx, top2.lead_idx, top1.bench_idx, top2.bench_idx);
+    }
+    if (isFromVault && $("ll-status-msg")) {
+      const gv = Number(fullRes.global_game_value || 0);
+      $("ll-status-msg").textContent = isEs
+        ? `⚡ Cargado desde Matchup Vault (${fullRes.t1_label} vs ${fullRes.t2_label} · v*=${gv >= 0 ? "+" : ""}${gv.toFixed(3)} · ${fullRes.preset}).`
+        : `⚡ Loaded instantly from Matchup Vault (${fullRes.t1_label} vs ${fullRes.t2_label} · v*=${gv >= 0 ? "+" : ""}${gv.toFixed(3)} · ${fullRes.preset}).`;
+    }
+  }
+
+  async function loadLeadLabFromVault(runId) {
+    const isEs = state.lang === "es";
+    try {
+      const resp = await fetch(`/api/lead-lab/vault/load?run_id=${encodeURIComponent(runId)}`);
+      const d = await resp.json();
+      if (!resp.ok || !d.ok || !d.result) {
+        if ($("ll-status-msg")) $("ll-status-msg").textContent = `Error: ${(d && d.error) || "Failed to load Vault run"}`;
+        return;
+      }
+      state.leadLab.vaultOpen = false;
+      if ($("ll-vault-panel")) $("ll-vault-panel").style.display = "none";
+      if ($("ll-progress-panel")) $("ll-progress-panel").style.display = "none";
+      hydrateLeadLabCompletedResult(d.result, true);
+    } catch (err) {
+      if ($("ll-status-msg")) {
+        $("ll-status-msg").textContent = isEs ? `Error cargando Vault: ${err}` : `Error loading Vault: ${err}`;
+      }
+    }
+  }
+
+  async function rerunLeadLabFromVault(runId) {
+    try {
+      const resp = await fetch(`/api/lead-lab/vault/load?run_id=${encodeURIComponent(runId)}`);
+      const d = await resp.json();
+      if (!resp.ok || !d.ok) return;
+      state.leadLab.t1UsePaste = true;
+      state.leadLab.t2Mode = "full";
+      state.leadLab.t2UsePaste = true;
+      if ($("ll-t1-paste-input")) $("ll-t1-paste-input").value = d.t1_paste || "";
+      if ($("ll-t2-paste-input")) $("ll-t2-paste-input").value = d.t2_paste || "";
+      if ($("ll-preset-select") && d.preset) $("ll-preset-select").value = d.preset;
+      state.leadLab.vaultOpen = false;
+      if ($("ll-vault-panel")) $("ll-vault-panel").style.display = "none";
+      updateLeadLabControlsUI();
+      launchLeadLabSweep();
+    } catch (_) {}
+  }
+
+  async function refreshLeadLabVault() {
+    const ll = state.leadLab;
+    const params = new URLSearchParams();
+    if (ll.vaultSearch) params.set("q", ll.vaultSearch);
+    if (ll.vaultFilterT1) params.set("t1_name", ll.vaultFilterT1);
+    if (ll.vaultFilterAdv) params.set("advantage", ll.vaultFilterAdv);
+    params.set("limit", "60");
+    try {
+      const resp = await fetch(`/api/lead-lab/vault?${params.toString()}`);
+      const d = await resp.json();
+      if (!resp.ok || !d.ok) return;
+      ll.vaultRuns = d.runs || [];
+      ll.vaultTotal = Number(d.total_count || 0);
+      ll.vaultT1Teams = d.t1_teams || [];
+      if ($("ll-vault-count-pill")) $("ll-vault-count-pill").textContent = String(ll.vaultTotal);
+      renderLeadLabVaultT1Select();
+      renderLeadLabVaultList();
+    } catch (_) {}
+  }
+
+  function renderLeadLabVaultT1Select() {
+    const sel = $("ll-vault-t1-filter");
+    if (!sel) return;
+    const isEs = state.lang === "es";
+    const cur = state.leadLab.vaultFilterT1 || "";
+    const opts = [`<option value="">${isEs ? "Todos mis equipos" : "All My Teams"}</option>`].concat(
+      (state.leadLab.vaultT1Teams || []).map(
+        (name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+      )
+    );
+    sel.innerHTML = opts.join("");
+    sel.value = cur;
+  }
+
+  function renderLeadLabVaultList() {
+    const box = $("ll-vault-list");
+    if (!box) return;
+    const isEs = state.lang === "es";
+    const runs = state.leadLab.vaultRuns || [];
+    if (!runs.length) {
+      box.innerHTML = `<div class="muted-sm" style="padding:12px;text-align:center">${
+        state.leadLab.vaultTotal === 0
+          ? (isEs ? "Aún no hay simulaciones 90×90 guardadas. Ejecuta un sweep para guardarlo automáticamente en DuckDB." : "No saved 90×90 sweeps yet. Run a Lead Lab sweep to auto-save it in DuckDB.")
+          : (isEs ? "Ningún matchup coincide con los filtros actuales." : "No saved matchups match the current filters.")
+      }</div>`;
+      return;
+    }
+
+    box.innerHTML = runs
+      .map((r) => {
+        const v = Number(r.global_nash_value || 0);
+        const vCls = v >= 0.08 ? "leg-win" : v <= -0.08 ? "leg-lose" : "leg-even";
+        const oppSpr = (r.t2_species_sprites || [])
+          .map((s) => (s.sprite_url ? `<img class="ll-mini-spr" src="${escapeHtml(s.sprite_url)}" alt="${escapeHtml(s.species)}" title="${escapeHtml(s.species)}" loading="lazy" />` : ""))
+          .join("");
+        const top1 = r.top_t1_bring || {};
+        const top1Pct = top1.nash_weight != null ? `${(Number(top1.nash_weight) * 100).toFixed(0)}%` : "";
+        const top1Names = [].concat(top1.lead_species || [], top1.bench_species || []);
+        const top1Label = top1Names.length ? `${top1Names.slice(0, 2).join("+")} [${top1Names.slice(2).join("/")}] ${top1Pct}` : "";
+        const outBadge = r.is_outdated
+          ? `<span class="cyber-pill gold-pill" title="Computed with an older equity model">⚠ ${isEs ? "Equity anterior" : "Outdated Equity"}</span>`
+          : "";
+        const deepBadge =
+          r.cached_deep_audit_count > 0
+            ? `<span class="cyber-pill cyan-pill">⚡ ${r.cached_deep_audit_count}</span>`
+            : "";
+        const tagHtml = r.tags
+          ? `<span class="ll-vault-tag-pill">🏷 ${escapeHtml(r.tags)}</span>`
+          : "";
+        return `<div class="ll-vault-row" data-run-id="${escapeHtml(r.run_id)}">
+          <div class="ll-vault-row-main">
+            <div class="ll-vault-row-head">
+              <span class="legend-chip ${vCls}">v* ${v >= 0 ? "+" : ""}${v.toFixed(3)}</span>
+              <span>${escapeHtml(r.t1_name)} <span class="muted-xs">vs</span> ${escapeHtml(r.t2_name)}</span>
+              <span class="cyber-pill slate-pill">${escapeHtml(r.preset)}</span>
+              ${outBadge}
+              ${deepBadge}
+              ${tagHtml}
+            </div>
+            <div class="ll-vault-row-sprites">
+              <span class="ll-vault-spr-strip" title="${escapeHtml((r.t2_species || []).join(", "))}">${oppSpr}</span>
+              ${top1Label ? `<span><strong>#1 Bring:</strong> ${escapeHtml(top1Label)}</span>` : ""}
+              <span class="muted-xs">${escapeHtml((r.created_at || "").replace("T", " ").slice(0, 16))}</span>
+            </div>
+          </div>
+          <div class="ll-vault-row-actions">
+            <button class="btn btn-greatball btn-xs ll-v-load" data-run-id="${escapeHtml(r.run_id)}" type="button">${isEs ? "Cargar" : "Load"}</button>
+            <button class="btn btn-ghost btn-xs ll-v-tag" data-run-id="${escapeHtml(r.run_id)}" data-tags="${escapeHtml(r.tags || "")}" type="button">🏷 ${isEs ? "Etiqueta" : "Tag"}</button>
+            <button class="btn btn-ghost btn-xs ll-v-rerun" data-run-id="${escapeHtml(r.run_id)}" type="button">↻</button>
+            <button class="btn btn-danger btn-xs ll-v-del" data-run-id="${escapeHtml(r.run_id)}" type="button">🗑</button>
+          </div>
+        </div>`;
+      })
+      .join("");
+
+    box.querySelectorAll(".ll-v-load").forEach((btn) => {
+      btn.addEventListener("click", () => loadLeadLabFromVault(btn.dataset.runId));
+    });
+    box.querySelectorAll(".ll-v-rerun").forEach((btn) => {
+      btn.addEventListener("click", () => rerunLeadLabFromVault(btn.dataset.runId));
+    });
+    box.querySelectorAll(".ll-v-tag").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const curTags = btn.dataset.tags || "";
+        const nextTags = window.prompt(
+          isEs ? "Etiquetas o notas para este matchup (ej. Regional, Trick Room):" : "Tags or notes for this matchup (e.g. Regional, Trick Room):",
+          curTags
+        );
+        if (nextTags === null) return;
+        await fetch("/api/lead-lab/vault/tag", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ run_id: btn.dataset.runId, tags: nextTags }),
+        });
+        refreshLeadLabVault();
+      });
+    });
+    box.querySelectorAll(".ll-v-del").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const ok = window.confirm(
+          isEs ? "¿Eliminar esta simulación guardada del Vault?" : "Delete this saved matchup from the Vault?"
+        );
+        if (!ok) return;
+        await fetch("/api/lead-lab/vault/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ run_id: btn.dataset.runId }),
+        });
+        refreshLeadLabVault();
+        scheduleLeadLabCacheLookup(0);
+      });
+    });
+  }
+
+  function clearLeadLabCli() {
+    const box = $("ll-cli-console");
+    if (box) box.innerHTML = "";
+  }
+
+  function appendLeadLabCli(tag, msg, tagClass) {
+    const box = $("ll-cli-console");
+    if (!box) return;
+    const prevLatest = box.querySelector(".ll-cli-line.latest");
+    if (prevLatest) prevLatest.classList.remove("latest");
+
+    const now = new Date();
+    const ts = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+    const line = document.createElement("div");
+    line.className = "ll-cli-line latest";
+    line.innerHTML = `<span class="ll-cli-ts">${ts}</span><span class="ll-cli-tag ${escapeHtml(tagClass || "")}">[${escapeHtml(tag)}]</span><span class="ll-cli-msg">${escapeHtml(msg)}</span>`;
+    box.appendChild(line);
+    while (box.childElementCount > 260) {
+      box.removeChild(box.firstElementChild);
+    }
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function launchLeadLabSweep() {
+    const isEs = state.lang === "es";
+    const ll = state.leadLab;
+    if (ll.running) return;
+    const statusEl = $("ll-status-msg");
+    const preset = ($("ll-preset-select") && $("ll-preset-select").value) || "balanced";
+
+    const payload = { preset };
+    if (ll.t1UsePaste) {
+      payload.t1_paste_text = ($("ll-t1-paste-input") && $("ll-t1-paste-input").value.trim()) || "";
+    } else {
+      payload.t1_roster_id = ($("ll-t1-roster-select") && $("ll-t1-roster-select").value) || "";
+    }
+
+    if (ll.t2Mode === "scout") {
+      if (!ll.t2Inference) {
+        if (statusEl) {
+          statusEl.textContent = isEs
+            ? "Primero sube 1–3 logs Bo3 y pulsa 'Resolver 66-SP Rival' antes de simular."
+            : "Upload 1–3 Bo3 scouting logs and click 'Solve Opponent 66-SP' first.";
+        }
+        return;
+      }
+      payload.t2_user_spreads = ll.t2UserSpreads;
+    } else if (ll.t2UsePaste) {
+      payload.t2_paste_text = ($("ll-t2-paste-input") && $("ll-t2-paste-input").value.trim()) || "";
+    } else {
+      payload.t2_roster_id = ($("ll-t2-roster-select") && $("ll-t2-roster-select").value) || "";
+    }
+
+    if ($("ll-progress-panel")) $("ll-progress-panel").style.display = "block";
+    if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot running";
+    clearLeadLabCli();
+    appendLeadLabCli(
+      "INIT",
+      isEs
+        ? `Validando 66-SP y precompilando tensores Reg M-C (preset=${preset})...`
+        : `Validating 66-SP spreads & pre-compiling Reg M-C tensors (preset=${preset})...`
+    );
+    if (statusEl) {
+      statusEl.textContent = isEs ? "Validando equipos 66-SP y compilando tensores..." : "Validating 66-SP teams & pre-compiling tensors...";
+    }
+
+    try {
+      const res = await fetch("/api/lead-lab/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const meta = await res.json();
+      if (!res.ok || !meta.ok) {
+        appendLeadLabCli("ERR", meta.error || "Could not start Lead Lab", "tag-err");
+        if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot error";
+        if (statusEl) statusEl.textContent = `Error: ${meta.error || "Could not start Lead Lab"}`;
+        return;
+      }
+
+      ll.running = true;
+      ll.jobId = meta.job_id;
+      ll.jobMeta = meta;
+      ll.result = null;
+      ll.selectedLead1 = null;
+      ll.selectedLead2 = null;
+      ll.deepAudit = null;
+      updateLeadLabControlsUI();
+
+      appendLeadLabCli(
+        "READY",
+        `${meta.t1_label} vs ${meta.t2_label} · ${meta.t1_leads.length}×${meta.t2_leads.length} leads (${meta.num_t1_modes}×${meta.num_t2_modes} = ${(meta.num_t1_modes * meta.num_t2_modes).toLocaleString()} modes) on ${meta.device}`,
+        "tag-nash"
+      );
+
+      if ($("ll-progress-fill")) $("ll-progress-fill").style.width = "0%";
+      if ($("ll-progress-text")) $("ll-progress-text").textContent = `0 / ${meta.total_lead_pairs}`;
+      if ($("ll-progress-eta")) $("ll-progress-eta").textContent = "";
+      if ($("ll-results-shell")) $("ll-results-shell").style.display = "block";
+      if ($("ll-podium-grid")) $("ll-podium-grid").style.display = "none";
+      if ($("ll-drill-panel")) $("ll-drill-panel").style.display = "none";
+      renderLeadLabHeatmapSkeleton(meta);
+
+      if (ll.activeStream) {
+        try { ll.activeStream.close(); } catch (_) {}
+      }
+      const es = new EventSource(`/api/lead-lab/stream?job_id=${encodeURIComponent(meta.job_id)}`);
+      ll.activeStream = es;
+
+      es.addEventListener("cell", (ev) => {
+        const d = JSON.parse(ev.data);
+        updateLeadLabHeatmapCell(d);
+        const pct = Math.min(100, (Number(d.completed || 0) / Math.max(1, Number(d.total || 225))) * 100);
+        const modesPerCell =
+          meta.total_lead_pairs > 0
+            ? Math.round((meta.num_t1_modes * meta.num_t2_modes) / meta.total_lead_pairs)
+            : 36;
+        const modesDone = Number(d.completed || 0) * modesPerCell;
+        const modesTotal = meta.num_t1_modes * meta.num_t2_modes;
+        if ($("ll-progress-fill")) $("ll-progress-fill").style.width = `${pct.toFixed(1)}%`;
+        if ($("ll-progress-text")) {
+          $("ll-progress-text").textContent = isEs
+            ? `${d.completed} / ${d.total} pares de lead (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modos)`
+            : `${d.completed} / ${d.total} lead pairs (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modes)`;
+        }
+        if ($("ll-progress-eta")) {
+          $("ll-progress-eta").textContent = `${d.elapsed_s}s · ETA ~${d.eta_s}s`;
+        }
+        const l1Pair = (meta.t1_leads && meta.t1_leads[d.lead_1_idx]) || ["?", "?"];
+        const l2Pair = (meta.t2_leads && meta.t2_leads[d.lead_2_idx]) || ["?", "?"];
+        const sc = Number(d.score || 0);
+        const cv = Number(d.cvar_10 || 0);
+        const backStr = (d.best_t1_bench || []).join("+");
+        const cTag = `CELL ${String(d.completed).padStart(3, "0")}/${d.total}`;
+        appendLeadLabCli(
+          cTag,
+          `${l1Pair[0]}+${l1Pair[1]} vs ${l2Pair[0]}+${l2Pair[1]} → v*=${sc >= 0 ? "+" : ""}${sc.toFixed(2)} (CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}) · Back: ${backStr} · ${d.elapsed_s}s`,
+          sc >= 0.12 ? "tag-win" : sc <= -0.12 ? "tag-err" : ""
+        );
+      });
+
+      es.addEventListener("done", (ev) => {
+        const fullRes = JSON.parse(ev.data);
+        es.close();
+        ll.activeStream = null;
+        ll.running = false;
+        ll.result = fullRes;
+        ll.currentMatchupHash = fullRes.matchup_hash || "";
+        ll.cachedDeepAuditKeys = new Set(fullRes.cached_deep_audit_keys || []);
+        updateLeadLabControlsUI();
+        if ($("ll-progress-fill")) $("ll-progress-fill").style.width = "100%";
+        if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot done";
+        const topBring = (fullRes.trainer_1_top_brings && fullRes.trainer_1_top_brings[0]) || null;
+        const gv = Number(fullRes.global_game_value || 0);
+        appendLeadLabCli(
+          "NASH",
+          topBring
+            ? `Global ${fullRes.num_t1_modes}×${fullRes.num_t2_modes} LP solved in ${fullRes.elapsed_s}s · v*=${gv >= 0 ? "+" : ""}${gv.toFixed(3)} · #1 Bring: ${topBring.lead_species.join("+")} [${topBring.bench_species.join("/")}] (${(topBring.nash_weight * 100).toFixed(1)}%)`
+            : `Global ${fullRes.num_t1_modes}×${fullRes.num_t2_modes} LP solved in ${fullRes.elapsed_s}s · v*=${gv >= 0 ? "+" : ""}${gv.toFixed(3)}`,
+          "tag-nash"
+        );
+        if (fullRes.vault_run_id) {
+          appendLeadLabCli(
+            "VAULT",
+            isEs
+              ? `Matchup guardado automáticamente en DuckDB Vault (${fullRes.vault_run_id.slice(0, 10)}).`
+              : `Matchup auto-saved to DuckDB Vault (${fullRes.vault_run_id.slice(0, 10)}).`,
+            "tag-win"
+          );
+        }
+        if (statusEl) {
+          statusEl.textContent = isEs
+            ? `Equilibrio de Nash ${fullRes.num_t1_modes}×${fullRes.num_t2_modes} completado en ${fullRes.elapsed_s}s (${fullRes.device_used}) y guardado en Vault.`
+            : `${fullRes.num_t1_modes}×${fullRes.num_t2_modes} Nash Equilibrium complete in ${fullRes.elapsed_s}s (${fullRes.device_used}) and saved to Vault.`;
+        }
+        renderLeadLabPodium(fullRes);
+        if (fullRes.trainer_1_top_brings && fullRes.trainer_1_top_brings.length && fullRes.trainer_2_top_brings && fullRes.trainer_2_top_brings.length) {
+          const top1 = fullRes.trainer_1_top_brings[0];
+          const top2 = fullRes.trainer_2_top_brings[0];
+          selectLeadLabCell(top1.lead_idx, top2.lead_idx, top1.bench_idx, top2.bench_idx);
+        }
+        refreshLeadLabVault();
+        scheduleLeadLabCacheLookup(0);
+      });
+
+      es.addEventListener("cancelled", () => {
+        es.close();
+        ll.activeStream = null;
+        ll.running = false;
+        updateLeadLabControlsUI();
+        if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot";
+        appendLeadLabCli("STOP", isEs ? "Simulación detenida limpiamente por el usuario." : "Sweep cleanly cancelled by user.", "tag-stop");
+        if (statusEl) statusEl.textContent = isEs ? "Simulación detenida por el usuario." : "Simulation cancelled by user.";
+      });
+
+      es.addEventListener("error", (ev) => {
+        let msg = "Stream error";
+        try {
+          if (ev && ev.data) msg = JSON.parse(ev.data).error || msg;
+        } catch (_) {}
+        es.close();
+        ll.activeStream = null;
+        ll.running = false;
+        updateLeadLabControlsUI();
+        if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot error";
+        appendLeadLabCli("ERR", msg, "tag-err");
+        if (statusEl) statusEl.textContent = `Error: ${msg}`;
+      });
+    } catch (err) {
+      ll.running = false;
+      updateLeadLabControlsUI();
+      appendLeadLabCli("ERR", String(err), "tag-err");
+      if (statusEl) statusEl.textContent = `Error: ${String(err)}`;
+    }
+  }
+
+  // Wire Lead Lab Event Listeners
+  if ($("ll-t1-roster-select")) {
+    $("ll-t1-roster-select").onchange = () => {
+      renderLeadLabRosterPreview("t1");
+      scheduleLeadLabCacheLookup(50);
+    };
+  }
+  if ($("ll-t2-roster-select")) {
+    $("ll-t2-roster-select").onchange = () => {
+      renderLeadLabRosterPreview("t2");
+      scheduleLeadLabCacheLookup(50);
+    };
+  }
+  if ($("ll-preset-select")) {
+    $("ll-preset-select").onchange = () => scheduleLeadLabCacheLookup(50);
+  }
+  if ($("ll-t1-paste-input")) {
+    $("ll-t1-paste-input").oninput = () => scheduleLeadLabCacheLookup(350);
+  }
+  if ($("ll-t2-paste-input")) {
+    $("ll-t2-paste-input").oninput = () => scheduleLeadLabCacheLookup(350);
+  }
+  if ($("btn-ll-vault-toggle")) {
+    $("btn-ll-vault-toggle").onclick = () => {
+      state.leadLab.vaultOpen = !state.leadLab.vaultOpen;
+      if ($("ll-vault-panel")) {
+        $("ll-vault-panel").style.display = state.leadLab.vaultOpen ? "block" : "none";
+      }
+      if (state.leadLab.vaultOpen) refreshLeadLabVault();
+    };
+  }
+  if ($("btn-ll-vault-close")) {
+    $("btn-ll-vault-close").onclick = () => {
+      state.leadLab.vaultOpen = false;
+      if ($("ll-vault-panel")) $("ll-vault-panel").style.display = "none";
+    };
+  }
+  if ($("ll-vault-search")) {
+    let vaultSearchTimer = null;
+    $("ll-vault-search").oninput = (ev) => {
+      state.leadLab.vaultSearch = String(ev.target.value || "").trim();
+      if (vaultSearchTimer) clearTimeout(vaultSearchTimer);
+      vaultSearchTimer = setTimeout(refreshLeadLabVault, 180);
+    };
+  }
+  if ($("ll-vault-t1-filter")) {
+    $("ll-vault-t1-filter").onchange = (ev) => {
+      state.leadLab.vaultFilterT1 = String(ev.target.value || "");
+      refreshLeadLabVault();
+    };
+  }
+  document.querySelectorAll("[data-ll-adv]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      state.leadLab.vaultFilterAdv = btn.dataset.llAdv || "";
+      document.querySelectorAll("[data-ll-adv]").forEach((b) => {
+        b.classList.toggle("active", b === btn);
+      });
+      refreshLeadLabVault();
+    });
+  });
+  if ($("btn-ll-cache-load")) {
+    $("btn-ll-cache-load").onclick = () => {
+      if (state.leadLab.cacheHit && state.leadLab.cacheHit.run_id) {
+        loadLeadLabFromVault(state.leadLab.cacheHit.run_id);
+      }
+    };
+  }
+  if ($("btn-ll-cache-rerun")) {
+    $("btn-ll-cache-rerun").onclick = () => launchLeadLabSweep();
+  }
+  if ($("btn-ll-t1-paste")) {
+    $("btn-ll-t1-paste").onclick = () => {
+      state.leadLab.t1UsePaste = !state.leadLab.t1UsePaste;
+      updateLeadLabControlsUI();
+      scheduleLeadLabCacheLookup(100);
+    };
+  }
+  if ($("btn-ll-t2-paste")) {
+    $("btn-ll-t2-paste").onclick = () => {
+      state.leadLab.t2UsePaste = !state.leadLab.t2UsePaste;
+      updateLeadLabControlsUI();
+      scheduleLeadLabCacheLookup(100);
+    };
+  }
+  if ($("btn-ll-t2-mode-full")) {
+    $("btn-ll-t2-mode-full").onclick = () => {
+      state.leadLab.t2Mode = "full";
+      updateLeadLabControlsUI();
+      scheduleLeadLabCacheLookup(100);
+    };
+  }
+  if ($("btn-ll-t2-mode-scout")) {
+    $("btn-ll-t2-mode-scout").onclick = () => {
+      state.leadLab.t2Mode = "scout";
+      updateLeadLabControlsUI();
+      scheduleLeadLabCacheLookup(100);
+    };
+  }
+  if ($("ll-scout-file-input")) {
+    $("ll-scout-file-input").onchange = async (ev) => {
+      const files = Array.from(ev.target.files || []).slice(0, 3);
+      const loaded = [];
+      for (const f of files) {
+        loaded.push({ filename: f.name, raw_input: await f.text() });
+      }
+      state.leadLab.scoutReplays = loaded;
+      if ($("ll-scout-files-label")) {
+        $("ll-scout-files-label").textContent = loaded.map((x) => x.filename).join(" · ");
+      }
+      updateLeadLabControlsUI();
+    };
+  }
+  if ($("btn-ll-t2-solve-sp")) {
+    $("btn-ll-t2-solve-sp").onclick = async () => {
+      const isEs = state.lang === "es";
+      const msgEl = $("ll-scout-status-msg");
+      const ll = state.leadLab;
+      if (msgEl) msgEl.textContent = isEs ? "Resolviendo 66-SP con Smogon Champions..." : "Solving opponent 66-SP with Smogon Champions...";
+      try {
+        const body = {
+          replays: ll.scoutReplays,
+          t2_ots_paste_text: ($("ll-t2-ots-input") && $("ll-t2-ots-input").value.trim()) || "",
+        };
+        if (ll.t1UsePaste) body.t1_paste_text = ($("ll-t1-paste-input") && $("ll-t1-paste-input").value.trim()) || "";
+        else body.t1_roster_id = ($("ll-t1-roster-select") && $("ll-t1-roster-select").value) || "";
+        const res = await fetch("/api/lead-lab/infer-opponent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const d = await res.json();
+        if (!res.ok || !d.ok) {
+          if (msgEl) msgEl.textContent = `Error: ${d.error || "Inference failed"}`;
+          return;
+        }
+        ll.t2Inference = d;
+        ll.t2UserSpreads = {};
+        (d.pokemon || []).forEach((m) => {
+          ll.t2UserSpreads[m.base_species] = Object.assign({}, m.active_spread || m.default_spread);
+        });
+        if (msgEl) {
+          msgEl.textContent = isEs
+            ? `66-SP rival acotado desde ${d.games_pooled} partida(s). Ajusta sliders si deseas y pulsa Simular.`
+            : `Opponent 66-SP bounded from ${d.games_pooled} game(s). Adjust sliders if desired and click Run.`;
+        }
+        renderLeadLabClampedSpPanel();
+      } catch (err) {
+        if (msgEl) msgEl.textContent = `Error: ${String(err)}`;
+      }
+    };
+  }
+  if ($("btn-ll-t2-reset-all")) {
+    $("btn-ll-t2-reset-all").onclick = () => {
+      const inf = state.leadLab.t2Inference;
+      if (!inf) return;
+      (inf.pokemon || []).forEach((m) => {
+        state.leadLab.t2UserSpreads[m.base_species] = Object.assign({}, m.default_spread);
+      });
+      renderLeadLabClampedSpPanel();
+    };
+  }
+  async function cancelLeadLabSweep() {
+    const isEs = state.lang === "es";
+    try {
+      await fetch("/api/lead-lab/cancel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
+      });
+    } catch (_) {}
+    if (state.leadLab.activeStream) {
+      try { state.leadLab.activeStream.close(); } catch (_) {}
+      state.leadLab.activeStream = null;
+    }
+    state.leadLab.running = false;
+    updateLeadLabControlsUI();
+    if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot";
+    appendLeadLabCli("STOP", isEs ? "Simulación detenida por el usuario." : "Simulation cancelled by user.", "tag-stop");
+    if ($("ll-status-msg")) {
+      $("ll-status-msg").textContent = isEs
+        ? "Simulación detenida por el usuario."
+        : "Simulation cancelled by user.";
+    }
+  }
+
+  if ($("btn-ll-launch")) $("btn-ll-launch").onclick = launchLeadLabSweep;
+  if ($("btn-ll-cancel")) $("btn-ll-cancel").onclick = cancelLeadLabSweep;
+  if ($("btn-ll-cancel-bar")) $("btn-ll-cancel-bar").onclick = cancelLeadLabSweep;
+  if ($("btn-ll-toggle-cli")) {
+    $("btn-ll-toggle-cli").onclick = () => {
+      const box = $("ll-cli-console");
+      if (!box) return;
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    };
+  }
+  if ($("btn-ll-deep-audit")) {
+    $("btn-ll-deep-audit").onclick = async () => {
+      const ll = state.leadLab;
+      const res = ll.result;
+      if (!res || !ll.jobId || ll.selectedLead1 === null) return;
+      const isEs = state.lang === "es";
+      const nb1 = (res.heatmap_cells[0][0].t1_bench_labels || []).length || 1;
+      const nb2 = (res.heatmap_cells[0][0].t2_bench_labels || []).length || 1;
+      const m1Idx = ll.selectedLead1 * nb1 + ll.selectedBench1;
+      const m2Idx = ll.selectedLead2 * nb2 + ll.selectedBench2;
+      const deepBox = $("ll-deep-audit-box");
+      appendLeadLabCli("DEEP", `Running unpruned Turn-1 Tensor Core audit (mode ${m1Idx} vs ${m2Idx}, K=128)...`, "tag-deep");
+      if (deepBox) {
+        deepBox.style.display = "flex";
+        deepBox.innerHTML = `<div class="muted-sm">${isEs ? "Ejecutando Tensor Core sin poda (K=128) para este 4v4..." : "Running full unpruned Turn-1 Tensor Core audit (K=128)..."}</div>`;
+      }
+      try {
+        const resp = await fetch("/api/lead-lab/deep-turn1", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ job_id: ll.jobId, mode_1_idx: m1Idx, mode_2_idx: m2Idx, num_mc: 128 }),
+        });
+        const d = await resp.json();
+        if (!resp.ok || !d.ok) {
+          appendLeadLabCli("ERR", d.error || "Deep audit failed", "tag-err");
+          if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(d.error || "Audit failed")}</div>`;
+          return;
+        }
+        ll.deepAudit = d;
+        if (d.audit_cell_key) {
+          if (!ll.cachedDeepAuditKeys) ll.cachedDeepAuditKeys = new Set();
+          ll.cachedDeepAuditKeys.add(d.audit_cell_key);
+        }
+        appendLeadLabCli(
+          "DEEP",
+          `${d.from_vault_cache ? "[VAULT CACHE] " : ""}Audit done in ${d.elapsed_s}s [${(d.matrix_shape || []).join("×")}] · v*=${Number(d.nash_value || 0) >= 0 ? "+" : ""}${Number(d.nash_value || 0).toFixed(3)} · #1: ${(d.top_actions && d.top_actions[0] && d.top_actions[0].desc) || ""}`,
+          "tag-deep"
+        );
+        renderLeadLabDrilldown();
+        renderLeadLabDeepAuditBox(d);
+        refreshLeadLabVault();
+      } catch (err) {
+        appendLeadLabCli("ERR", String(err), "tag-err");
+        if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(String(err))}</div>`;
+      }
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // Legal Disclaimer & Third-Party Vendor Credits Modal (Bilingual ES/EN)
+  // -------------------------------------------------------------------------
+  function renderLegalModalBody() {
+    const box = $("legal-modal-content");
+    if (!box) return;
+    const isEs = state.lang === "es";
+    if ($("lbl-legal-modal-title")) {
+      $("lbl-legal-modal-title").textContent = isEs
+        ? "⚖ Aviso Legal, Propiedad Intelectual y Créditos de Terceros"
+        : "⚖ Legal Notice, Intellectual Property & Third-Party Credits";
+    }
+    const rows = [
+      {
+        name: "Pokéos",
+        url: "https://www.pokeos.com/",
+        role: isEs
+          ? "Sprites Pokémon (128×128), íconos de objetos y Megapiedras (24×24), y catálogos Regulation M-C / M-D"
+          : "Pokémon sprites (128×128), held item & Mega Stone icons (24×24), and Regulation M-C / M-D catalogs",
+        lic: isEs ? "Activos Pokémon © Nintendo / Creatures / GAME FREAK / TPCi" : "Pokémon assets © Nintendo / Creatures / GAME FREAK / TPCi",
+      },
+      {
+        name: "@smogon/calc (v0.12.0)",
+        url: "https://github.com/smogon/damage-calc",
+        role: isEs ? "Motor oficial de cálculo de daño Champions (bundle offline)" : "Official Champions damage calculation engine (offline bundle)",
+        lic: "MIT (© Honko & contributors)",
+      },
+      {
+        name: "Pokémon Showdown",
+        url: "https://github.com/smogon/pokemon-showdown",
+        role: isEs ? "Reproductor de replays (replay-embed.js) y datos del mod Champions" : "Replay player (replay-embed.js) & Champions mod data",
+        lic: "MIT (© Guangcong Luo / Zarel & contributors)",
+      },
+      {
+        name: "MunchStats",
+        url: "https://www.munchstats.com/",
+        role: isEs ? "Resultados de torneos regionales VGC y estadísticas de uso meta" : "Regional VGC tournament standings & meta usage stats",
+        lic: isEs ? "Dataset comunitario" : "Community dataset",
+      },
+      {
+        name: "PyTorch",
+        url: "https://pytorch.org/",
+        role: isEs ? "Motor GPU/CPU del Tensor Core y evaluación 8-Pillar Victory Equity" : "GPU/CPU Tensor Core state machine & 8-pillar equity engine",
+        lic: "BSD-3-Clause",
+      },
+      {
+        name: "DuckDB",
+        url: "https://duckdb.org/",
+        role: isEs ? "Base de datos en memoria y almacenamiento persistente OTS / Lead Lab Vault" : "In-memory SQL engine & persistent OTS / Lead Lab Matchup Vault",
+        lic: "MIT",
+      },
+      {
+        name: "SciPy & HiGHS",
+        url: "https://scipy.org/",
+        role: isEs ? "Solver exacto de Equilibrio de Nash (LP HiGHS) y calibración L-BFGS-B" : "Exact Zero-Sum Nash LP solver (HiGHS) & L-BFGS-B weight tuner",
+        lic: "BSD-3-Clause / MIT (HiGHS)",
+      },
+      {
+        name: "NumPy",
+        url: "https://numpy.org/",
+        role: isEs ? "Álgebra matricial y puente numérico de tensores" : "Vectorized numerical arrays & tensor bridges",
+        lic: "BSD-3-Clause",
+      },
+      {
+        name: "PyMiniRacer & V8",
+        url: "https://github.com/bpcreech/PyMiniRacer",
+        role: isEs ? "Sandbox JS V8 en proceso sin Node.js para Smogon Champions Calc" : "In-process V8 sandbox (zero Node.js) for Smogon Champions Calc",
+        lic: "ISC / BSD-3-Clause (V8)",
+      },
+    ];
+
+    const tableRowsHtml = rows
+      .map(
+        (r) => `<tr>
+          <td><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer"><strong>${escapeHtml(r.name)}</strong></a></td>
+          <td>${escapeHtml(r.role)}</td>
+          <td>${escapeHtml(r.lic)}</td>
+        </tr>`
+      )
+      .join("");
+
+    box.innerHTML = `
+      <div class="legal-callout">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+          <span class="community-chip"><img src="/assets/community/pokemmunity.png" alt="Pokémmunity MÉXICO" /><strong>Pokémmunity</strong></span>
+          <span class="community-chip"><img src="/assets/community/pokemex.png" alt="PokéMex" /><strong>PokéMex</strong></span>
+          <strong>${isEs ? "Agradecimiento Especial a la Comunidad" : "Special Community Thanks"}</strong>
+        </div>
+        ${
+          isEs
+            ? "Muchas gracias a los chats grupales de Pokémmunity MÉXICO y PokéMex por todo su apoyo, pruebas y comentarios que ayudaron a mejorar Coach Porygon VGC."
+            : "Special thanks to the Pokémmunity MÉXICO and PokéMex group chats for their continuous support, testing, and feedback to improve Coach Porygon VGC."
+        }
+      </div>
+      <div class="legal-callout">
+        <strong>${isEs ? "100% Proyecto Fan — Sin Fines de Lucro (Nunca Monetizado)" : "100% Fan-Made Project — Strictly Non-Commercial (Never Monetized)"}</strong><br/>
+        ${
+          isEs
+            ? "Coach Porygon VGC es una herramienta gratuita hecha por fans para fans del VGC competitivo. Nunca tendrá anuncios, suscripciones, muros de pago ni monetización."
+            : "Coach Porygon VGC is a free tool built by fans for competitive VGC fans. It will never have ads, paywalls, subscriptions, or monetization."
+        }
+      </div>
+      <div class="legal-callout warn">
+        <strong>${isEs ? "Propiedad Intelectual de Pokémon" : "Pokémon Intellectual Property Disclaimer"}</strong><br/>
+        ${
+          isEs
+            ? "Pokémon, Pokémon Champions y todos los nombres de especies, formas, Megaevoluciones, movimientos, objetos, habilidades y sprites son marcas registradas y propiedad intelectual de © 1995–2026 Nintendo, Creatures Inc., GAME FREAK inc. y The Pokémon Company. Este proyecto no está afiliado, respaldado ni patrocinado por ellos. La licencia AGPLv3 del repositorio cubre exclusivamente el código fuente original y excluye todos los activos y marcas de Pokémon."
+            : "Pokémon, Pokémon Champions, and all species names, forms, Mega Evolutions, moves, items, abilities, and sprites are registered trademarks and copyrights of © 1995–2026 Nintendo, Creatures Inc., GAME FREAK inc., and The Pokémon Company. This project is not affiliated with, endorsed by, or sponsored by them. The repository's AGPLv3 license applies strictly to original source code and excludes all Pokémon IP and sprites."
+        }
+      </div>
+      <table class="legal-table">
+        <thead>
+          <tr>
+            <th>${isEs ? "Proveedor / Fuente" : "Vendor / Source"}</th>
+            <th>${isEs ? "Uso en Coach Porygon VGC" : "Role in Coach Porygon VGC"}</th>
+            <th>${isEs ? "Licencia / Derechos" : "License / Rights"}</th>
+          </tr>
+        </thead>
+        <tbody>${tableRowsHtml}</tbody>
+      </table>
+      <div class="muted-xs">
+        ${
+          isEs
+            ? "Licencia del código fuente: GNU AGPLv3 (ver LICENSE y THIRD_PARTY_NOTICES.md en el repositorio). Contacto para titulares de derechos: esquedevil94@gmail.com."
+            : "Source code license: GNU AGPLv3 (see LICENSE and THIRD_PARTY_NOTICES.md in the repository). Rights-holder removal contact: esquedevil94@gmail.com."
+        }
+      </div>
+    `;
+  }
+
+  function updateLegalFooterAndModalCopy() {
+    const isEs = state.lang === "es";
+    if ($("lbl-footer-community")) {
+      $("lbl-footer-community").textContent = isEs
+        ? "Agradecimiento especial a los grupos Pokémmunity y PokéMex por su apoyo y comentarios para mejorar la app."
+        : "Special thanks to the Pokémmunity and PokéMex group chats for their support and feedback to improve the app.";
+    }
+    if ($("lbl-footer-fan-pill")) {
+      $("lbl-footer-fan-pill").textContent = isEs
+        ? "FAN-MADE · 100% NO COMERCIAL"
+        : "FAN-MADE · 100% NON-COMMERCIAL";
+    }
+    if ($("lbl-footer-disclaimer")) {
+      $("lbl-footer-disclaimer").textContent = isEs
+        ? "Proyecto hecho por fans para fans, nunca monetizado. Pokémon, nombres y sprites © Nintendo / Creatures Inc. / GAME FREAK inc. / The Pokémon Company. Sin afiliación ni patrocinio oficial."
+        : "Fan-made for fans, never monetized. Pokémon, names & sprites © Nintendo / Creatures Inc. / GAME FREAK inc. / The Pokémon Company. Not affiliated or endorsed.";
+    }
+    if ($("lbl-footer-credits")) {
+      $("lbl-footer-credits").innerHTML =
+        `${isEs ? "Créditos:" : "Credits:"} ` +
+        `<a href="https://www.pokeos.com/" target="_blank" rel="noopener noreferrer">Pokéos</a> · ` +
+        `<a href="https://github.com/smogon/damage-calc" target="_blank" rel="noopener noreferrer">@smogon/calc</a> · ` +
+        `<a href="https://github.com/smogon/pokemon-showdown" target="_blank" rel="noopener noreferrer">Pokémon Showdown</a> · ` +
+        `<a href="https://www.munchstats.com/" target="_blank" rel="noopener noreferrer">MunchStats</a> · ` +
+        `PyTorch · DuckDB · SciPy/HiGHS · NumPy · MiniRacer`;
+    }
+    if ($("btn-open-legal-modal")) {
+      $("btn-open-legal-modal").textContent = isEs ? "⚖ Legal y Créditos" : "⚖ Legal & Credits";
+    }
+    renderLegalModalBody();
+  }
+
+  if ($("btn-open-legal-modal")) {
+    $("btn-open-legal-modal").onclick = () => {
+      renderLegalModalBody();
+      if ($("legal-modal")) $("legal-modal").style.display = "flex";
+    };
+  }
+  if ($("btn-close-legal-modal")) {
+    $("btn-close-legal-modal").onclick = () => {
+      if ($("legal-modal")) $("legal-modal").style.display = "none";
+    };
+  }
+  if ($("legal-modal")) {
+    $("legal-modal").onclick = (ev) => {
+      if (ev.target === $("legal-modal")) $("legal-modal").style.display = "none";
+    };
+  }
+
+  // Boot onto Coach Porygon VGC Cyber-Tactical Command Hub
   (async function init() {
     const res = await fetch("/api/state");
     state.app = await res.json();
     const prefix = state.app.device_type === "cuda" ? "CUDA" : "CPU";
     $("hw-badge").textContent = `${prefix}: ${state.app.device}`;
+    if ($("home-hw-pill")) {
+      $("home-hw-pill").textContent = `${prefix} · ${state.app.device}`;
+    }
+    if ($("home-db-pill")) {
+      const nRosters = (state.app.rosters || []).length;
+      $("home-db-pill").textContent = `DuckDB · ${nRosters} OTS Teams`;
+    }
     renderSavedTeamsList("t1");
     renderSavedTeamsList("t2");
     populatePrepRosterSelect();
+    populateLeadLabRosterSelects();
+    setStep("home");
     applyAllTranslations();
   })();
 })();

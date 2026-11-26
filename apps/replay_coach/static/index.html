@@ -3,45 +3,52 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Coach Porygon VGC — Replay Coach Studio</title>
+  <title>Coach Porygon VGC — Command Hub &amp; Tensor Core Studio</title>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 <div class="app-shell">
-  <!-- Subtle Great Ball Top Accent Ribbon -->
-  <div class="greatball-ribbon" aria-hidden="true"></div>
+  <!-- Cyber-Tactical Coach Porygon Top Accent Ribbon -->
+  <div class="cyber-ribbon" aria-hidden="true"></div>
 
-  <!-- Minimalist Top Navigation Bar -->
+  <!-- Unified Persistent Top Navigation Bar -->
   <header class="topbar">
-    <div class="brand">
-      <!-- Sleek Great Ball SVG Emblem -->
-      <svg class="greatball-icon" viewBox="0 0 32 32" width="22" height="22" aria-hidden="true">
-        <circle cx="16" cy="16" r="14" fill="#f8fafc" stroke="#0b101b" stroke-width="2"/>
-        <path d="M2 16 A14 14 0 0 1 30 16 Z" fill="#2563eb"/>
-        <path d="M5.2 9.4 L10.8 13.6 L8.6 15.6 L3.6 11.8 Z" fill="#e11d48"/>
-        <path d="M26.8 9.4 L21.2 13.6 L23.4 15.6 L28.4 11.8 Z" fill="#e11d48"/>
-        <rect x="2" y="14.6" width="28" height="2.8" fill="#0b101b"/>
-        <circle cx="16" cy="16" r="4.6" fill="#f8fafc" stroke="#0b101b" stroke-width="2.2"/>
-        <circle cx="16" cy="16" r="1.8" fill="#2563eb"/>
-      </svg>
-      <span class="brand-title">Coach Porygon VGC</span>
+    <div class="brand-group">
+      <button class="brand-home-btn" id="btn-go-home" type="button" title="Volver al Command Hub de Coach Porygon VGC">
+        <span class="porygon-emblem" aria-hidden="true"></span>
+        <span class="brand-text-wrap">
+          <span class="brand-title">Coach Porygon VGC</span>
+          <span class="brand-sub" id="lbl-brand-sub">REG M-C · TENSOR CORE</span>
+        </span>
+      </button>
       <span class="hw-chip" id="hw-badge" title="Active compute backend (CUDA GPU or CPU)">...</span>
     </div>
 
-    <nav class="stepper" aria-label="Analysis steps">
-      <button class="step-btn active" id="nav-step-setup" data-step="setup" type="button">
-        <span class="step-num">1</span>
-        <span id="lbl-step-1">Partida y Equipos</span>
+    <!-- Quick Tool Switcher Pills -->
+    <nav class="hub-quick-nav" id="hub-quick-nav" aria-label="Primary tools">
+      <button class="hub-nav-pill" id="nav-hub-speed" data-hub-nav="speed" type="button">
+        <span class="nav-ico" aria-hidden="true">⚡</span>
+        <span id="lbl-nav-speed">Velocidades</span>
       </button>
-      <span class="step-sep">/</span>
-      <button class="step-btn" id="nav-step-pipeline" data-step="pipeline" disabled type="button">
-        <span class="step-num">2</span>
-        <span id="lbl-step-2">Ejecución</span>
+      <button class="hub-nav-pill" id="nav-hub-damage" data-hub-nav="damage" type="button">
+        <span class="nav-ico" aria-hidden="true">💥</span>
+        <span id="lbl-nav-damage">Daño &amp; KO</span>
       </button>
-      <span class="step-sep">/</span>
-      <button class="step-btn" id="nav-step-review" data-step="review" disabled type="button">
-        <span class="step-num">3</span>
-        <span id="lbl-step-3">Revisión</span>
+      <button class="hub-nav-pill" id="nav-hub-bo3" data-hub-nav="bo3" type="button">
+        <span class="nav-ico" aria-hidden="true">🧠</span>
+        <span id="lbl-nav-bo3">Bo3 Coach</span>
+      </button>
+      <button class="hub-nav-pill hub-nav-gold" id="nav-hub-lead-lab" data-hub-nav="lead-lab" type="button">
+        <span class="nav-ico" aria-hidden="true">🎯</span>
+        <span id="lbl-nav-lead-lab">Lead Lab 90×90</span>
+      </button>
+      <button class="hub-nav-pill hub-nav-emerald" id="nav-hub-analytics" data-hub-nav="analytics" type="button">
+        <span class="nav-ico" aria-hidden="true">📊</span>
+        <span id="lbl-nav-analytics">Analítica</span>
+      </button>
+      <button class="hub-nav-pill hub-nav-violet" id="nav-hub-md-scout" data-hub-nav="md-scout" type="button">
+        <span class="nav-ico" aria-hidden="true">🔮</span>
+        <span id="lbl-nav-md-scout">Reg M-D</span>
       </button>
     </nav>
 
@@ -54,24 +61,178 @@
         <button class="seg-btn active" id="btn-style-vgc" type="button">VGC</button>
         <button class="seg-btn" id="btn-style-sci" type="button">Científico</button>
       </div>
-      <button class="btn btn-ghost btn-prep" id="btn-open-prep-view" type="button" title="Generar tablas offline Base64 de Velocidades y Matriz de Daño (Cero IA)">
-        <span id="lbl-prep-btn">Herramientas Prep</span>
-      </button>
-      <button class="btn btn-ghost btn-analytics" id="btn-open-analytics-modal" type="button" title="Ver analítica histórica Bo3 y sesiones guardadas en CSV">
-        <span id="lbl-analytics-btn">Analítica</span>
-      </button>
-      <button class="btn btn-ghost btn-bug" id="btn-open-bug-modal" type="button" title="Generar log de error y enviarlo por correo">
-        <span id="lbl-bug-btn">Reportar Bug</span>
+      <button class="btn btn-ghost btn-bug btn-bug-icon" id="btn-open-bug-modal" type="button" title="Reportar Bug / Generar Log Diagnóstico" aria-label="Reportar Bug">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="m8 2 1.88 1.88"/>
+          <path d="M14.12 3.88 16 2"/>
+          <path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/>
+          <path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/>
+          <path d="M12 20v-9"/>
+          <path d="M6.53 9C4.6 8.8 3 7.1 3 5"/>
+          <path d="M6 13H2"/>
+          <path d="M3 21c0-2.1 1.7-3.9 3.8-4"/>
+          <path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/>
+          <path d="M22 13h-4"/>
+          <path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>
+        </svg>
       </button>
     </div>
   </header>
 
+  <!-- Contextual Bo3 Replay Coach Stepper Sub-Bar (shown only during Bo3 Steps 1–3) -->
+  <div class="bo3-stepper-bar" id="bo3-stepper-bar" style="display:none">
+    <div class="bo3-stepper-inner">
+      <span class="bo3-stepper-tag" id="lbl-bo3-subtag">🧠 BO3 REPLAY COACH</span>
+      <nav class="stepper" aria-label="Bo3 analysis steps">
+        <button class="step-btn active" id="nav-step-setup" data-step="setup" type="button">
+          <span class="step-num">1</span>
+          <span id="lbl-step-1">Partida y Equipos</span>
+        </button>
+        <span class="step-sep">/</span>
+        <button class="step-btn" id="nav-step-pipeline" data-step="pipeline" disabled type="button">
+          <span class="step-num">2</span>
+          <span id="lbl-step-2">Ejecución</span>
+        </button>
+        <span class="step-sep">/</span>
+        <button class="step-btn" id="nav-step-review" data-step="review" disabled type="button">
+          <span class="step-num">3</span>
+          <span id="lbl-step-3">Revisión</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
   <!-- ================================================================== -->
-  <!-- STEP 1: MATCH SETUP                                                -->
+  <!-- DEFAULT LANDING VIEW: COACH PORYGON VGC CYBER-TACTICAL COMMAND HUB -->
   <!-- ================================================================== -->
-  <section class="studio-view active" id="view-setup">
+  <section class="studio-view active" id="view-home">
+    <div class="home-wrap">
+      <!-- Hero Banner Card -->
+      <div class="home-hero-card">
+        <div class="home-hero-media">
+          <img class="home-hero-img" src="/assets/coach_porygon_banner.jpg" alt="Coach Porygon VGC Cyber-Tactical Banner" />
+          <div class="home-hero-scrim" aria-hidden="true"></div>
+        </div>
+        <div class="home-hero-overlay">
+          <div class="home-hero-badges">
+            <span class="cyber-pill cyan-pill">POKÉMON CHAMPIONS · REG M-C</span>
+            <span class="cyber-pill gold-pill" id="home-hw-pill">TENSOR CORE READY</span>
+            <span class="cyber-pill slate-pill" id="home-db-pill">DuckDB OTS</span>
+          </div>
+          <h1 class="home-hero-title" id="lbl-home-title">Coach Porygon VGC — Command Hub</h1>
+          <p class="home-hero-sub" id="lbl-home-sub">
+            Suite competitiva local de Regulation M-C: tablas móviles offline Base64, auditoría Bo3 con Equilibrio de Nash / IEDS y Laboratorio Turno 1 de 90×90 modos.
+          </p>
+        </div>
+      </div>
+
+      <!-- 4 Interactive CTA Cards (2 × 2 Grid) -->
+      <div class="home-cta-grid">
+        <!-- Card 1: Speed Tiers Dynamic HTML -->
+        <button class="cta-card cta-cyan" id="cta-card-speed" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">⚡</span>
+            <span class="cta-badge" id="lbl-cta1-badge">HTML DINÁMICO · OFFLINE</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta1-title">Speed Tiers Dinámicos</h2>
+          <p class="cta-desc" id="lbl-cta1-desc">
+            Genera una tabla interactiva de velocidades Lv.50 (31 IVs) contra el Top 50 DuckDB con Tailwind, Icy Wind, Choice Scarf, Unburden, climas y cambios de Mega al instante.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta1-meta">1-Click HTML móvil Base64 · Cero IA</span>
+            <span class="cta-arrow" aria-hidden="true">Abrir &rarr;</span>
+          </div>
+        </button>
+
+        <!-- Card 2: Damage Calcs Dynamic HTML -->
+        <button class="cta-card cta-magenta" id="cta-card-damage" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">💥</span>
+            <span class="cta-badge" id="lbl-cta2-badge">16 ROLLS SMOGON · OFFLINE</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta2-title">Matriz de Daño &amp; KOs</h2>
+          <p class="cta-desc" id="lbl-cta2-desc">
+            Precalcula todos los rangos OHKO/2HKO exactos de tu equipo con Smogon Champions (5 Climas × 5 Campos × Pantallas) y llévalos en un HTML autónomo al torneo.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta2-meta">1-Click HTML móvil Base64 · Cero IA</span>
+            <span class="cta-arrow" aria-hidden="true">Abrir &rarr;</span>
+          </div>
+        </button>
+
+        <!-- Card 3: Bo3 Log Coach -->
+        <button class="cta-card cta-indigo" id="cta-card-bo3" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">🧠</span>
+            <span class="cta-badge" id="lbl-cta3-badge">TENSOR CORE · BO1 / BO3</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta3-title">Bo3 Replay Coach</h2>
+          <p class="cta-desc" id="lbl-cta3-desc">
+            Sube 1 a 3 replays de Showdown, deduce el 66-SP rival con límites exactos bloqueados y audita cada turno con el reproductor oficial sincronizado, IEDS, Nash y CVaR₁₀.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta3-meta">Reproductor Showdown + Explicación VGC/Científica</span>
+            <span class="cta-arrow" aria-hidden="true">Abrir &rarr;</span>
+          </div>
+        </button>
+
+        <!-- Card 4: 90×90 Turn-1 Lead & Bring Lab -->
+        <button class="cta-card cta-gold" id="cta-card-lead-lab" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">🎯</span>
+            <span class="cta-badge" id="lbl-cta4-badge">NUEVO · 90×90 (8,100 MODOS)</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta4-title">Simulador de Leads Turno 1</h2>
+          <p class="cta-desc" id="lbl-cta4-desc">
+            Enfrenta dos equipos de 6 Pokémon (66-SP o OTS + logs Bo3) y simula el Turno 1 para los 15×15 leads × 6×6 bancas en GPU para obtener tu Equilibrio de Nash de Team Preview.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta4-meta">Heatmap 15×15 en vivo + Drilldown 6×6 + Audit K=128</span>
+            <span class="cta-arrow" aria-hidden="true">Simular &rarr;</span>
+          </div>
+        </button>
+
+        <!-- Card 5: Bo3 Session Analytics & Telemetry -->
+        <button class="cta-card cta-emerald" id="cta-card-analytics" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">📊</span>
+            <span class="cta-badge" id="lbl-cta5-badge">TELEMETRÍA LOCAL · CSV POR EQUIPO</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta5-title">Analítica de Sesiones y Torneos Bo3</h2>
+          <p class="cta-desc" id="lbl-cta5-desc">
+            Crea carpetas por equipo, registra tus partidas auditadas desde Bo3 Coach y sigue tu Win Rate, curva de precisión, errores por fase (Lead / Mid / Endgame) y efectividad por par de Leads.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta5-meta">Guía paso a paso + Carpetas locales en data/telemetry/</span>
+            <span class="cta-arrow" aria-hidden="true">Explorar &rarr;</span>
+          </div>
+        </button>
+
+        <!-- Card 6: Regulation M-D Meta Scout (Offline Base64 HTML) -->
+        <button class="cta-card cta-violet" id="cta-card-md-scout" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">🔮</span>
+            <span class="cta-badge" id="lbl-cta6-badge">PREVIEW M-D · HTML BASE64 OFFLINE</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta6-title">Scout del Meta Regulation M-D</h2>
+          <p class="cta-desc" id="lbl-cta6-desc">
+            Tier List proyectada combinando los añadidos oficiales confirmados de Regulation M-D y la ola de pronóstico comunitario, cruzados contra equipos reales Top Cut de DuckDB (incl. LAIC 2027).
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta6-meta">Confirmados vs. Rumor · 6 Blueprints DuckDB · 1-Click HTML</span>
+            <span class="cta-arrow" aria-hidden="true">Explorar &rarr;</span>
+          </div>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- STEP 1: MATCH SETUP (BO3 REPLAY COACH)                             -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-setup">
     <div class="setup-wrap">
-      <!-- TOP HERO ACTION BAR (Primary CTA Front & Center — Zero Scrolling!) -->
+      <!-- TOP HERO ACTION BAR -->
       <div class="hero-action-bar">
         <div class="hero-copy">
           <div class="hero-title" id="lbl-setup-replay-title">Configurar Replay y Equipos Full OTS</div>
@@ -136,7 +297,7 @@
             </div>
           </div>
 
-          <!-- Unified Bo3 Game Switcher Strip (auto-shown when 2-3 games are loaded) -->
+          <!-- Unified Bo3 Game Switcher Strip -->
           <div class="bo3-tabs-bar" id="setup-bo3-tabs" style="display:none"></div>
         </div>
       </div>
@@ -150,18 +311,13 @@
             <span class="sp-status" id="t1-sp-status">Sin OTS</span>
           </div>
           <div class="panel-body">
-            <!-- Searchable Saved Teams Bar -->
             <div class="ots-search-bar">
               <input type="text" id="t1-search-input" class="grow search-input" placeholder="Filtrar por Pokémon o nombre (ej. Charizard Garchomp)..." autocomplete="off" />
-              <button class="btn btn-ghost btn-infer" id="btn-t1-infer" type="button" title="Auto-inferir 66-SP desde el replay + DuckDB regional">Auto-Inferir</button>
+              <button class="btn btn-ghost btn-infer" id="btn-t1-infer" type="button" title="Auto-inferir 66-SP desde el replay + DuckDB regional">Resolver 66-SP</button>
               <button class="btn btn-ghost" id="btn-t1-toggle-paste" type="button">Pegar OTS</button>
               <button class="btn btn-ghost" id="btn-t1-clear" type="button" title="Limpiar equipo seleccionado de esta tarjeta (no borra de DuckDB)">Limpiar</button>
             </div>
-
-            <!-- Interactive Searchable Saved Teams List (with mini sprites + confirmed DB delete) -->
             <div class="saved-teams-box" id="t1-saved-teams"></div>
-
-            <!-- Collapsible Inline Paste Editor -->
             <div id="t1-paste-drawer" class="paste-drawer" style="display:none">
               <textarea id="t1-paste-input" rows="8" placeholder="Pega el Showdown Paste completo (66-SP) de trainer_1..."></textarea>
               <div class="save-db-row">
@@ -173,8 +329,6 @@
                 <button class="btn btn-greatball" id="btn-t1-validate" type="button">Aplicar</button>
               </div>
             </div>
-
-            <!-- Active Selected Team Roster Preview -->
             <div class="ots-roster-list" id="t1-ots-mon-grid"></div>
           </div>
         </div>
@@ -188,13 +342,11 @@
           <div class="panel-body">
             <div class="ots-search-bar">
               <input type="text" id="t2-search-input" class="grow search-input" placeholder="Filtrar por Pokémon o nombre (ej. Incineroar Farigiraf)..." autocomplete="off" />
-              <button class="btn btn-ghost btn-infer" id="btn-t2-infer" type="button" title="Auto-inferir 66-SP del rival desde el replay + DuckDB regional">Auto-Inferir</button>
+              <button class="btn btn-ghost btn-infer" id="btn-t2-infer" type="button" title="Auto-inferir 66-SP del rival desde el replay + DuckDB regional">Resolver 66-SP</button>
               <button class="btn btn-ghost" id="btn-t2-toggle-paste" type="button">Pegar OTS</button>
               <button class="btn btn-ghost" id="btn-t2-clear" type="button" title="Limpiar equipo seleccionado de esta tarjeta (no borra de DuckDB)">Limpiar</button>
             </div>
-
             <div class="saved-teams-box" id="t2-saved-teams"></div>
-
             <div id="t2-paste-drawer" class="paste-drawer" style="display:none">
               <textarea id="t2-paste-input" rows="8" placeholder="Pega el OTS del rival (con o sin EVs/SPs — Species, Item, Ability, Nature, Moves)..."></textarea>
               <div class="save-db-row">
@@ -215,8 +367,8 @@
                   <span class="muted-xs" id="t2-solver-meta-sub"></span>
                 </div>
                 <div class="btn-row">
-                  <button class="btn btn-ghost btn-xs" id="btn-t2-autofill-all" type="button" title="Restaurar los valores óptimos sugeridos dentro de los límites observados">Auto-Completar</button>
-                  <button class="btn btn-ghost btn-xs" id="btn-t2-save-ephemeral" type="button" title="Guardar opcionalmente esta hoja 66-SP en tu biblioteca DuckDB">Guardar en Biblioteca</button>
+                  <button class="btn btn-ghost btn-xs" id="btn-t2-autofill-all" type="button">Auto-Completar</button>
+                  <button class="btn btn-ghost btn-xs" id="btn-t2-save-ephemeral" type="button">Guardar en Biblioteca</button>
                 </div>
               </div>
               <div class="clamped-sp-hint muted-xs" id="t2-clamped-sp-hint">
@@ -274,7 +426,7 @@
             <span class="muted-sm" id="done-meta-text"></span>
           </div>
           <button class="btn btn-greatball btn-lg" id="btn-start-synced-replay" type="button">
-            <span id="lbl-start-replay-btn">Ver Replay Sincronizado &▶;</span>
+            <span id="lbl-start-replay-btn">Ver Replay Sincronizado ▶</span>
           </button>
         </div>
       </div>
@@ -318,8 +470,7 @@
     </div>
 
     <main class="review-grid">
-      <!-- Left: Unified Controls + Turn Scrubber + Official Showdown Player -->
-      <section class="panel player-panel">
+      <section class="panel player-panel" id="review-player-panel">
         <div class="panel-head">
           <span class="panel-title" id="match-title">Pokémon Showdown Replay</span>
           <span class="muted-xs" id="ots-match-indicator"></span>
@@ -349,20 +500,24 @@
         </div>
       </section>
 
-      <!-- Right: Focused Coach Advice Panel with 3 Clean Tabs -->
-      <section class="panel coach-panel">
+      <section class="panel coach-panel" id="review-coach-panel">
         <div class="panel-head">
-          <span class="panel-title" id="coach-panel-title">Turno 1</span>
+          <div class="btn-row">
+            <span class="panel-title" id="coach-panel-title">Turno 1</span>
+            <span class="verdict-pill" id="coach-head-badge" style="display:none"></span>
+          </div>
           <div class="btn-row">
             <span class="muted-xs" id="turn-compute-meta"></span>
-            <button class="btn btn-ghost" id="btn-recompute-turn" type="button">Recalcular</button>
+            <button class="btn btn-ghost btn-xs" id="btn-recompute-turn" type="button">Recalcular</button>
           </div>
         </div>
 
         <div class="coach-tabs" role="tablist">
-          <button class="coach-tab active" data-tab="advice" id="tab-btn-advice" type="button">Consejos</button>
-          <button class="coach-tab" data-tab="matrix" id="tab-btn-matrix" type="button">Todas las Jugadas</button>
-          <button class="coach-tab" data-tab="board" id="tab-btn-board" type="button">Tablero y Curva</button>
+          <button class="coach-tab active" data-tab="advice" id="tab-btn-advice" type="button">Resumen</button>
+          <button class="coach-tab" data-tab="details" id="tab-btn-details" type="button">Claves</button>
+          <button class="coach-tab" data-tab="matrix" id="tab-btn-matrix" type="button">Jugadas</button>
+          <button class="coach-tab" data-tab="board" id="tab-btn-board" type="button">Tablero</button>
+          <button class="coach-tab" data-tab="graph" id="tab-btn-graph" type="button">Curva</button>
         </div>
 
         <div class="panel-body coach-body" id="coach-panel-body"></div>
@@ -378,7 +533,7 @@
       <div class="prep-toolbar panel">
         <div class="prep-toolbar-row">
           <div class="prep-toolbar-group">
-            <button class="btn btn-ghost" id="btn-prep-back" type="button">&larr; Studio</button>
+            <button class="btn btn-ghost" id="btn-prep-back" type="button">&larr; Hub</button>
             <strong class="prep-heading" id="lbl-prep-heading">Herramientas Prep Offline (Cero IA)</strong>
             <div class="seg-group" aria-label="Prep tool type">
               <button class="seg-btn active" id="btn-prep-kind-speed" type="button">⚡ Velocidades</button>
@@ -428,24 +583,299 @@
     </div>
   </section>
 
-  <!-- Session / Bo3 Tournament Analytics Dashboard Modal -->
-  <div class="modal-backdrop" id="analytics-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="lbl-analytics-modal-title">
-    <div class="modal-card modal-wide">
-      <div class="panel-head">
-        <span class="panel-title" id="lbl-analytics-modal-title">Analítica de Sesiones y Torneos Bo3</span>
-        <div class="btn-row">
-          <select id="analytics-team-select" title="Filtrar por carpeta de equipo"></select>
-          <button class="btn btn-ghost" id="btn-refresh-analytics" type="button">Actualizar</button>
-          <button class="btn btn-ghost" id="btn-close-analytics-modal" type="button" aria-label="Close">&times;</button>
+  <!-- ================================================================== -->
+  <!-- DEDICATED VIEW: FACTORED 90×90 TURN-1 LEAD & BRING LAB             -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-lead-lab">
+    <div class="ll-wrap">
+      <!-- Launch & Progress Hero Bar -->
+      <div class="hero-action-bar ll-hero-bar">
+        <div class="hero-copy">
+          <div class="hero-title" id="lbl-ll-title">🎯 Simulador de Leads &amp; Brings Turno 1 (90×90 Nash)</div>
+          <div class="muted-sm" id="ll-status-msg">Elige dos equipos de Regulation M-C (66-SP o OTS + logs Bo3) y simula los 8,100 modos de Team Preview en GPU.</div>
+        </div>
+        <div class="hero-cta-group">
+          <button class="btn btn-ghost" id="btn-ll-vault-toggle" type="button" title="Abrir biblioteca de matchups guardados en DuckDB">
+            📚 <span id="lbl-ll-vault-btn">Matchup Vault</span>
+            <span class="cyber-pill cyan-pill" id="ll-vault-count-pill">0</span>
+          </button>
+          <select id="ll-preset-select" class="prep-select-sm" title="Profundidad de simulación Turno 1">
+            <option value="fast">Rápido (K=16 · ~55s GPU)</option>
+            <option value="balanced" selected>Balanceado (K=32 · ~105s GPU)</option>
+            <option value="tournament">Torneo (K=48 · ~175s GPU)</option>
+          </select>
+          <button class="btn btn-danger" id="btn-ll-cancel" type="button" disabled>■ Detener</button>
+          <button class="btn btn-gold btn-lg" id="btn-ll-launch" type="button">
+            <span id="lbl-ll-launch">Simular 90×90 Leads &rarr;</span>
+          </button>
         </div>
       </div>
-      <div class="panel-body modal-body analytics-body" id="analytics-dashboard-body">
-        <div class="muted-sm">Cargando telemetría...</div>
+
+      <!-- Instant DuckDB Cache-Hit Pill Bar (shown automatically when matchup is already in Vault) -->
+      <div class="ll-cache-hit-bar" id="ll-cache-hit-bar" style="display:none">
+        <div class="ll-cache-hit-info" id="ll-cache-hit-info"></div>
+        <div class="btn-row">
+          <button class="btn btn-greatball btn-xs" id="btn-ll-cache-load" type="button">⚡ Cargar al Instante</button>
+          <button class="btn btn-ghost btn-xs" id="btn-ll-cache-rerun" type="button">↻ Recalcular</button>
+        </div>
+      </div>
+
+      <!-- Collapsible Searchable DuckDB Matchup Vault Drawer -->
+      <div class="panel ll-vault-panel" id="ll-vault-panel" style="display:none">
+        <div class="panel-head">
+          <span class="panel-title" id="lbl-ll-vault-title">📚 Matchup Vault — Simulaciones 90×90 Guardadas (DuckDB)</span>
+          <button class="btn btn-ghost btn-xs" id="btn-ll-vault-close" type="button">&times;</button>
+        </div>
+        <div class="panel-body">
+          <div class="ll-vault-toolbar">
+            <input type="text" id="ll-vault-search" class="ll-vault-search-input" placeholder="Buscar por Pokémon, nombre de equipo o etiqueta (ej. Incineroar, Regional)..." autocomplete="off" />
+            <select id="ll-vault-t1-filter" class="prep-select-sm" title="Filtrar por Tu Equipo"></select>
+            <div class="seg-group" id="ll-vault-adv-group" aria-label="Filter by advantage">
+              <button class="seg-btn active" data-ll-adv="" type="button" id="btn-ll-adv-all">Todos</button>
+              <button class="seg-btn" data-ll-adv="win" type="button" id="btn-ll-adv-win">+ Ventaja</button>
+              <button class="seg-btn" data-ll-adv="even" type="button" id="btn-ll-adv-even">Parejo</button>
+              <button class="seg-btn" data-ll-adv="lose" type="button" id="btn-ll-adv-lose">- Desventaja</button>
+            </div>
+          </div>
+          <div class="ll-vault-list" id="ll-vault-list"></div>
+        </div>
+      </div>
+
+      <!-- Live Progress Strip + Compact Cyber-CLI Log Stream -->
+      <div class="panel ll-progress-panel" id="ll-progress-panel" style="display:none">
+        <div class="progress-track">
+          <div class="progress-fill ll-progress-fill" id="ll-progress-fill" style="width:0%"></div>
+        </div>
+        <div class="ll-progress-meta">
+          <div class="btn-row">
+            <span class="status-dot" id="ll-status-dot"></span>
+            <strong id="ll-progress-text">0 / 225 pares de lead</strong>
+          </div>
+          <div class="btn-row">
+            <span class="muted-xs" id="ll-progress-eta"></span>
+            <button class="btn btn-ghost btn-xs" id="btn-ll-toggle-cli" type="button" title="Mostrar / ocultar terminal CLI">CLI</button>
+            <button class="btn btn-danger btn-xs" id="btn-ll-cancel-bar" type="button" style="display:none">■ Detener</button>
+          </div>
+        </div>
+        <div class="ll-cli-console" id="ll-cli-console" aria-live="polite" aria-label="Lead Lab live telemetry log"></div>
+      </div>
+
+      <!-- 2-Column Team Setup Strip -->
+      <div class="ots-columns ll-setup-cols">
+        <!-- Team 1 (trainer_1 — Full 66-SP) -->
+        <div class="panel ots-card ll-team-card">
+          <div class="panel-head">
+            <span class="panel-title" id="lbl-ll-t1-title">Tu Equipo (trainer_1 · 66-SP)</span>
+            <span class="sp-status" id="ll-t1-badge">DuckDB</span>
+          </div>
+          <div class="panel-body">
+            <div class="ots-search-bar">
+              <select id="ll-t1-roster-select" class="grow prep-select"></select>
+              <button class="btn btn-ghost" id="btn-ll-t1-paste" type="button">Pegar 66-SP</button>
+            </div>
+            <div id="ll-t1-paste-drawer" class="paste-drawer" style="display:none">
+              <textarea id="ll-t1-paste-input" rows="7" placeholder="Pega tu Showdown Paste completo (66-SP) de trainer_1..."></textarea>
+            </div>
+            <div class="ll-team-sprites" id="ll-t1-preview"></div>
+          </div>
+        </div>
+
+        <!-- Team 2 (trainer_2 — Full 66-SP OR EV-less OTS + 1–3 Bo3 Scouting Logs) -->
+        <div class="panel ots-card ll-team-card">
+          <div class="panel-head">
+            <span class="panel-title" id="lbl-ll-t2-title">Equipo Rival (trainer_2)</span>
+            <div class="seg-group" aria-label="Team 2 input mode">
+              <button class="seg-btn active" id="btn-ll-t2-mode-full" type="button">Full 66-SP</button>
+              <button class="seg-btn" id="btn-ll-t2-mode-scout" type="button">OTS + Logs Bo3</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <!-- Mode A: Saved DuckDB or Full 66-SP Paste -->
+            <div id="ll-t2-full-box">
+              <div class="ots-search-bar">
+                <select id="ll-t2-roster-select" class="grow prep-select"></select>
+                <button class="btn btn-ghost" id="btn-ll-t2-paste" type="button">Pegar 66-SP</button>
+              </div>
+              <div id="ll-t2-paste-drawer" class="paste-drawer" style="display:none">
+                <textarea id="ll-t2-paste-input" rows="7" placeholder="Pega el Showdown Paste completo (66-SP) de trainer_2..."></textarea>
+              </div>
+              <div class="ll-team-sprites" id="ll-t2-preview"></div>
+            </div>
+
+            <!-- Mode B: EV-less OTS + 1–3 Bo3 Scouting Logs -> Clamped 66-SP Sliders -->
+            <div id="ll-t2-scout-box" style="display:none">
+              <div class="ll-scout-drop" id="ll-scout-dropzone">
+                <div class="muted-sm" id="lbl-ll-scout-hint">Sube 1 a 3 replays Bo3 del rival (.html, .log, .txt) para acotar su 66-SP con Smogon Champions</div>
+                <div class="btn-row" style="margin-top:6px">
+                  <label class="btn btn-ghost btn-xs">
+                    <span id="lbl-ll-scout-pick">Seleccionar logs Bo3</span>
+                    <input type="file" id="ll-scout-file-input" accept=".html,.htm,.txt,.log" multiple hidden />
+                  </label>
+                  <button class="btn btn-greatball btn-xs" id="btn-ll-t2-solve-sp" type="button" disabled>
+                    <span id="lbl-ll-solve-sp">Resolver 66-SP Rival</span>
+                  </button>
+                </div>
+                <div class="muted-xs" id="ll-scout-files-label" style="margin-top:4px"></div>
+              </div>
+              <textarea id="ll-t2-ots-input" rows="4" class="ll-ots-textarea" placeholder="(Opcional si los logs incluyen |showteam|) Pega aquí el OTS sin EVs del rival..."></textarea>
+              <div class="muted-xs" id="ll-scout-status-msg" style="margin-top:4px"></div>
+
+              <!-- Reused Clamped 66-SP Slider Workbench for Lead Lab Team 2 -->
+              <div id="ll-t2-clamped-panel" class="clamped-sp-panel" style="display:none;margin-top:8px">
+                <div class="clamped-sp-toolbar">
+                  <div class="clamped-sp-meta">
+                    <span class="tag-solver" id="ll-t2-solver-badge">OTS 66-SP</span>
+                    <span class="muted-xs" id="ll-t2-solver-sub"></span>
+                  </div>
+                  <button class="btn btn-ghost btn-xs" id="btn-ll-t2-reset-all" type="button">Auto-Completar</button>
+                </div>
+                <div class="clamped-sp-list" id="ll-t2-clamped-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================ -->
+      <!-- HIERARCHICAL 2-LEVEL RESULTS DASHBOARD                           -->
+      <!-- ================================================================ -->
+      <div id="ll-results-shell" style="display:none">
+        <!-- Live Adjustable LQRE Beta Control Bar for Lead Lab 90x90 -->
+        <div id="ll-beta-bar"></div>
+
+        <!-- Level 1A: Global 90×90 Nash Podium + Opponent Counter-Leads -->
+        <div class="ll-podium-grid" id="ll-podium-grid" style="display:none">
+          <div class="panel ll-podium-card">
+            <div class="panel-head">
+              <span class="panel-title" id="lbl-ll-podium-t1">🏆 Mejores Brings (Equilibrio de Nash 90×90)</span>
+              <span class="cyber-pill gold-pill" id="ll-global-value-pill">v* = 0.00</span>
+            </div>
+            <div class="panel-body ll-podium-body" id="ll-t1-podium-list"></div>
+          </div>
+
+          <div class="panel ll-podium-card">
+            <div class="panel-head">
+              <span class="panel-title" id="lbl-ll-podium-t2">🛡 Brings Más Peligrosos del Rival &amp; Tu Counter</span>
+              <span class="muted-xs" id="ll-modes-meta-pill">8,100 modos</span>
+            </div>
+            <div class="panel-body ll-podium-body" id="ll-t2-counter-list"></div>
+          </div>
+        </div>
+
+        <!-- Level 1B: Interactive Live 15×15 Lead-Pair Heatmap -->
+        <div class="panel ll-heatmap-panel">
+          <div class="panel-head">
+            <span class="panel-title" id="lbl-ll-heatmap-title">Mapa de Calor de Leads (15×15 · Click en cualquier celda para ver sus 6×6 bancas)</span>
+            <div class="ll-heatmap-legend">
+              <span class="legend-chip leg-win" id="lbl-ll-leg-win">+ Ventaja T1</span>
+              <span class="legend-chip leg-even" id="lbl-ll-leg-even">Parejo</span>
+              <span class="legend-chip leg-lose" id="lbl-ll-leg-lose">- Ventaja Rival</span>
+            </div>
+          </div>
+          <div class="panel-body ll-heatmap-scroll" id="ll-heatmap-container"></div>
+        </div>
+
+        <!-- Level 2: Click-to-Drill 6×6 Back-2 Bench Matrix + 1-Click Deep Turn-1 Audit -->
+        <div class="panel ll-drill-panel" id="ll-drill-panel" style="display:none">
+          <div class="panel-head">
+            <div class="ll-drill-head-left" id="ll-drill-title">Detalle de Matchup</div>
+            <button class="btn btn-gold" id="btn-ll-deep-audit" type="button">
+              <span id="lbl-ll-deep-btn">⚡ Auditoría Profunda Turno 1 (Sin Poda · K=128)</span>
+            </button>
+          </div>
+          <div class="panel-body ll-drill-body">
+            <div class="ll-turn0-strip" id="ll-drill-turn0-strip"></div>
+            <div class="ll-drill-split">
+              <div class="ll-submatrix-col">
+                <div class="muted-xs" id="lbl-ll-submatrix-hint" style="margin-bottom:6px">
+                  Matriz 6×6 de Back-2 (haz click en una celda para inspeccionar su apertura Turno 1):
+                </div>
+                <div class="ll-submatrix-scroll" id="ll-submatrix-container"></div>
+              </div>
+              <div class="ll-opening-col">
+                <div class="ll-opening-card" id="ll-opening-card"></div>
+                <div class="ll-deep-audit-box" id="ll-deep-audit-box" style="display:none"></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- Bug Report Modal (Diagnostic Log Generator + Direct Email to esquedevil94@gmail.com) -->
+  <!-- ================================================================== -->
+  <!-- DEDICATED VIEW: BO3 SESSION ANALYTICS & LOCAL TELEMETRY            -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-analytics">
+    <div class="analytics-wrap">
+      <!-- Analytics Header & Folder Manager Bar -->
+      <div class="hero-action-bar analytics-hero-bar">
+        <div class="hero-copy">
+          <div class="hero-title" id="lbl-analytics-modal-title">📊 Analítica de Sesiones y Torneos Bo3</div>
+          <div class="muted-sm" id="lbl-analytics-sub">Registra tus partidas por carpeta de equipo en data/telemetry/ y detecta tendencias de precisión, leads y errores por fase.</div>
+        </div>
+        <div class="hero-cta-group">
+          <select id="analytics-team-select" class="prep-select-sm" title="Filtrar por carpeta de equipo"></select>
+          <div class="analytics-create-row">
+            <input type="text" id="analytics-new-team-input" class="analytics-folder-input" placeholder="Nueva carpeta (ej. mi_equipo_v1)" autocomplete="off" />
+            <button class="btn btn-emerald" id="btn-analytics-create-team" type="button">+ Crear</button>
+          </div>
+          <button class="btn btn-ghost" id="btn-analytics-toggle-guide" type="button">? Cómo funciona</button>
+          <button class="btn btn-ghost" id="btn-refresh-analytics" type="button">Actualizar</button>
+        </div>
+      </div>
+
+      <div class="muted-xs" id="analytics-action-msg" style="display:none"></div>
+
+      <!-- Interactive 3-Step Telemetry Walkthrough (auto-shown on empty state, toggleable anytime) -->
+      <div class="panel analytics-guide-panel" id="analytics-guide-panel" style="display:none">
+        <div class="panel-head">
+          <span class="panel-title" id="lbl-analytics-guide-title">🧭 Guía Rápida: Cómo usar Analítica y Telemetría de Sesiones</span>
+          <button class="btn btn-ghost btn-xs" id="btn-analytics-hide-guide" type="button">Ocultar</button>
+        </div>
+        <div class="panel-body">
+          <div class="analytics-steps-grid" id="analytics-guide-steps"></div>
+          <div class="analytics-guide-actions">
+            <button class="btn btn-greatball" id="btn-analytics-go-bo3" type="button">🧠 Ir a Bo3 Replay Coach &rarr;</button>
+            <span class="muted-xs" id="lbl-analytics-storage-note">Los CSVs se guardan 100% localmente en data/telemetry/&lt;equipo&gt;/battles_telemetry.csv (sin nube).</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics KPIs, Charts & History Stage -->
+      <div class="panel analytics-stage-panel">
+        <div class="panel-body analytics-body" id="analytics-dashboard-body">
+          <div class="muted-sm">Cargando telemetría...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- DEDICATED VIEW: REGULATION M-D META SCOUT (BASE64 HTML)            -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-md-scout">
+    <div class="prep-wrap">
+      <div class="prep-toolbar panel">
+        <div class="prep-toolbar-row">
+          <div class="prep-toolbar-group">
+            <button class="btn btn-ghost" id="btn-md-scout-back" type="button">&larr; Hub</button>
+            <strong class="prep-heading" id="lbl-md-scout-heading">🔮 Scout del Meta Regulation M-D (HTML Offline Base64)</strong>
+          </div>
+          <div class="prep-toolbar-group">
+            <a class="btn btn-greatball" id="btn-md-scout-download" href="/api/reg-md-scout?download=1">
+              <span id="lbl-md-scout-download">⬇ Descargar HTML Offline</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="panel prep-stage-panel">
+        <iframe id="md-scout-iframe" class="prep-iframe" src="about:blank" title="Regulation M-D Meta Scout Report"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bug Report Modal -->
   <div class="modal-backdrop" id="bug-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="lbl-bug-modal-title">
     <div class="modal-card">
       <div class="panel-head">
@@ -472,6 +902,54 @@
       </div>
     </div>
   </div>
+
+  <!-- Legal, IP Disclaimer & Third-Party Credits Modal -->
+  <div class="modal-backdrop" id="legal-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="lbl-legal-modal-title">
+    <div class="modal-card legal-modal-card">
+      <div class="panel-head">
+        <span class="panel-title" id="lbl-legal-modal-title">⚖ Aviso Legal, Propiedad Intelectual y Créditos de Terceros</span>
+        <button class="btn btn-ghost" id="btn-close-legal-modal" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="panel-body modal-body legal-modal-body" id="legal-modal-content"></div>
+    </div>
+  </div>
+
+  <!-- Persistent Global Fan-Made Legal, Community Thanks & Vendor Credits Footer -->
+  <footer class="studio-footer" id="studio-footer" aria-label="Legal notice, community thanks, and third-party credits">
+    <div class="footer-community-strip" id="footer-community-strip">
+      <div class="community-logos-pair">
+        <span class="community-chip" title="Pokémmunity MÉXICO">
+          <img src="/assets/community/pokemmunity.png" alt="Pokémmunity MÉXICO" />
+          <strong>Pokémmunity</strong>
+        </span>
+        <span class="community-chip" title="PokéMex">
+          <img src="/assets/community/pokemex.png" alt="PokéMex" />
+          <strong>PokéMex</strong>
+        </span>
+      </div>
+      <span class="community-thanks-text" id="lbl-footer-community">
+        Agradecimiento especial a los grupos Pokémmunity y PokéMex por su apoyo y comentarios para mejorar la app.
+      </span>
+    </div>
+    <div class="studio-footer-bottom">
+      <div class="studio-footer-left">
+        <span class="footer-fan-pill" id="lbl-footer-fan-pill">FAN-MADE · 100% NO COMERCIAL</span>
+        <span class="studio-footer-copy" id="lbl-footer-disclaimer">
+          Proyecto hecho por fans para fans, nunca monetizado. Pokémon, nombres y sprites © Nintendo / Creatures Inc. / GAME FREAK inc. / The Pokémon Company. Sin afiliación ni patrocinio oficial.
+        </span>
+      </div>
+      <div class="studio-footer-right">
+        <span class="studio-footer-credits" id="lbl-footer-credits">
+          Créditos: <a href="https://www.pokeos.com/" target="_blank" rel="noopener noreferrer">Pokéos</a> ·
+          <a href="https://github.com/smogon/damage-calc" target="_blank" rel="noopener noreferrer">@smogon/calc</a> ·
+          <a href="https://github.com/smogon/pokemon-showdown" target="_blank" rel="noopener noreferrer">Pokémon Showdown</a> ·
+          <a href="https://www.munchstats.com/" target="_blank" rel="noopener noreferrer">MunchStats</a> ·
+          PyTorch · DuckDB · SciPy/HiGHS · NumPy · MiniRacer
+        </span>
+        <button class="btn btn-ghost btn-xs" id="btn-open-legal-modal" type="button">⚖ Legal y Créditos</button>
+      </div>
+    </div>
+  </footer>
 </div>
 
 <script src="/static/app.js"></script>

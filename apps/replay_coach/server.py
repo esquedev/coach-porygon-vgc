@@ -36,6 +36,10 @@ from engine.prep_tools import (
     build_damage_matrix_html,
     build_speed_tiers_html,
 )
+from engine.solver.lead_matchup_solver import (
+    LeadMatchupConfig,
+    LeadMatchupSolver,
+)
 from engine.telemetry.extractor import (
     CSV_COLUMNS,
     TurnTelemetryRecord,
@@ -43,9 +47,14 @@ from engine.telemetry.extractor import (
 )
 from engine.terminology import export_glossary_payload
 from engine.vgc_tensor_core.state_machine import AnalysisCancelledError
+from engine.vgc_tensor_core.victory_equity import EQUITY_ENGINE_VERSION
 
 from .gpu_coach_engine import GPUReplayCoachEngine, compute_match_summary
-from .ots_db import OTSRosterDatabase, resolve_sprite_urls
+from .ots_db import (
+    OTSRosterDatabase,
+    compute_lead_lab_matchup_hash,
+    resolve_sprite_urls,
+)
 from .protocol_parser import (
     ParsedReplay,
     format_evless_ots_paste,
@@ -93,6 +102,15 @@ class ReplayCoachAppState:
         self._prep_cache_lock = threading.Lock()
         self._prep_cache: Dict[str, Dict[str, Any]] = {}
         self._prep_cache_order: List[str] = []
+        # Factored 90×90 Turn-1 Lead & Bring Lab state
+        self._lead_cancel_lock = threading.Lock()
+        self._lead_cancel_event: Optional[threading.Event] = None
+        self._lead_jobs_lock = threading.Lock()
+        self._lead_jobs: Dict[str, Dict[str, Any]] = {}
+        self._lead_jobs_order: List[str] = []
+        self.lead_ephemeral_t2_inference: Optional[SeriesSPInferenceReport] = None
+        self.lead_ephemeral_t2_spreads: Dict[str, Dict[str, int]] = {}
+        self._lead_solver: Optional[LeadMatchupSolver] = None
         # Warm SmogonChampionsCalc on the main thread so MiniRacer V8 teardown is always thread-safe
         get_champions_calc()
 
@@ -127,16 +145,42 @@ class ReplayCoachAppState:
             return False
 
     def list_telemetry_teams(self) -> List[str]:
-        """List available team folders under `data/telemetry/`."""
+        """List existing team folders under `data/telemetry/`."""
         teams: List[str] = []
         if TELEMETRY_ROOT.exists():
             for d in sorted(TELEMETRY_ROOT.iterdir()):
                 if d.is_dir() and not d.name.startswith("."):
                     teams.append(d.name)
-        for default_team in ("char_y_v4", "char_y_v3"):
-            if default_team not in teams:
-                teams.append(default_team)
         return teams
+
+    def create_telemetry_team(self, team_folder: str) -> Dict[str, Any]:
+        """Create a new local team folder under `data/telemetry/<team>/battles_telemetry.csv`."""
+        raw_name = (team_folder or "").strip().lower().replace(" ", "_")
+        clean_team = re.sub(r"[^a-zA-Z0-9_-]", "_", raw_name).strip("_")
+        if not clean_team or clean_team == "all":
+            raise ValueError("Provide a valid team folder name (letters, numbers, hyphens, or underscores).")
+
+        csv_path = TELEMETRY_ROOT / clean_team / "battles_telemetry.csv"
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        created = False
+        if not csv_path.exists() or csv_path.stat().st_size == 0:
+            with open(csv_path, mode="w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=CSV_COLUMNS)
+                writer.writeheader()
+            created = True
+
+        rel_csv = (
+            csv_path.relative_to(REPO_ROOT).as_posix()
+            if csv_path.is_relative_to(REPO_ROOT)
+            else csv_path.as_posix()
+        )
+        return {
+            "ok": True,
+            "team_folder": clean_team,
+            "csv_path": rel_csv,
+            "created": created,
+            "teams": self.list_telemetry_teams(),
+        }
 
     def _enrich_inference_payload(
         self,
@@ -626,7 +670,7 @@ class ReplayCoachAppState:
     def get_telemetry_session_summary(self, team_folder: Optional[str] = None) -> Dict[str, Any]:
         """Aggregate Bo3 / tournament session analytics from `data/telemetry/<team>/battles_telemetry.csv`."""
         teams = self.list_telemetry_teams()
-        req_team = (team_folder or "").strip() or (teams[0] if teams else "char_y_v4")
+        req_team = (team_folder or "").strip() or "all"
 
         csv_paths: List[Tuple[str, Path]] = []
         if req_team.lower() == "all":
@@ -801,7 +845,7 @@ class ReplayCoachAppState:
             if rep is None:
                 raise ValueError("No active replay loaded to export.")
 
-            clean_team = re.sub(r"[^a-zA-Z0-9_-]", "_", (team_folder or "char_y_v4").strip()) or "char_y_v4"
+            clean_team = re.sub(r"[^a-zA-Z0-9_-]", "_", (team_folder or "my_team").strip()) or "my_team"
             csv_path = TELEMETRY_ROOT / clean_team / "battles_telemetry.csv"
             csv_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1125,7 +1169,8 @@ class ReplayCoachAppState:
         if rep is None:
             return "<!doctype html><html><body style='background:#0f172a;color:#94a3b8;font-family:sans-serif;padding:24px'>No replay loaded yet. Complete Step 1 (Match Setup) to start.</body></html>"
 
-        escaped_log = rep.raw_log_text.replace("</script", r"<\/script")
+        escaped_log = re.sub(r"</script", r"<\/script", rep.raw_log_text, flags=re.IGNORECASE)
+        escaped_log = escaped_log.replace("<!--", r"<\!--")
         embed_src = (
             "/vendor/replay-embed.js"
             if (VENDOR_DIR / "replay-embed.js").exists()
@@ -1414,6 +1459,444 @@ class ReplayCoachAppState:
         with self._prep_cache_lock:
             return self._prep_cache.get(token)
 
+    # ------------------------------------------------------------------
+    # Factored 90×90 Turn-1 Lead & Bring Lab (Team-Preview Nash)
+    # ------------------------------------------------------------------
+
+    def _get_lead_solver(self) -> LeadMatchupSolver:
+        """Lazily initialize the shared `LeadMatchupSolver` bound to the active compute backend."""
+        with self.lock:
+            if self._lead_solver is None:
+                self._lead_solver = LeadMatchupSolver(
+                    repo=self.gpu_engine.sc.repo,
+                    device=self.gpu_engine.device_type,
+                )
+            return self._lead_solver
+
+    def start_new_lead_cancel_event(self) -> threading.Event:
+        """Cancel any previously running Lead Lab sweep and register a fresh cancel event."""
+        with self._lead_cancel_lock:
+            if self._lead_cancel_event is not None:
+                self._lead_cancel_event.set()
+            ev = threading.Event()
+            self._lead_cancel_event = ev
+            return ev
+
+    def cancel_active_lead_stream(self) -> bool:
+        """Abort any active `90 × 90` Lead Lab sweep cleanly between lead pairs/tiles."""
+        with self._lead_cancel_lock:
+            if self._lead_cancel_event is not None:
+                self._lead_cancel_event.set()
+                return True
+            return False
+
+    def infer_lead_lab_opponent(
+        self,
+        replays: Optional[Sequence[Dict[str, Any]]] = None,
+        pov_trainer: Optional[str] = None,
+        t1_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_ots_paste_text: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Solve exact clamped 66-SP bounds for Lead Lab Team 2 from 1–3 Bo3 scouting logs + OTS."""
+        raw_items: List[str] = []
+        for entry in list(replays or [])[:3]:
+            raw_txt = (
+                str(entry.get("raw_input") or "").strip()
+                if isinstance(entry, dict)
+                else str(entry or "").strip()
+            )
+            if raw_txt:
+                raw_items.append(raw_txt)
+        if not raw_items:
+            raise ValueError(
+                "Upload 1 to 3 Bo3 scouting Showdown replay logs to infer clamped 66-SP bounds for an EV-less opponent OTS."
+            )
+
+        prelim0 = parse_showdown_replay(raw_items[0], pov_trainer=pov_trainer or None, game_index=1)
+        resolved_pov = prelim0.trainer_1_name
+
+        paste1 = (t1_paste_text or "").strip()
+        if not paste1 and t1_roster_id:
+            r1 = self.ots_db.get_roster(str(t1_roster_id).strip())
+            paste1 = str(r1.get("paste_text") or "").strip() if r1 else ""
+        if not paste1:
+            r1_auto = self.ots_db.match_best_roster(prelim0.trainer_1_name, prelim0.trainer_1_preview)
+            paste1 = str(r1_auto.get("paste_text") or "").strip() if r1_auto else ""
+        t1_sets = self.ots_db.get_parsed_sets_by_species(paste1) if paste1 else {}
+        if not t1_sets and prelim0.trainer_1_showteam_ots:
+            t1_sets = dict(prelim0.trainer_1_showteam_ots)
+
+        parsed_replays: List[ParsedReplay] = []
+        t2_showteam_pooled: Dict[str, Any] = {}
+        for idx, raw_txt in enumerate(raw_items, 1):
+            pr = parse_showdown_replay(
+                raw_txt,
+                pov_trainer=resolved_pov,
+                trainer_1_ots_sets=t1_sets,
+                game_index=idx,
+            )
+            parsed_replays.append(pr)
+            for k, v in (pr.trainer_2_showteam_ots or {}).items():
+                if k not in t2_showteam_pooled:
+                    t2_showteam_pooled[k] = v
+
+        t2_ots_paste = (t2_ots_paste_text or "").strip()
+        if t2_ots_paste:
+            t2_ots_sets = self.ots_db.get_parsed_sets_by_species(t2_ots_paste)
+        else:
+            t2_ots_sets = t2_showteam_pooled
+
+        inferencer = OpponentSetInferencer()
+        report = inferencer.infer_series(
+            trainer_1_sets=t1_sets,
+            trainer_2_ots_sets=t2_ots_sets,
+            replays=parsed_replays,
+            trainer_1_name=prelim0.trainer_1_name,
+            trainer_2_name=prelim0.trainer_2_name,
+        )
+        default_spreads = {
+            inf.base_species: inf.default_spread.to_dict()
+            for inf in report.pokemon_inferences.values()
+        }
+        with self.lock:
+            self.lead_ephemeral_t2_inference = report
+            self.lead_ephemeral_t2_spreads = default_spreads
+
+        payload = self._enrich_inference_payload(report, override_spreads=default_spreads)
+        payload["ok"] = True
+        payload["games_pooled"] = len(parsed_replays)
+        payload["trainer_1_name"] = prelim0.trainer_1_name
+        payload["trainer_2_name"] = prelim0.trainer_2_name
+        return payload
+
+    def _resolve_lead_lab_inputs(
+        self,
+        t1_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_roster_id: Optional[str] = None,
+        t2_paste_text: Optional[str] = None,
+        t2_user_spreads: Optional[Dict[str, Dict[str, int]]] = None,
+    ) -> Tuple[str, str, str, str]:
+        """Resolve `(paste1, t1_label, paste2, t2_label)` from saved rosters, raw pastes, or Bo3 inference."""
+        paste1 = (t1_paste_text or "").strip()
+        t1_label = "Team 1 (trainer_1)"
+        if not paste1 and t1_roster_id:
+            r1 = self.ots_db.get_roster(str(t1_roster_id).strip())
+            if r1 is None:
+                raise ValueError(f"Saved DuckDB roster not found for trainer_1: '{t1_roster_id}'")
+            paste1 = str(r1.get("paste_text") or "").strip()
+            t1_label = str(r1.get("display_name") or r1.get("roster_id") or t1_label)
+        if not paste1:
+            raise ValueError("Select a saved DuckDB 66-SP team or paste a Full 66-SP team for trainer_1.")
+
+        paste2 = (t2_paste_text or "").strip()
+        t2_label = "Team 2 (trainer_2)"
+        with self.lock:
+            lead_inf = self.lead_ephemeral_t2_inference
+
+        if t2_user_spreads is not None and lead_inf is not None:
+            ok_sp, errs_sp = lead_inf.validate_user_spreads(t2_user_spreads)
+            if not ok_sp:
+                raise ValueError(
+                    "Invalid Team 2 66-SP allocation (scouting bounds cannot be overridden): "
+                    + " | ".join(errs_sp)
+                )
+            paste2 = lead_inf.build_paste(override_spreads=t2_user_spreads)
+            t2_label = f"{lead_inf.trainer_2_name} (Inferred 66-SP)"
+            with self.lock:
+                self.lead_ephemeral_t2_spreads = {k: dict(v) for k, v in t2_user_spreads.items()}
+        elif not paste2 and t2_roster_id:
+            r2 = self.ots_db.get_roster(str(t2_roster_id).strip())
+            if r2 is None:
+                raise ValueError(f"Saved DuckDB roster not found for trainer_2: '{t2_roster_id}'")
+            paste2 = str(r2.get("paste_text") or "").strip()
+            t2_label = str(r2.get("display_name") or r2.get("roster_id") or t2_label)
+        elif not paste2 and lead_inf is not None:
+            with self.lock:
+                sp_ov = self.lead_ephemeral_t2_spreads or None
+            paste2 = lead_inf.build_paste(override_spreads=sp_ov)
+            t2_label = f"{lead_inf.trainer_2_name} (Inferred 66-SP)"
+
+        if not paste2:
+            raise ValueError(
+                "Select a saved 66-SP team, paste a Full 66-SP team, or solve Team 2 66-SP from 1–3 Bo3 scouting logs."
+            )
+        return paste1, t1_label, paste2, t2_label
+
+    def lookup_lead_lab_vault(
+        self,
+        t1_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_roster_id: Optional[str] = None,
+        t2_paste_text: Optional[str] = None,
+        t2_user_spreads: Optional[Dict[str, Dict[str, int]]] = None,
+        preset: str = "balanced",
+    ) -> Dict[str, Any]:
+        """Instant DuckDB Matchup Vault cache-hit lookup for the selected T1 + T2 + preset."""
+        try:
+            paste1, _l1, paste2, _l2 = self._resolve_lead_lab_inputs(
+                t1_roster_id=t1_roster_id,
+                t1_paste_text=t1_paste_text,
+                t2_roster_id=t2_roster_id,
+                t2_paste_text=t2_paste_text,
+                t2_user_spreads=t2_user_spreads,
+            )
+        except Exception:
+            return {"ok": True, "found": False, "current_engine_version": EQUITY_ENGINE_VERSION}
+
+        hit = self.ots_db.lookup_lead_lab_run(
+            t1_paste=paste1,
+            t2_paste=paste2,
+            preset=str(preset or "balanced"),
+            engine_version=EQUITY_ENGINE_VERSION,
+        )
+        if not hit:
+            return {"ok": True, "found": False, "current_engine_version": EQUITY_ENGINE_VERSION}
+        return {"ok": True, "current_engine_version": EQUITY_ENGINE_VERSION, **hit}
+
+    def load_lead_lab_vault_run(self, run_id: str) -> Dict[str, Any]:
+        """Load a saved DuckDB Lead Lab matchup run and register a live `job_id` for deep Turn-1 audits."""
+        saved = self.ots_db.load_lead_lab_run(run_id, current_engine_version=EQUITY_ENGINE_VERSION)
+        if saved is None:
+            raise ValueError(f"Saved Lead Lab Vault run not found: '{run_id}'")
+
+        payload = dict(saved["payload"])
+        sprites_map = dict(payload.get("sprites") or {})
+        if not sprites_map:
+            for sp in list(saved["t1_species"]) + list(saved["t2_species"]):
+                sprites_map[sp] = resolve_sprite_urls(sp)
+
+        job_id = f"vault_{saved['run_id'][:14]}"
+        job_rec = {
+            "job_id": job_id,
+            "matchup_hash": saved["matchup_hash"],
+            "t1_label": saved["t1_name"],
+            "t2_label": saved["t2_name"],
+            "t1_paste": saved["t1_paste"],
+            "t2_paste": saved["t2_paste"],
+            "config": LeadMatchupConfig.from_preset(preset=saved["preset"], device=self._get_lead_solver().device_str),
+            "t1_species": saved["t1_species"],
+            "t2_species": saved["t2_species"],
+            "sprites": sprites_map,
+            "result": payload,
+        }
+        with self._lead_jobs_lock:
+            self._lead_jobs[job_id] = job_rec
+            if job_id not in self._lead_jobs_order:
+                self._lead_jobs_order.append(job_id)
+                while len(self._lead_jobs_order) > 16:
+                    evict = self._lead_jobs_order.pop(0)
+                    self._lead_jobs.pop(evict, None)
+
+        payload["job_id"] = job_id
+        payload["sprites"] = sprites_map
+        payload["t1_label"] = saved["t1_name"]
+        payload["t2_label"] = saved["t2_name"]
+        payload["vault_run_id"] = saved["run_id"]
+        payload["matchup_hash"] = saved["matchup_hash"]
+        payload["engine_version"] = saved["engine_version"]
+        payload["is_outdated"] = saved["is_outdated"]
+        payload["tags"] = saved["tags"]
+        payload["created_at"] = saved["created_at"]
+        payload["cached_deep_audit_keys"] = saved["cached_deep_audit_keys"]
+        payload["from_vault"] = True
+
+        return {
+            "ok": True,
+            "job_id": job_id,
+            "run_id": saved["run_id"],
+            "matchup_hash": saved["matchup_hash"],
+            "preset": saved["preset"],
+            "t1_name": saved["t1_name"],
+            "t2_name": saved["t2_name"],
+            "t1_paste": saved["t1_paste"],
+            "t2_paste": saved["t2_paste"],
+            "t1_species": saved["t1_species"],
+            "t2_species": saved["t2_species"],
+            "engine_version": saved["engine_version"],
+            "is_outdated": saved["is_outdated"],
+            "tags": saved["tags"],
+            "created_at": saved["created_at"],
+            "cached_deep_audit_keys": saved["cached_deep_audit_keys"],
+            "result": payload,
+        }
+
+    def create_lead_lab_job(
+        self,
+        t1_roster_id: Optional[str] = None,
+        t1_paste_text: Optional[str] = None,
+        t2_roster_id: Optional[str] = None,
+        t2_paste_text: Optional[str] = None,
+        t2_user_spreads: Optional[Dict[str, Dict[str, int]]] = None,
+        preset: str = "balanced",
+        require_explicit_spreads: bool = True,
+    ) -> Dict[str, Any]:
+        """Validate both 66-SP teams and register a streamable Factored `90 × 90` Lead Lab job."""
+        paste1, t1_label, paste2, t2_label = self._resolve_lead_lab_inputs(
+            t1_roster_id=t1_roster_id,
+            t1_paste_text=t1_paste_text,
+            t2_roster_id=t2_roster_id,
+            t2_paste_text=t2_paste_text,
+            t2_user_spreads=t2_user_spreads,
+        )
+
+        solver = self._get_lead_solver()
+        cfg = LeadMatchupConfig.from_preset(
+            preset=preset,
+            device=solver.device_str,
+            require_explicit_spreads=require_explicit_spreads,
+        )
+        # Validate spreads & precompile pools upfront so bare EV-less OTS fails immediately with HTTP 400
+        pool_t1 = solver._precompile_team_pool(
+            paste1, trainer_id="trainer_1", require_explicit_spreads=cfg.require_explicit_spreads
+        )
+        pool_t2 = solver._precompile_team_pool(
+            paste2, trainer_id="trainer_2", require_explicit_spreads=cfg.require_explicit_spreads
+        )
+
+        sprites_map: Dict[str, Dict[str, Any]] = {}
+        for mon, disp in zip(pool_t1.mons, pool_t1.display_species):
+            sprites_map[disp] = resolve_sprite_urls(disp, mon.item)
+        for mon, disp in zip(pool_t2.mons, pool_t2.display_species):
+            sprites_map[disp] = resolve_sprite_urls(disp, mon.item)
+
+        t1_leads = [[pool_t1.display_species[a], pool_t1.display_species[b]] for (a, b) in pool_t1.leads]
+        t2_leads = [[pool_t2.display_species[a], pool_t2.display_species[b]] for (a, b) in pool_t2.leads]
+
+        matchup_hash = compute_lead_lab_matchup_hash(paste1, paste2, cfg.preset, engine_version=EQUITY_ENGINE_VERSION)
+        seed_key = f"{time.time_ns()}|{cfg.preset}|{paste1[:64]}|{paste2[:64]}"
+        job_id = hashlib.sha256(seed_key.encode("utf-8")).hexdigest()[:20]
+
+        job_rec = {
+            "job_id": job_id,
+            "matchup_hash": matchup_hash,
+            "t1_label": t1_label,
+            "t2_label": t2_label,
+            "t1_paste": paste1,
+            "t2_paste": paste2,
+            "config": cfg,
+            "t1_species": list(pool_t1.display_species),
+            "t2_species": list(pool_t2.display_species),
+            "t1_leads": t1_leads,
+            "t2_leads": t2_leads,
+            "num_t1_modes": len(pool_t1.modes),
+            "num_t2_modes": len(pool_t2.modes),
+            "total_lead_pairs": len(t1_leads) * len(t2_leads),
+            "sprites": sprites_map,
+            "result": None,
+        }
+        with self._lead_jobs_lock:
+            self._lead_jobs[job_id] = job_rec
+            self._lead_jobs_order.append(job_id)
+            while len(self._lead_jobs_order) > 16:
+                evict = self._lead_jobs_order.pop(0)
+                self._lead_jobs.pop(evict, None)
+
+        return {
+            "ok": True,
+            "job_id": job_id,
+            "matchup_hash": matchup_hash,
+            "preset": cfg.preset,
+            "device": self.gpu_engine.device_name,
+            "device_type": self.gpu_engine.device_type,
+            "t1_label": t1_label,
+            "t2_label": t2_label,
+            "t1_species": job_rec["t1_species"],
+            "t2_species": job_rec["t2_species"],
+            "t1_leads": t1_leads,
+            "t2_leads": t2_leads,
+            "num_t1_modes": job_rec["num_t1_modes"],
+            "num_t2_modes": job_rec["num_t2_modes"],
+            "total_lead_pairs": job_rec["total_lead_pairs"],
+            "sprites": sprites_map,
+        }
+
+    def get_lead_lab_job(self, job_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a registered Lead Lab job by `job_id`."""
+        if not job_id:
+            return None
+        with self._lead_jobs_lock:
+            return self._lead_jobs.get(job_id)
+
+    def run_lead_lab_deep_turn1(
+        self,
+        job_id: str,
+        mode_1_idx: int,
+        mode_2_idx: int,
+        num_mc: int = 128,
+        force_recompute: bool = False,
+    ) -> Dict[str, Any]:
+        """Run (or serve cached) full unpruned Turn-1 GPU audit (`K=128`) on one exact 4v4 matchup."""
+        job = self.get_lead_lab_job(job_id)
+        if job is None:
+            raise ValueError(f"Lead Lab session expired or not found: '{job_id}'")
+
+        m_hash = str(job.get("matchup_hash") or "")
+        t1_mk = f"m{int(mode_1_idx)}"
+        t2_mk = f"m{int(mode_2_idx)}"
+
+        if m_hash and not force_recompute:
+            cached = self.ots_db.get_cached_deep_audit(
+                matchup_hash=m_hash,
+                t1_mode_key=t1_mk,
+                t2_mode_key=t2_mk,
+                engine_version=EQUITY_ENGINE_VERSION,
+            )
+            if cached is not None:
+                return cached
+
+        solver = self._get_lead_solver()
+        board, m1, m2, events = solver.build_turn1_battle_state(
+            trainer_1_paste=job["t1_paste"],
+            trainer_2_paste=job["t2_paste"],
+            mode_1_idx=int(mode_1_idx),
+            mode_2_idx=int(mode_2_idx),
+        )
+        audit = self.gpu_engine.analyze_compiled_turn1(
+            comp=board,
+            turn0_events=events,
+            num_mc=max(32, min(256, int(num_mc or 128))),
+        )
+        audit["mode_1"] = m1.to_dict()
+        audit["mode_2"] = m2.to_dict()
+        audit["sprites"] = job["sprites"]
+        audit["from_vault_cache"] = False
+        audit["audit_cell_key"] = f"{t1_mk}__{t2_mk}"
+        if m_hash:
+            try:
+                self.ots_db.save_cached_deep_audit(
+                    matchup_hash=m_hash,
+                    t1_mode_key=t1_mk,
+                    t2_mode_key=t2_mk,
+                    payload=audit,
+                    engine_version=EQUITY_ENGINE_VERSION,
+                )
+            except Exception:
+                pass
+        return audit
+
+
+MAX_JSON_BODY_BYTES = 10 * 1024 * 1024  # 10 MiB hard cap against local memory DoS
+_ALLOWED_LOOPBACK_HOSTS = {"127.0.0.1", "localhost", "::1", "[::1]"}
+
+
+class _PayloadTooLargeError(ValueError):
+    """Raised when an HTTP request body exceeds `MAX_JSON_BODY_BYTES`."""
+
+
+def _extract_hostname(host_or_origin: str) -> str:
+    """Extract normalized lowercase hostname from a `Host`, `Origin`, or `Referer` header."""
+    raw = str(host_or_origin or "").strip()
+    if not raw:
+        return ""
+    if "://" in raw:
+        parsed = urllib.parse.urlparse(raw)
+        return (parsed.hostname or "").lower()
+    # Bare Host header (`127.0.0.1:8765`, `localhost:8765`, `[::1]:8765`)
+    parsed = urllib.parse.urlparse(f"http://{raw}")
+    return (parsed.hostname or "").lower()
+
 
 def make_handler(app_state: ReplayCoachAppState):
     """Create a request handler class bound to the shared `ReplayCoachAppState`."""
@@ -1423,6 +1906,32 @@ def make_handler(app_state: ReplayCoachAppState):
 
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
             return
+
+        def _send_security_headers(self) -> None:
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("X-Frame-Options", "SAMEORIGIN")
+            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+
+        def _is_trusted_host(self) -> bool:
+            """Defend against DNS rebinding by enforcing a strict loopback Host allowlist."""
+            host_hdr = self.headers.get("Host", "")
+            if not host_hdr:
+                return True
+            return _extract_hostname(host_hdr) in _ALLOWED_LOOPBACK_HOSTS
+
+        def _is_trusted_origin(self) -> bool:
+            """Defend against cross-site localhost CSRF on state-changing POST requests."""
+            fetch_site = (self.headers.get("Sec-Fetch-Site") or "").strip().lower()
+            if fetch_site == "cross-site":
+                return False
+            origin_hdr = self.headers.get("Origin", "")
+            if origin_hdr:
+                return _extract_hostname(origin_hdr) in _ALLOWED_LOOPBACK_HOSTS
+            referer_hdr = self.headers.get("Referer", "")
+            if referer_hdr:
+                return _extract_hostname(referer_hdr) in _ALLOWED_LOOPBACK_HOSTS
+            return True
 
         def _send_bytes(
             self,
@@ -1434,6 +1943,7 @@ def make_handler(app_state: ReplayCoachAppState):
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store")
+            self._send_security_headers()
             self.end_headers()
             self.wfile.write(data)
 
@@ -1442,20 +1952,33 @@ def make_handler(app_state: ReplayCoachAppState):
             self._send_bytes(raw, "application/json; charset=utf-8", status=status)
 
         def _read_json_body(self) -> Dict[str, Any]:
-            length = int(self.headers.get("Content-Length", "0"))
+            raw_len = (self.headers.get("Content-Length") or "0").strip()
+            length = int(raw_len)
+            if length < 0:
+                raise ValueError("Negative Content-Length")
+            if length > MAX_JSON_BODY_BYTES:
+                raise _PayloadTooLargeError(f"Request body exceeds {MAX_JSON_BODY_BYTES} bytes")
             raw = self.rfile.read(length) if length > 0 else b"{}"
             return json.loads(raw.decode("utf-8"))
 
         def _serve_file(self, base_dir: Path, rel_path: str) -> None:
-            safe_rel = urllib.parse.unquote(rel_path).lstrip("/")
-            full = (base_dir / safe_rel).resolve()
-            if not str(full).startswith(str(base_dir.resolve())) or not full.is_file():
+            unquoted = urllib.parse.unquote(rel_path)
+            if "\x00" in unquoted or "\\" in unquoted:
+                self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
+                return
+            safe_rel = unquoted.lstrip("/")
+            base_resolved = base_dir.resolve()
+            full = (base_resolved / safe_rel).resolve()
+            if not full.is_relative_to(base_resolved) or not full.is_file():
                 self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
                 return
             ctype, _ = mimetypes.guess_type(str(full))
             self._send_bytes(full.read_bytes(), ctype or "application/octet-stream")
 
         def do_GET(self) -> None:
+            if not self._is_trusted_host():
+                self._send_json({"error": "Forbidden host"}, status=HTTPStatus.FORBIDDEN)
+                return
             parsed = urllib.parse.urlparse(self.path)
             path = parsed.path
             qs = urllib.parse.parse_qs(parsed.query)
@@ -1491,6 +2014,29 @@ def make_handler(app_state: ReplayCoachAppState):
                 with app_state.lock:
                     html_doc = app_state.render_official_showdown_player_html()
                 self._send_bytes(html_doc.encode("utf-8"), "text/html; charset=utf-8")
+                return
+            if path == "/api/reg-md-scout":
+                report_path = REPO_ROOT / "reports" / "reg_md_meta_scout.html"
+                if not report_path.is_file():
+                    self._send_json(
+                        {"error": "Meta scout report not found. Run scripts/generate_reg_md_meta_report.py."},
+                        status=HTTPStatus.NOT_FOUND,
+                    )
+                    return
+                data = report_path.read_bytes()
+                if qs.get("download", ["0"])[0] in ("1", "true", "yes"):
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header(
+                        "Content-Disposition",
+                        'attachment; filename="CoachPorygon_Reg_MD_Meta_Scout.html"',
+                    )
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(data)
+                else:
+                    self._send_bytes(data, "text/html; charset=utf-8")
                 return
             if path == "/api/prep-tools/preview":
                 token = str(qs.get("token", [""])[0]).strip()
@@ -1614,13 +2160,120 @@ def make_handler(app_state: ReplayCoachAppState):
                 _write_sse("done", summary_payload)
                 return
 
+            if path == "/api/lead-lab/stream":
+                job_id = str(qs.get("job_id", [""])[0]).strip()
+                job = app_state.get_lead_lab_job(job_id)
+                if job is None:
+                    self._send_json({"error": "Lead Lab job not found or expired"}, status=HTTPStatus.NOT_FOUND)
+                    return
+
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache")
+                self.send_header("Connection", "close")
+                self.end_headers()
+
+                def _write_lead_sse(event_name: str, payload_obj: Any) -> bool:
+                    try:
+                        msg = f"event: {event_name}\ndata: {json.dumps(payload_obj, ensure_ascii=False)}\n\n"
+                        self.wfile.write(msg.encode("utf-8"))
+                        self.wfile.flush()
+                        return True
+                    except (BrokenPipeError, ConnectionResetError):
+                        return False
+
+                cancel_event = app_state.start_new_lead_cancel_event()
+                solver = app_state._get_lead_solver()
+
+                def _on_cell(cell_payload: Dict[str, Any]) -> None:
+                    if not _write_lead_sse("cell", cell_payload):
+                        cancel_event.set()
+
+                try:
+                    result = solver.solve_90x90_matchup(
+                        trainer_1_paste=job["t1_paste"],
+                        trainer_2_paste=job["t2_paste"],
+                        config=job["config"],
+                        progress_cb=_on_cell,
+                        cancel_event=cancel_event,
+                    )
+                    res_dict = result.to_dict()
+                    res_dict["job_id"] = job_id
+                    res_dict["sprites"] = job["sprites"]
+                    res_dict["t1_label"] = job["t1_label"]
+                    res_dict["t2_label"] = job["t2_label"]
+                    res_dict["t1_species"] = job["t1_species"]
+                    res_dict["t2_species"] = job["t2_species"]
+                    res_dict["engine_version"] = EQUITY_ENGINE_VERSION
+                    res_dict["from_vault"] = False
+                    try:
+                        saved_meta = app_state.ots_db.save_lead_lab_run(
+                            t1_name=job["t1_label"],
+                            t2_name=job["t2_label"],
+                            t1_paste=job["t1_paste"],
+                            t2_paste=job["t2_paste"],
+                            preset=job["config"].preset,
+                            result_payload=res_dict,
+                            engine_version=EQUITY_ENGINE_VERSION,
+                        )
+                        res_dict["vault_run_id"] = saved_meta["run_id"]
+                        res_dict["matchup_hash"] = saved_meta["matchup_hash"]
+                        res_dict["cached_deep_audit_keys"] = saved_meta["cached_deep_audit_keys"]
+                    except Exception:
+                        res_dict["matchup_hash"] = job.get("matchup_hash", "")
+                        res_dict["cached_deep_audit_keys"] = []
+                    job["result"] = res_dict
+                    _write_lead_sse("done", res_dict)
+                except AnalysisCancelledError:
+                    _write_lead_sse("cancelled", {"job_id": job_id})
+                except (BrokenPipeError, ConnectionResetError):
+                    cancel_event.set()
+                except Exception as exc:
+                    _write_lead_sse("error", {"job_id": job_id, "error": str(exc)})
+                return
+
+            if path == "/api/lead-lab/vault":
+                try:
+                    q_s = str(qs.get("q", [""])[0])
+                    t1_s = str(qs.get("t1_name", [""])[0])
+                    adv_s = str(qs.get("advantage", [""])[0])
+                    lim_i = int(qs.get("limit", ["60"])[0] or 60)
+                    res = app_state.ots_db.search_lead_lab_runs(
+                        q=q_s,
+                        t1_name=t1_s,
+                        advantage=adv_s,
+                        limit=lim_i,
+                        current_engine_version=EQUITY_ENGINE_VERSION,
+                    )
+                    self._send_json({"ok": True, **res})
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+
+            if path == "/api/lead-lab/vault/load":
+                try:
+                    run_id = str(qs.get("run_id", [""])[0]).strip()
+                    res = app_state.load_lead_lab_vault_run(run_id)
+                    self._send_json(res)
+                except ValueError as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.NOT_FOUND)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+
             self._send_json({"error": "Not found"}, status=HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:
+            if not self._is_trusted_host() or not self._is_trusted_origin():
+                self._send_json({"error": "Forbidden cross-origin or untrusted host request"}, status=HTTPStatus.FORBIDDEN)
+                return
             parsed = urllib.parse.urlparse(self.path)
             path = parsed.path
             try:
                 body = self._read_json_body()
+            except _PayloadTooLargeError as exc:
+                self._send_json({"error": str(exc)}, status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return
             except Exception as exc:
                 self._send_json({"error": f"Invalid JSON: {exc}"}, status=HTTPStatus.BAD_REQUEST)
                 return
@@ -1765,10 +2418,107 @@ def make_handler(app_state: ReplayCoachAppState):
                     self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
+            if path == "/api/lead-lab/infer-opponent":
+                try:
+                    res = app_state.infer_lead_lab_opponent(
+                        replays=body.get("replays") or [],
+                        pov_trainer=body.get("pov_trainer"),
+                        t1_roster_id=body.get("t1_roster_id"),
+                        t1_paste_text=body.get("t1_paste_text"),
+                        t2_ots_paste_text=body.get("t2_ots_paste_text"),
+                    )
+                    self._send_json(res)
+                except MissingOTSError as exc:
+                    self._send_json(
+                        {"ok": False, "missing_ots": True, "error": str(exc)},
+                        status=HTTPStatus.UNPROCESSABLE_ENTITY,
+                    )
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/start":
+                try:
+                    res = app_state.create_lead_lab_job(
+                        t1_roster_id=body.get("t1_roster_id"),
+                        t1_paste_text=body.get("t1_paste_text"),
+                        t2_roster_id=body.get("t2_roster_id"),
+                        t2_paste_text=body.get("t2_paste_text"),
+                        t2_user_spreads=body.get("t2_user_spreads"),
+                        preset=str(body.get("preset") or "balanced"),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/cancel":
+                cancelled = app_state.cancel_active_lead_stream()
+                self._send_json({"ok": True, "cancelled": cancelled})
+                return
+
+            if path == "/api/lead-lab/lookup":
+                try:
+                    res = app_state.lookup_lead_lab_vault(
+                        t1_roster_id=body.get("t1_roster_id"),
+                        t1_paste_text=body.get("t1_paste_text"),
+                        t2_roster_id=body.get("t2_roster_id"),
+                        t2_paste_text=body.get("t2_paste_text"),
+                        t2_user_spreads=body.get("t2_user_spreads"),
+                        preset=str(body.get("preset") or "balanced"),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/vault/tag":
+                try:
+                    run_id = str(body.get("run_id") or "").strip()
+                    tags = str(body.get("tags") or "")
+                    updated = app_state.ots_db.update_lead_lab_tags(run_id, tags)
+                    self._send_json({"ok": updated, "run_id": run_id, "tags": tags.strip()[:240]})
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/vault/delete":
+                try:
+                    run_id = str(body.get("run_id") or "").strip()
+                    deleted = app_state.ots_db.delete_lead_lab_run(run_id)
+                    self._send_json({"ok": deleted, "deleted": deleted, "run_id": run_id})
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/deep-turn1":
+                try:
+                    res = app_state.run_lead_lab_deep_turn1(
+                        job_id=str(body.get("job_id") or "").strip(),
+                        mode_1_idx=int(body.get("mode_1_idx", 0)),
+                        mode_2_idx=int(body.get("mode_2_idx", 0)),
+                        num_mc=int(body.get("num_mc") or 128),
+                        force_recompute=bool(body.get("force_recompute", False)),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/telemetry/create-team":
+                try:
+                    res = app_state.create_telemetry_team(
+                        team_folder=str(body.get("team_folder") or ""),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
             if path == "/api/telemetry/export":
                 try:
                     res = app_state.export_match_telemetry_csv(
-                        team_folder=str(body.get("team_folder") or "char_y_v4"),
+                        team_folder=str(body.get("team_folder") or "my_team"),
                         turn_results=body.get("turn_results") or {},
                         lang=str(body.get("lang") or "es"),
                         style=str(body.get("style") or "vgc"),

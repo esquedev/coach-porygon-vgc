@@ -58,7 +58,7 @@ _WEATHER_MAP = {
     "sandstorm": "Sand",
     "snow": "Snow",
     "snowscape": "Snow",
-    "hail": "Snow",
+    "hail": "Snow",  # Legacy Showdown replay compatibility
     "none": None,
 }
 
@@ -1142,7 +1142,7 @@ def parse_showdown_replay(
                     is_crit_hit = tgt_key in current_move_ctx["pending_crits"]
                     existing_obs: Optional[DamageObservation] = current_move_ctx["obs_by_target"].get(tgt_key)
                     if existing_obs is not None:
-                        # Multi-hit move (Dual Wingbeat, Scale Shot, Surging Strikes, etc.)
+                        # Multi-hit move (Dual Wingbeat, Scale Shot, Population Bomb, etc.)
                         existing_obs.hits += 1
                         existing_obs.hp_pct_after = hp_pct
                         existing_obs.damage_pct = max(0.0, existing_obs.hp_pct_before - hp_pct)

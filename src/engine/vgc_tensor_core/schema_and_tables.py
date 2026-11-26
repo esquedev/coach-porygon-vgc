@@ -5,16 +5,16 @@ Defines the exact tensor dimensions, feature slice indices (`FieldIdx`, `MonIdx`
 `MoveIdx`), and constant linear-algebra operator matrices for the One-Turn VGC
 Tensor Engine under `trainer_1` and `trainer_2` semantics:
 
-1. Global Field Tensor `F`: shape `[..., 24]`
-2. 8-Slot Unified Roster Tensor `P`: shape `[..., 8, 87]`
+1. Global Field Tensor `F`: shape `[..., 26]`
+2. 8-Slot Unified Roster Tensor `P`: shape `[..., 8, 96]`
    - Slots 0, 1: `trainer_1` Active (`SLOT_TRAINER_1_A`, `SLOT_TRAINER_1_B`)
    - Slots 2, 3: `trainer_1` Bench  (`SLOT_TRAINER_1_BENCH1`, `SLOT_TRAINER_1_BENCH2`)
    - Slots 4, 5: `trainer_2` Active (`SLOT_TRAINER_2_A`, `SLOT_TRAINER_2_B`)
    - Slots 6, 7: `trainer_2` Bench  (`SLOT_TRAINER_2_BENCH1`, `SLOT_TRAINER_2_BENCH2`)
-3. 8-Slot Programmatic Move Tensor `M_moves`: shape `[..., 8, 4, 59]`
+3. 8-Slot Programmatic Move Tensor `M_moves`: shape `[..., 8, 4, 60]`
    - Compiled dynamically on the fly from Showdown's `moves.jsonl` via in-memory
      DuckDB (`VGCDataRegistry`).
-   - Includes 59 channels covering Base Power, Accuracy, Priority, Target Type,
+   - Includes 60 channels covering Base Power, Accuracy, Priority, Target Type,
      Crit Stage (`willCrit`), 18-Type One-Hot, 3-Category One-Hot, 7 Stat Stage
      Deltas + Chance + Self/Target flag, 7 Status Procs + Chance, Recoil/Drain/Heal,
      Flinch Chance, Protect Type, Switch Mode, Field Op ID, Turn-1 Gate, Sound Flag,
@@ -205,6 +205,7 @@ class ItemID(IntEnum):
     CHESTO_BERRY = 50
     SHELL_BELL = 51
     BRIGHT_POWDER = 52
+    QUICK_CLAW = 53
 
 
 # Mapping from ItemID type-resist berries to their resisted type index in CANONICAL_TYPES
@@ -385,6 +386,11 @@ class AbilityID(IntEnum):
     SPICY_SPRAY = 112
     STALWART = 113
     INNARDS_OUT = 114
+    OBLIVIOUS = 115
+    LIMBER = 116
+    UNAWARE = 117
+    DISGUISE = 118
+    WATER_BUBBLE = 119
 
 
 class TargetType(IntEnum):
@@ -429,6 +435,19 @@ class FieldOpID(IntEnum):
     YAWN = 26
     PERISH_SONG = 27
     EXPLOSION = 28
+    TAUNT = 29
+    UPPER_HAND = 30
+    EXPANDING_FORCE = 31
+    KNOCK_OFF = 32
+    FREEZE_DRY = 33
+    DIRE_CLAW = 34
+    TOXIC_SPIKES = 35
+    HAZARD_CLEAR = 36
+    STOMPING_TANTRUM = 37
+    THROAT_CHOP = 38
+    GLAIVE_RUSH = 39
+    CHARGE = 40
+    PHANTOM_FORCE = 41
     # Flag-carrier codes (zero conflict with active FieldOpID moves in DuckDB `moves`)
     FLAG_PULSE = 100
     FLAG_BITE = 101
@@ -467,12 +486,12 @@ SLOT_TRAINER_2_BENCH1: int = 6
 SLOT_TRAINER_2_BENCH2: int = 7
 
 
-# --- A. Global Field Tensor F: shape [..., 24] ---
-FIELD_DIM: int = 24
+# --- A. Global Field Tensor F: shape [..., 26] ---
+FIELD_DIM: int = 26
 
 
 class FieldIdx:
-    """Exact indices for the 24-element Global Field Tensor `F`."""
+    """Exact indices for the 26-element Global Field Tensor `F`."""
 
     # 0..4: Weather One-Hot [Clear, Sun, Rain, Sand, Snow]
     WEATHER_START: int = 0
@@ -502,13 +521,17 @@ class FieldIdx:
     TRAINER_2_AURORA_VEIL_TURNS: int = 22
     TRAINER_2_MEGA_USED: int = 23
 
+    # 24..25: Entry Hazards — Toxic Spikes layers in {0.0, 1.0, 2.0}
+    TRAINER_1_TOXIC_SPIKES: int = 24
+    TRAINER_2_TOXIC_SPIKES: int = 25
 
-# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 88] ---
-MON_DIM: int = 88
+
+# --- B. 8-Slot Unified Roster Tensor P: shape [..., 8, 96] ---
+MON_DIM: int = 96
 
 
 class MonIdx:
-    """Exact indices for the 88-Float Per-Pokémon Feature Vector `[..., 8, 88]`."""
+    """Exact indices for the 96-Float Per-Pokémon Feature Vector `[..., 8, 96]`."""
 
     # 0..2 (3 floats): HP Channels
     HP_CUR: int = 0
@@ -591,6 +614,14 @@ class MonIdx:
     MEGA_TYPE2: int = 85          # Type index 0..17 for Mega secondary type (or -1.0 if single-type)
     ITEM_BOOST_TYPE: int = 86     # Type index 0..17 boosted by held type-boosting item (or -1.0 if none)
     MUST_RECHARGE: int = 87       # 1.0 if Pokémon must spend this turn recharging (Hyper Beam, Giga Impact, etc.)
+    DISGUISE_INTACT: int = 88     # 1.0 while Mimikyu's Disguise is intact; 0.0 once busted (persists across switches)
+    LAST_MOVE_FAILED: int = 89    # 1.0 if previous turn's action failed (doubles Stomping Tantrum / Temper Flare 75->150 BP)
+    CHARGED_MOVE_IDX: int = 90    # 0.0 if idle; 1.0..4.0 = (move_idx + 1) when finished Turn-1 charge (Electro Shot/Solar Beam/Phantom Force)
+    SEMI_INVULN: int = 91         # 1.0 while vanished on Turn 1 of Phantom Force / Fly / Dig / Dive / Bounce
+    THROAT_CHOP_TURNS: int = 92   # Remaining turns Sound moves are blocked (2.0 -> 0.0)
+    YAWN_ACTIVE: int = 93         # 0.0 none, 1.0 drowsy inflicted this turn, 2.0 falls asleep at End of Turn
+    GLAIVE_RUSH_VULN: int = 94    # 1.0 after using Glaive Rush until next move (incoming hits 2.0x & bypass accuracy)
+    CHARGE_ACTIVE: int = 95       # 1.0 after using Charge (2.0x BP on next Electric move)
 
 
 # --- C. 8-Slot Programmatic Move Tensor M_moves: shape [..., 8, 4, 60] ---
@@ -756,6 +787,9 @@ def build_bilinear_lookup_tables(device: Optional[Any] = None) -> BilinearLookup
     switch_persist_np[MonIdx.HELPING_HAND_MULT] = 1.0
     switch_persist_np[MonIdx.UNBURDEN_ACTIVE] = 0.0
     switch_persist_np[MonIdx.MUST_RECHARGE] = 0.0
+    # MonIdx.DISGUISE_INTACT (88) intentionally stays 1.0 so busted/intact Disguise persists across switches.
+    # All 2-turn volatile states (89..95) reset cleanly to 0.0 on switch-out.
+    switch_persist_np[MonIdx.LAST_MOVE_FAILED:MON_DIM] = 0.0
 
     # Branchless lookup table from ItemID (0..63) -> resisted type index (0..17) or -1
     resist_berry_lut_np = np.full((64,), -1, dtype=np.int64)
@@ -897,7 +931,7 @@ def apply_switch_permutation(
     slot_b: Any,
     tables: BilinearLookupTables,
 ) -> Tuple[Any, Any]:
-    """Swap Active Slot `slot_a` with Bench Slot `slot_b` across `P` `[..., 8, 87]` and `M_moves` `[..., 8, 4, 59]`."""
+    """Swap Active Slot `slot_a` with Bench Slot `slot_b` across `P` `[..., 8, 89]` and `M_moves` `[..., 8, 4, 60]`."""
     perm_mat = tables.p_switch_perms[slot_a, slot_b]
     new_roster = _einsum("...ij,...jk->...ik", perm_mat, roster_tensor)
     new_moves = _einsum("...ij,...jmk->...imk", perm_mat, moves_tensor)

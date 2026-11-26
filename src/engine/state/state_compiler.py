@@ -406,14 +406,45 @@ class TurnStateCompiler:
         )
         dex_entry = self.repo.pokedex.get(current_dex_species, {})
         forme_str = str(dex_entry.get("forme") or "")
-        if "Mega" in current_dex_species or forme_str.startswith("Mega"):
-            base_species = str(
-                dex_entry.get("baseSpecies")
-                or pkm.base_species
-                or current_dex_species.split("-Mega")[0]
-            )
+        is_mega_dex_forme = "Mega" in current_dex_species or forme_str.startswith("Mega")
+
+        # Anti Regulation M-C Hallucination Guard:
+        # Under Champions rules, Mega Evolution resolves at Turn 1 Barrier 2 (Priority +5.5),
+        # never on Turn 0. If a team paste writes `Garchomp-Mega-Z @ Garchompite Z` or
+        # `Floette-Mega @ Floettite` with `is_mega=False`, enter Turn 0 in the true pre-Mega
+        # base form (`Garchomp`, `Floette-Eternal`, `Meowstic-F`, etc.) so Turn-0 speed order
+        # and pre-Mega stats/typing are cartridge-accurate while Mega stats stay primed.
+        if not pkm.is_mega and is_mega_dex_forme:
+            if current_dex_species == "Floette-Mega" and "Floette-Eternal" in self.repo.pokedex:
+                pre_mega_species = "Floette-Eternal"
+            elif current_dex_species == "Meowstic-F-Mega" and "Meowstic-F" in self.repo.pokedex:
+                pre_mega_species = "Meowstic-F"
+            else:
+                pre_mega_species = str(
+                    dex_entry.get("baseSpecies")
+                    or current_dex_species.split("-Mega")[0]
+                )
+            if pre_mega_species in self.repo.pokedex:
+                current_dex_species = pre_mega_species
+                dex_entry = self.repo.pokedex.get(current_dex_species, {})
+                forme_str = str(dex_entry.get("forme") or "")
+                is_mega_dex_forme = False
+
+        if is_mega_dex_forme:
+            if current_dex_species == "Floette-Mega" and "Floette-Eternal" in self.repo.pokedex:
+                base_species = "Floette-Eternal"
+            elif current_dex_species == "Meowstic-F-Mega" and "Meowstic-F" in self.repo.pokedex:
+                base_species = "Meowstic-F"
+            else:
+                base_species = str(
+                    dex_entry.get("baseSpecies")
+                    or pkm.base_species
+                    or current_dex_species.split("-Mega")[0]
+                )
         else:
             base_species = current_dex_species
+
+        family_base_species = str(dex_entry.get("baseSpecies") or base_species)
 
         # Types
         raw_types = dex_entry.get("types") or ["Normal"]
@@ -460,13 +491,21 @@ class TurnStateCompiler:
         stone_candidate = item or mega_stone
         if stone_candidate:
             target_mega = self.repo.mega_stone_to_species.get(stone_candidate)
+            if (
+                target_mega == "Meowstic-M-Mega"
+                and current_dex_species == "Meowstic-F"
+                and "Meowstic-F-Mega" in self.repo.pokedex
+            ):
+                target_mega = "Meowstic-F-Mega"
             if target_mega:
                 mega_dex = self.repo.pokedex.get(target_mega, {})
                 mega_base = str(mega_dex.get("baseSpecies") or "")
-                if (
-                    mega_base.lower() == base_species.lower()
-                    or mega_base.lower() == current_dex_species.lower()
-                ):
+                allowed_bases = {
+                    base_species.lower(),
+                    current_dex_species.lower(),
+                    family_base_species.lower(),
+                }
+                if mega_base.lower() in allowed_bases:
                     mega_stone = stone_candidate
                     mega_target_species = target_mega
                     mega_base_stats = dict(self.repo.get_base_stats(target_mega))

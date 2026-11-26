@@ -53,6 +53,7 @@ from .rng_engine import (
     RNGEventID,
     counter_uniform_0_100_numpy,
     counter_uniform_0_100_torch,
+    spin_wheel_gate,
 )
 from .schema_and_tables import (
     AbilityID,
@@ -76,6 +77,7 @@ from .schema_and_tables import (
     SLOT_TRAINER_2_B,
     SLOT_TRAINER_2_BENCH1,
     SLOT_TRAINER_2_BENCH2,
+    STATUS_TO_IDX,
     TERRAIN_TO_IDX,
     TYPE_TO_IDX,
     WEATHER_TO_IDX,
@@ -501,6 +503,7 @@ def _execute_speed_sorted_entry_abilities(
                     is_mirror_armor = (opp_abil == float(AbilityID.MIRROR_ARMOR)) * 1.0
                     opp_abil_immune = _clamp(
                         ((opp_abil == float(AbilityID.INNER_FOCUS)) * 1.0)
+                        + ((opp_abil == float(AbilityID.OBLIVIOUS)) * 1.0)
                         + ((opp_abil == float(AbilityID.SCRAPPY)) * 1.0)
                         + ((opp_abil == float(AbilityID.GOOD_AS_GOLD)) * 1.0)
                         + ((opp_abil == float(AbilityID.CLEAR_BODY)) * 1.0)
@@ -739,6 +742,9 @@ def execute_barrier1_switches(
         M_moves[..., bench_slot, :, :] = (1.0 - sw_gate_m2) * m_bench + sw_gate_m2 * m_act
 
         P[..., act_slot, MonIdx.ACTIVE_TURNS] = P[..., act_slot, MonIdx.ACTIVE_TURNS] * (1.0 - sw_gate)
+
+        # Entry Hazard: Toxic Spikes resolution on newly switched-in active slot
+        _apply_toxic_spikes_to_fixed_slot(F, P, act_slot, sw_gate)
 
     sw_t1a = (((c_t1a == CHOICE_SWITCH_BENCH1) | (c_t1a == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_1_A, MonIdx.MUST_RECHARGE])
     sw_t1b = (((c_t1b == CHOICE_SWITCH_BENCH1) | (c_t1b == CHOICE_SWITCH_BENCH2)) * 1.0) * (1.0 - P[..., SLOT_TRAINER_1_B, MonIdx.MUST_RECHARGE])
@@ -1073,15 +1079,142 @@ def execute_barrier3_turn_order_sort(
     )
 
 
+def _apply_toxic_spikes_to_fixed_slot(
+    F: TensorOrArray,
+    P: TensorOrArray,
+    act_slot: int,
+    sw_gate: TensorOrArray,
+) -> None:
+    """Resolve Toxic Spikes entry hazard (`0`, `1`, or `2` layers) on a newly switched-in slot.
+
+    - Grounded Poison-types absorb and clear the side's Toxic Spikes (`-> 0.0`).
+    - Grounded Healthy non-Poison, non-Steel Pokémon receive Poison (1 layer) or Toxic (2 layers),
+      blocked by Misty Terrain or Leaf Guard in Sun, and cured immediately by Lum Berry (+ Unburden).
+    """
+    side_idx = (
+        FieldIdx.TRAINER_1_TOXIC_SPIKES
+        if act_slot in (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+        else FieldIdx.TRAINER_2_TOXIC_SPIKES
+    )
+    layers = F[..., side_idx]
+    has_layers = (
+        float(layers.max().item()) > 0.0
+        if (HAS_TORCH and isinstance(layers, torch.Tensor))
+        else float(np.max(layers)) > 0.0
+    )
+    if not has_layers:
+        return
+
+    alive = P[..., act_slot, MonIdx.ALIVE_FLAG]
+    grav_on = (F[..., FieldIdx.GRAVITY_TURNS] > 0.0) * 1.0
+    grounded = _clamp(P[..., act_slot, MonIdx.GROUNDED_FLAG] + grav_on, 0.0, 1.0)
+    active_entry = sw_gate * alive * grounded * ((layers > 0.0) * 1.0)
+
+    is_poison = _clamp(
+        P[..., act_slot, MonIdx.TYPE1_START + TYPE_TO_IDX["poison"]]
+        + P[..., act_slot, MonIdx.TYPE2_START + TYPE_TO_IDX["poison"]],
+        0.0,
+        1.0,
+    )
+    is_steel = _clamp(
+        P[..., act_slot, MonIdx.TYPE1_START + TYPE_TO_IDX["steel"]]
+        + P[..., act_slot, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]],
+        0.0,
+        1.0,
+    )
+
+    # 1. Grounded Poison-type absorbs Toxic Spikes on entry
+    absorbs = active_entry * is_poison
+    F[..., side_idx] = F[..., side_idx] * (1.0 - absorbs)
+
+    # 2. Grounded non-Poison, non-Steel Healthy Pokémon takes Poison (1 layer) or Toxic (2 layers)
+    healthy = (P[..., act_slot, MonIdx.STATUS_HEALTHY] > 0.5) * 1.0
+    misty_on = (F[..., FieldIdx.TERRAIN_START + T_MISTY] > 0.5) * 1.0
+    sun_on = (F[..., FieldIdx.WEATHER_START + W_SUN] > 0.5) * 1.0
+    leaf_guard = ((P[..., act_slot, MonIdx.ABILITY_ID] == float(AbilityID.LEAF_GUARD)) * 1.0) * sun_on
+
+    afflicted = active_entry * (1.0 - is_poison) * (1.0 - is_steel) * healthy * (1.0 - misty_on) * (1.0 - leaf_guard)
+    has_afflicted = (
+        float(afflicted.max().item()) > 0.0
+        if (HAS_TORCH and isinstance(afflicted, torch.Tensor))
+        else float(np.max(afflicted)) > 0.0
+    )
+    if not has_afflicted:
+        return
+
+    is_tox = afflicted * ((layers >= 2.0) * 1.0)
+    is_psn = afflicted * (1.0 - ((layers >= 2.0) * 1.0))
+
+    # Immediate Lum Berry check (suppressed by active opposing Unnerve)
+    opp_slots = (
+        (SLOT_TRAINER_2_A, SLOT_TRAINER_2_B)
+        if act_slot in (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+        else (SLOT_TRAINER_1_A, SLOT_TRAINER_1_B)
+    )
+    opp_unnerve = _clamp(
+        ((P[..., opp_slots[0], MonIdx.ABILITY_ID] == float(AbilityID.UNNERVE)) * 1.0)
+        * P[..., opp_slots[0], MonIdx.ALIVE_FLAG]
+        + ((P[..., opp_slots[1], MonIdx.ABILITY_ID] == float(AbilityID.UNNERVE)) * 1.0)
+        * P[..., opp_slots[1], MonIdx.ALIVE_FLAG],
+        0.0,
+        1.0,
+    )
+    has_lum = (
+        ((P[..., act_slot, MonIdx.ITEM_ID] == float(ItemID.LUM_BERRY)) * 1.0)
+        * P[..., act_slot, MonIdx.ITEM_ACTIVE]
+        * (1.0 - opp_unnerve)
+    )
+    lum_cures = afflicted * has_lum
+    status_sticks = afflicted * (1.0 - has_lum)
+
+    P[..., act_slot, MonIdx.STATUS_HEALTHY] = P[..., act_slot, MonIdx.STATUS_HEALTHY] * (1.0 - status_sticks)
+    P[..., act_slot, MonIdx.STATUS_POISON] = _clamp(
+        P[..., act_slot, MonIdx.STATUS_POISON] + is_psn * (1.0 - has_lum), 0.0, 1.0
+    )
+    P[..., act_slot, MonIdx.STATUS_TOXIC] = _clamp(
+        P[..., act_slot, MonIdx.STATUS_TOXIC] + is_tox * (1.0 - has_lum), 0.0, 1.0
+    )
+    P[..., act_slot, MonIdx.TOXIC_COUNTER] = (
+        P[..., act_slot, MonIdx.TOXIC_COUNTER] * (1.0 - is_tox * (1.0 - has_lum))
+        + 1.0 * (is_tox * (1.0 - has_lum))
+    )
+    P[..., act_slot, MonIdx.ITEM_ACTIVE] = P[..., act_slot, MonIdx.ITEM_ACTIVE] * (1.0 - lum_cures)
+    is_unb = (P[..., act_slot, MonIdx.ABILITY_ID] == float(AbilityID.UNBURDEN)) * 1.0
+    P[..., act_slot, MonIdx.UNBURDEN_ACTIVE] = _clamp(
+        P[..., act_slot, MonIdx.UNBURDEN_ACTIVE] + lum_cures * is_unb, 0.0, 1.0
+    )
+
+
+def compute_quick_claw_bonus_torch(
+    P_mc: "torch.Tensor",
+    rng_seed: int = 42,
+) -> "torch.Tensor":
+    """Return `[B1, B2, K, 4]` intra-bracket `+5000.0` priority bonus when Quick Claw procs (20%)."""
+    dev = P_mc.device
+    B1, B2, K = P_mc.shape[0], P_mc.shape[1], P_mc.shape[2]
+    act_item_id = P_mc[:, :, :, list(ACTIVE_SLOTS), MonIdx.ITEM_ID]
+    act_item_on = P_mc[:, :, :, list(ACTIVE_SLOTS), MonIdx.ITEM_ACTIVE] > 0.5
+    act_alive = P_mc[:, :, :, list(ACTIVE_SLOTS), MonIdx.HP_CUR] > 0.0
+    has_qc = act_alive & act_item_on & (act_item_id == float(ItemID.QUICK_CLAW))
+    if not torch.any(has_qc):
+        return torch.zeros((B1, B2, K, 4), dtype=torch.float32, device=dev)
+    qc_thresh = torch.where(has_qc, torch.full_like(act_item_id, 20.0), torch.zeros_like(act_item_id))
+    qc_procs = has_qc & spin_wheel_gate(
+        qc_thresh, seed=int(rng_seed), event_id=int(RNGEventID.QUICK_CLAW), step_idx=1
+    )
+    return torch.where(qc_procs, torch.full_like(act_item_id, 5000.0), torch.zeros_like(act_item_id))
+
+
 def compute_per_thread_execution_orders(
     F_mc: TensorOrArray,
     eff_speeds: TensorOrArray,
     eff_priorities: TensorOrArray,
     num_sim_threads: int,
     rng_seed: int = 42,
+    P_mc: Optional[TensorOrArray] = None,
 ) -> TensorOrArray:
     """Compute `[B1, B2, K, 4]` turn-order permutations where every simulation thread `k in 0..K-1`
-    spins an independent 50/50 wheel to break exact intra-bracket speed ties!
+    spins an independent 50/50 wheel to break exact intra-bracket speed ties and evaluates Quick Claw (20%).
     """
     B1, B2 = eff_speeds.shape[0], eff_speeds.shape[1]
     K = num_sim_threads
@@ -1101,8 +1234,13 @@ def compute_per_thread_execution_orders(
         jitter_k = (cyclic_u * 0.02) - 0.01
 
         prio_k = eff_priorities.unsqueeze(2).expand(B1, B2, K, 4)
-        spe_k = eff_speeds.unsqueeze(2).expand(B1, B2, K, 4)
-        scores_k = (prio_k * 10000.0) + (tr_sign * spe_k) + jitter_k
+        spe_k = torch.clamp(eff_speeds.unsqueeze(2).expand(B1, B2, K, 4), min=0.0, max=4900.0)
+        qc_bonus = (
+            compute_quick_claw_bonus_torch(P_mc, rng_seed=rng_seed)
+            if (P_mc is not None and isinstance(P_mc, torch.Tensor))
+            else 0.0
+        )
+        scores_k = (prio_k * 10000.0) + qc_bonus + (tr_sign * spe_k) + jitter_k
         return torch.argsort(scores_k, dim=-1, descending=True)
 
     tr_active = (F_mc[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).astype(np.float32)
@@ -1118,14 +1256,59 @@ def compute_per_thread_execution_orders(
     jitter_k = ((cyclic_u * 0.02) - 0.01).astype(np.float32)
 
     prio_k = np.broadcast_to(eff_priorities[:, :, None, :], (B1, B2, K, 4))
-    spe_k = np.broadcast_to(eff_speeds[:, :, None, :], (B1, B2, K, 4))
+    spe_k = np.clip(np.broadcast_to(eff_speeds[:, :, None, :], (B1, B2, K, 4)), 0.0, 4900.0)
     scores_k = (prio_k * 10000.0) + (tr_sign * spe_k) + jitter_k
     return np.argsort(-scores_k, axis=-1)
 
 
 # =====================================================================
-# 7. UNIFIED PRE-ATTACK PHASES ENTRYPOINT (BARRIERS 1–3)
+# 7. TURN-0 LEAD ENTRY HELPER & UNIFIED PRE-ATTACK PHASES (BARRIERS 1–3)
 # =====================================================================
+
+def resolve_turn_zero_lead_entry(
+    F_init: TensorOrArray,
+    P_init: TensorOrArray,
+    tables: Optional[BilinearLookupTables] = None,
+) -> Tuple[TensorOrArray, TensorOrArray]:
+    """Execute ONLY Turn-0 speed-ordered lead entry abilities on active slots `(0, 1, 4, 5)`.
+
+    Resolves lead Weather (`Drought`, `Drizzle`, `Sand Stream`, `Snow Warning`),
+    Terrain (`Electric/Grassy/Psychic Surge`), `Intimidate` (`Defiant`, `Competitive`,
+    `Mirror Armor`, `Flower Veil`, `Contrary`, `White Herb + Unburden`), `Trace`,
+    `Hospitality`, and Terrain Seeds in Champions Speed Order with ZERO Barrier 1–3
+    (Switch / Mega / Turn-Order) side effects.
+
+    Accepts either unbatched `(F[24], P[8, 87])` or batched `(F[..., 24], P[..., 8, 87])`
+    tensors/arrays and returns cloned tensors of the exact input shape.
+    """
+    is_torch = HAS_TORCH and isinstance(P_init, torch.Tensor)
+    if tables is None:
+        dev = P_init.device if is_torch else "cpu"
+        tables = build_bilinear_lookup_tables(device=dev)
+
+    unbatched = F_init.ndim == 1
+    if unbatched:
+        if is_torch:
+            F = F_init[None, None, :].clone()
+            P = P_init[None, None, :, :].clone()
+        else:
+            F = np.array(F_init[None, None, :], dtype=np.float32, copy=True)
+            P = np.array(P_init[None, None, :, :], dtype=np.float32, copy=True)
+    else:
+        F = _clone(F_init)
+        P = _clone(P_init)
+
+    lead_shape = F.shape[:-1] + (4,)
+    if is_torch:
+        lead_trig = torch.ones(lead_shape, dtype=torch.float32, device=P.device)
+    else:
+        lead_trig = np.ones(lead_shape, dtype=np.float32)
+
+    F, P = _execute_speed_sorted_entry_abilities(F, P, lead_trig, tables)
+    if unbatched:
+        return F[0, 0], P[0, 0]
+    return F, P
+
 
 def execute_pre_attack_phases(
     F_init: TensorOrArray,

@@ -3,13 +3,19 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch CUDA & CPU](https://img.shields.io/badge/PyTorch-CUDA_%7C_CPU-ee4c2c.svg)](https://pytorch.org/)
-[![DuckDB](https://img.shields.io/badge/DuckDB-34k_Regional_Slots-FFF000.svg)](https://duckdb.org/)
+[![DuckDB](https://img.shields.io/badge/DuckDB-38k_Slots_(9_Events)-FFF000.svg)](https://duckdb.org/)
 [![Format: Reg M-C](https://img.shields.io/badge/Format-Regulation_M--C_(Champions)-7c3aed.svg)](https://www.pokemon.com/)
-[![Tests](https://img.shields.io/badge/Pytest-137%2F137_Passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Pytest-100%25_Passing-brightgreen.svg)](tests/)
 
-**An open-source GPU/CPU Tensor State Machine & Game-Theoretic Replay Coach for Competitive Pokémon VGC 4v4 Doubles (Regulation M-C / Pokémon Champions).**
+**An open-source GPU/CPU Tensor State Machine, 90×90 Team-Preview Lead Lab & Game-Theoretic Replay Coach for Competitive Pokémon VGC 4v4 Doubles (Regulation M-C / Pokémon Champions).**
 
-Coach Porygon VGC turns any Pokémon Showdown replay and Open Team Sheet (66-SP) into an exact, turn-by-turn decision audit — simulating thousands of discrete-RNG battle timelines in parallel via PyTorch linear algebra, solving Zero-Sum Nash Equilibria & Logit QRE, generating **zero-AI offline mobile Base64 Speed Tiers & Damage Matrices**, and presenting plain-English (or Spanish) coaching advice alongside the live Showdown replay.
+Coach Porygon VGC boots into a unified **6-Card Cyber-Tactical Command Hub** featuring:
+1. **⚡ Dynamic Speed Tiers (Offline Base64 HTML)** — Lv.50 31-IV speed tables against Top 50 DuckDB (`9` official events incl. LAIC 2027) with Tailwind, Icy Wind, Choice Scarf, Unburden, Weather, and Mega speed shifts.
+2. **💥 Damage & KO Matrix (Offline Base64 HTML)** — Exact 16-roll `SmogonChampionsCalc` OHKO/2HKO matrices across 5 Weathers × 5 Terrains & Screens.
+3. **🧠 Bo3 Replay Coach (Tactical HUD + Live LQRE $\beta$)** — Synchronized official Showdown player + zero-scroll Tactical HUD (sprite-visualized *Played vs. #1* cards, 8-Pillar diverging tug-of-war equity bars, live adjustable Logit QRE $\beta \in [0.5, 20.0]$ slider with skill presets & formula card, strict VGC vs. Scientific language separation) + Bo3 Clamped 66-SP Opponent Solver.
+4. **🎯 Factored 90×90 Turn-1 Lead & Bring Lab (+ DuckDB Vault)** — Pit any two 6-Pokémon teams (Full 66-SP or EV-less OTS + 1–3 Bo3 scouting logs) and simulate Turn 1 across all 15×15 leads × 6×6 benches (`8,100` modes) with persistent DuckDB Matchup Vault caching, live adjustable LQRE $\beta$, `15×15` heatmap, `6×6` Back-2 drilldown, and 1-click unpruned Turn-1 Audit (`K=128`).
+5. **📊 Bo3 Session & Tournament Analytics** — Local team-folder CSV telemetry (`data/telemetry/`) tracking Win Rate, accuracy curve, phase errors, and lead-pair effectiveness.
+6. **🔮 Regulation M-D Meta Scout (Offline Base64 HTML)** — Unified projected Regulation M-D tier list (clearly badging **Confirmed M-D** vs. **Rumored Wave** additions) cross-referenced with real Top Cut teams from all 9 DuckDB tournaments (including **LAIC 2027**).
 
 > **🇪🇸 Resumen Rápido (Español):** Coach Porygon VGC es un entrenador interactivo y motor matemático en GPU/CPU para **Pokémon VGC Dobles (Regulation M-C / Champions)**. Carga tus replays Bo1/Bo3 de Pokémon Showdown y tus equipos 66-SP (o resuelve los SPs rivales exactos con `smogon/damage-calc` Champions) para auditar cada turno con simulación RNG discreta, protección de peor escenario ($CVaR_{10}$), equilibrio de Nash, **Herramientas Prep Base64 offline (Velocidades y Matriz de Daño sin IA)** y analítica de sesiones Bo3 — **100% bilingüe (ES / EN) y sin LLMs en el motor de cálculo**. En Windows haz doble clic en **`start_replay_coach.bat`** (o compila **`CoachPorygonStudio.exe`**); en Linux/macOS ejecuta **`./start_replay_coach.sh`** — ambos crean y activan `.venv` automáticamente sin tocar tu Python del sistema.
 
@@ -38,10 +44,13 @@ What every launcher does automatically:
 *(Pass server flags straight through any launcher, e.g. `./start_replay_coach.sh --device cpu --port 9000` or `.\start_replay_coach.bat --port 9000`.)*
 
 ### Option B — Windows No-Git 1-Click Release Bundle (`CoachPorygonStudio.exe`)
-For Windows users who prefer not to use `git`, download **`CoachPorygonVGC-windows-x64.zip`** from the **[GitHub Releases](https://github.com/esquedev/coach-porygon-vgc/releases/latest)** page, extract it, and double-click **`CoachPorygonStudio.exe`** (`~8 MB`, built automatically on `windows-latest` via [`.github/workflows/build-windows-launcher.yml`](.github/workflows/build-windows-launcher.yml) whenever a `v*` tag is pushed).
+For Windows users who prefer not to use `git`, download **`CoachPorygonVGC-windows-x64.zip`** from the **[GitHub Releases](https://github.com/esquedev/coach-porygon-vgc/releases/latest)** page, extract it, and double-click **`CoachPorygonStudio.exe`** (`~8 MB`, compiled automatically on `windows-latest` via [`.github/workflows/build-windows-launcher.yml`](.github/workflows/build-windows-launcher.yml) **only after 100% of CI & acceptance tests pass on `main`**, or on verified `main`-ancestor `v*` release tags).
 
 Instead of shipping a bloated 3 GB CPU-only PyTorch monolith, `CoachPorygonStudio.exe` wraps the pure-stdlib launcher ([`apps/replay_coach/launcher_entry.py`](apps/replay_coach/launcher_entry.py)) with a custom Great Ball icon ([`assets/coach_porygon.ico`](assets/coach_porygon.ico)) and bootstraps `.venv` with the user's exact GPU:
 ```powershell
+# Dry-run validate on Linux / macOS / Windows:
+python scripts/build_windows_launcher.py --check
+
 # Or compile locally on Windows:
 pip install pyinstaller
 python scripts/build_windows_launcher.py
@@ -92,19 +101,23 @@ Traditional Pokémon simulators use slow Python object trees and nested `if/else
 
 **Coach Porygon VGC** compiles the entire 4v4 Doubles board into **3 flat `float32` tensors** so every rule runs simultaneously across `[Strats_1 × Strats_2 × K]` parallel worlds:
 
-![3-Tensor VGC Board State Representation](docs/images/tensor_anatomy.png)
+![3-Tensor VGC Board State Representation v2.1](docs/images/tensor_anatomy.svg)
 
 | Tensor | Shape | What It Stores |
 | :--- | :--- | :--- |
-| **`F` (Field)** | `[Strats_1, Strats_2, K, 24]` | Weather & Terrain one-hots/timers, Trick Room, Gravity, Tailwind, Reflect/Light Screen/Aurora Veil, Mega flags. |
-| **`P` (Roster)** | `[Strats_1, Strats_2, K, 8, 88]` | 8 fixed slots (`0–3` `trainer_1`, `4–7` `trainer_2`) × HP, L50 stats, boosts (`-6..+6`), status/recharge bits, dual-types, items, abilities, Mega payload. |
+| **`F` (Field)** | `[Strats_1, Strats_2, K, 26]` | Weather & Terrain one-hots/timers, Trick Room, Gravity, Tailwind, Reflect/Light Screen/Aurora Veil, Mega flags, Toxic Spikes. |
+| **`P` (Roster)** | `[Strats_1, Strats_2, K, 8, 96]` | 8 fixed slots (`0–3` `trainer_1`, `4–7` `trainer_2`) × HP, L50 stats, boosts (`-6..+6`), status/Disguise, dual-types, items, abilities, Mega payload, and **2-Turn Persistent State (`88..95`)** (`STOMPING_PRIMED`, `LAST_MOVE_FAILED`, `CONSEC_USE`, `RECHARGE`, `CHARGING`, `ENCORE`). |
 | **`M` (Moves)** | `[Strats_1, Strats_2, K, 8, 4, 60]` | 4 DuckDB-compiled move vectors per slot (BP, accuracy, priority, 18-type one-hot, multi-hit, recharge/contact/slicing/punch/pulse/bite/bullet flags). |
 
 ### Worked Example: One Branchless Operation (`Switch-In + Intimidate`)
 
-Instead of branching with `if mon.switched:`, every game mechanic is a **matrix multiplication or binary gate `g ∈ {0, 1}` operating across rows simultaneously**. Below, Pokémon and Item sprites replace raw matrix rows so you can see exactly how **Phase 1 (Switch-In + Intimidate)** resolves in one GPU pass:
+Instead of branching with `if mon.switched:`, every game mechanic is a **matrix multiplication or binary gate `g ∈ {0, 1}` operating across rows simultaneously**. Below is how **Phase 1 (Switch-In + Intimidate + Defiant + White Herb / Unburden)** resolves in one GPU pass:
 
-![Step-by-Step Branchless Switch-In plus Intimidate Operation](docs/images/switch_intimidate_op.png)
+![Step-by-Step Branchless Switch-In plus Intimidate Operation](docs/images/switch_intimidate_op.svg)
+
+### End-to-End Architecture Pipeline
+
+![Coach Porygon VGC Zero-AI Architecture Pipeline](docs/images/architecture_pipeline.svg)
 
 1. **Permutation Matrix Multiply (`Π · P_before = P_after`):** Selecting *Switch Slot A → Bench 1* swaps Row `0` (`Charizard`) and Row `2` (`Incineroar`) via permutation matrix `Π`, while the persistence mask `m` zeroes temporary stat boosts (`SpA +2 → 0`) on the outgoing Pokémon in the exact same multiply.
 2. **Masked Vector Addition (`Intimidate + Defiant + White Herb`):** Opposing Active Rows `r4` (`Kingambit`) and `r5` (`Sneasler`) receive `-1 Atk` from `Incineroar`, then branchless counter-gates add `+2 Atk` for `Defiant` and restore `< 0 → 0` + `Unburden (2× Speed)` for `White Herb` — letting the GPU automatically spot and penalize bad Intimidate traps in Nash/IEDS!
@@ -171,18 +184,45 @@ PYTHONPATH=src:. python3 scripts/coach_bo3.py \
 ```
 *(Supports `--opp-ots <file>` for Bo1 replays without `|showteam|`, `--two-ply` for Selective 2-Ply Lookahead, `--no-sim` for instant 66-SP solving only, `--device {auto,cuda,cpu}`, `--lang {es,en}`, and `--style {vgc,scientific}`.)*
 
-### Verification (`137/137` Pytest Passing)
+### Verification, Git Pre-Hooks & Contributing (`develop` & `main`)
+See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for full developer guidelines, 7-gate anti-hallucination checks, and `.exe` release rules.
 ```powershell
 # Windows (PowerShell)
 $env:PYTHONPATH = "src;."
 .\.venv\Scripts\pytest.exe tests/ -q
 
-# Linux / macOS
+# Linux / macOS — Full suite + TestAT-1..10 Acceptance & Anti-Hallucination Model Fuzzer
 PYTHONPATH=src:. .venv/bin/pytest tests/ -q
+
+# Activate local versioned Git pre-commit (7 gates + V8 JS check) & pre-push hooks
+./scripts/install_git_hooks.sh
 ```
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) automatically runs **Lint & 7-Gate Anti-Hallucination Scanner**, **Unit/Integration Tests (`3.11`/`3.12`)**, **Acceptance Test & Anti-Hallucination Model Fuzzer**, and **Package + Launcher Check** on every push and PR targeting `develop` or `main`. Only when `main` passes full CI does [`.github/workflows/build-windows-launcher.yml`](.github/workflows/build-windows-launcher.yml) compile and publish `CoachPorygonStudio.exe`.
 
 ---
 
-## 5. License
+## 5. Community Special Thanks, License & Third-Party Credits
 
-Coach Porygon VGC is open-source software licensed under the **GNU Affero General Public License v3.0 (AGPLv3)**. See [`LICENSE`](LICENSE) for details.
+### Special Thanks to the Community 💚
+Special thanks to the **Pokémmunity MÉXICO** and **PokéMex** group chats for their constant support, real-match testing, and feedback that shaped Coach Porygon VGC's features and UX.
+
+### Fan-Made Non-Commercial Project & Intellectual Property Disclaimer
+**Coach Porygon VGC** is a **100% fan-made, strictly non-commercial** project created by fans for fans and **will never be monetized** (no ads, no paywalls, no subscriptions, no sponsorships).
+
+> **Trademark & Copyright Notice:** Pokémon, Pokémon Champions, and all Pokémon names, forms, moves, abilities, items, and sprites are trademarks and copyrights of **© Nintendo, Creatures Inc., GAME FREAK inc., and The Pokémon Company**. This project is **not affiliated with, endorsed by, or sponsored by** Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company.
+
+### Source Code License
+Original Coach Porygon VGC source code is licensed under the **GNU Affero General Public License v3.0 (AGPLv3)** — see [`LICENSE`](LICENSE). Third-party software, community datasets, and official Pokémon trademarks/sprites are explicitly excluded from the AGPLv3 grant and remain the property of their respective owners.
+
+### Third-Party Vendor, Asset & Data Credits
+Full license texts and attributions live in **[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)**:
+
+| Component | Credit / Source | License |
+| :--- | :--- | :--- |
+| **Pokémon Sprites, Items, Mega Stones & Reg M-C / M-D Catalogs** | **[Pokéos](https://www.pokeos.com/)** | Official Pokémon assets © Nintendo / Creatures Inc. / GAME FREAK inc. / The Pokémon Company |
+| **Champions Damage Calculator (`@smogon/calc` v0.12.0)** | **[Smogon `damage-calc`](https://github.com/smogon/damage-calc)** (Honko & contributors) | MIT |
+| **Replay Player (`replay-embed.js`) & Champions Mod Data** | **[Pokémon Showdown](https://github.com/smogon/pokemon-showdown)** (Guangcong Luo / Zarel & contributors) | MIT |
+| **Regional Tournament Standings & Meta Usage** | **[MunchStats](https://www.munchstats.com/)** | Community tournament dataset |
+| **Core Compute & Storage Stack** | **PyTorch** (BSD-3), **NumPy** (BSD-3), **SciPy / HiGHS** (BSD-3 / MIT), **DuckDB** (MIT), **MiniRacer / V8** (ISC / BSD-3) | Respective OSI licenses |
+
+*Rights-holder removal requests: contact `esquedevil94@gmail.com`.*

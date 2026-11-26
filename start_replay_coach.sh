@@ -114,11 +114,11 @@ done
 
 STUDIO_URL="http://${STUDIO_HOST}:${STUDIO_PORT}/"
 
-# 6. Schedule non-blocking browser open once server responds
+# 6. Schedule non-blocking browser open once server responds (argv-safe, zero quote injection)
 if [ "$NO_BROWSER" != "1" ]; then
     (
         for _ in $(seq 1 60); do
-            if "$VENV_PY" -c "import urllib.request; urllib.request.urlopen('${STUDIO_URL}api/state', timeout=0.5)" >/dev/null 2>&1; then
+            if "$VENV_PY" -c "import sys, urllib.request; urllib.request.urlopen(sys.argv[1] + 'api/state', timeout=0.5)" "$STUDIO_URL" >/dev/null 2>&1; then
                 if command -v xdg-open >/dev/null 2>&1; then
                     xdg-open "$STUDIO_URL" >/dev/null 2>&1 || true
                 elif command -v open >/dev/null 2>&1; then

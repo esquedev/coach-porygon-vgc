@@ -754,9 +754,16 @@ class LogicalConstraintEngine:
         active_turns = float(user_vec[MonIdx.ACTIVE_TURNS])
         protect_count = float(user_vec[MonIdx.PROTECT_COUNTER])
         taunt_active = 1.0 if user_vec[MonIdx.TAUNT_TURNS] > 0.0 else 0.0
+        throat_chop_active = 1.0 if user_vec[MonIdx.THROAT_CHOP_TURNS] > 0.0 else 0.0
+        charged_move_idx = int(round(float(user_vec[MonIdx.CHARGED_MOVE_IDX]))) - 1  # -1 if none, 0..3 if charged
         encore_active = 1.0 if user_vec[MonIdx.ENCORE_TURNS] > 0.0 else 0.0
         last_move_idx = int(round(float(user_vec[MonIdx.LAST_MOVE_IDX])))
         choice_lock_idx = int(round(float(user_vec[MonIdx.CHOICE_LOCKED_MOVE])))
+        from .schema_and_tables import FieldOpID as _FopIDInit
+        user_has_tantrum = any(
+            int(round(float(moves_4[k_m, MoveIdx.FIELD_OP_ID]))) == int(_FopIDInit.STOMPING_TANTRUM)
+            for k_m in range(MOVES_PER_MON)
+        )
         user_ab = int(round(float(user_vec[MonIdx.ABILITY_ID])))
         can_mega_gate = (
             1.0
@@ -940,12 +947,16 @@ class LogicalConstraintEngine:
                     tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
                     tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
 
-                    # 2. Choice Lock / Encore / Taunt Hard Gates
+                    # 2. Choice Lock / Encore / Taunt / Throat Chop / 2-Turn Charged Hard Gates
+                    if charged_move_idx >= 0 and m_idx != charged_move_idx:
+                        continue
                     if choice_lock_idx >= 0 and m_idx != choice_lock_idx:
                         continue
                     if encore_active > 0.0 and last_move_idx >= 0 and m_idx != last_move_idx:
                         continue
                     if is_status and taunt_active > 0.0:
+                        continue
+                    if m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5 and throat_chop_active > 0.0:
                         continue
 
                     # 3. Turn-1 Gate (Fake Out / First Impression)
@@ -1033,6 +1044,8 @@ class LogicalConstraintEngine:
                             continue
                         if is_status and tgt_ab == AbilityID.GOOD_AS_GOLD:
                             continue
+                        if m_fop == int(_FopID.TAUNT) and tgt_ab == AbilityID.OBLIVIOUS and not user_has_mold_breaker:
+                            continue
                         if m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE:
                             continue
                         if m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab in (
@@ -1063,7 +1076,7 @@ class LogicalConstraintEngine:
                     risk_val = 0.10
                     upside_val = 0.70
 
-                    if m_vec[MoveIdx.PROTECT_TYPE] >= 1.0 and protect_count >= 1.0:
+                    if m_vec[MoveIdx.PROTECT_TYPE] == 1.0 and protect_count >= 1.0:
                         succ_prob = (1.0 / 3.0) ** protect_count
                         risk_val = min(0.97, 1.0 - succ_prob)
                         upside_val = 0.85 if protect_count == 1.0 else 0.90
@@ -1091,9 +1104,16 @@ class LogicalConstraintEngine:
                     acc_val = min(1.0, max(0.0, acc_val))
 
                     if not is_status:
+                        from .schema_and_tables import FieldOpID as _FopIDDmg
+                        m_fop_dmg = int(round(float(m_vec[MoveIdx.FIELD_OP_ID])))
                         eff1 = float(m_type_vec @ self._type_chart_np @ tgt_type1)
                         raw_eff2 = float(m_type_vec @ self._type_chart_np @ tgt_type2)
                         eff2 = raw_eff2 + (1.0 - float(np.sum(tgt_type2)))
+                        if m_fop_dmg == int(_FopIDDmg.FREEZE_DRY):
+                            if tgt_type1[TYPE_TO_IDX["water"]] > 0.5:
+                                eff1 = 2.0
+                            if tgt_type2[TYPE_TO_IDX["water"]] > 0.5:
+                                eff2 = 2.0
                         eff_total = eff1 * eff2
 
                         # Scrappy bypasses Ghost immunity on Normal/Fighting moves
@@ -1131,9 +1151,15 @@ class LogicalConstraintEngine:
                             continue
 
                         if tgt_bucket == 2:
-                            prior_scale = 0.20
-                            risk_val = 0.65
-                            upside_val = 0.75
+                            # Intentional ally-immunity miss priming for Stomping Tantrum / Temper Flare (75 -> 150 BP next turn!)
+                            if eff_total == 0.0 and user_has_tantrum:
+                                prior_scale = 0.55
+                                risk_val = 0.35
+                                upside_val = 0.80
+                            else:
+                                prior_scale = 0.20
+                                risk_val = 0.65
+                                upside_val = 0.75
                         else:
                             if eff_total == 0.0:
                                 prior_scale = 0.15

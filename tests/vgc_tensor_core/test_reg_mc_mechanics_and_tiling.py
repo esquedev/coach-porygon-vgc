@@ -61,8 +61,8 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         cls.state_machine = VgcTensorStateMachine(backend="torch", device="cpu")
 
     def test_01_standalone_decoupling_and_schema_dimensions(self) -> None:
-        """Verify vgc_tensor_core has zero imports from engine.inference and uses 88/60 dims."""
-        self.assertEqual(MON_DIM, 88)
+        """Verify vgc_tensor_core has zero imports from engine.inference and uses 96/60 dims."""
+        self.assertEqual(MON_DIM, 96)
         self.assertEqual(MOVE_DIM, 60)
 
         core_dir = SRC_DIR / "engine" / "vgc_tensor_core"
@@ -684,8 +684,11 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
 
         u_norm = float(compute_per_thread_board_utility_torch(F_norm, P_norm)[0, 0, 0].item())
         u_tr = float(compute_per_thread_board_utility_torch(F_tr, P_tr)[0, 0, 0].item())
-        # Under Trick Room, slow trainer_1 gains +0.48 speed initiative swing over fast trainer_2!
-        self.assertAlmostEqual(u_tr - u_norm, 0.48, places=4)
+        # Under 8-pillar Victory Equity (M_moves=None fallback), 4-turn Trick Room flips speed initiative
+        # (w_threat=0.32 * 0.20 * 8 = +0.512) plus turn-scaled TR tempo (w_field_tempo=0.25 * 4/5 * 0.25 * 4 = +0.200) -> +0.712!
+        self.assertLess(u_norm, 0.0)
+        self.assertGreater(u_tr, 0.0)
+        self.assertAlmostEqual(u_tr - u_norm, 0.712, places=4)
 
     def test_08_bilingual_terminology_and_5_verdict_badges(self) -> None:
         """Verify 4-variant glossary and 5 real verdict badges (no 6th FLINCH badge)."""
@@ -1141,12 +1144,15 @@ class TestRegMCMechanicsAndTiling(unittest.TestCase):
         ]
         st_m = self.compiler.compile_battle_state(roster_m)
 
-        # Piercing Drill contact Iron Head breaks through Lucario-Mega-Z's Protect,
+        # Piercing Drill contact Iron Head breaks through Lucario-Mega-Z's Protect at Champions 0.25x damage
+        # (0.25x Protect pierce * 0.5x Aura Guard * 0.5x Steel resist -> ~4.2 HP),
         # while Mega Sol fires Solar Beam Turn 1 in Clear weather onto Chesnaught (who uses Wood Hammer)!
         t1_c = torch.tensor([[0, 4]], dtype=torch.long)  # Excadrill Iron Head->Opp A (Lucario), Meganium Solar Beam->Opp B (Chesnaught)
         t2_c = torch.tensor([[0, 1]], dtype=torch.long)  # Lucario Protect, Chesnaught Wood Hammer->Opp A
         res_m = self.state_machine.step(st_m.field_tensor, st_m.roster_tensor, st_m.moves_tensor, t1_c, t2_c, num_mc_samples=32, rng_seed=901)
-        self.assertGreater(float(res_m.attack_cascade.mean_damage_dealt[0, 0, 0].item()), 5.0)
+        pierce_dmg = float(res_m.attack_cascade.mean_damage_dealt[0, 0, 0].item())
+        self.assertGreater(pierce_dmg, 2.0)
+        self.assertLess(pierce_dmg, 8.0)
         self.assertGreater(float(res_m.attack_cascade.mean_damage_dealt[0, 0, 1].item()), 10.0)
 
         # Compare Aura Guard vs None on incoming contact Iron Head (Aura Guard halves contact damage!)

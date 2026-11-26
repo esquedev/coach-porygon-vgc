@@ -115,14 +115,14 @@ for %%A in (%*) do (
 )
 set "STUDIO_URL=http://!STUDIO_HOST!:!STUDIO_PORT!/"
 
-REM 6. Boot the Replay Coach Studio HTTP/SSE server and open the browser
+REM 6. Boot the Replay Coach Studio HTTP/SSE server and safely open the browser
 set "PYTHONPATH=src;."
 echo [4/4] Starting Replay Coach Studio at !STUDIO_URL!
 echo       Press Ctrl+C in this window to stop the server.
 echo.
 
 if not defined COACH_NO_BROWSER (
-    start "" cmd /c "timeout /t 2 /nobreak >nul && start !STUDIO_URL!"
+    start "" /b "%VENV_PY%" -c "import sys, time, urllib.request, webbrowser; u=sys.argv[1]; [time.sleep(0.4) or (urllib.request.urlopen(u+'api/state', timeout=0.5).status==200 and (webbrowser.open(u) or sys.exit(0))) for _ in range(75)]" "!STUDIO_URL!"
 )
 "%VENV_PY%" -m apps.replay_coach.server %*
 if errorlevel 1 (

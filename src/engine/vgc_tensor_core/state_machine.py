@@ -32,6 +32,7 @@ from .phases_pre_attack import (
     PreAttackPhaseResult,
     T_ELECTRIC,
     T_GRASSY,
+    T_MISTY,
     T_NONE,
     T_PSYCHIC,
     W_CLEAR,
@@ -419,6 +420,78 @@ def _execute_end_of_turn_torch(
     P[:, :, :, active_slot_tensor, MonIdx.MUST_RECHARGE] = torch.where(
         active_hp_cur > 0.0, cur_rech_eot, torch.zeros_like(cur_rech_eot)
     )
+    # Throat Chop counter decrement & fainted cleanup for 2-turn persistent states
+    P[:, :, :, active_slot_tensor, MonIdx.THROAT_CHOP_TURNS] = torch.where(
+        active_hp_cur > 0.0,
+        torch.clamp(P[:, :, :, active_slot_tensor, MonIdx.THROAT_CHOP_TURNS] - 1.0, min=0.0),
+        torch.zeros_like(active_hp_cur),
+    )
+    for _two_turn_idx in (
+        MonIdx.LAST_MOVE_FAILED,
+        MonIdx.CHARGED_MOVE_IDX,
+        MonIdx.SEMI_INVULN,
+        MonIdx.GLAIVE_RUSH_VULN,
+        MonIdx.CHARGE_ACTIVE,
+    ):
+        cur_tt = P[:, :, :, active_slot_tensor, _two_turn_idx]
+        P[:, :, :, active_slot_tensor, _two_turn_idx] = torch.where(
+            active_hp_cur > 0.0, cur_tt, torch.zeros_like(cur_tt)
+        )
+
+    # Persistent Yawn progression: 2.0 -> Sleep at EoT (unless blocked by Electric/Misty Terrain or statused), 1.0 -> 2.0
+    cur_yawn_eot = P[:, :, :, active_slot_tensor, MonIdx.YAWN_ACTIVE]
+    yawn_sleeps = (
+        (active_hp_cur > 0.0)
+        & (cur_yawn_eot >= 1.9)
+        & (P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY] > 0.5)
+    )
+    if torch.any(yawn_sleeps):
+        elec_or_misty_eot = (
+            (F[:, :, :, FieldIdx.TERRAIN_START + T_ELECTRIC] > 0.5)
+            | (F[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5)
+        ).unsqueeze(-1)
+        grav_eot = (F[:, :, :, FieldIdx.GRAVITY_TURNS] > 0.0).unsqueeze(-1)
+        act_gr_eot = (P[:, :, :, active_slot_tensor, MonIdx.GROUNDED_FLAG] > 0.5) | grav_eot
+        sun_eot = (F[:, :, :, FieldIdx.WEATHER_START + W_SUN] > 0.5).unsqueeze(-1)
+        lg_eot = (active_abil == float(AbilityID.LEAF_GUARD)) & sun_eot
+        yawn_lands = yawn_sleeps & (~(act_gr_eot & elec_or_misty_eot)) & (~lg_eot)
+        if torch.any(yawn_lands):
+            P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY] = torch.where(
+                yawn_lands, torch.zeros_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY]
+            )
+            P[:, :, :, active_slot_tensor, MonIdx.STATUS_SLEEP] = torch.where(
+                yawn_lands, torch.ones_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.STATUS_SLEEP]
+            )
+            # Immediate Chesto / Lum Berry wake-up
+            act_it_eot = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ID]
+            act_it_on = P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] > 0.5
+            berry_wakes = yawn_lands & act_it_on & (
+                (act_it_eot == float(ItemID.CHESTO_BERRY)) | (act_it_eot == float(ItemID.LUM_BERRY))
+            )
+            if torch.any(berry_wakes):
+                P[:, :, :, active_slot_tensor, MonIdx.STATUS_SLEEP] = torch.where(
+                    berry_wakes, torch.zeros_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.STATUS_SLEEP]
+                )
+                P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY] = torch.where(
+                    berry_wakes, torch.ones_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.STATUS_HEALTHY]
+                )
+                P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE] = torch.where(
+                    berry_wakes, torch.zeros_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.ITEM_ACTIVE]
+                )
+                unb_yw = berry_wakes & (active_abil == float(AbilityID.UNBURDEN))
+                P[:, :, :, active_slot_tensor, MonIdx.UNBURDEN_ACTIVE] = torch.where(
+                    unb_yw, torch.ones_like(active_hp_cur), P[:, :, :, active_slot_tensor, MonIdx.UNBURDEN_ACTIVE]
+                )
+    next_yawn_eot = torch.where(
+        active_hp_cur <= 0.0,
+        torch.zeros_like(cur_yawn_eot),
+        torch.where(
+            cur_yawn_eot >= 1.9,
+            torch.zeros_like(cur_yawn_eot),
+            torch.where(cur_yawn_eot >= 0.9, torch.full_like(cur_yawn_eot, 2.0), torch.zeros_like(cur_yawn_eot)),
+        ),
+    )
+    P[:, :, :, active_slot_tensor, MonIdx.YAWN_ACTIVE] = next_yawn_eot
 
     act_turns = P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS]
     P[:, :, :, active_slot_tensor, MonIdx.ACTIVE_TURNS] = torch.where(
@@ -558,249 +631,30 @@ def execute_end_of_turn(
 # 2. PER-THREAD BOARD EVALUATOR & RISK-ADJUSTED STATISTICAL AGGREGATOR
 # =============================================================================
 
+from .victory_equity import (
+    EQUITY_ENGINE_VERSION,
+    VictoryEquityBreakdown,
+    VictoryEquityWeights,
+    compute_victory_equity_torch,
+)
+
 def compute_per_thread_board_utility_torch(
-    F_eot: "torch.Tensor",  # [B1, B2, K, 24]
-    P_eot: "torch.Tensor",  # [B1, B2, K, 8, 87]
+    F_eot: "torch.Tensor",  # [B1, B2, K, 26]
+    P_eot: "torch.Tensor",  # [B1, B2, K, 8, 96]
     extra_volatiles: Optional[Dict[str, "torch.Tensor"]] = None,
+    M_moves: Optional["torch.Tensor"] = None,
+    tables: Optional[BilinearLookupTables] = None,
+    weights: Optional[VictoryEquityWeights] = None,
 ) -> "torch.Tensor":
-    """Evaluate exact scalar board utility $U_{b_1, b_2, k}$ for `trainer_1` vs `trainer_2`
-    inside every individual discrete simulation thread `k in 0..K-1`.
-
-    Components of $U_{b_1, b_2, k}$:
-    1. **HP Fraction Differential**:
-       $\\sum_{s \\in \\{0..3\\}} \\frac{\\text{HP}_{\\text{cur}, s}}{\\text{HP}_{\\text{max}, s}} - \\sum_{s \\in \\{4..7\\}} \\frac{\\text{HP}_{\\text{cur}, s}}{\\text{HP}_{\\text{max}, s}}$
-    2. **Alive Count Differential ($0.75$ per surviving Pokémon)**:
-       $0.75 \\times (N_{\\text{alive}, \\text{trainer\\_1}} - N_{\\text{alive}, \\text{trainer\\_2}})$
-    3. **Terminal Wipe Bonus ($\\pm 2.0$)**:
-       $+2.0$ if all 4 `trainer_2` Pokémon fainted; $-2.0$ if all 4 `trainer_1` Pokémon fainted.
-    4. **Active Stat Stage & Status Differential**:
-       $+0.12$ per net offensive/speed boost stage on alive active slots; $+0.20$ per statused opposing mon.
-    5. **Side Speed Control / Screens Differential**:
-       $+0.25$ for active Tailwind / Screens advantage.
-    6. **Real Speed Initiative Differential (with Trick Room Inversion)**:
-       Compares effective turn-order speeds across alive Pokémon on both sides, inverting advantage
-       when `TRICK_ROOM_TURNS > 0.0`.
-    7. **Weather & Terrain Synergy Differential**:
-       Evaluates active Weather (Sun, Rain, Sand, Snow) and Terrain (Electric, Grassy, Psychic, Misty)
-       against the types and abilities of alive Pokémon on each side.
-    """
-    device = P_eot.device
-    hp_cur = P_eot[:, :, :, :, MonIdx.HP_CUR]
-    hp_max = torch.clamp(P_eot[:, :, :, :, MonIdx.HP_MAX], min=1.0)
-    hp_frac = torch.clamp(hp_cur / hp_max, min=0.0, max=1.0)
-    alive = (hp_cur > 0.0).float()
-
-    t1_hp_sum = torch.sum(hp_frac[:, :, :, 0:4], dim=-1)
-    t2_hp_sum = torch.sum(hp_frac[:, :, :, 4:8], dim=-1)
-    hp_diff = t1_hp_sum - t2_hp_sum
-
-    t1_alive_sum = torch.sum(alive[:, :, :, 0:4], dim=-1)
-    t2_alive_sum = torch.sum(alive[:, :, :, 4:8], dim=-1)
-    alive_diff = 0.75 * (t1_alive_sum - t2_alive_sum)
-
-    win_bonus = torch.where(t2_alive_sum <= 0.0, torch.full_like(hp_diff, 2.0), torch.zeros_like(hp_diff))
-    loss_penalty = torch.where(t1_alive_sum <= 0.0, torch.full_like(hp_diff, 2.0), torch.zeros_like(hp_diff))
-
-    # Active stat boosts (Atk, Def, SpA, SpD, Spe) weighted on alive active slots
-    boost_weights = torch.tensor([0.10, 0.06, 0.10, 0.06, 0.12], dtype=torch.float32, device=device)
-    boosts_5 = P_eot[:, :, :, :, MonIdx.BOOST_ATK:MonIdx.BOOST_SPE + 1]  # [B1, B2, K, 8, 5]
-    weighted_boosts = torch.sum(boosts_5 * boost_weights, dim=-1) * alive
-    t1_boost_score = weighted_boosts[:, :, :, SLOT_TRAINER_1_A] + weighted_boosts[:, :, :, SLOT_TRAINER_1_B]
-    t2_boost_score = weighted_boosts[:, :, :, SLOT_TRAINER_2_A] + weighted_boosts[:, :, :, SLOT_TRAINER_2_B]
-    boost_diff = t1_boost_score - t2_boost_score
-
-    # Non-healthy status penalty on alive mons
-    statused = (1.0 - P_eot[:, :, :, :, MonIdx.STATUS_HEALTHY]) * alive
-    t1_statused = torch.sum(statused[:, :, :, 0:4], dim=-1)
-    t2_statused = torch.sum(statused[:, :, :, 4:8], dim=-1)
-    status_diff = 0.20 * (t2_statused - t1_statused)
-
-    # Tailwind & Screens advantage
-    t1_tw = (F_eot[:, :, :, FieldIdx.TRAINER_1_TAILWIND_TURNS] > 0.0).float()
-    t2_tw = (F_eot[:, :, :, FieldIdx.TRAINER_2_TAILWIND_TURNS] > 0.0).float()
-    t1_scr = (
-        (F_eot[:, :, :, FieldIdx.TRAINER_1_REFLECT_TURNS] > 0.0)
-        | (F_eot[:, :, :, FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS] > 0.0)
-        | (F_eot[:, :, :, FieldIdx.TRAINER_1_AURORA_VEIL_TURNS] > 0.0)
-    ).float()
-    t2_scr = (
-        (F_eot[:, :, :, FieldIdx.TRAINER_2_REFLECT_TURNS] > 0.0)
-        | (F_eot[:, :, :, FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] > 0.0)
-        | (F_eot[:, :, :, FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] > 0.0)
-    ).float()
-    field_diff = 0.25 * (t1_tw - t2_tw) + 0.15 * (t1_scr - t2_scr)
-
-    # 6. Real Speed Initiative Differential (All 8 Roster Slots, Inverted under Trick Room)
-    abil_8 = P_eot[:, :, :, :, MonIdx.ABILITY_ID]
-    act_slots_idx = [SLOT_TRAINER_1_A, SLOT_TRAINER_1_B, SLOT_TRAINER_2_A, SLOT_TRAINER_2_B]
-    cloud_nine_on = torch.any(
-        (alive[:, :, :, act_slots_idx] > 0.5) & (abil_8[:, :, :, act_slots_idx] == float(AbilityID.CLOUD_NINE)),
-        dim=-1,
-        keepdim=True,
-    )
-    no_c9 = (~cloud_nine_on).float()
-    w_sun = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SUN].unsqueeze(-1) * no_c9
-    w_rain = F_eot[:, :, :, FieldIdx.WEATHER_START + W_RAIN].unsqueeze(-1) * no_c9
-    w_sand = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SAND].unsqueeze(-1) * no_c9
-    w_snow = F_eot[:, :, :, FieldIdx.WEATHER_START + W_SNOW].unsqueeze(-1) * no_c9
-    t_elec = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_ELECTRIC].unsqueeze(-1)
-    t_grassy = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY].unsqueeze(-1)
-    t_psychic = F_eot[:, :, :, FieldIdx.TERRAIN_START + T_PSYCHIC].unsqueeze(-1)
-
-    base_spe_8 = P_eot[:, :, :, :, MonIdx.STAT_SPE]
-    boost_spe_8 = torch.clamp(P_eot[:, :, :, :, MonIdx.BOOST_SPE], -6.0, 6.0)
-    two = torch.tensor(2.0, dtype=torch.float32, device=device)
-    s1_8 = torch.floor(base_spe_8 * (torch.maximum(two, two + boost_spe_8) / torch.maximum(two, two - boost_spe_8)))
-
-    w_spe_gate = torch.clamp(
-        ((abil_8 == float(AbilityID.CHLOROPHYLL)).float() * w_sun)
-        + ((abil_8 == float(AbilityID.SWIFT_SWIM)).float() * w_rain)
-        + ((abil_8 == float(AbilityID.SAND_RUSH)).float() * w_sand)
-        + ((abil_8 == float(AbilityID.SLUSH_RUSH)).float() * w_snow)
-        + ((abil_8 == float(AbilityID.SURGE_SURFER)).float() * t_elec),
-        0.0,
-        1.0,
-    )
-    unb_8 = P_eot[:, :, :, :, MonIdx.UNBURDEN_ACTIVE]
-    qf_8 = ((abil_8 == float(AbilityID.QUICK_FEET)).float()) * torch.clamp(1.0 - P_eot[:, :, :, :, MonIdx.STATUS_HEALTHY], 0.0, 1.0)
-    s2_8 = torch.floor(s1_8 * (1.0 + w_spe_gate) * (1.0 + unb_8) * (1.0 + 0.5 * qf_8))
-    is_scarf_8 = ((P_eot[:, :, :, :, MonIdx.ITEM_ID] == float(ItemID.CHOICE_SCARF)).float()) * P_eot[:, :, :, :, MonIdx.ITEM_ACTIVE]
-    is_iron_ball_8 = ((P_eot[:, :, :, :, MonIdx.ITEM_ID] == float(ItemID.IRON_BALL)).float()) * P_eot[:, :, :, :, MonIdx.ITEM_ACTIVE]
-    s3_8 = torch.floor(s2_8 * (1.0 + 0.5 * is_scarf_8) * (1.0 - 0.5 * is_iron_ball_8))
-    tw_8 = torch.cat([t1_tw.unsqueeze(-1).expand(-1, -1, -1, 4), t2_tw.unsqueeze(-1).expand(-1, -1, -1, 4)], dim=-1)
-    s4_8 = torch.floor(s3_8 * (1.0 + tw_8))
-    para_8 = P_eot[:, :, :, :, MonIdx.STATUS_PARALYZE] * (1.0 - qf_8)
-    s_eff_8 = torch.floor(s4_8 * (1.0 - 0.5 * para_8))
-
-    tr_active = (F_eot[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).float()
-    tr_sign = (1.0 - 2.0 * tr_active)  # +1.0 normal, -1.0 Trick Room
-    ordered_spe_8 = s_eff_8 * tr_sign.unsqueeze(-1)
-
-    # Active pairwise speed initiative (trainer_1 active slots 0,1 vs trainer_2 active slots 4,5)
-    t1_act_spe = ordered_spe_8[:, :, :, 0:2].unsqueeze(-1)  # [B1, B2, K, 2, 1]
-    t2_act_spe = ordered_spe_8[:, :, :, 4:6].unsqueeze(-2)  # [B1, B2, K, 1, 2]
-    t1_act_alv = alive[:, :, :, 0:2].unsqueeze(-1)
-    t2_act_alv = alive[:, :, :, 4:6].unsqueeze(-2)
-    pair_alive = t1_act_alv * t2_act_alv
-    pair_sign = torch.sign(t1_act_spe - t2_act_spe) * pair_alive
-    speed_initiative_diff = 0.06 * torch.sum(pair_sign, dim=(-2, -1))
-
-    # 7. Weather & Terrain Synergy Differential across alive roster slots (0..3 vs 4..7)
-    is_fire = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["fire"]],
-        0.0,
-        1.0,
-    )
-    is_water = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["water"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["water"]],
-        0.0,
-        1.0,
-    )
-    is_rock_ground_steel = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["rock"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["rock"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["ground"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["ground"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["steel"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]],
-        0.0,
-        1.0,
-    )
-    is_ice = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["ice"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["ice"]],
-        0.0,
-        1.0,
-    )
-    is_elec = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["electric"]],
-        0.0,
-        1.0,
-    )
-    is_grass = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]],
-        0.0,
-        1.0,
-    )
-    is_psychic = torch.clamp(
-        P_eot[:, :, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["psychic"]]
-        + P_eot[:, :, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["psychic"]],
-        0.0,
-        1.0,
-    )
-    grounded_8 = P_eot[:, :, :, :, MonIdx.GROUNDED_FLAG]
-
-    sun_syn = w_sun * (
-        is_fire
-        + (abil_8 == float(AbilityID.SOLAR_POWER)).float()
-        + (abil_8 == float(AbilityID.CHLOROPHYLL)).float()
-        + 0.4 * (abil_8 == float(AbilityID.LEAF_GUARD)).float()
-        - 0.5 * is_water
-        - 0.6 * (abil_8 == float(AbilityID.DRY_SKIN)).float()
-    )
-    rain_syn = w_rain * (
-        is_water
-        + (abil_8 == float(AbilityID.SWIFT_SWIM)).float()
-        + 0.6 * (abil_8 == float(AbilityID.DRY_SKIN)).float()
-        + 0.4 * (abil_8 == float(AbilityID.RAIN_DISH)).float()
-        + 0.4 * (abil_8 == float(AbilityID.HYDRATION)).float()
-        - 0.5 * is_fire
-    )
-    sand_syn = w_sand * (
-        0.6 * is_rock_ground_steel
-        + (abil_8 == float(AbilityID.SAND_RUSH)).float()
-        + 0.6 * (abil_8 == float(AbilityID.SAND_FORCE)).float()
-    )
-    snow_syn = w_snow * (
-        0.9 * is_ice
-        + (abil_8 == float(AbilityID.SLUSH_RUSH)).float()
-        + 0.4 * (abil_8 == float(AbilityID.ICE_BODY)).float()
-    )
-    terrain_syn = grounded_8 * (
-        t_elec * (0.8 * is_elec + (abil_8 == float(AbilityID.SURGE_SURFER)).float())
-        + t_grassy * (0.8 * is_grass)
-        + t_psychic * (0.8 * is_psychic)
-    )
-    mon_synergy = (sun_syn + rain_syn + sand_syn + snow_syn + terrain_syn) * alive
-    synergy_diff = 0.08 * (torch.sum(mon_synergy[:, :, :, 0:4], dim=-1) - torch.sum(mon_synergy[:, :, :, 4:8], dim=-1))
-
-    # 8. Active Tactical Disruption Differential (Encore, Recharge Lock, Leech Seed, Salt Cure, Yawn, Disable, Perish Song)
-    enc_active = (P_eot[:, :, :, :, MonIdx.ENCORE_TURNS] > 0.0).float() * alive
-    vol_diff = 0.12 * (torch.sum(enc_active[:, :, :, 4:6], dim=-1) - torch.sum(enc_active[:, :, :, 0:2], dim=-1))
-    rech_active = (P_eot[:, :, :, :, MonIdx.MUST_RECHARGE] > 0.5).float() * alive
-    vol_diff = vol_diff + 0.40 * (
-        torch.sum(rech_active[:, :, :, 4:6], dim=-1) - torch.sum(rech_active[:, :, :, 0:2], dim=-1)
-    )
-    if extra_volatiles:
-        for v_key, v_weight in (
-            ("leech_seed_src", 0.16),
-            ("salt_cured", 0.16),
-            ("yawned", 0.18),
-            ("disabled", 0.10),
-            ("perish_song", 0.08),
-        ):
-            v_tens = extra_volatiles.get(v_key)
-            if v_tens is not None:
-                v_mask = (v_tens > 0.5).float() * alive
-                vol_diff = vol_diff + v_weight * (
-                    torch.sum(v_mask[:, :, :, 4:6], dim=-1) - torch.sum(v_mask[:, :, :, 0:2], dim=-1)
-                )
-
-    return (
-        hp_diff
-        + alive_diff
-        + win_bonus
-        - loss_penalty
-        + boost_diff
-        + status_diff
-        + field_diff
-        + speed_initiative_diff
-        + synergy_diff
-        + vol_diff
+    """Evaluate exact 8-pillar scalar Victory Equity $U_{b_1, b_2, k}$ for `trainer_1` vs `trainer_2`."""
+    return compute_victory_equity_torch(
+        F_eot=F_eot,
+        P_eot=P_eot,
+        M_moves=M_moves,
+        tables=tables,
+        extra_volatiles=extra_volatiles,
+        weights=weights,
+        return_breakdown=False,
     )
 
 
@@ -865,8 +719,11 @@ class VgcTensorStateMachine:
         backend: str = "torch",
         device: Any = None,
         risk_aversion_lambda: float = 0.25,
+        equity_weights: Optional[Any] = None,
     ) -> None:
-        """Initialize state machine with pre-allocated Bilinear Lookup Tables and Logic Pruner."""
+        """Initialize state machine with pre-allocated Bilinear Lookup Tables, Logic Pruner, and Equity Weights."""
+        from .victory_equity import VictoryEquityWeights
+
         self.backend = backend
         self.risk_aversion_lambda = float(risk_aversion_lambda)
         if backend == "torch" and HAS_TORCH:
@@ -879,6 +736,9 @@ class VgcTensorStateMachine:
 
         self.tables = build_bilinear_lookup_tables(device=self.device)
         self.logic_engine = LogicalConstraintEngine(tables=self.tables)
+        self.equity_weights: VictoryEquityWeights = (
+            equity_weights if isinstance(equity_weights, VictoryEquityWeights) else VictoryEquityWeights.load_or_default()
+        )
 
     def _step_single_tile(
         self,
@@ -957,7 +817,12 @@ class VgcTensorStateMachine:
 
             if is_torch_in:
                 u_k = compute_per_thread_board_utility_torch(
-                    eot_res.F, eot_res.P, extra_volatiles=attack_res.extra_volatiles
+                    eot_res.F,
+                    eot_res.P,
+                    extra_volatiles=attack_res.extra_volatiles,
+                    M_moves=eot_res.M_moves,
+                    tables=self.tables,
+                    weights=self.equity_weights,
                 )
                 stats = aggregate_simulation_statistics_torch(u_k, eot_res.faint_prob, lam)
             else:
@@ -967,7 +832,12 @@ class VgcTensorStateMachine:
                     else None
                 )
                 u_k_t = compute_per_thread_board_utility_torch(
-                    torch.from_numpy(eot_res.F), torch.from_numpy(eot_res.P), extra_volatiles=ev_t
+                    torch.from_numpy(eot_res.F),
+                    torch.from_numpy(eot_res.P),
+                    extra_volatiles=ev_t,
+                    M_moves=torch.from_numpy(eot_res.M_moves),
+                    tables=self.tables,
+                    weights=self.equity_weights,
                 )
                 stats_t = aggregate_simulation_statistics_torch(
                     u_k_t, torch.from_numpy(eot_res.faint_prob), lam
@@ -1055,6 +925,7 @@ class VgcTensorStateMachine:
 
             f_t = eot_c.F if is_torch_in else torch.from_numpy(eot_c.F)
             p_t = eot_c.P if is_torch_in else torch.from_numpy(eot_c.P)
+            m_t = eot_c.M_moves if is_torch_in else torch.from_numpy(eot_c.M_moves)
             ev_c = (
                 att_c.extra_volatiles
                 if is_torch_in
@@ -1064,7 +935,14 @@ class VgcTensorStateMachine:
                     else None
                 )
             )
-            u_c = compute_per_thread_board_utility_torch(f_t, p_t, extra_volatiles=ev_c)
+            u_c = compute_per_thread_board_utility_torch(
+                f_t,
+                p_t,
+                extra_volatiles=ev_c,
+                M_moves=m_t,
+                tables=self.tables,
+                weights=getattr(self, "equity_weights", None),
+            )
             utilities_chunks.append(u_c)
 
             if mean_hp_accum is None:

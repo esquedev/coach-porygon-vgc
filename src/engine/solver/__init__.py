@@ -17,10 +17,21 @@ from .game_theory import (
     solve_zero_sum_nash,
 )
 
+from .lead_matchup_solver import (
+    BringModeSpec,
+    LeadMatchupConfig,
+    LeadMatchupResult,
+    LeadMatchupSolver,
+)
+
 __all__ = [
     "ActionRecommendation",
+    "BringModeSpec",
     "DominatedActionRecord",
     "IEDSResult",
+    "LeadMatchupConfig",
+    "LeadMatchupResult",
+    "LeadMatchupSolver",
     "QuantalResponseResult",
     "TurnEquilibriumResult",
     "ZeroSumNashResult",
