@@ -3721,3 +3721,67 @@ details.inspector summary {
 .prob-mini-fill.human {
   background: var(--cyber-gold);
 }
+
+/* Bo3 Series Queue Chips (+ Agregar Juego / Remove / Clear) */
+.bo3-chip-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bo3-remove-x {
+  background: rgba(244, 63, 94, 0.14);
+  border: 1px solid rgba(244, 63, 94, 0.38);
+  color: #fda4af;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.bo3-remove-x:hover {
+  background: rgba(244, 63, 94, 0.3);
+  color: #fff;
+}
+
+.bo3-queue-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Lead Lab Persisted Top-3 Turn-1 Opening Plays */
+.ll-top-plays-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ll-top-play-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 7px;
+  border-radius: 6px;
+  background: rgba(13, 21, 38, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  font-size: 11.5px;
+}
+
+.ll-top-play-row.rank-1 {
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.08);
+}
+
+.ll-top-play-meta {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  color: #facc15;
+  font-weight: 700;
+}
