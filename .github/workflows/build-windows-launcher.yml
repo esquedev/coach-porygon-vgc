@@ -36,7 +36,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          git fetch origin main --depth=0
+          git fetch origin main
           if ! git merge-base --is-ancestor HEAD origin/main; then
             echo "::error::Release tag ${RELEASE_TAG} is NOT an ancestor of origin/main. Merge into main with passing CI before tagging a Windows .exe release."
             exit 1
