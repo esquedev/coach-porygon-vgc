@@ -15,6 +15,7 @@ import csv
 from datetime import datetime
 import hashlib
 import html as html_lib
+import io
 import json
 import mimetypes
 from pathlib import Path
@@ -1662,6 +1663,36 @@ class ReplayCoachAppState:
             raise ValueError(f"Saved Lead Lab Vault run not found: '{run_id}'")
 
         payload = dict(saved["payload"])
+        # Normalize canonical + alias keys so legacy and new Vault entries restore full 15×15 × 6×6 matrices
+        t1_leads = payload.get("t1_leads") or payload.get("trainer_1_leads") or []
+        t2_leads = payload.get("t2_leads") or payload.get("trainer_2_leads") or []
+        if not t1_leads and payload.get("heatmap_cells"):
+            t1_leads = [row[0].get("lead_1", []) for row in payload["heatmap_cells"] if row and row[0]]
+        if not t2_leads and payload.get("heatmap_cells") and payload["heatmap_cells"][0]:
+            t2_leads = [cell.get("lead_2", []) for cell in payload["heatmap_cells"][0] if cell]
+        payload["t1_leads"] = t1_leads
+        payload["t2_leads"] = t2_leads
+        payload["trainer_1_leads"] = t1_leads
+        payload["trainer_2_leads"] = t2_leads
+        payload["num_t1_modes"] = int(payload.get("num_t1_modes") or len(payload.get("modes_t1") or []) or 90)
+        payload["num_t2_modes"] = int(payload.get("num_t2_modes") or len(payload.get("modes_t2") or []) or 90)
+        # Reconstruct 90×90 payoff_matrix from heatmap_cells sub-matrices if absent in pre-v0.2.0 Vault rows
+        if not payload.get("payoff_matrix") and payload.get("heatmap_cells"):
+            hm = payload["heatmap_cells"]
+            n_l1 = len(hm)
+            n_l2 = len(hm[0]) if n_l1 else 0
+            if n_l1 > 0 and n_l2 > 0 and hm[0][0].get("sub_matrix_6x6"):
+                nb1 = len(hm[0][0]["sub_matrix_6x6"])
+                nb2 = len(hm[0][0]["sub_matrix_6x6"][0]) if nb1 else 0
+                mat = [[0.0] * (n_l2 * nb2) for _ in range(n_l1 * nb1)]
+                for li in range(n_l1):
+                    for lj in range(n_l2):
+                        sub = (hm[li][lj] or {}).get("sub_matrix_6x6") or []
+                        for bi in range(min(nb1, len(sub))):
+                            for bj in range(min(nb2, len(sub[bi]))):
+                                mat[li * nb1 + bi][lj * nb2 + bj] = round(float(sub[bi][bj]), 3)
+                payload["payoff_matrix"] = mat
+
         sprites_map = dict(payload.get("sprites") or {})
         if not sprites_map:
             for sp in list(saved["t1_species"]) + list(saved["t2_species"]):
@@ -1693,6 +1724,8 @@ class ReplayCoachAppState:
         payload["sprites"] = sprites_map
         payload["t1_label"] = saved["t1_name"]
         payload["t2_label"] = saved["t2_name"]
+        payload["t1_paste"] = saved["t1_paste"]
+        payload["t2_paste"] = saved["t2_paste"]
         payload["vault_run_id"] = saved["run_id"]
         payload["matchup_hash"] = saved["matchup_hash"]
         payload["engine_version"] = saved["engine_version"]
@@ -1721,6 +1754,96 @@ class ReplayCoachAppState:
             "cached_deep_audit_keys": saved["cached_deep_audit_keys"],
             "result": payload,
         }
+
+    def export_lead_lab_vault_run(self, run_id: str, fmt: str = "json") -> Tuple[bytes, str, str]:
+        """Export the full persisted 90×90 matrix + best Turn-1 plays from DuckDB Vault as CSV or JSON."""
+        loaded = self.load_lead_lab_vault_run(run_id)
+        payload = loaded["result"]
+        safe_slug = re.sub(r"[^a-zA-Z0-9_-]+", "_", f"{loaded['t1_name']}_vs_{loaded['t2_name']}").strip("_")[:60]
+        norm_fmt = str(fmt or "json").strip().lower()
+
+        if norm_fmt == "csv":
+            def _csv_safe(val: Any) -> str:
+                s = str(val if val is not None else "")
+                if s and s[0] in ("=", "+", "-", "@", "\t", "\r"):
+                    return "'" + s
+                return s
+
+            buf = io.StringIO()
+            writer = csv.writer(buf)
+            writer.writerow(
+                [
+                    "lead_1",
+                    "bench_1",
+                    "lead_2",
+                    "bench_2",
+                    "score",
+                    "cvar_10",
+                    "t1_best_play",
+                    "t2_best_counter",
+                    "t1_top3_plays",
+                    "t2_top3_counters",
+                ]
+            )
+            for row_cells in payload.get("heatmap_cells") or []:
+                for cell in row_cells or []:
+                    l1_str = " + ".join(cell.get("lead_1") or [])
+                    l2_str = " + ".join(cell.get("lead_2") or [])
+                    b1_lbls = cell.get("t1_bench_labels") or []
+                    b2_lbls = cell.get("t2_bench_labels") or []
+                    sub_m = cell.get("sub_matrix_6x6") or []
+                    sub_cv = cell.get("sub_cvar_6x6") or []
+                    sub_t1 = cell.get("sub_t1_openings") or []
+                    sub_t2 = cell.get("sub_t2_openings") or []
+                    sub_t1_top = cell.get("sub_t1_top_plays") or []
+                    sub_t2_top = cell.get("sub_t2_top_plays") or []
+                    for bi, b1_pair in enumerate(b1_lbls):
+                        for bj, b2_pair in enumerate(b2_lbls):
+                            sc = sub_m[bi][bj] if bi < len(sub_m) and bj < len(sub_m[bi]) else 0.0
+                            cv = sub_cv[bi][bj] if bi < len(sub_cv) and bj < len(sub_cv[bi]) else 0.0
+                            p1_op = sub_t1[bi][bj] if bi < len(sub_t1) and bj < len(sub_t1[bi]) else ""
+                            p2_op = sub_t2[bi][bj] if bi < len(sub_t2) and bj < len(sub_t2[bi]) else ""
+                            top1_list = sub_t1_top[bi][bj] if bi < len(sub_t1_top) and bj < len(sub_t1_top[bi]) else []
+                            top2_list = sub_t2_top[bi][bj] if bi < len(sub_t2_top) and bj < len(sub_t2_top[bi]) else []
+                            top1_fmt = " | ".join(f"{x[0]} ({x[1]}%, {x[2]:+.2f})" for x in top1_list)
+                            top2_fmt = " | ".join(f"{x[0]} ({x[1]}%, {x[2]:+.2f})" for x in top2_list)
+                            writer.writerow(
+                                [
+                                    _csv_safe(l1_str),
+                                    _csv_safe(" + ".join(b1_pair)),
+                                    _csv_safe(l2_str),
+                                    _csv_safe(" + ".join(b2_pair)),
+                                    f"{float(sc):.4f}",
+                                    f"{float(cv):.4f}",
+                                    _csv_safe(p1_op),
+                                    _csv_safe(p2_op),
+                                    _csv_safe(top1_fmt),
+                                    _csv_safe(top2_fmt),
+                                ]
+                            )
+            return (
+                buf.getvalue().encode("utf-8-sig"),
+                "text/csv; charset=utf-8",
+                f"LeadLab_90x90_{safe_slug or 'matchup'}.csv",
+            )
+
+        export_obj = {
+            "run_id": loaded["run_id"],
+            "matchup_hash": loaded["matchup_hash"],
+            "preset": loaded["preset"],
+            "engine_version": loaded["engine_version"],
+            "created_at": loaded["created_at"],
+            "t1_name": loaded["t1_name"],
+            "t2_name": loaded["t2_name"],
+            "t1_paste": loaded["t1_paste"],
+            "t2_paste": loaded["t2_paste"],
+            "result": payload,
+        }
+        return (
+            json.dumps(export_obj, indent=2, ensure_ascii=False).encode("utf-8"),
+            "application/json; charset=utf-8",
+            f"LeadLab_90x90_{safe_slug or 'matchup'}.json",
+        )
 
     def create_lead_lab_job(
         self,
@@ -2255,6 +2378,25 @@ def make_handler(app_state: ReplayCoachAppState):
                     run_id = str(qs.get("run_id", [""])[0]).strip()
                     res = app_state.load_lead_lab_vault_run(run_id)
                     self._send_json(res)
+                except ValueError as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.NOT_FOUND)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+
+            if path == "/api/lead-lab/vault/export":
+                try:
+                    run_id = str(qs.get("run_id", [""])[0]).strip()
+                    fmt = str(qs.get("format", ["csv"])[0]).strip().lower()
+                    data, ctype, fname = app_state.export_lead_lab_vault_run(run_id, fmt=fmt)
+                    self.send_response(HTTPStatus.OK)
+                    self.send_header("Content-Type", ctype)
+                    self.send_header("Content-Disposition", f'attachment; filename="{fname}"')
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("Cache-Control", "no-store")
+                    self._send_security_headers()
+                    self.end_headers()
+                    self.wfile.write(data)
                 except ValueError as exc:
                     self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.NOT_FOUND)
                 except Exception as exc:

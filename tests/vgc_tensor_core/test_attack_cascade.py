@@ -408,14 +408,21 @@ def test_benchmarks() -> None:
 
         pre_res_cuda = execute_pre_attack_phases(F_cuda, P_cuda, M_cuda, p1_cuda, p2_cuda, tables_cuda)
 
-        # Warmup
-        _ = execute_attack_cascade(F_cuda, P_cuda, M_cuda, p1_cuda, p2_cuda, pre_res_cuda, tables_cuda, num_mc_samples=16)
-        torch.cuda.synchronize()
+        # Warmup (explicitly release warmup output tensors before timed pass to keep peak VRAM < 1.2 GB)
+        torch.cuda.empty_cache()
+        with torch.no_grad():
+            warm_out = execute_attack_cascade(F_cuda, P_cuda, M_cuda, p1_cuda, p2_cuda, pre_res_cuda, tables_cuda, num_mc_samples=16)
+            torch.cuda.synchronize()
+            del warm_out
+            torch.cuda.empty_cache()
 
-        t0_cuda = time.perf_counter()
-        _ = execute_attack_cascade(F_cuda, P_cuda, M_cuda, p1_cuda, p2_cuda, pre_res_cuda, tables_cuda, num_mc_samples=16)
-        torch.cuda.synchronize()
-        cuda_latency = (time.perf_counter() - t0_cuda) * 1000.0
+            t0_cuda = time.perf_counter()
+            bench_out = execute_attack_cascade(F_cuda, P_cuda, M_cuda, p1_cuda, p2_cuda, pre_res_cuda, tables_cuda, num_mc_samples=16)
+            torch.cuda.synchronize()
+            cuda_latency = (time.perf_counter() - t0_cuda) * 1000.0
+            del bench_out
+        del pre_res_cuda, F_cuda, P_cuda, M_cuda, tables_cuda
+        torch.cuda.empty_cache()
         print(f"    • PyTorch CUDA Latency [10,000 cells x 16 K]: {cuda_latency:.2f} ms on {torch.cuda.get_device_name(0)}")
     else:
         print("    • PyTorch CUDA: Skipped (CUDA not detected)")

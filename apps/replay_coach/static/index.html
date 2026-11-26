@@ -297,7 +297,8 @@
             </div>
           </div>
 
-          <!-- Unified Bo3 Game Switcher Strip -->
+          <!-- Unified Bo3 Game Switcher & Queue Strip (1 to 3 Games with Append/Remove) -->
+          <input type="file" id="replay-add-file-input" accept=".html,.htm,.txt,.log" multiple hidden />
           <div class="bo3-tabs-bar" id="setup-bo3-tabs" style="display:none"></div>
         </div>
       </div>
@@ -770,6 +771,8 @@
               <span class="legend-chip leg-win" id="lbl-ll-leg-win">+ Ventaja T1</span>
               <span class="legend-chip leg-even" id="lbl-ll-leg-even">Parejo</span>
               <span class="legend-chip leg-lose" id="lbl-ll-leg-lose">- Ventaja Rival</span>
+              <a class="btn btn-ghost btn-xs" id="btn-ll-export-csv" href="#" style="display:none" title="Descargar matriz completa 90×90 + mejores jugadas Turno 1 (CSV)">⬇ CSV 90×90</a>
+              <a class="btn btn-ghost btn-xs" id="btn-ll-export-json" href="#" style="display:none" title="Descargar matriz completa 90×90 + mejores jugadas Turno 1 (JSON)">⬇ JSON</a>
             </div>
           </div>
           <div class="panel-body ll-heatmap-scroll" id="ll-heatmap-container"></div>

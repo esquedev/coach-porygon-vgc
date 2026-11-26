@@ -999,14 +999,77 @@
   // Bo3 Game Switcher & Ephemeral Clamped 66-SP Slider Workbench
   // -------------------------------------------------------------------------
   function renderBo3GameTabs() {
-    const games =
+    const isEs = state.lang === "es";
+    // Source of truth: in Step 1 (setup), ALWAYS render freshly staged `state.bo3GamesMeta`
+    // so a previously analyzed 2-game match in `state.app.bo3_games` never hides a new 3-game upload!
+    const setupGames = state.bo3GamesMeta || [];
+    const activeGames =
       (state.app && state.app.bo3_games && state.app.bo3_games.length
         ? state.app.bo3_games
-        : state.bo3GamesMeta) || [];
-    const isEs = state.lang === "es";
-    const containers = [$("setup-bo3-tabs"), $("pipeline-bo3-tabs"), $("review-bo3-tabs")];
-    if (games.length <= 1) {
-      containers.forEach((el) => {
+        : setupGames) || [];
+
+    // 1. Setup Queue Strip: always visible when >= 1 game is loaded, with +Agregar Juego (up to 3), × remove, & Limpiar
+    const setupEl = $("setup-bo3-tabs");
+    if (setupEl) {
+      if (!setupGames.length) {
+        setupEl.style.display = "none";
+        setupEl.innerHTML = "";
+      } else {
+        const canAddMore = state.bo3Replays.length < 3 && state.rawReplayText !== "__SAMPLE__";
+        const chipsHtml = setupGames
+          .map((g, idx) => {
+            const isAct = idx === state.activeGameIndex;
+            const resCls = g.is_t1_win ? "win" : g.winner ? "loss" : "unk";
+            const resTxt = g.is_t1_win ? "W" : g.winner ? "L" : "—";
+            const lbl = isEs ? `Juego ${g.game_index}` : `Game ${g.game_index}`;
+            const rmBtn =
+              state.bo3Replays.length > 0
+                ? `<button type="button" class="bo3-remove-x" data-bo3-remove="${idx}" title="${isEs ? "Quitar este juego" : "Remove this game"}">&times;</button>`
+                : "";
+            return `<span class="bo3-chip-wrap">
+              <button type="button" class="bo3-tab-btn ${isAct ? "active" : ""}" data-bo3-idx="${idx}" title="${escapeHtml(g.filename || lbl)}">
+                <span>${lbl}</span>
+                <span class="bo3-res-dot ${resCls}">${resTxt}</span>
+                <span class="muted-xs">${g.num_turns}t</span>
+              </button>
+              ${rmBtn}
+            </span>`;
+          })
+          .join("");
+        const addBtnHtml = canAddMore
+          ? `<button type="button" class="btn btn-greatball btn-xs" id="btn-bo3-add-game">+ ${
+              isEs ? `Agregar Juego (${setupGames.length}/3)` : `Add Game (${setupGames.length}/3)`
+            }</button>`
+          : `<span class="cyber-pill cyan-pill">${isEs ? "Serie completa (3/3)" : "Full Bo3 (3/3)"}</span>`;
+        const clearBtnHtml = `<button type="button" class="btn btn-ghost btn-xs" id="btn-bo3-clear-series">${
+          isEs ? "Limpiar serie" : "Clear series"
+        }</button>`;
+        setupEl.style.display = "flex";
+        setupEl.innerHTML = `${chipsHtml}<span class="bo3-queue-actions">${addBtnHtml}${clearBtnHtml}</span>`;
+        setupEl.querySelectorAll("[data-bo3-idx]").forEach((btn) => {
+          btn.addEventListener("click", () => switchBo3Game(parseInt(btn.dataset.bo3Idx, 10)));
+        });
+        setupEl.querySelectorAll("[data-bo3-remove]").forEach((btn) => {
+          btn.addEventListener("click", () => removeBo3ReplayAt(parseInt(btn.dataset.bo3Remove, 10)));
+        });
+        const addBtn = $("btn-bo3-add-game");
+        if (addBtn) {
+          addBtn.addEventListener("click", () => {
+            const inp = $("replay-add-file-input");
+            if (inp) inp.click();
+          });
+        }
+        const clrBtn = $("btn-bo3-clear-series");
+        if (clrBtn) {
+          clrBtn.addEventListener("click", () => clearBo3Series());
+        }
+      }
+    }
+
+    // 2. Pipeline & Review Game Switcher Tabs
+    const runContainers = [$("pipeline-bo3-tabs"), $("review-bo3-tabs")];
+    if (activeGames.length <= 1) {
+      runContainers.forEach((el) => {
         if (el) {
           el.style.display = "none";
           el.innerHTML = "";
@@ -1015,7 +1078,7 @@
       return;
     }
 
-    const html = games
+    const html = activeGames
       .map((g, idx) => {
         const isAct = idx === state.activeGameIndex;
         const resCls = g.is_t1_win ? "win" : g.winner ? "loss" : "unk";
@@ -1029,7 +1092,7 @@
       })
       .join("");
 
-    containers.forEach((el) => {
+    runContainers.forEach((el) => {
       if (!el) return;
       el.style.display = el.classList.contains("bo3-tabs-inline") ? "inline-flex" : "flex";
       el.innerHTML = html;
@@ -1037,6 +1100,39 @@
         btn.addEventListener("click", () => switchBo3Game(parseInt(btn.dataset.bo3Idx, 10)));
       });
     });
+  }
+
+  function clearBo3Series() {
+    state.bo3Replays = [];
+    state.bo3GamesMeta = [];
+    state.rawReplayText = "";
+    state.previewData = null;
+    state.activeGameIndex = 0;
+    state.bo3TurnCache = {};
+    state.t2Inference = null;
+    state.t2UserSpreads = {};
+    if (state.app) state.app.bo3_games = [];
+    if ($("replay-dropzone")) $("replay-dropzone").style.display = "block";
+    if ($("detected-match-bar")) $("detected-match-bar").style.display = "none";
+    if ($("btn-launch-analysis")) $("btn-launch-analysis").disabled = true;
+    renderBo3GameTabs();
+    if ($("setup-status-msg")) {
+      $("setup-status-msg").textContent =
+        state.lang === "es"
+          ? "Serie limpiada. Arrastra o selecciona 1 a 3 replays (.html, .log, .txt)."
+          : "Series cleared. Drop or select 1 to 3 replay files (.html, .log, .txt).";
+    }
+  }
+
+  async function removeBo3ReplayAt(idx) {
+    if (!state.bo3Replays.length || idx < 0 || idx >= state.bo3Replays.length) return;
+    const remaining = state.bo3Replays.filter((_, i) => i !== idx);
+    if (!remaining.length) {
+      clearBo3Series();
+      return;
+    }
+    const pov = ($("setup-pov-select") && $("setup-pov-select").value) || null;
+    await handleBo3ReplayFiles(remaining, false, pov);
   }
 
   async function switchBo3Game(targetIdx) {
@@ -1449,6 +1545,10 @@
     state.previewData = prev;
     state.bo3GamesMeta = prev.games || [];
     state.activeGameIndex = prev.active_game_index || 0;
+    state.bo3TurnCache = {};
+    if (state.app) {
+      state.app.bo3_games = [];
+    }
     state.t2Inference = null;
     state.t2UserSpreads = {};
 
@@ -2506,16 +2606,28 @@
     applyAllTranslations();
   };
 
-  // Multi-File Drag & Drop + File Input (1 to 3 Showdown Replays: Bo1 or Bo3)
-  async function readUploadedFiles(fileList) {
-    const arr = Array.from(fileList || []).slice(0, 3);
+  // Multi-File Drag & Drop + File Input + Append Mode (1 to 3 Showdown Replays: Bo1 or Bo3)
+  async function readUploadedFiles(fileList, appendMode) {
+    const arr = Array.from(fileList || []);
     arr.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true }));
-    const items = [];
+    const newItems = [];
     for (const f of arr) {
-      items.push({ filename: f.name, raw_input: await f.text() });
+      newItems.push({ filename: f.name, raw_input: await f.text() });
     }
-    if (items.length) {
-      await handleBo3ReplayFiles(items, false, null);
+    if (!newItems.length) return;
+
+    let combined = appendMode && state.rawReplayText !== "__SAMPLE__" ? [...state.bo3Replays] : [];
+    const seenTexts = new Set(combined.map((it) => (it.raw_input || "").trim()));
+    for (const it of newItems) {
+      const clean = (it.raw_input || "").trim();
+      if (!clean || seenTexts.has(clean)) continue;
+      if (combined.length >= 3) break;
+      seenTexts.add(clean);
+      combined.push(it);
+    }
+    if (combined.length) {
+      const pov = appendMode && $("setup-pov-select") ? $("setup-pov-select").value || null : null;
+      await handleBo3ReplayFiles(combined, false, pov);
     }
   }
 
@@ -2529,16 +2641,25 @@
     e.preventDefault();
     dz.classList.remove("dragover");
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-      await readUploadedFiles(e.dataTransfer.files);
+      await readUploadedFiles(e.dataTransfer.files, false);
     }
   });
 
   $("replay-file-input").onchange = async (e) => {
     if (e.target.files && e.target.files.length) {
-      await readUploadedFiles(e.target.files);
+      await readUploadedFiles(e.target.files, false);
       e.target.value = "";
     }
   };
+
+  if ($("replay-add-file-input")) {
+    $("replay-add-file-input").onchange = async (e) => {
+      if (e.target.files && e.target.files.length) {
+        await readUploadedFiles(e.target.files, true);
+        e.target.value = "";
+      }
+    };
+  }
 
   $("btn-change-replay").onclick = () => {
     $("replay-dropzone").style.display = "block";
@@ -2549,8 +2670,22 @@
     box.style.display = box.style.display === "none" ? "block" : "none";
   };
 
-  $("btn-parse-raw-replay").onclick = () => {
-    handleReplayInput($("raw-replay-textarea").value, false, null);
+  $("btn-parse-raw-replay").onclick = async () => {
+    const rawText = ($("raw-replay-textarea") && $("raw-replay-textarea").value) || "";
+    if (!rawText.trim()) return;
+    const trimmed = rawText.trim();
+    if (state.bo3Replays.length > 0 && state.bo3Replays.length < 3 && state.rawReplayText !== "__SAMPLE__") {
+      const exists = state.bo3Replays.some((it) => (it.raw_input || "").trim() === trimmed);
+      if (!exists) {
+        const nextIdx = state.bo3Replays.length + 1;
+        const combined = [...state.bo3Replays, { filename: `Game ${nextIdx}`, raw_input: rawText }];
+        const pov = ($("setup-pov-select") && $("setup-pov-select").value) || null;
+        $("raw-replay-textarea").value = "";
+        await handleBo3ReplayFiles(combined, false, pov);
+        return;
+      }
+    }
+    await handleReplayInput(rawText, false, null);
   };
 
   $("btn-load-sample").onclick = () => {
@@ -3954,32 +4089,102 @@
       });
     }
 
-    // Render selected (Back-1, Back-2) opening play card
+    // Render selected (Back-1, Back-2) opening play card with persisted Top-3 Turn-1 plays
     const openCard = $("ll-opening-card");
     if (openCard) {
+      const isSci = state.style === "scientific";
       const sc = Number((cell.sub_matrix_6x6[b1] && cell.sub_matrix_6x6[b1][b2]) || 0);
       const cv = Number((cell.sub_cvar_6x6[b1] && cell.sub_cvar_6x6[b1][b2]) || 0);
       const t1Op = (cell.sub_t1_openings[b1] && cell.sub_t1_openings[b1][b2]) || "";
       const t2Op = (cell.sub_t2_openings[b1] && cell.sub_t2_openings[b1][b2]) || "";
+      const t1Top3 = (cell.sub_t1_top_plays && cell.sub_t1_top_plays[b1] && cell.sub_t1_top_plays[b1][b2]) || [];
+      const t2Top3 = (cell.sub_t2_top_plays && cell.sub_t2_top_plays[b1] && cell.sub_t2_top_plays[b1][b2]) || [];
       const b1Name = (cell.t1_bench_labels[b1] || []).join(" + ");
       const b2Name = (cell.t2_bench_labels[b2] || []).join(" + ");
+      const scoreBadge = isSci
+        ? `v* = ${sc >= 0 ? "+" : ""}${sc.toFixed(3)} · CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}`
+        : isEs
+          ? `Ventaja ${sc >= 0 ? "+" : ""}${sc.toFixed(2)} · Piso 10% RNG ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}`
+          : `Edge ${sc >= 0 ? "+" : ""}${sc.toFixed(2)} · Bad-Luck Floor ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}`;
+      const mixLbl = isSci ? "Nash" : "Mix";
+
+      const renderTopList = (plays, fallbackDesc) => {
+        if (plays && plays.length) {
+          return `<div class="ll-top-plays-list">${plays
+            .map(
+              (p, idx) => `<div class="ll-top-play-row ${idx === 0 ? "rank-1" : ""}">
+                <span><strong>#${idx + 1}</strong> ${escapeHtml(p[0])}</span>
+                <span class="ll-top-play-meta">${mixLbl} ${Number(p[1]).toFixed(1)}% · ${Number(p[2]) >= 0 ? "+" : ""}${Number(p[2]).toFixed(2)}</span>
+              </div>`
+            )
+            .join("")}</div>`;
+        }
+        return `<div>${escapeHtml(fallbackDesc || "—")}</div>`;
+      };
+
+      const t1Head = isSci
+        ? (isEs ? "Tus Mejores Jugadas Turno 1 (Nash):" : "Your Top Turn-1 Plays (Nash):")
+        : (isEs ? "Tus Mejores Aperturas Turno 1:" : "Your Best Turn-1 Openings:");
+      const t2Head = isSci
+        ? (isEs ? "Mejores Respuestas del Rival (Nash):" : "Best Opponent Responses (Nash):")
+        : (isEs ? "Respuestas Más Peligrosas del Rival:" : "Toughest Opponent Counters:");
+
       openCard.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
-          <strong>${isEs ? "Apertura Turno 1 Óptima" : "Optimal Turn-1 Opening"}</strong>
-          <span class="cyber-pill ${sc >= 0 ? "cyan-pill" : "gold-pill"}">v* = ${sc >= 0 ? "+" : ""}${sc.toFixed(3)} · CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}</span>
+          <strong>${isEs ? "Aperturas Óptimas Turno 1" : "Optimal Turn-1 Openings"}</strong>
+          <span class="cyber-pill ${sc >= 0 ? "cyan-pill" : "gold-pill"}">${escapeHtml(scoreBadge)}</span>
         </div>
         <div class="muted-xs">${isEs ? "Tu Banca:" : "Your Back-2:"} <strong>${escapeHtml(b1Name)}</strong> · ${isEs ? "Banca Rival:" : "Opp Back-2:"} <strong>${escapeHtml(b2Name)}</strong></div>
-        <div class="ll-opening-line"><strong>${isEs ? "Tu Jugada #1 (Nash):" : "Your #1 Play (Nash):"}</strong><br/>${escapeHtml(t1Op)}</div>
-        <div class="ll-opening-line opp"><strong>${isEs ? "Mejor Respuesta Rival:" : "Best Opponent Counter:"}</strong><br/>${escapeHtml(t2Op)}</div>
+        <div class="ll-opening-line"><strong>${t1Head}</strong>${renderTopList(t1Top3, t1Op)}</div>
+        <div class="ll-opening-line opp"><strong>${t2Head}</strong>${renderTopList(t2Top3, t2Op)}</div>
       `;
     }
 
+    // Auto-hydrate cached K=128 Deep Audit immediately from DuckDB if this exact (mode1, mode2) cell is cached!
+    const nb1 = (cell.t1_bench_labels || []).length || 1;
+    const nb2 = (cell.t2_bench_labels || []).length || 1;
+    const m1Idx = l1 * nb1 + b1;
+    const m2Idx = l2 * nb2 + b2;
+    const cellKey = `m${m1Idx}__m${m2Idx}`;
     const deepBox = $("ll-deep-audit-box");
     if (deepBox) {
-      if (!state.leadLab.deepAudit) {
-        deepBox.style.display = "none";
-      } else {
+      if (state.leadLab.deepAudit && state.leadLab.deepAudit.audit_cell_key === cellKey) {
         renderLeadLabDeepAuditBox(state.leadLab.deepAudit);
+      } else if (
+        state.leadLab.jobId &&
+        state.leadLab.cachedDeepAuditKeys &&
+        state.leadLab.cachedDeepAuditKeys.has(cellKey)
+      ) {
+        deepBox.style.display = "flex";
+        deepBox.innerHTML = `<span class="muted-xs">⚡ ${isEs ? "Cargando auditoría profunda K=128 guardada en Vault..." : "Loading cached K=128 deep audit from Vault..."}</span>`;
+        fetch("/api/lead-lab/deep-turn1", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_id: state.leadLab.jobId,
+            mode_1_idx: m1Idx,
+            mode_2_idx: m2Idx,
+            num_mc: 128,
+            force_recompute: false,
+          }),
+        })
+          .then((r) => r.json())
+          .then((d) => {
+            if (
+              d &&
+              !d.error &&
+              state.leadLab.selectedLead1 === l1 &&
+              state.leadLab.selectedLead2 === l2 &&
+              state.leadLab.selectedBench1 === b1 &&
+              state.leadLab.selectedBench2 === b2
+            ) {
+              state.leadLab.deepAudit = d;
+              renderLeadLabDeepAuditBox(d);
+            }
+          })
+          .catch(() => {});
+      } else {
+        deepBox.style.display = "none";
       }
     }
   }
@@ -3988,6 +4193,7 @@
     const deepBox = $("ll-deep-audit-box");
     if (!deepBox || !audit) return;
     const isEs = state.lang === "es";
+    const isSci = state.style === "scientific";
     const pk = profileKey();
     const com = (audit.commentary_variants && (audit.commentary_variants[pk] || audit.commentary_variants.es_vgc)) || {};
     deepBox.style.display = "flex";
@@ -4002,12 +4208,14 @@
     const cacheBadge = audit.from_vault_cache
       ? `<span class="cyber-pill cyan-pill">⚡ ${isEs ? "En Vault" : "Vault Cache"}</span>`
       : "";
+    const mixLbl = isSci ? "Nash" : "Mix";
+    const scoreLbl = isSci ? "EV" : (isEs ? "Vent." : "Score");
     const topRows = (audit.top_actions || [])
       .slice(0, 5)
       .map(
         (a, idx) => `<div class="ll-deep-row">
           <span><strong>#${idx + 1}</strong> ${escapeHtml(a.desc)}</span>
-          <span style="white-space:nowrap;font-family:monospace;color:#fde047">Nash ${a.nash_pct}% · EV ${a.risk_ev >= 0 ? "+" : ""}${a.risk_ev.toFixed(2)}</span>
+          <span style="white-space:nowrap;font-family:monospace;color:#fde047">${mixLbl} ${a.nash_pct}% · ${scoreLbl} ${a.risk_ev >= 0 ? "+" : ""}${a.risk_ev.toFixed(2)}</span>
         </div>`
       )
       .join("");
@@ -4101,6 +4309,24 @@
     }, Math.max(0, Number(delayMs || 0)));
   }
 
+  function updateLeadLabExportButtons(vaultRunId) {
+    const csvBtn = $("btn-ll-export-csv");
+    const jsonBtn = $("btn-ll-export-json");
+    if (vaultRunId) {
+      if (csvBtn) {
+        csvBtn.href = `/api/lead-lab/vault/export?run_id=${encodeURIComponent(vaultRunId)}&format=csv`;
+        csvBtn.style.display = "inline-flex";
+      }
+      if (jsonBtn) {
+        jsonBtn.href = `/api/lead-lab/vault/export?run_id=${encodeURIComponent(vaultRunId)}&format=json`;
+        jsonBtn.style.display = "inline-flex";
+      }
+    } else {
+      if (csvBtn) csvBtn.style.display = "none";
+      if (jsonBtn) jsonBtn.style.display = "none";
+    }
+  }
+
   function hydrateLeadLabCompletedResult(fullRes, isFromVault) {
     const ll = state.leadLab;
     const isEs = state.lang === "es";
@@ -4113,19 +4339,24 @@
     ll.selectedLead2 = null;
     ll.deepAudit = null;
 
+    const t1Leads =
+      (fullRes.t1_leads && fullRes.t1_leads.length ? fullRes.t1_leads : fullRes.trainer_1_leads) || [];
+    const t2Leads =
+      (fullRes.t2_leads && fullRes.t2_leads.length ? fullRes.t2_leads : fullRes.trainer_2_leads) || [];
     const meta = {
       job_id: fullRes.job_id,
       t1_label: fullRes.t1_label,
       t2_label: fullRes.t2_label,
-      t1_leads: fullRes.t1_leads || [],
-      t2_leads: fullRes.t2_leads || [],
-      num_t1_modes: fullRes.num_t1_modes || 90,
-      num_t2_modes: fullRes.num_t2_modes || 90,
-      total_lead_pairs: (fullRes.t1_leads || []).length * (fullRes.t2_leads || []).length,
+      t1_leads: t1Leads,
+      t2_leads: t2Leads,
+      num_t1_modes: fullRes.num_t1_modes || (fullRes.modes_t1 && fullRes.modes_t1.length) || 90,
+      num_t2_modes: fullRes.num_t2_modes || (fullRes.modes_t2 && fullRes.modes_t2.length) || 90,
+      total_lead_pairs: t1Leads.length * t2Leads.length,
       sprites: fullRes.sprites || {},
     };
     ll.jobMeta = meta;
     updateLeadLabControlsUI();
+    updateLeadLabExportButtons(fullRes.vault_run_id || "");
 
     if ($("ll-results-shell")) $("ll-results-shell").style.display = "block";
     renderLeadLabHeatmapSkeleton(meta);
@@ -4135,12 +4366,18 @@
       for (let j = 0; j < row.length; j++) {
         const c = row[j];
         if (!c) continue;
+        const cellScore = typeof c.score === "number" ? c.score : Number(c.nash_value || 0);
         updateLeadLabHeatmapCell({
           lead_1_idx: i,
           lead_2_idx: j,
-          score: c.nash_value,
+          score: cellScore,
           best_t1_bench: (c.t1_bench_labels && c.t1_bench_labels[c.best_t1_bench_idx || 0]) || [],
-          t1_opening: (c.sub_t1_openings && c.sub_t1_openings[c.best_t1_bench_idx || 0] && c.sub_t1_openings[c.best_t1_bench_idx || 0][c.best_t2_bench_idx || 0]) || "",
+          t1_opening:
+            c.t1_opening ||
+            (c.sub_t1_openings &&
+              c.sub_t1_openings[c.best_t1_bench_idx || 0] &&
+              c.sub_t1_openings[c.best_t1_bench_idx || 0][c.best_t2_bench_idx || 0]) ||
+            "",
         });
       }
     }
@@ -4418,6 +4655,7 @@
       ll.selectedLead2 = null;
       ll.deepAudit = null;
       updateLeadLabControlsUI();
+      updateLeadLabExportButtons("");
 
       appendLeadLabCli(
         "READY",
@@ -4480,6 +4718,7 @@
         ll.currentMatchupHash = fullRes.matchup_hash || "";
         ll.cachedDeepAuditKeys = new Set(fullRes.cached_deep_audit_keys || []);
         updateLeadLabControlsUI();
+        updateLeadLabExportButtons(fullRes.vault_run_id || "");
         if ($("ll-progress-fill")) $("ll-progress-fill").style.width = "100%";
         if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot done";
         const topBring = (fullRes.trainer_1_top_brings && fullRes.trainer_1_top_brings[0]) || null;

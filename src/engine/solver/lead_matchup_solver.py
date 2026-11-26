@@ -300,6 +300,10 @@ class LeadMatchupResult:
             "trainer_2_species": list(self.trainer_2_species),
             "trainer_1_leads": [list(p) for p in self.trainer_1_leads],
             "trainer_2_leads": [list(p) for p in self.trainer_2_leads],
+            "t1_leads": [list(p) for p in self.trainer_1_leads],
+            "t2_leads": [list(p) for p in self.trainer_2_leads],
+            "num_t1_modes": len(self.modes_t1),
+            "num_t2_modes": len(self.modes_t2),
             "modes_t1": [m.to_dict() for m in self.modes_t1],
             "modes_t2": [m.to_dict() for m in self.modes_t2],
             "global_game_value": round(float(self.global_game_value), 4),
@@ -1088,6 +1092,8 @@ class LeadMatchupSolver:
         sub_cvar = np.zeros((nb1, nb2), dtype=np.float64)
         sub_t1_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
         sub_t2_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
+        sub_t1_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
+        sub_t2_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
 
         def _slice_sw1_s2(m1: int) -> Tuple[np.ndarray, np.ndarray]:
             c_i, s0, s1 = r1_chunk_slice[m1]
@@ -1156,6 +1162,28 @@ class LeadMatchupSolver:
                 sub_t1_openings[b1_i][b2_i] = t1_labels[top_r] if top_r < len(t1_labels) else ""
                 sub_t2_openings[b1_i][b2_i] = t2_labels[top_c] if top_c < len(t2_labels) else ""
 
+                # Persist compact Top-3 Turn-1 plays ([desc, mix_pct, score]) for both sides
+                ev_t1_rows = u_mat_adj @ q_star if len(q_star) > 0 else np.zeros(len(t1_labels))
+                ev_t2_cols = p_star @ u_mat_adj if len(p_star) > 0 else np.zeros(len(t2_labels))
+                t1_order = sorted(
+                    range(min(len(t1_labels), len(p_star))),
+                    key=lambda idx: (round(float(p_star[idx]), 4), float(ev_t1_rows[idx])),
+                    reverse=True,
+                )[:3]
+                t2_order = sorted(
+                    range(min(len(t2_labels), len(q_star))),
+                    key=lambda idx: (round(float(q_star[idx]), 4), -float(ev_t2_cols[idx])),
+                    reverse=True,
+                )[:3]
+                sub_t1_top_plays[b1_i][b2_i] = [
+                    [t1_labels[i], round(float(p_star[i] * 100.0), 1), round(float(ev_t1_rows[i]), 3)]
+                    for i in t1_order
+                ]
+                sub_t2_top_plays[b1_i][b2_i] = [
+                    [t2_labels[j], round(float(q_star[j] * 100.0), 1), round(float(ev_t2_cols[j]), 3)]
+                    for j in t2_order
+                ]
+
         # Solve the 6×6 Back-2 Nash game at this lead pair for the 15×15 heatmap headline cell
         cell_nash = solve_zero_sum_nash(sub_scores)
         best_b1 = int(np.argmax(cell_nash.trainer_1_strategy))
@@ -1187,6 +1215,8 @@ class LeadMatchupSolver:
             "sub_cvar_6x6": np.round(sub_cvar, 4).tolist(),
             "sub_t1_openings": sub_t1_openings,
             "sub_t2_openings": sub_t2_openings,
+            "sub_t1_top_plays": sub_t1_top_plays,
+            "sub_t2_top_plays": sub_t2_top_plays,
             "turn0_events": turn0_events,
             "_raw_sub_scores": sub_scores,
         }
