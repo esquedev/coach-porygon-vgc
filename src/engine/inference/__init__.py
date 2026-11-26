@@ -1,31 +1,28 @@
 # -*- coding: utf-8 -*-
-"""Regulation M-C Opponent Set & Tournament Usage Inference Package."""
+"""Regulation M-C OTS-Enforced 66-SP Inference & Tournament Repository Package."""
 
 from .set_inferencer import (
-    InferredSetCandidate,
+    MissingOTSError,
     OpponentSetInferencer,
-    TeamInferenceReport,
+    PokemonSPInference,
+    SeriesSPInferenceReport,
+    StatBound,
     apply_stat_stage,
     compute_effective_speed,
-    compute_level_50_stats_from_base,
 )
 from .tournament_db import (
-    SpeciesUsageProfile,
-    TournamentBuildRecord,
     TournamentUsageRepository,
     get_tournament_repository,
 )
 
 __all__ = [
-    "InferredSetCandidate",
+    "MissingOTSError",
     "OpponentSetInferencer",
-    "SpeciesUsageProfile",
-    "TeamInferenceReport",
-    "TournamentBuildRecord",
+    "PokemonSPInference",
+    "SeriesSPInferenceReport",
+    "StatBound",
     "TournamentUsageRepository",
     "apply_stat_stage",
     "compute_effective_speed",
-    "compute_level_50_stats_from_base",
     "get_tournament_repository",
 ]
-

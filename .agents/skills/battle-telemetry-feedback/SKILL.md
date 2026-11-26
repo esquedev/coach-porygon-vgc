@@ -10,7 +10,7 @@ description: >-
 
 This skill automates the full post-match coaching pipeline:
 1. Extracting turn-by-turn cartridge telemetry into `data/telemetry/battles_telemetry.csv`.
-2. Running the game-theoretic turn advisor (`engine.cli`) to evaluate Nash equilibrium lines, regret, and downside risk ($CVaR_{0.10}$).
+2. Running the Bo1/Bo3 OTS 66-SP & Tensor Core CLI (`scripts/coach_bo3.py`) or Replay Coach Studio (`apps/replay_coach/`) to solve exact opponent 66-SP bounds and evaluate Nash equilibrium lines, regret, and downside risk ($CVaR_{0.10}$).
 3. Injecting structured coaching comments with standardized tags into the CSV's `comment` column:
    - `[LEAD_EVAL]`: Turn 1 bring assessment against opponent's preview.
    - `[MEGA_DECISION]`: Timing and species selection for Mega Evolution (Priority +5.5).
@@ -39,15 +39,20 @@ python3 scripts/dump_battle_telemetry.py \
 
 ---
 
-### Step 2: Run Game-Theoretic Turn Advisor
-Run the turn advisor CLI against the battle log to detect missed opportunities and evaluate risk floors:
+### Step 2: Run Bo1/Bo3 OTS 66-SP & Tensor Core Audit
+Run the headless v2 coaching CLI against 1 to 3 Showdown replays (auto-extracts opponent OTS from `|showteam|`, or pass `--opp-ots` for Bo1 replays without `|showteam|`):
 
 ```bash
-PYTHONPATH=src python3 -m engine.cli \
-    --paste data/teams/<team>.txt \
-    --log path/to/match.log \
-    --verbosity coach
+PYTHONPATH=src:. python3 scripts/coach_bo3.py \
+    --team data/teams/<team>.txt \
+    --replays path/to/g1.html [path/to/g2.html path/to/g3.html] \
+    --rng-samples 128 \
+    --lang en \
+    --style vgc \
+    --export-csv <team>
 ```
+
+*(Pass `--two-ply` to enable Selective 2-Ply Lookahead on the Strict-IEDS core, or `--no-sim` to only solve and print the opponent's clamped 66-SP bounds.)*
 
 ---
 

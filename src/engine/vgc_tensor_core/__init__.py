@@ -3,10 +3,11 @@
 Coach Porygon VGC — Programmatic Showdown Tensor Core (`src/engine/vgc_tensor_core`)
 ====================================================================================
 
-Exports the canonical `trainer_1`/`trainer_2` tensor schema (`FieldIdx[24]`, `MonIdx[86]`,
-`MoveIdx[56]`), bilinear lookup tables, on-the-fly DuckDB `ShowdownTensorCompiler`,
+Exports the canonical `trainer_1`/`trainer_2` tensor schema (`FieldIdx[26]`, `MonIdx[96]`,
+`MoveIdx[60]`), bilinear lookup tables, on-the-fly DuckDB `ShowdownTensorCompiler`,
 `LogicalConstraintEngine` (`26x26` action pruner), `rng_engine` (Dual-Draw Spinning-Wheel
-+ Counter-Based Hash Scrambling), and the 5-Phase `VgcTensorStateMachine`.
++ Counter-Based Hash Scrambling), 8-pillar `victory_equity`, and the 5-Phase
+`VgcTensorStateMachine`.
 """
 
 from .attack_cascade import (
@@ -131,6 +132,14 @@ from .telemetry_formatter import (
     format_monte_carlo_damage_matrix,
     format_pre_attack_barrier_table,
 )
+from .victory_equity import (
+    DEFAULT_TUNED_WEIGHTS_PATH,
+    EQUITY_ENGINE_VERSION,
+    PILLAR_NAMES,
+    VictoryEquityBreakdown,
+    VictoryEquityWeights,
+    compute_victory_equity_torch,
+)
 
 __all__ = [
     "ACTIVE_SLOTS",
@@ -157,6 +166,8 @@ __all__ = [
     "CRIT_STAGE_THRESHOLDS_PCT",
     "CompiledBattleState",
     "ConstraintResult",
+    "DEFAULT_TUNED_WEIGHTS_PATH",
+    "EQUITY_ENGINE_VERSION",
     "EndOfTurnResult",
     "FIELD_DIM",
     "FieldIdx",
@@ -176,6 +187,7 @@ __all__ = [
     "NUM_WEATHERS",
     "OverrideDefStat",
     "OverrideOffStat",
+    "PILLAR_NAMES",
     "PreAttackPhaseResult",
     "PrunedSideActionTensorMask",
     "RESIST_BERRY_TO_TYPE_IDX",
@@ -206,6 +218,8 @@ __all__ = [
     "TurnCheckpoint",
     "TurnSimulationStatistics",
     "VgcTensorStateMachine",
+    "VictoryEquityBreakdown",
+    "VictoryEquityWeights",
     "WEATHER_TO_IDX",
     "aggregate_simulation_statistics_torch",
     "apply_switch_permutation",
@@ -216,6 +230,7 @@ __all__ = [
     "compute_stab_multiplier",
     "compute_terrain_move_multiplier",
     "compute_type_effectiveness",
+    "compute_victory_equity_torch",
     "counter_uniform_0_100_numpy",
     "counter_uniform_0_100_torch",
     "execute_attack_cascade",

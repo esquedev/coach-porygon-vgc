@@ -1,0 +1,125 @@
+name: Coach Porygon VGC — CI & Acceptance Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-anti-hallucination:
+    name: Lint & Anti-Hallucination Scanner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install linter & V8 JS validator
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 mini-racer
+
+      - name: Run Flake8 syntax & undefined-name gate
+        run: |
+          flake8 src/ apps/ scripts/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Run Anti-Hallucination, Zero p1/p2 & JS Syntax Scanner
+        run: |
+          python scripts/scan_repo_hallucinations.py
+
+  unit-tests:
+    name: Unit & Integration Suite (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    needs: lint-and-anti-hallucination
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install CPU PyTorch & runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pytest
+
+      - name: Run Unit & Integration Tests (pytest)
+        env:
+          PYTHONPATH: src:.
+        run: |
+          pytest tests/ -m "not acceptance" -v
+
+  acceptance-and-model-fuzzer:
+    name: Acceptance Test & Anti-Hallucination Model Fuzzer
+    runs-on: ubuntu-latest
+    needs: lint-and-anti-hallucination
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install CPU PyTorch & runtime dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt pytest
+
+      - name: Run Anti-Hallucination Acceptance & Model Constraint Fuzzer
+        env:
+          PYTHONPATH: src:.
+        run: |
+          pytest tests/test_acceptance_anti_hallucination.py tests/vgc_tensor_core/test_adversarial_fuzzer.py -v
+
+  package-integrity:
+    name: Validate Package & Launcher Build Scripts
+    runs-on: ubuntu-latest
+    needs: [unit-tests, acceptance-and-model-fuzzer]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Verify Python package build & metadata (twine)
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+          python -m build
+          twine check --strict dist/*
+          python -m py_compile apps/replay_coach/launcher_entry.py scripts/build_windows_launcher.py
+          python scripts/build_windows_launcher.py --check

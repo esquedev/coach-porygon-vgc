@@ -1,0 +1,59 @@
+Hazard (Charizard) @ Charizardite Y
+Ability: Blaze
+Level: 50
+Modest Nature
+EVs: 22 HP / 19 Def / 3 SpA / 1 SpD / 21 Spe
+- Weather Ball
+- Heat Wave
+- Hurricane
+- Protect
+
+Raichu @ Raichunite X
+Ability: Lightning Rod
+Level: 50
+Jolly Nature
+EVs: 29 HP / 3 Atk / 2 Def / 32 Spe
+- Volt Tackle
+- Volt Switch
+- Fake Out
+- Feint
+
+Garchomp @ Life Orb
+Ability: Rough Skin
+Level: 50
+Jolly Nature
+EVs: 1 HP / 30 Atk / 3 Def / 32 Spe
+- Stomping Tantrum
+- Dragon Claw
+- Rock Slide
+- Protect
+
+Archaludon @ Leftovers
+Ability: Stamina
+Level: 50
+Bold Nature
+EVs: 30 HP / 1 Def / 7 SpA / 28 SpD
+- Electro Shot
+- Dragon Pulse
+- Flash Cannon
+- Protect
+
+Pelipper @ Sitrus Berry
+Ability: Drizzle
+Level: 50
+Bold Nature
+EVs: 32 HP / 22 Def / 12 SpA
+- Weather Ball
+- Hurricane
+- Tailwind
+- Wide Guard
+
+Venusaur @ Focus Sash
+Ability: Chlorophyll
+Level: 50
+Modest Nature
+EVs: 2 HP / 32 SpA / 32 Spe
+- Leaf Storm
+- Sludge Bomb
+- Sleep Powder
+- Protect

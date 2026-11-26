@@ -1,0 +1,24 @@
+#!/bin/sh
+# ==============================================================================
+# Coach Porygon VGC — Git Pre-Commit Hook
+# Runs fast deterministic Anti-Hallucination, Zero p1/p2 AST & V8 JS checks.
+# Activate locally with: git config core.hooksPath .githooks
+# ==============================================================================
+
+set -e
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+if [ -f "./.venv/Scripts/python.exe" ]; then
+    PY="./.venv/Scripts/python.exe"
+elif [ -f "./.venv/bin/python" ]; then
+    PY="./.venv/bin/python"
+else
+    PY="python3"
+fi
+
+echo ""
+echo "[GIT PRE-COMMIT] Running Anti-Hallucination, Zero p1/p2 & JS Syntax Gate..."
+"$PY" scripts/scan_repo_hallucinations.py
+echo "[GIT PRE-COMMIT] Passed cleanly."
+exit 0

@@ -68,8 +68,11 @@ Desktop.ini
 *.swo
 
 # 6. Private Coaching Telemetry, Rosters, Scouting Intel & Heavy Tournament Dumps
-data/
-src/data/
+/data/*
+!/data/teams/
+/data/teams/*
+!/data/teams/char_y_v4.txt
+/src/data/
 src/engine/data/showdown/raw_ts/
 src/engine/data/showdown/*.ts
 reports/*.pdf
@@ -90,3 +93,6 @@ reports/*.html
 
 !tests/data/
 !tests/data/**
+!reports/reg_md_meta_scout.html
+!src/engine/data/munchstats/raw/archive/
+!src/engine/data/munchstats/raw/archive/**

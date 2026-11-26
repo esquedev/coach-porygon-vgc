@@ -13,15 +13,12 @@ stats, types, abilities, and move metadata directly from the in-memory DuckDB
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
-from engine.db_registry import VGCDataRegistry, get_registry
+from engine.db_registry import VGCDataRegistry
 from engine.game_rules import (
-    NATURE_MODS,
-    STANDARD_IV,
     TYPE_CHART,
     compute_champions_level_50_stats,
-    trunc,
 )
 from engine.inference.tournament_db import (
     TournamentUsageRepository,
@@ -112,30 +109,18 @@ class TurnStateCompiler:
     def compile_turn_state(
         self,
         battle: ParsedBattle,
-        run_inference: bool = True,
+        run_inference: bool = False,
         trainer_1_bench_override: Optional[Sequence[str]] = None,
         trainer_2_bench_override: Optional[Sequence[str]] = None,
     ) -> TurnState:
-        """Compile a `ParsedBattle` into a concrete `TurnState` for the next decision point.
+        """Compile a deterministic, OTS-resolved `ParsedBattle` into a concrete `TurnState`.
 
-        Args:
-            battle: ParsedBattle model from `parse_showdown_chat_log`.
-            run_inference: If True, runs `OpponentSetInferencer` when `trainer_2` sets
-                           have unrevealed natures, spreads, or moves.
-            trainer_1_bench_override: Optional explicit bench species list for `trainer_1`.
-            trainer_2_bench_override: Optional explicit bench species list for `trainer_2`.
-
-        Returns:
-            Compiled `TurnState` containing `trainer_1`, `trainer_2`, and `field`.
+        Note: `TurnStateCompiler` is strictly decoupled from `engine.inference` — both
+        `trainer_1` and `trainer_2` must already have resolved OTS + 66-SP spreads
+        before compiling into `(F, P, M)` tensors. The `run_inference` flag is retained
+        strictly as a no-op parameter for caller signature compatibility.
         """
-        if run_inference and (
-            self._needs_inference(battle.trainer_2)
-            or self._needs_inference(battle.trainer_1)
-        ):
-            from engine.inference.set_inferencer import OpponentSetInferencer
-
-            inferencer = OpponentSetInferencer(repo=self.repo)
-            inferencer.infer_battle(battle)
+        _ = run_inference
 
         trainer_1_side = self._compile_trainer_side(
             trainer_id="trainer_1",
@@ -171,15 +156,6 @@ class TurnStateCompiler:
             trainer_2=trainer_2_side,
             field=field_state,
         )
-
-    def _needs_inference(self, team: ParsedTeam) -> bool:
-        """Check whether any Pokémon on `team` is missing a spread, nature, or moves."""
-        if not team.pokemon_sets:
-            return False
-        for pkm in team.pokemon_sets.values():
-            if not pkm.nature or pkm.spread.total_sp == 0 or len(pkm.moves) < 2:
-                return True
-        return False
 
     # ------------------------------------------------------------------
     # Side & Roster Compilation
@@ -430,14 +406,45 @@ class TurnStateCompiler:
         )
         dex_entry = self.repo.pokedex.get(current_dex_species, {})
         forme_str = str(dex_entry.get("forme") or "")
-        if "Mega" in current_dex_species or forme_str.startswith("Mega"):
-            base_species = str(
-                dex_entry.get("baseSpecies")
-                or pkm.base_species
-                or current_dex_species.split("-Mega")[0]
-            )
+        is_mega_dex_forme = "Mega" in current_dex_species or forme_str.startswith("Mega")
+
+        # Anti Regulation M-C Hallucination Guard:
+        # Under Champions rules, Mega Evolution resolves at Turn 1 Barrier 2 (Priority +5.5),
+        # never on Turn 0. If a team paste writes `Garchomp-Mega-Z @ Garchompite Z` or
+        # `Floette-Mega @ Floettite` with `is_mega=False`, enter Turn 0 in the true pre-Mega
+        # base form (`Garchomp`, `Floette-Eternal`, `Meowstic-F`, etc.) so Turn-0 speed order
+        # and pre-Mega stats/typing are cartridge-accurate while Mega stats stay primed.
+        if not pkm.is_mega and is_mega_dex_forme:
+            if current_dex_species == "Floette-Mega" and "Floette-Eternal" in self.repo.pokedex:
+                pre_mega_species = "Floette-Eternal"
+            elif current_dex_species == "Meowstic-F-Mega" and "Meowstic-F" in self.repo.pokedex:
+                pre_mega_species = "Meowstic-F"
+            else:
+                pre_mega_species = str(
+                    dex_entry.get("baseSpecies")
+                    or current_dex_species.split("-Mega")[0]
+                )
+            if pre_mega_species in self.repo.pokedex:
+                current_dex_species = pre_mega_species
+                dex_entry = self.repo.pokedex.get(current_dex_species, {})
+                forme_str = str(dex_entry.get("forme") or "")
+                is_mega_dex_forme = False
+
+        if is_mega_dex_forme:
+            if current_dex_species == "Floette-Mega" and "Floette-Eternal" in self.repo.pokedex:
+                base_species = "Floette-Eternal"
+            elif current_dex_species == "Meowstic-F-Mega" and "Meowstic-F" in self.repo.pokedex:
+                base_species = "Meowstic-F"
+            else:
+                base_species = str(
+                    dex_entry.get("baseSpecies")
+                    or pkm.base_species
+                    or current_dex_species.split("-Mega")[0]
+                )
         else:
             base_species = current_dex_species
+
+        family_base_species = str(dex_entry.get("baseSpecies") or base_species)
 
         # Types
         raw_types = dex_entry.get("types") or ["Normal"]
@@ -484,13 +491,21 @@ class TurnStateCompiler:
         stone_candidate = item or mega_stone
         if stone_candidate:
             target_mega = self.repo.mega_stone_to_species.get(stone_candidate)
+            if (
+                target_mega == "Meowstic-M-Mega"
+                and current_dex_species == "Meowstic-F"
+                and "Meowstic-F-Mega" in self.repo.pokedex
+            ):
+                target_mega = "Meowstic-F-Mega"
             if target_mega:
                 mega_dex = self.repo.pokedex.get(target_mega, {})
                 mega_base = str(mega_dex.get("baseSpecies") or "")
-                if (
-                    mega_base.lower() == base_species.lower()
-                    or mega_base.lower() == current_dex_species.lower()
-                ):
+                allowed_bases = {
+                    base_species.lower(),
+                    current_dex_species.lower(),
+                    family_base_species.lower(),
+                }
+                if mega_base.lower() in allowed_bases:
                     mega_stone = stone_candidate
                     mega_target_species = target_mega
                     mega_base_stats = dict(self.repo.get_base_stats(target_mega))
@@ -556,6 +571,7 @@ class TurnStateCompiler:
             locked_move=locked_move,
             taunt_turns=getattr(pkm, "taunt_turns", 0),
             encore_move=getattr(pkm, "encore_move", None),
+            must_recharge=bool(getattr(pkm, "must_recharge", False)),
         )
 
     def compile_move(self, move_name: str) -> Optional[CompiledMove]:

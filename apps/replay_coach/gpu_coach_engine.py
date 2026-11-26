@@ -11,8 +11,10 @@ into `commentary_engine.py` (100% deterministic, zero LLM calls).
 from __future__ import annotations
 
 import copy
-import hashlib
+from datetime import datetime, timezone
+import json
 import math
+from pathlib import Path
 import threading
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
@@ -30,11 +32,17 @@ from engine.solver.two_ply_lookahead import evaluate_two_ply_on_ieds_core
 from engine.state.state_compiler import TurnStateCompiler
 from engine.terminology import export_glossary_payload
 from engine.vgc_tensor_core import (
+    EQUITY_ENGINE_VERSION,
+    FIELD_DIM,
     FieldIdx,
+    MON_DIM,
+    MOVE_DIM,
     MonIdx,
     MoveIdx,
+    PILLAR_NAMES,
     ShowdownTensorCompiler,
     VgcTensorStateMachine,
+    compute_victory_equity_torch,
 )
 from engine.vgc_tensor_core.state_machine import AnalysisCancelledError
 from engine.vgc_tensor_core.compiler import CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH2
@@ -42,22 +50,59 @@ from engine.vgc_tensor_core.compiler import CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_
 from .commentary_engine import (
     _classify_verdict_key,
     generate_all_commentary_variants,
-    generate_deterministic_commentary,
 )
 from .ots_db import OTSRosterDatabase, resolve_sprite_urls
 from .protocol_parser import ParsedReplay, RecordedSlotAction, TurnSnapshot
+
+
+DEFAULT_EQUITY_SAMPLES_PATH: Path = Path("data/telemetry/equity_samples.jsonl")
 
 
 def _norm_id(s: str) -> str:
     return "".join(ch for ch in (s or "").lower() if ch.isalnum())
 
 
+def append_equity_training_sample(
+    match_id: str,
+    turn: int,
+    phi_raw: Dict[str, float],
+    winner_label: float,
+    nash_value: float,
+    ply2_nash_value: Optional[float] = None,
+    samples_path: Path = DEFAULT_EQUITY_SAMPLES_PATH,
+) -> None:
+    """Passively append a compact 8-pillar equity training observation to JSONL for offline Texel tuning."""
+    try:
+        samples_path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "match_id": str(match_id),
+            "turn": int(turn),
+            "phi_raw": {k: round(float(v), 6) for k, v in phi_raw.items()},
+            "winner": float(winner_label),
+            "nash_value": round(float(nash_value), 5),
+            "ply2_nash_value": round(float(ply2_nash_value), 5) if ply2_nash_value is not None else None,
+            "engine_version": EQUITY_ENGINE_VERSION,
+            "logged_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        with samples_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception:
+        # Passive logging must never interrupt live replay coaching
+        pass
+
+
 class GPUReplayCoachEngine:
     """Warm singleton Tensor Core solver wrapping `VgcTensorStateMachine` (CUDA GPU or CPU) and DuckDB OTS DB."""
 
-    def __init__(self, ots_db: OTSRosterDatabase, device: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        ots_db: OTSRosterDatabase,
+        device: Optional[str] = None,
+        equity_samples_path: Optional[Path] = DEFAULT_EQUITY_SAMPLES_PATH,
+    ) -> None:
         self.ots_db = ots_db
         self._gpu_lock = threading.Lock()
+        self.equity_samples_path = equity_samples_path
         self.sc = TurnStateCompiler()
 
         req = (device or "auto").strip().lower()
@@ -152,6 +197,7 @@ class GPUReplayCoachEngine:
                     P[s_idx, MonIdx.ALIVE_FLAG] = 1.0
                 P[s_idx, MonIdx.ACTIVE_TURNS] = float(mon.active_turns)
                 P[s_idx, MonIdx.PROTECT_COUNTER] = 1.0 if mon.used_protect_last_turn else 0.0
+                P[s_idx, MonIdx.MUST_RECHARGE] = 1.0 if getattr(mon, "must_recharge", False) else 0.0
                 if mon.item is None:
                     P[s_idx, MonIdx.ITEM_ACTIVE] = 0.0
                     P[s_idx, MonIdx.ITEM_ID] = 0.0
@@ -177,6 +223,8 @@ class GPUReplayCoachEngine:
         """Map a recorded replay slot action (`RecordedSlotAction`) into tensor choice `0..25`."""
         if rec is None or rec.kind in ("none", "fainted"):
             return fallback_choice, False
+        if rec.kind == "recharge":
+            return 0, False
         if rec.kind == "flinched":
             return fallback_choice, True
 
@@ -311,8 +359,8 @@ class GPUReplayCoachEngine:
                 "COMPILE",
                 f"Turno {turn_number}: Tablero y equipos 66-SP preparados ({t1_leads} vs. {t2_leads}) en {t_comp_ms:.0f}ms",
                 f"Turn {turn_number}: Board & 66-SP teams compiled ({t1_leads} vs. {t2_leads}) in {t_comp_ms:.0f}ms",
-                f"Turno {turn_number}: Tensores F[24], P[8,87], M[8,4,59] compilados ({t1_leads} vs. {t2_leads}) en {t_comp_ms:.1f}ms",
-                f"Turn {turn_number}: Compiled tensors F[24], P[8,87], M[8,4,59] ({t1_leads} vs. {t2_leads}) in {t_comp_ms:.1f}ms",
+                f"Turno {turn_number}: Tensores F[{FIELD_DIM}], P[8,{MON_DIM}], M[8,4,{MOVE_DIM}] compilados ({t1_leads} vs. {t2_leads}) en {t_comp_ms:.1f}ms",
+                f"Turn {turn_number}: Compiled tensors F[{FIELD_DIM}], P[8,{MON_DIM}], M[8,4,{MOVE_DIM}] ({t1_leads} vs. {t2_leads}) in {t_comp_ms:.1f}ms",
             )
 
             t_pr0 = time.perf_counter()
@@ -640,6 +688,7 @@ class GPUReplayCoachEngine:
             wc_j = int(min_j_args[row_i])
             wc_pair = [int(c2_np[wc_j, 0]), int(c2_np[wc_j, 1])]
             return {
+                "row_idx": int(row_i),
                 "choice_pair": cp,
                 "desc": decode_joint_action(comp, "trainer_1", cp),
                 "risk_ev": round(float(ev_vs_q[row_i]), 4),
@@ -665,6 +714,45 @@ class GPUReplayCoachEngine:
         )
         top_actions = [build_action_row(i) for i in sorted_rows[:8]]
 
+        best_row_idx = int(sorted_rows[0]) if sorted_rows else idx_act1
+        opp_sorted_all = sorted(range(B2), key=lambda j: (-float(q_nash[j]), float(U_risk[:, j].max())))
+        best_opp_idx = int(opp_sorted_all[0]) if opp_sorted_all else idx_act2
+        best_t1_pair = (int(c1_np[best_row_idx, 0]), int(c1_np[best_row_idx, 1]))
+        best_t2_pair = (int(c2_np[best_opp_idx, 0]), int(c2_np[best_opp_idx, 1]))
+        equity_breakdown = self._compute_equity_attribution(
+            comp=comp,
+            best_t1=best_t1_pair,
+            best_t2=best_t2_pair,
+            played_t1=actual_t1,
+            played_t2=actual_t2,
+            res_played=res_act,
+            k_sample=min(64, k_ko),
+            rng_seed=919191 + turn_number * 137,
+            resolve_lead_entry_abilities=False,
+            cancel_event=cancel_event,
+        )
+
+        # Passively log 8-pillar feature vector when replay has a known match winner
+        if self.equity_samples_path is not None and replay.winner:
+            win_norm = _norm_id(replay.winner)
+            t1_norm = _norm_id(replay.trainer_1_name)
+            t2_norm = _norm_id(replay.trainer_2_name)
+            winner_label: Optional[float] = None
+            if win_norm and win_norm == t1_norm:
+                winner_label = 1.0
+            elif win_norm and win_norm == t2_norm:
+                winner_label = 0.0
+            if winner_label is not None and equity_breakdown.get("phi_raw"):
+                append_equity_training_sample(
+                    match_id=replay.replay_id,
+                    turn=turn_number,
+                    phi_raw=equity_breakdown["phi_raw"],
+                    winner_label=winner_label,
+                    nash_value=float(nash_sub.game_value),
+                    ply2_nash_value=float(nash_sub.game_value) if enable_two_ply else None,
+                    samples_path=self.equity_samples_path,
+                )
+
         best_vs_opp_idx = int(np.argmax(U_risk[:, idx_act2]))
         actual_row = build_action_row(idx_act1)
         actual_row["rank"] = int(sorted_rows.index(idx_act1)) + 1
@@ -686,6 +774,7 @@ class GPUReplayCoachEngine:
         opp_sorted = sorted(range(B2), key=lambda j: (-float(q_nash[j]), float(U_risk[:, j].max())))[:4]
         opp_top = [
             {
+                "col_idx": int(j),
                 "choice_pair": [int(c2_np[j, 0]), int(c2_np[j, 1])],
                 "desc": decode_joint_action(comp, "trainer_2", [int(c2_np[j, 0]), int(c2_np[j, 1])]),
                 "nash_pct": round(float(q_nash[j] * 100.0), 1),
@@ -781,6 +870,7 @@ class GPUReplayCoachEngine:
             ieds_summary=ieds_summary,
             events=events_dict,
             field_context=field_context,
+            equity_breakdown=equity_breakdown,
         )
         commentary = commentary_variants["es_vgc"]
         verdict_key = _classify_verdict_key(
@@ -818,15 +908,353 @@ class GPUReplayCoachEngine:
             "actual_action": actual_row,
             "top_actions": top_actions,
             "opp_top_actions": opp_top,
+            "qre_matrix": {
+                "U": [[round(float(U_risk[i, j]), 4) for j in range(B2)] for i in range(B1)],
+                "default_beta": 4.0,
+            },
             "events": events_dict,
             "verdict_key": verdict_key,
             "commentary": commentary,
             "commentary_variants": commentary_variants,
             "terminology": export_glossary_payload(),
             "two_ply": two_ply_meta,
+            "equity_breakdown": equity_breakdown,
             "pipeline_logs": turn_logs,
         }
         return payload
+
+    def _compute_equity_attribution(
+        self,
+        comp: Any,
+        best_t1: Tuple[int, int],
+        best_t2: Tuple[int, int],
+        played_t1: Optional[Tuple[int, int]] = None,
+        played_t2: Optional[Tuple[int, int]] = None,
+        res_played: Optional[Any] = None,
+        k_sample: int = 64,
+        rng_seed: int = 919191,
+        resolve_lead_entry_abilities: bool = False,
+        cancel_event: Optional[threading.Event] = None,
+    ) -> Dict[str, Any]:
+        """Compute 8-pillar `VictoryEquityBreakdown` for Nash-optimal and played lines."""
+        with self._gpu_lock, torch.inference_mode():
+            def _eval_res(step_res_obj: Any) -> Any:
+                _, bd = compute_victory_equity_torch(
+                    step_res_obj.F,
+                    step_res_obj.P,
+                    M_moves=step_res_obj.M_moves,
+                    tables=self.sm.tables,
+                    extra_volatiles=step_res_obj.attack_cascade.extra_volatiles,
+                    weights=self.sm.equity_weights,
+                    return_breakdown=True,
+                )
+                return bd
+
+            def _sim_pair(pair1: Tuple[int, int], pair2: Tuple[int, int], seed_off: int) -> Any:
+                return self.sm.step(
+                    comp.field_tensor,
+                    comp.roster_tensor,
+                    comp.moves_tensor,
+                    torch.tensor([[pair1[0], pair1[1]]], dtype=torch.long, device=self.sm.device),
+                    torch.tensor([[pair2[0], pair2[1]]], dtype=torch.long, device=self.sm.device),
+                    num_mc_samples=max(16, int(k_sample)),
+                    rng_seed=int(rng_seed + seed_off),
+                    resolve_lead_entry_abilities=resolve_lead_entry_abilities,
+                    cancel_event=cancel_event,
+                )
+
+            played_bd = _eval_res(res_played) if res_played is not None else None
+            if played_bd is not None and played_t1 == best_t1 and played_t2 == best_t2:
+                nash_bd = played_bd
+            else:
+                res_best = _sim_pair(best_t1, best_t2, 0)
+                nash_bd = _eval_res(res_best)
+                if played_bd is None:
+                    if played_t1 is not None and played_t2 is not None and (played_t1 != best_t1 or played_t2 != best_t2):
+                        res_pl = _sim_pair(played_t1, played_t2, 7919)
+                        played_bd = _eval_res(res_pl)
+                    else:
+                        played_bd = nash_bd
+
+        nash_d = nash_bd.to_dict()
+        played_d = played_bd.to_dict()
+        nash_p = nash_d["pillars"]
+        played_p = played_d["pillars"]
+        delta_p = {k: round(float(nash_p[k]) - float(played_p[k]), 4) for k in PILLAR_NAMES}
+
+        non_mat = [k for k in PILLAR_NAMES if k != "material"]
+        max_delta = max((abs(delta_p[k]) for k in non_mat), default=0.0)
+        if played_t1 is not None and (played_t1 != best_t1 or played_t2 != best_t2) and max_delta >= 0.04:
+            ranked = sorted(non_mat, key=lambda k: -abs(delta_p[k]))
+            top_drivers = [
+                {
+                    "pillar": k,
+                    "value": delta_p[k],
+                    "nash_val": nash_p[k],
+                    "played_val": played_p[k],
+                    "mode": "delta",
+                }
+                for k in ranked[:3]
+                if abs(delta_p[k]) >= 0.03
+            ]
+        else:
+            ranked = sorted(non_mat, key=lambda k: -abs(float(nash_p[k])))
+            top_drivers = [
+                {
+                    "pillar": k,
+                    "value": float(nash_p[k]),
+                    "nash_val": float(nash_p[k]),
+                    "played_val": float(played_p[k]),
+                    "mode": "state",
+                }
+                for k in ranked[:3]
+                if abs(float(nash_p[k])) >= 0.03
+            ]
+
+        return {
+            "engine_version": EQUITY_ENGINE_VERSION,
+            "nash_pillars": nash_p,
+            "nash_total": nash_d["total"],
+            "played_pillars": played_p,
+            "played_total": played_d["total"],
+            "delta_pillars": delta_p,
+            "phi_raw": played_d["phi_raw"],
+            "nash_phi_raw": nash_d["phi_raw"],
+            "top_drivers": top_drivers,
+        }
+
+    def analyze_compiled_turn1(
+        self,
+        comp: Any,
+        turn0_events: Optional[List[str]] = None,
+        num_mc: int = 128,
+        cancel_event: Optional[threading.Event] = None,
+    ) -> Dict[str, Any]:
+        """Run a full unpruned Turn-1 Tensor Core IEDS + Nash + QRE + 4-profile bilingual audit.
+
+        Operates on an exact post-Turn-0 `CompiledBattleState` produced by
+        `LeadMatchupSolver.build_turn1_battle_state(...)` with `resolve_lead_entry_abilities=False`
+        so Turn-0 entry abilities never double-fire.
+        """
+        t0 = time.time()
+        k_mc = max(16, int(num_mc))
+        with self._gpu_lock:
+            if cancel_event is not None and cancel_event.is_set():
+                raise AnalysisCancelledError("Deep Turn-1 audit cancelled before start.")
+
+            m1 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
+                comp, trainer_id="trainer_1", min_prior_threshold=0.0
+            )
+            m2 = self.sm.logic_engine.prune_side_26x26_tensor_actions(
+                comp, trainer_id="trainer_2", min_prior_threshold=0.0
+            )
+            c1 = m1.pruned_choices
+            c2 = m2.pruned_choices
+            c1_np = c1.detach().cpu().numpy() if isinstance(c1, torch.Tensor) else np.asarray(c1)
+            c2_np = c2.detach().cpu().numpy() if isinstance(c2, torch.Tensor) else np.asarray(c2)
+            B1, B2 = int(c1_np.shape[0]), int(c2_np.shape[0])
+
+            with torch.inference_mode():
+                step_res = self.sm.step(
+                    F=comp.field_tensor,
+                    P=comp.roster_tensor,
+                    M_moves=comp.moves_tensor,
+                    trainer_1_choices=c1,
+                    trainer_2_choices=c2,
+                    num_mc_samples=k_mc,
+                    rng_seed=424242,
+                    resolve_lead_entry_abilities=False,
+                    tile_size=24,
+                    cancel_event=cancel_event,
+                )
+
+            U_risk = step_res.stats.risk_adjusted_utility.detach().cpu().numpy().astype(np.float64)
+            U_mean = step_res.stats.mean_utility.detach().cpu().numpy().astype(np.float64)
+            U_cvar = step_res.stats.cvar_10_utility.detach().cpu().numpy().astype(np.float64)
+            U_win = step_res.stats.win_turn_prob.detach().cpu().numpy().astype(np.float64)
+
+        ieds_strict = run_iterated_dominance_elimination(
+            U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=False
+        )
+        ieds_weak = run_iterated_dominance_elimination(
+            U_risk, dominance_Margin_eps=0.0, eliminate_weakly_dominated=True
+        )
+        nash_sub = solve_zero_sum_nash(ieds_strict.reduced_payoff_matrix)
+        p_nash = np.zeros(B1, dtype=np.float64)
+        q_nash = np.zeros(B2, dtype=np.float64)
+        p_nash[ieds_strict.trainer_1_surviving_indices] = nash_sub.trainer_1_strategy
+        q_nash[ieds_strict.trainer_2_surviving_indices] = nash_sub.trainer_2_strategy
+        qre_res = solve_quantal_response(U_risk, rationality_beta=4.0)
+
+        ev_vs_q = U_risk @ q_nash
+        mean_vs_q = U_mean @ q_nash
+        cvar_vs_q = U_cvar @ q_nash
+        win_vs_q = U_win @ q_nash
+        min_j_vals = U_risk.min(axis=1)
+        min_j_args = U_risk.argmin(axis=1)
+
+        strict_surv_set = set(int(x) for x in ieds_strict.trainer_1_surviving_indices)
+        weak_surv_set = set(int(x) for x in ieds_weak.trainer_1_surviving_indices)
+        strict_rec_map = {r.eliminated_idx: r for r in ieds_strict.eliminated_trainer_1}
+        weak_rec_map = {r.eliminated_idx: r for r in ieds_weak.eliminated_trainer_1}
+
+        def _fmt_dom(rec_map: Dict[int, Any], row_i: int) -> Optional[Dict[str, Any]]:
+            rec = rec_map.get(row_i)
+            if rec is None:
+                return None
+            dom_pair = [int(c1_np[rec.dominated_by_idx, 0]), int(c1_np[rec.dominated_by_idx, 1])]
+            return {
+                "round": int(rec.round_eliminated),
+                "choice_pair": dom_pair,
+                "desc": decode_joint_action(comp, "trainer_1", dom_pair),
+                "worst_margin": round(float(rec.worst_margin), 4),
+                "mean_margin": round(float(rec.mean_margin), 4),
+            }
+
+        sorted_rows = sorted(
+            range(B1),
+            key=lambda i: (-(1 if p_nash[i] > 1e-4 else 0), -float(p_nash[i]), -float(ev_vs_q[i])),
+        )
+        opp_sorted = sorted(range(B2), key=lambda j: (-float(q_nash[j]), float(U_risk[:, j].max())))
+        top_opp_idx = int(opp_sorted[0]) if opp_sorted else 0
+
+        def _build_row(row_i: int) -> Dict[str, Any]:
+            cp = [int(c1_np[row_i, 0]), int(c1_np[row_i, 1])]
+            wc_j = int(min_j_args[row_i])
+            wc_pair = [int(c2_np[wc_j, 0]), int(c2_np[wc_j, 1])]
+            return {
+                "row_idx": int(row_i),
+                "choice_pair": cp,
+                "desc": decode_joint_action(comp, "trainer_1", cp),
+                "risk_ev": round(float(ev_vs_q[row_i]), 4),
+                "mean_ev": round(float(mean_vs_q[row_i]), 4),
+                "cvar10": round(float(cvar_vs_q[row_i]), 4),
+                "win_turn_pct": round(float(win_vs_q[row_i] * 100.0), 1),
+                "nash_pct": round(float(p_nash[row_i] * 100.0), 1),
+                "qre_pct": round(float(qre_res.trainer_1_strategy[row_i] * 100.0), 1),
+                "nash_regret": round(float(max(0.0, nash_sub.game_value - ev_vs_q[row_i])), 4),
+                "security_floor": round(float(min_j_vals[row_i]), 4),
+                "worst_counter_desc": decode_joint_action(comp, "trainer_2", wc_pair),
+                "survived_strict_ieds": row_i in strict_surv_set,
+                "survived_weak_ieds": row_i in weak_surv_set,
+                "strict_dominated_by": _fmt_dom(strict_rec_map, row_i),
+                "weak_dominated_by": _fmt_dom(weak_rec_map, row_i),
+                "vs_actual_opp_u": round(float(U_risk[row_i, top_opp_idx]), 4),
+                "is_played": False,
+            }
+
+        top_actions = [_build_row(i) for i in sorted_rows[:8]]
+        ref_row = dict(top_actions[0]) if top_actions else {}
+        ref_row["rank"] = 1
+        ref_row["total_actions"] = int(B1)
+        ref_row["opp_actual_desc"] = decode_joint_action(
+            comp, "trainer_2", [int(c2_np[top_opp_idx, 0]), int(c2_np[top_opp_idx, 1])]
+        )
+        ref_row["num_mc"] = int(k_mc)
+        ref_row["ko_probs_vs_actual_opp"] = {}
+
+        opp_top = [
+            {
+                "choice_pair": [int(c2_np[j, 0]), int(c2_np[j, 1])],
+                "desc": decode_joint_action(comp, "trainer_2", [int(c2_np[j, 0]), int(c2_np[j, 1])]),
+                "nash_pct": round(float(q_nash[j] * 100.0), 1),
+                "qre_pct": round(float(qre_res.trainer_2_strategy[j] * 100.0), 1),
+            }
+            for j in opp_sorted[:5]
+        ]
+
+        ieds_summary = {
+            "t1_total": int(B1),
+            "t1_strict": int(ieds_strict.num_trainer_1_surviving),
+            "t1_strict_elim": int(len(ieds_strict.eliminated_trainer_1)),
+            "t1_weak": int(ieds_weak.num_trainer_1_surviving),
+            "t1_weak_elim": int(len(ieds_weak.eliminated_trainer_1)),
+            "t2_total": int(B2),
+            "t2_strict": int(ieds_strict.num_trainer_2_surviving),
+            "t2_weak": int(ieds_weak.num_trainer_2_surviving),
+            "strict_rounds": int(ieds_strict.rounds_executed),
+            "weak_rounds": int(ieds_weak.rounds_executed),
+            "sample_eliminations": [
+                {
+                    "eliminated": decode_joint_action(
+                        comp, "trainer_1", [int(c1_np[r.eliminated_idx, 0]), int(c1_np[r.eliminated_idx, 1])]
+                    ),
+                    "dominated_by": decode_joint_action(
+                        comp, "trainer_1", [int(c1_np[r.dominated_by_idx, 0]), int(c1_np[r.dominated_by_idx, 1])]
+                    ),
+                    "round": int(r.round_eliminated),
+                    "worst_margin": round(float(r.worst_margin), 3),
+                    "mean_margin": round(float(r.mean_margin), 3),
+                }
+                for r in ieds_strict.eliminated_trainer_1[:6]
+            ],
+        }
+
+        F_np = comp.field_tensor.detach().cpu().numpy() if isinstance(comp.field_tensor, torch.Tensor) else np.asarray(comp.field_tensor)
+        weather_lbl = None
+        for w_i, w_nm in ((1, "Sun"), (2, "Rain"), (3, "Sand"), (4, "Snow")):
+            if float(F_np[FieldIdx.WEATHER_START + w_i]) > 0.5:
+                weather_lbl = w_nm
+                break
+        terrain_lbl = None
+        for t_i, t_nm in ((1, "Electric"), (2, "Grassy"), (3, "Psychic"), (4, "Misty")):
+            if float(F_np[FieldIdx.TERRAIN_START + t_i]) > 0.5:
+                terrain_lbl = t_nm
+                break
+        field_context = {
+            "weather": weather_lbl,
+            "weather_turns": int(round(float(F_np[FieldIdx.WEATHER_TURNS]))),
+            "terrain": terrain_lbl,
+            "terrain_turns": int(round(float(F_np[FieldIdx.TERRAIN_TURNS]))),
+            "trick_room_turns": 0,
+            "t1_tailwind": 0,
+            "t2_tailwind": 0,
+        }
+        empty_events = {
+            "crits": [], "misses": [], "flinches": [], "protects": [],
+            "faints": [], "megas": [], "weather_changes": [],
+        }
+        best_t1_idx = int(sorted_rows[0]) if sorted_rows else 0
+        equity_breakdown = self._compute_equity_attribution(
+            comp=comp,
+            best_t1=(int(c1_np[best_t1_idx, 0]), int(c1_np[best_t1_idx, 1])),
+            best_t2=(int(c2_np[top_opp_idx, 0]), int(c2_np[top_opp_idx, 1])),
+            k_sample=min(64, k_mc),
+            rng_seed=424999,
+            resolve_lead_entry_abilities=False,
+            cancel_event=cancel_event,
+        )
+        commentary_variants = generate_all_commentary_variants(
+            turn_number=1,
+            actual_action=ref_row,
+            top_actions=top_actions,
+            nash_value=float(nash_sub.game_value),
+            ieds_summary=ieds_summary,
+            events=empty_events,
+            field_context=field_context,
+            equity_breakdown=equity_breakdown,
+        )
+
+        return {
+            "ok": True,
+            "elapsed_s": round(time.time() - t0, 2),
+            "device": self.device_name,
+            "matrix_shape": [int(B1), int(B2)],
+            "total_timelines": int(B1 * B2 * k_mc),
+            "num_mc": int(k_mc),
+            "nash_value": round(float(nash_sub.game_value), 4),
+            "qre_value": round(float(qre_res.expected_value), 4),
+            "maximin": round(float(nash_sub.pure_maximin_value), 4),
+            "minimax": round(float(nash_sub.pure_minimax_value), 4),
+            "exploitability_gap": round(float(nash_sub.exploitability_gap), 6),
+            "turn0_events": list(turn0_events or []),
+            "field": field_context,
+            "ieds": ieds_summary,
+            "top_actions": top_actions,
+            "opp_top_actions": opp_top,
+            "equity_breakdown": equity_breakdown,
+            "commentary_variants": commentary_variants,
+        }
 
 
 def compute_match_summary(turn_results: List[Dict[str, Any]]) -> Dict[str, Any]:

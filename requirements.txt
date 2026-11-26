@@ -3,3 +3,4 @@ numpy>=1.24.0      # Vectorized numerical operations and tensor bridges
 scipy>=1.10.0      # Exact HiGHS Zero-Sum Nash LP solver
 torch>=2.0.0       # GPU/CPU Vectorized VGC Tensor State Machine
 duckdb>=2.0.0      # In-memory DuckDB mechanics & tournament telemetry + persistent OTS DB
+mini-racer>=0.12.0 # Hermetic in-process V8 sandbox for vendored smogon/damage-calc Champions bundle

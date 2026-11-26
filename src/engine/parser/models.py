@@ -10,7 +10,7 @@ naming semantics.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -150,6 +150,9 @@ class ParsedPokemon:
     last_move_used: Optional[str] = None
     taunt_turns: int = 0
     encore_move: Optional[str] = None
+    initial_item: Optional[str] = None
+    unburden_active: bool = False
+    must_recharge: bool = False
 
 
 @dataclass
@@ -222,27 +225,30 @@ class SpeedObservation:
     tailwind_active_slower: bool = False
     trick_room_active: bool = False
     notes: str = ""
+    faster_trainer: Optional[str] = None
+    slower_trainer: Optional[str] = None
+    source: str = "turn_order"
+    faster_is_mega: bool = False
+    slower_is_mega: bool = False
+    faster_spe_stage: int = 0
+    slower_spe_stage: int = 0
+    faster_unburden: bool = False
+    slower_unburden: bool = False
+    faster_item: Optional[str] = None
+    slower_item: Optional[str] = None
+    faster_ability: Optional[str] = None
+    slower_ability: Optional[str] = None
+    faster_status: Optional[str] = None
+    slower_status: Optional[str] = None
+    game_index: int = 1
 
 
 @dataclass
 class DamageObservation:
-    """Observed damage percentage taken from an attack event.
+    """Observed damage taken from an attack event (exact integer HP on trainer_1, % on trainer_2).
 
-    Used by the engine to infer defensive/offensive Stat Point allocations.
-
-    Attributes:
-        attacker: Pokémon that executed the attack.
-        defender: Pokémon that received the damage.
-        move: Move name.
-        damage_pct: Percentage of maximum HP lost (e.g. 75.0, 97.0).
-        turn: Turn number of the attack.
-        weather: Active weather during the attack.
-        terrain: Active terrain during the attack.
-        attacker_boosts: Stat boosts of the attacker at time of execution.
-        defender_boosts: Stat boosts of the defender at time of execution.
-        is_crit: Whether the attack was reported as a critical hit.
-        effectiveness: Effectiveness descriptor ('super_effective', 'resisted', 'neutral', 'immune').
-        hits: Number of times the move hit (for multi-hit moves like Dual Wingbeat).
+    Used by the OTS 66-SP constraint solver to invert offensive and defensive Stat Points
+    against the vendored Smogon Champions damage calculator.
     """
 
     attacker: str
@@ -257,6 +263,47 @@ class DamageObservation:
     is_crit: bool = False
     effectiveness: Optional[str] = None
     hits: int = 1
+    attacker_trainer: Optional[str] = None
+    defender_trainer: Optional[str] = None
+    damage_hp_exact: Optional[int] = None
+    defender_max_hp_exact: Optional[int] = None
+    hp_pct_before: float = 100.0
+    hp_pct_after: float = 100.0
+    is_ohko: bool = False
+    focus_sash_or_sturdy: bool = False
+    is_spread_multi_target: bool = False
+    helping_hand: bool = False
+    friend_guard: bool = False
+    screen_active: bool = False
+    attacker_burned: bool = False
+    attacker_is_mega: bool = False
+    defender_is_mega: bool = False
+    attacker_item: Optional[str] = None
+    defender_item: Optional[str] = None
+    attacker_ability: Optional[str] = None
+    defender_ability: Optional[str] = None
+    attacker_hp_pct: float = 100.0
+    boosts_include_charge_spa: bool = False
+    game_index: int = 1
+
+
+@dataclass
+class HpTickObservation:
+    """Observed non-attack HP tick (recoil, Sitrus Berry, Leftovers, Life Orb, Burn/Sand).
+
+    Directly constrains `HP SP` (`MaxHP = BaseHP + sp_hp + 75`) when linked to exact
+    integer recoil damage or cartridge fractional thresholds (1/16, 1/10, 1/4, 1/2).
+    """
+
+    trainer: str
+    species: str
+    turn: int
+    kind: str
+    hp_pct_before: float
+    hp_pct_after: float
+    source_damage_hp_exact: Optional[int] = None
+    recoil_fraction: Optional[float] = None
+    game_index: int = 1
 
 
 @dataclass
@@ -294,6 +341,7 @@ class ParsedBattle:
     forfeit: bool = False
     speed_observations: List[SpeedObservation] = field(default_factory=list)
     damage_observations: List[DamageObservation] = field(default_factory=list)
+    hp_tick_observations: List[HpTickObservation] = field(default_factory=list)
     weather: Optional[str] = None
     terrain: Optional[str] = None
     trainer_1_tailwind: bool = False

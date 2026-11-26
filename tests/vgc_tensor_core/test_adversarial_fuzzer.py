@@ -125,29 +125,29 @@ def run_50k_invariant_fuzzer(
                     M_np[i, 0, s, m, MoveIdx.CAT_START + c] = 1.0
 
         # 4. Randomized Action Choices [B, 2] in [0, 25]
-        p1_choices_np = rng.randint(0, 26, size=(batch_size, 2))
-        p2_choices_np = rng.randint(0, 1, size=(1, 2))  # Broadcasting against P1
+        trainer_1_choices_np = rng.randint(0, 26, size=(batch_size, 2))
+        trainer_2_choices_np = rng.randint(0, 1, size=(1, 2))  # Broadcasting against trainer_1
 
         if HAS_TORCH and torch.cuda.is_available():
             F_tensor = torch.from_numpy(F_np).to(device=device)
             P_tensor = torch.from_numpy(P_np).to(device=device)
             M_tensor = torch.from_numpy(M_np).to(device=device)
-            p1_c_tensor = torch.from_numpy(p1_choices_np).to(device=device)
-            p2_c_tensor = torch.from_numpy(p2_choices_np).to(device=device)
+            t1_c_tensor = torch.from_numpy(trainer_1_choices_np).to(device=device)
+            t2_c_tensor = torch.from_numpy(trainer_2_choices_np).to(device=device)
         else:
             F_tensor = F_np
             P_tensor = P_np
             M_tensor = M_np
-            p1_c_tensor = p1_choices_np
-            p2_c_tensor = p2_choices_np
+            t1_c_tensor = trainer_1_choices_np
+            t2_c_tensor = trainer_2_choices_np
 
         # Step State Machine
         step_res = sm.step(
             F=F_tensor,
             P=P_tensor,
             M_moves=M_tensor,
-            trainer_1_choices=p1_c_tensor,
-            trainer_2_choices=p2_c_tensor,
+            trainer_1_choices=t1_c_tensor,
+            trainer_2_choices=t2_c_tensor,
             num_mc_samples=num_mc_samples,
         )
 
@@ -196,6 +196,12 @@ def run_50k_invariant_fuzzer(
     log_lines.append("\nFUZZER RESULT: [PASS — PRODUCTION AIRTIGHT]")
 
     return log_lines
+
+
+def test_adversarial_tensor_fuzzer_invariants() -> None:
+    """Pytest-discovered randomized adversarial invariant fuzzer (2,000 turns × K=8)."""
+    report = run_50k_invariant_fuzzer(total_turns=2000, batch_size=250, num_mc_samples=8)
+    assert any("FUZZER RESULT: [PASS" in line for line in report)
 
 
 def main() -> None:

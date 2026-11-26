@@ -11,14 +11,17 @@
   - **NatureMult:** Applied *after* addition, truncating decimals (`1.1×` or `0.9×`).
 
 ## 2. Dynamic Speed Control, Turn Order & Priority
-- **Mega Evolution & Auto-Setters:** Resolves at Turn Start (Phase 0). Speed tiers update *immediately*. Abilities that set Weather (Drought, Drizzle) or Terrain (Psychic/Grassy Surge) trigger immediately on turn start, before the first action is selected.
+- **Turn-0 Lead Entry vs. Mega Evolution (+5.5):**
+  - **Turn-0 Lead Entry Auto-Setters:** On lead entry (before Turn 1 action selection), Weather (`Drought`, `Drizzle`, `Sand Stream`, `Snow Warning`), Terrain (`Electric/Grassy/Psychic Surge`), and `Intimidate` trigger in Base Speed order.
+  - **Barrier 1 Voluntary Switches (+6):** Execute first during the turn, resetting volatiles and resolving switch-in entry hazards (`Toxic Spikes`) and entry abilities.
+  - **Barrier 2 Mega Evolution (+5.5):** Resolves *after* Turn 1 action selection and *after* Priority `+6` Voluntary Switches. Base stats, typing, and Mega ability update *immediately*, recalculating Turn 1 speed order before any move fires (e.g., `Charizard-Mega-Y` Drought overwrites Rain/Snow before Aurora Veil or Swift Swim moves execute). Terastallization is strictly forbidden.
 - **Priority Brackets (Overrides Speed):**
   - **+5:** Helping Hand.
   - **+4:** Protect, Detect.
-  - **+3:** Fake Out *(Valid ONLY on the user's first turn on the field)*, Wide Guard. *(Note: Wide Guard protects against spread moves and **does not decay** upon consecutive uses).* 
-  - **+2:** Ally Switch, Extreme Speed.
+  - **+3:** Fake Out *(Valid ONLY on the user's first turn on the field)*, Upper Hand *(Succeeds ONLY against opposing priority `> 0` damaging moves; 100% flinch)*, Wide Guard / Quick Guard. *(Note: Wide Guard and Quick Guard **do not decay** upon consecutive uses).*
+  - **+2:** Follow Me, Rage Powder, Ally Switch, Extreme Speed.
   - **+1:** Sucker Punch, Grassy Glide (in Grassy Terrain), Prankster status moves.
-  - **0:** Standard moves.
+  - **0:** Standard moves. *(Note: `Quick Claw` has a 20% chance to act first **within** its own priority bracket, even under Trick Room, but never jumps above higher priority brackets).*
   - **-7:** Trick Room.
 - **Speed Multipliers & Status:**
   - **Paralysis:** Multiplies final Speed by `0.5×`.
@@ -62,6 +65,13 @@ All modifiers apply sequentially with `n / 4096` scaling and strict integer trun
   - **Defiant / Competitive:** If ANY stat is lowered by an opponent (including Intimidate, Icy Wind, Snarl), the Pokémon gains a +2 Attack (Defiant) or +2 Sp. Atk (Competitive) boost.
   - **Clear Body / White Smoke:** Flat immunity to all opponent-induced stat drops.
   - **Inner Focus:** Flat immunity to Intimidate and Flinch (Fake Out).
+  - **Oblivious:** Flat immunity to Intimidate and Taunt.
+  - **Limber:** Flat immunity to Paralysis (`Thunder Wave`, `Nuzzle`, `Dire Claw`).
+  - **Unaware:** Ignores opposing stat stage changes when attacking or defending.
+  - **Water Bubble:** Doubles Water-type offensive power (`2.0×`), halves incoming Fire damage (`0.5×`), and grants Burn immunity.
+  - **Disguise:** Blocks the first damaging hit for `1/8` max HP bust chip (bypassed by `Mold Breaker`; busted state persists across switches).
+  - **Magic Bounce:** Reflects opposing status moves (`Taunt`, `Will-O-Wisp`, `Thunder Wave`, `Spore`, `Encore`, `Parting Shot`, `Toxic Spikes`) back onto the user.
+  - **Champions Balance Invariants:** `Make It Rain` is `95%` accuracy with `-2 SpA` self-drop; `Dire Claw` has a `30%` tri-status chance; `Piercing Drill` (`Excadrill-Mega`) and `Unseen Fist` (`Golurk-Mega`) deal `0.25×` damage through `Protect` on contact moves; `Snowscape` replaces `Hail`.
 - **Ability-Based Invulnerability & Redirection:**
   - **Lightning Rod:** Unconditionally redirects single-target Electric attacks to the ability bearer, granting immunity and `+1 SpA` boost.
   - **Powder / Spore Immunities:** `Grass`-types and `Overcoat` users are 100% immune to `Rage Powder` and `Spore`.

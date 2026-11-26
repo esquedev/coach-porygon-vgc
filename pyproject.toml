@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "coach-porygon-vgc"
 version = "0.2.0"
-description = "High-performance GPU-accelerated tensor state machine and tournament simulation engine for Pokémon VGC 4v4 Doubles."
+description = "Non-commercial fan-made GPU-accelerated tensor state machine, Replay Coach Studio, and tournament simulation engine for Pokémon VGC 4v4 Doubles."
 readme = "README.md"
-license = { text = "GNU Affero General Public License v3 (AGPLv3)" }
+license = { file = "LICENSE" }
 authors = [
     { name = "BeRightVGC / esquedev", email = "esquedevil94@gmail.com" }
 ]
@@ -51,6 +51,7 @@ all = [
 Homepage = "https://github.com/esquedev/coach-porygon-vgc"
 Repository = "https://github.com/esquedev/coach-porygon-vgc.git"
 "Bug Tracker" = "https://github.com/esquedev/coach-porygon-vgc/issues"
+"Third-Party Notices" = "https://github.com/esquedev/coach-porygon-vgc/blob/main/THIRD_PARTY_NOTICES.md"
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["engine*"]
@@ -60,3 +61,6 @@ minversion = "7.0"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-ra -q --import-mode=importlib"
+markers = [
+    "acceptance: Acceptance Test & Anti-Hallucination Model Fuzzer gate (required on develop & main)",
+]

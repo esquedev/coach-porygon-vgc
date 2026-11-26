@@ -382,7 +382,7 @@ def extract_turn_telemetry(
             cur_weather = "Sand"
             if not is_post_combat_faint_replacement:
                 entry["weather"] = cur_weather
-        elif "started to snow" in line or "Snow continues" in line or "started to hail" in line:
+        elif "started to snow" in line or "Snow continues" in line or "started to hail" in line:  # Legacy Showdown replay compatibility
             cur_weather = "Snow"
             if not is_post_combat_faint_replacement:
                 entry["weather"] = cur_weather
@@ -391,7 +391,7 @@ def extract_turn_telemetry(
             or "The rain stopped" in line
             or "The sandstorm subsided" in line
             or "The snow stopped" in line
-            or "The hail stopped" in line
+            or "The hail stopped" in line  # Legacy Showdown replay compatibility
         ):
             cur_weather = "None"
             if not has_combat_actions:
