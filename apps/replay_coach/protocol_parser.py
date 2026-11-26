@@ -14,10 +14,17 @@ import copy
 import html
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from engine.db_registry import get_registry
-from engine.parser.models import ParsedBattle, ParsedPokemon, ParsedTeam, StatSpread
+from engine.parser.models import (
+    DamageObservation,
+    HpTickObservation,
+    ParsedBattle,
+    ParsedPokemon,
+    ParsedTeam,
+    SpeedObservation,
+)
 
 # Showdown wire protocol uses fixed 2-char side tags on the wire; we translate
 # them immediately at the parser boundary into `trainer_1` (POV) and `trainer_2` (Opp).
@@ -51,7 +58,7 @@ _WEATHER_MAP = {
     "sandstorm": "Sand",
     "snow": "Snow",
     "snowscape": "Snow",
-    "hail": "Snow",
+    "hail": "Snow",  # Legacy Showdown replay compatibility
     "none": None,
 }
 
@@ -77,17 +84,42 @@ def _canonical_db_name(raw_token: str, lookup: Dict[str, str]) -> str:
     return spaced or raw_token
 
 
-def _build_duckdb_name_lookups() -> Tuple[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str]]:
-    """Build normalized-id -> canonical-name maps from DuckDB `VGCDataRegistry`."""
+def _build_duckdb_name_lookups() -> Tuple[
+    Dict[str, str],
+    Dict[str, str],
+    Dict[str, str],
+    Dict[str, str],
+    Dict[str, Dict[str, Any]],
+]:
+    """Build normalized-id -> canonical-name maps and move metadata from DuckDB `VGCDataRegistry`."""
     reg = get_registry()
     moves_map: Dict[str, str] = {}
+    move_meta_map: Dict[str, Dict[str, Any]] = {}
     items_map: Dict[str, str] = {}
     abilities_map: Dict[str, str] = {}
     species_map: Dict[str, str] = {}
 
-    for r in reg.query("SELECT id, name FROM moves;"):
-        moves_map[_norm_id(str(r["id"]))] = str(r["name"])
-        moves_map[_norm_id(str(r["name"]))] = str(r["name"])
+    for r in reg.query("SELECT id, name, priority, category, type, basePower, target, recoil FROM moves;"):
+        m_name = str(r["name"])
+        moves_map[_norm_id(str(r["id"]))] = m_name
+        moves_map[_norm_id(m_name)] = m_name
+        raw_recoil = r.get("recoil")
+        recoil_frac: Optional[float] = None
+        if isinstance(raw_recoil, (list, tuple)) and len(raw_recoil) == 2:
+            try:
+                num_r, den_r = float(raw_recoil[0]), float(raw_recoil[1])
+                if den_r > 0:
+                    recoil_frac = num_r / den_r
+            except (TypeError, ValueError):
+                pass
+        move_meta_map[m_name] = {
+            "priority": int(r.get("priority") or 0),
+            "category": str(r.get("category") or "Status"),
+            "type": str(r.get("type") or "Normal"),
+            "basePower": int(r.get("basePower") or 0),
+            "target": str(r.get("target") or "normal"),
+            "recoil_frac": recoil_frac,
+        }
     for r in reg.query("SELECT id, name FROM items;"):
         items_map[_norm_id(str(r["id"]))] = str(r["name"])
         items_map[_norm_id(str(r["name"]))] = str(r["name"])
@@ -97,7 +129,7 @@ def _build_duckdb_name_lookups() -> Tuple[Dict[str, str], Dict[str, str], Dict[s
     for r in reg.query("SELECT id, name FROM pokedex;"):
         species_map[_norm_id(str(r["id"]))] = str(r["name"])
         species_map[_norm_id(str(r["name"]))] = str(r["name"])
-    return species_map, moves_map, items_map, abilities_map
+    return species_map, moves_map, items_map, abilities_map, move_meta_map
 
 
 @dataclass
@@ -164,6 +196,12 @@ class ParsedReplay:
     trainer_1_brought: List[str]
     trainer_2_brought: List[str]
     turns: List[TurnSnapshot]
+    speed_observations: List[SpeedObservation] = field(default_factory=list)
+    damage_observations: List[DamageObservation] = field(default_factory=list)
+    hp_tick_observations: List[HpTickObservation] = field(default_factory=list)
+    trainer_1_showteam_ots: Dict[str, ParsedPokemon] = field(default_factory=dict)
+    trainer_2_showteam_ots: Dict[str, ParsedPokemon] = field(default_factory=dict)
+    game_index: int = 1
 
 
 def extract_protocol_log(raw_input: str) -> Tuple[str, str]:
@@ -188,26 +226,54 @@ def extract_protocol_log(raw_input: str) -> Tuple[str, str]:
     return text, replay_id
 
 
-def _parse_hp_token(hp_token: str) -> Tuple[float, bool]:
-    """Parse Showdown HP strings (`175/175`, `32/100`, `0 fnt`, `57/100 par`) -> `(hp_pct, fainted)`."""
+def _parse_hp_detailed(hp_token: str) -> Tuple[float, bool, Optional[int], Optional[int]]:
+    """Parse Showdown HP string -> `(hp_pct, fainted, cur_hp_exact, max_hp_exact)`.
+
+    When Showdown logs exact integer HP (e.g., `94/167`, `175/175`), returns `(pct, fainted, 94, 167)`.
+    When Showdown logs percentage HP (e.g., `32/100`), returns `(32.0, False, None, None)`.
+    """
     clean = (hp_token or "").strip()
     if not clean:
-        return 100.0, False
+        return 100.0, False, None, None
     parts = clean.split()
     first = parts[0]
     if first == "0" or (len(parts) > 1 and parts[1].lower() == "fnt"):
-        return 0.0, True
+        return 0.0, True, 0, None
     if "/" in first:
         num_s, den_s = first.split("/", 1)
         try:
-            num, den = float(num_s), float(den_s)
-            if den <= 0.0:
-                return 0.0, True
-            pct = max(0.0, min(100.0, (num / den) * 100.0))
-            return pct, num <= 0.0
+            num_i, den_i = int(float(num_s)), int(float(den_s))
+            if den_i <= 0:
+                return 0.0, True, 0, None
+            pct = max(0.0, min(100.0, (num_i / den_i) * 100.0))
+            if den_i != 100:
+                return pct, num_i <= 0, num_i, den_i
+            return pct, num_i <= 0, None, None
         except ValueError:
             pass
-    return 100.0, False
+    return 100.0, False, None, None
+
+
+def format_evless_ots_paste(mons: Sequence[ParsedPokemon] | Dict[str, ParsedPokemon]) -> str:
+    """Format a sequence/dict of `ParsedPokemon` into a clean Champions EV-less OTS Showdown paste."""
+    items = list(mons.values()) if isinstance(mons, dict) else list(mons)
+    blocks: List[str] = []
+    seen: set[str] = set()
+    for mon in items:
+        sp = mon.base_species or mon.species.split("-Mega")[0]
+        key = _norm_id(sp)
+        if key in seen:
+            continue
+        seen.add(key)
+        item = mon.initial_item or mon.item
+        header = f"{sp} @ {item}" if item else sp
+        lines = [header, f"Ability: {mon.ability or 'None'}", f"Level: {mon.level or 50}"]
+        if mon.nature:
+            lines.append(f"{mon.nature} Nature")
+        for mv in (mon.moves or [])[:4]:
+            lines.append(f"- {mv}")
+        blocks.append("\n".join(lines))
+    return "\n\n".join(blocks).strip()
 
 
 def _parse_status_token(hp_token: str) -> Optional[str]:
@@ -264,6 +330,7 @@ def _parse_showteam_packed(
                 species=sp,
                 base_species=base_sp,
                 item=item,
+                initial_item=item,
                 ability=ability,
                 nature=nature,
                 level=lvl,
@@ -279,17 +346,19 @@ def parse_showdown_replay(
     pov_trainer: Optional[str] = None,
     trainer_1_ots_sets: Optional[Dict[str, ParsedPokemon]] = None,
     trainer_2_ots_sets: Optional[Dict[str, ParsedPokemon]] = None,
+    game_index: int = 1,
 ) -> ParsedReplay:
-    """Parse an official Showdown `.html` or pipe-protocol replay into per-turn snapshots.
+    """Parse an official Showdown `.html` or pipe-protocol replay into per-turn snapshots
+    and lossless empirical Speed, Damage, and HP-tick observations for Bo1/Bo3 SP inference.
 
     Merges exact 66-SP spreads (and fallback items/moves) from the OTS Database
-    while preserving exact replay `|showteam|` items/moves and exact turn-by-turn
+    while preserving exact replay `|showteam|` items/moves/natures and exact turn-by-turn
     HP, boosts, weather, Trick Room, Protect chains, and `active_turns`.
     """
     log_text, replay_id = extract_protocol_log(raw_input)
     lines = [ln.strip() for ln in log_text.splitlines() if ln.strip()]
 
-    species_map, moves_map, items_map, abilities_map = _build_duckdb_name_lookups()
+    species_map, moves_map, items_map, abilities_map, move_meta_map = _build_duckdb_name_lookups()
 
     wire_players: Dict[str, str] = {}
     format_name = "[Gen 9 Champions] VGC 2026 Reg M-C (Bo3)"
@@ -356,6 +425,109 @@ def parse_showdown_replay(
         "trainer_2": {"a": False, "b": False},
     }
 
+    # Lossless empirical telemetry accumulators for Zero-AI 66-SP constraint solving
+    speed_observations: List[SpeedObservation] = []
+    damage_observations: List[DamageObservation] = []
+    hp_tick_observations: List[HpTickObservation] = []
+    showteam_ots: Dict[str, Dict[str, ParsedPokemon]] = {"trainer_1": {}, "trainer_2": {}}
+    hp_exact_by_mon: Dict[Tuple[str, str], Tuple[int, int]] = {}  # (tid, base_sp_key) -> (cur_hp, max_hp)
+    helping_hand_slots: set[Tuple[str, str]] = set()
+    cur_turn_num: int = 0
+
+    # Turn-level speed & move context trackers
+    turn_speed_entries: List[Dict[str, Any]] = []
+    turn_speed_invalidated: bool = False
+    switchin_ability_entries: List[Dict[str, Any]] = []
+    in_lead_entry_window: bool = False
+    current_move_ctx: Optional[Dict[str, Any]] = None
+    last_damage_by_attacker: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+    def _effective_move_priority(mon: Optional[ParsedPokemon], move_name: str, cur_terrain: Optional[str]) -> int:
+        meta = move_meta_map.get(move_name) or {}
+        prio = int(meta.get("priority", 0))
+        if mon is None:
+            return prio
+        cat = str(meta.get("category") or "Status")
+        mtype = str(meta.get("type") or "Normal")
+        ab = (mon.ability or "").strip()
+        if ab == "Prankster" and cat == "Status":
+            prio += 1
+        elif ab == "Gale Wings" and mtype == "Flying" and mon.current_hp_pct >= 99.9:
+            prio += 1
+        elif ab == "Triage" and move_name in {
+            "Absorb", "Drain Punch", "Draining Kiss", "Floral Healing", "Giga Drain",
+            "Heal Order", "Heal Pulse", "Healing Wish", "Horn Leech", "Leech Life",
+            "Lunar Blessing", "Mega Drain", "Milk Drink", "Moonlight", "Morning Sun",
+            "Oblivion Wing", "Parabolic Charge", "Purify", "Recover", "Rest", "Roost",
+            "Shore Up", "Slack Off", "Soft-Boiled", "Strength Sap", "Swallow",
+            "Synthesis", "Wish",
+        }:
+            prio += 3
+        elif move_name == "Grassy Glide" and cur_terrain == "Grassy":
+            prio += 1
+        return prio
+
+    def _record_ability_entry(tid: str, sl: str, sp: str, label: str) -> None:
+        if not in_lead_entry_window:
+            return
+        mon = teams[tid].get_pokemon(sp)
+        if mon is None:
+            return
+        entry = {
+            "tid": tid,
+            "sl": sl,
+            "species": mon.species,
+            "base_species": mon.base_species or mon.species.split("-Mega")[0],
+            "is_mega": mon.is_mega,
+            "spe_stage": int(mon.boosts.get("spe", 0)),
+            "unburden": bool(mon.unburden_active),
+            "item": mon.item,
+            "ability": mon.ability,
+            "status": mon.status,
+            "label": label,
+            "weather": weather,
+            "terrain": terrain,
+            "tw_t1": tailwind_turns["trainer_1"] > 0,
+            "tw_t2": tailwind_turns["trainer_2"] > 0,
+            "tr": trick_room_turns > 0,
+        }
+        # Compare against earlier opposite-trainer simultaneous switch-in ability triggers
+        for prev in switchin_ability_entries:
+            if prev["tid"] != tid:
+                speed_observations.append(
+                    SpeedObservation(
+                        faster_mon=prev["species"],
+                        slower_mon=entry["species"],
+                        turn=cur_turn_num,
+                        priority=0,
+                        faster_move=f"[Entry: {prev['label']}]",
+                        slower_move=f"[Entry: {entry['label']}]",
+                        weather=prev["weather"],
+                        terrain=prev["terrain"],
+                        tailwind_active_faster=prev["tw_t1"] if prev["tid"] == "trainer_1" else prev["tw_t2"],
+                        tailwind_active_slower=entry["tw_t1"] if entry["tid"] == "trainer_1" else entry["tw_t2"],
+                        trick_room_active=prev["tr"],
+                        notes="Turn-0 simultaneous switch-in ability speed order",
+                        faster_trainer=prev["tid"],
+                        slower_trainer=tid,
+                        source="switch_in_ability",
+                        faster_is_mega=prev["is_mega"],
+                        slower_is_mega=entry["is_mega"],
+                        faster_spe_stage=prev["spe_stage"],
+                        slower_spe_stage=entry["spe_stage"],
+                        faster_unburden=prev["unburden"],
+                        slower_unburden=entry["unburden"],
+                        faster_item=prev["item"],
+                        slower_item=entry["item"],
+                        faster_ability=prev["ability"],
+                        slower_ability=entry["ability"],
+                        faster_status=prev["status"],
+                        slower_status=entry["status"],
+                        game_index=game_index,
+                    )
+                )
+        switchin_ability_entries.append(entry)
+
     def ensure_pokemon(trainer_id: str, species_raw: str) -> ParsedPokemon:
         t_obj = teams[trainer_id]
         sp_clean = species_raw.split(",")[0].strip()
@@ -375,6 +547,8 @@ def parse_showdown_replay(
                 existing.nature = db_mon.nature
             if not existing.item and db_mon.item:
                 existing.item = db_mon.item
+            if not existing.initial_item and (db_mon.initial_item or db_mon.item):
+                existing.initial_item = db_mon.initial_item or db_mon.item
             if not existing.ability and db_mon.ability:
                 existing.ability = db_mon.ability
             if not existing.moves and db_mon.moves:
@@ -469,10 +643,12 @@ def parse_showdown_replay(
                 packed_rest, species_map, moves_map, items_map, abilities_map
             )
             for pm in packed_mons:
+                showteam_ots[tid][_norm_id(pm.base_species or pm.species)] = copy.deepcopy(pm)
                 existing = ensure_pokemon(tid, pm.species)
                 # Replay |showteam| is authoritative for actual items/moves/ability/nature
                 if pm.item:
                     existing.item = pm.item
+                    existing.initial_item = pm.item
                 if pm.ability:
                     existing.ability = pm.ability
                 if pm.moves:
@@ -490,10 +666,19 @@ def parse_showdown_replay(
         elif cmd == "start":
             started = True
             in_upkeep_phase = False
+            in_lead_entry_window = True
+            switchin_ability_entries.clear()
 
         elif cmd == "turn" and len(toks) >= 3:
             t_num = int(toks[2].strip())
+            cur_turn_num = t_num
             in_upkeep_phase = False
+            in_lead_entry_window = False
+            switchin_ability_entries.clear()
+            turn_speed_entries.clear()
+            turn_speed_invalidated = False
+            helping_hand_slots.clear()
+            current_move_ctx = None
             pending_mega_slot.clear()
             used_protect_this_turn = {
                 "trainer_1": {"a": False, "b": False},
@@ -506,7 +691,7 @@ def parse_showdown_replay(
             wire_s, sl, nick = _extract_slot_ident(toks[2])
             tid = wire_to_trainer(wire_s)
             sp_details = toks[3].strip()
-            hp_pct, fainted = _parse_hp_token(toks[4])
+            hp_pct, fainted, hp_cur_ex, hp_max_ex = _parse_hp_detailed(toks[4])
             status = _parse_status_token(toks[4])
             from_tag = " ".join(toks[5:]).lower() if len(toks) > 5 else ""
 
@@ -518,6 +703,8 @@ def parse_showdown_replay(
                     prev_mon.boosts = {k: 0 for k in prev_mon.boosts}
                     prev_mon.active_turns = 0
                     prev_mon.used_protect_last_turn = False
+                    prev_mon.unburden_active = False
+                    prev_mon.must_recharge = False
 
             mon = ensure_pokemon(tid, sp_details)
             if nick:
@@ -529,7 +716,11 @@ def parse_showdown_replay(
             mon.revealed_in_battle = True
             mon.active_turns = 0
             mon.used_protect_last_turn = False
+            mon.unburden_active = False
+            mon.must_recharge = False
             mon.boosts = {k: 0 for k in mon.boosts}
+            if hp_cur_ex is not None and hp_max_ex is not None:
+                hp_exact_by_mon[(tid, _norm_id(mon.base_species or mon.species))] = (hp_cur_ex, hp_max_ex)
             if "-mega" in sp_details.lower():
                 mon.is_mega = True
                 mon.species = _canonical_db_name(sp_details.split(",")[0].strip(), species_map)
@@ -563,6 +754,12 @@ def parse_showdown_replay(
             mon.species = new_sp
             if "-mega" in new_sp.lower():
                 mon.is_mega = True
+                # Update Mega Evolution ability immediately from DuckDB pokedex!
+                dex_row = get_registry().get_pokemon(new_sp)
+                if dex_row and isinstance(dex_row.get("abilities"), dict):
+                    mega_ab = dex_row["abilities"].get("0")
+                    if mega_ab:
+                        mon.ability = str(mega_ab)
             # Update dict key & active_by_slot
             if old_key in teams[tid].pokemon_sets and old_key != new_sp:
                 teams[tid].pokemon_sets[new_sp] = teams[tid].pokemon_sets.pop(old_key)
@@ -576,6 +773,23 @@ def parse_showdown_replay(
             for idx_b, b_sp in enumerate(teams[tid].battle_roster):
                 if b_sp == old_key:
                     teams[tid].battle_roster[idx_b] = new_sp
+
+        elif cmd == "-ability" and len(toks) >= 4:
+            wire_s, sl, nick = _extract_slot_ident(toks[2])
+            tid = wire_to_trainer(wire_s)
+            ab_name = _canonical_db_name(toks[3].strip(), abilities_map)
+            sp = active_by_slot[tid][sl] or nick_to_species[tid].get(nick.lower(), nick)
+            mon = teams[tid].get_pokemon(sp)
+            if mon is not None and ab_name:
+                mon.ability = ab_name
+                _record_ability_entry(tid, sl, mon.species, ab_name)
+
+        elif cmd == "-singleturn" and len(toks) >= 4:
+            wire_s, sl, nick = _extract_slot_ident(toks[2])
+            tid = wire_to_trainer(wire_s)
+            eff = toks[3].strip().lower()
+            if "helping hand" in eff:
+                helping_hand_slots.add((tid, sl))
 
         elif cmd == "-mega" and len(toks) >= 4:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
@@ -592,6 +806,7 @@ def parse_showdown_replay(
             move_raw = toks[3].strip()
             move_name = _canonical_db_name(move_raw, moves_map)
             tgt_raw = toks[4].strip() if len(toks) >= 5 else ""
+            extra_tags = " ".join(toks[5:]) if len(toks) > 5 else ""
             tgt_tid: Optional[str] = None
             tgt_sl: Optional[str] = None
             if tgt_raw and ":" in tgt_raw:
@@ -603,6 +818,7 @@ def parse_showdown_replay(
             mon = teams[tid].get_pokemon(actor_sp)
             if mon is not None:
                 mon.last_move_used = move_name
+                mon.must_recharge = False
                 if move_name not in mon.moves:
                     mon.moves.append(move_name)
             used_mega = pending_mega_slot.pop((tid, sl), False)
@@ -624,32 +840,361 @@ def parse_showdown_replay(
                 ),
             )
 
+            # 1. Empirical same-priority Speed observation (skip After You / Quash / Instruct / Dancer)
+            is_forced_order_move = move_name in ("After You", "Quash", "Instruct") or "[from] ability: Dancer" in extra_tags
+            if is_forced_order_move:
+                turn_speed_invalidated = True
+            elif mon is not None and not turn_speed_invalidated and "[still]" not in extra_tags:
+                eff_prio = _effective_move_priority(mon, move_name, terrain)
+                cur_entry = {
+                    "tid": tid,
+                    "sl": sl,
+                    "species": mon.species,
+                    "move": move_name,
+                    "priority": eff_prio,
+                    "is_mega": mon.is_mega,
+                    "spe_stage": int(mon.boosts.get("spe", 0)),
+                    "unburden": bool(mon.unburden_active),
+                    "item": mon.item,
+                    "ability": mon.ability,
+                    "status": mon.status,
+                    "weather": weather,
+                    "terrain": terrain,
+                    "tw_t1": tailwind_turns["trainer_1"] > 0,
+                    "tw_t2": tailwind_turns["trainer_2"] > 0,
+                    "tr": trick_room_turns > 0,
+                }
+                for prev in turn_speed_entries:
+                    if prev["tid"] != tid and prev["priority"] == eff_prio:
+                        # Only compare if Trick Room & Tailwind & Weather did not change between the two moves
+                        if (
+                            prev["tr"] == cur_entry["tr"]
+                            and prev["tw_t1"] == cur_entry["tw_t1"]
+                            and prev["tw_t2"] == cur_entry["tw_t2"]
+                            and prev["weather"] == cur_entry["weather"]
+                            and prev["terrain"] == cur_entry["terrain"]
+                        ):
+                            speed_observations.append(
+                                SpeedObservation(
+                                    faster_mon=prev["species"],
+                                    slower_mon=cur_entry["species"],
+                                    turn=cur_turn_num,
+                                    priority=eff_prio,
+                                    faster_move=prev["move"],
+                                    slower_move=move_name,
+                                    weather=cur_entry["weather"],
+                                    terrain=cur_entry["terrain"],
+                                    tailwind_active_faster=prev["tw_t1"] if prev["tid"] == "trainer_1" else prev["tw_t2"],
+                                    tailwind_active_slower=cur_entry["tw_t1"] if tid == "trainer_1" else cur_entry["tw_t2"],
+                                    trick_room_active=cur_entry["tr"],
+                                    notes=f"G{game_index} T{cur_turn_num} prio {eff_prio}",
+                                    faster_trainer=prev["tid"],
+                                    slower_trainer=tid,
+                                    source="turn_order",
+                                    faster_is_mega=prev["is_mega"],
+                                    slower_is_mega=cur_entry["is_mega"],
+                                    faster_spe_stage=prev["spe_stage"],
+                                    slower_spe_stage=cur_entry["spe_stage"],
+                                    faster_unburden=prev["unburden"],
+                                    slower_unburden=cur_entry["unburden"],
+                                    faster_item=prev["item"],
+                                    slower_item=cur_entry["item"],
+                                    faster_ability=prev["ability"],
+                                    slower_ability=cur_entry["ability"],
+                                    faster_status=prev["status"],
+                                    slower_status=cur_entry["status"],
+                                    game_index=game_index,
+                                )
+                            )
+                turn_speed_entries.append(cur_entry)
+
+            # 2. Initialize active move context for empirical DamageObservation capture
+            m_meta = move_meta_map.get(move_name) or {}
+            m_target = str(m_meta.get("target") or "normal")
+            is_spread_move = m_target in ("allAdjacentFoes", "allAdjacent")
+            spread_multi = False
+            if is_spread_move:
+                spread_match = re.search(r"\[spread\]\s*([^\|\n]+)", extra_tags)
+                if spread_match:
+                    spread_targets = [x.strip() for x in spread_match.group(1).split(",") if x.strip()]
+                    spread_multi = len(spread_targets) >= 2
+                else:
+                    # Fallback to live target count on the field
+                    opp_tid_c = "trainer_2" if tid == "trainer_1" else "trainer_1"
+                    alive_cnt = 0
+                    for s_l in ("a", "b"):
+                        o_sp = active_by_slot[opp_tid_c][s_l]
+                        if o_sp:
+                            o_m = teams[opp_tid_c].get_pokemon(o_sp)
+                            if o_m is not None and not o_m.fainted:
+                                alive_cnt += 1
+                    if m_target == "allAdjacent":
+                        p_sl = "b" if sl == "a" else "a"
+                        p_sp = active_by_slot[tid][p_sl]
+                        if p_sp:
+                            p_m = teams[tid].get_pokemon(p_sp)
+                            if p_m is not None and not p_m.fainted:
+                                alive_cnt += 1
+                    spread_multi = alive_cnt >= 2
+
+            current_move_ctx = {
+                "attacker_tid": tid,
+                "attacker_sl": sl,
+                "attacker_sp": mon.species if mon is not None else actor_sp,
+                "attacker_is_mega": bool(mon.is_mega) if mon is not None else False,
+                "attacker_item": mon.item if mon is not None else None,
+                "attacker_ability": mon.ability if mon is not None else None,
+                "attacker_burned": (mon.status == "brn") if mon is not None else False,
+                "attacker_hp_pct": float(mon.current_hp_pct) if mon is not None else 100.0,
+                "attacker_boosts": dict(mon.boosts) if mon is not None else {},
+                "move_name": move_name,
+                "move_cat": str(m_meta.get("category") or "Status"),
+                "move_recoil_frac": m_meta.get("recoil_frac"),
+                "is_spread_multi_target": spread_multi,
+                "helping_hand": (tid, sl) in helping_hand_slots,
+                "weather": weather,
+                "terrain": terrain,
+                "pending_crits": set(),
+                "pending_eff": {},
+                "obs_by_target": {},
+                "boosts_include_charge_spa": False,
+                "is_charge_turn": "[still]" in extra_tags,
+            }
+
+        elif cmd == "-mustrecharge" and len(toks) >= 3:
+            wire_s, sl, nick = _extract_slot_ident(toks[2])
+            tid = wire_to_trainer(wire_s)
+            sp = active_by_slot[tid][sl] or nick_to_species[tid].get(nick.lower(), nick)
+            mon = teams[tid].get_pokemon(sp)
+            if mon is not None:
+                mon.must_recharge = True
+
         elif cmd == "cant" and len(toks) >= 4:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
             tid = wire_to_trainer(wire_s)
             reason = toks[3].strip()
             actor_sp = active_by_slot[tid][sl] or nick
-            set_slot_action(
-                tid,
-                sl,
-                RecordedSlotAction(
-                    actor_species=actor_sp,
-                    kind="flinched",
-                    flinched_or_blocked=True,
-                    summary=f"{actor_sp}: Blocked ({reason})",
-                ),
-            )
-            if cur_turn_snap is not None:
-                cur_turn_snap.events.flinches.append({"trainer": tid, "species": actor_sp, "reason": reason})
+            mon_cant = teams[tid].get_pokemon(actor_sp)
+            if reason.lower() == "recharge":
+                if mon_cant is not None:
+                    mon_cant.must_recharge = False
+                set_slot_action(
+                    tid,
+                    sl,
+                    RecordedSlotAction(
+                        actor_species=actor_sp,
+                        kind="recharge",
+                        flinched_or_blocked=True,
+                        summary=f"{actor_sp}: Recharge (forced)",
+                    ),
+                )
+            else:
+                set_slot_action(
+                    tid,
+                    sl,
+                    RecordedSlotAction(
+                        actor_species=actor_sp,
+                        kind="flinched",
+                        flinched_or_blocked=True,
+                        summary=f"{actor_sp}: Blocked ({reason})",
+                    ),
+                )
+                if cur_turn_snap is not None:
+                    cur_turn_snap.events.flinches.append({"trainer": tid, "species": actor_sp, "reason": reason})
+
+        elif cmd in ("-supereffective", "-resisted") and len(toks) >= 3:
+            if current_move_ctx is not None:
+                wire_s, sl, _ = _extract_slot_ident(toks[2])
+                tid = wire_to_trainer(wire_s)
+                current_move_ctx["pending_eff"][(tid, sl)] = (
+                    "super_effective" if cmd == "-supereffective" else "resisted"
+                )
 
         elif cmd in ("-damage", "-heal") and len(toks) >= 4:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
             tid = wire_to_trainer(wire_s)
-            hp_pct, fainted = _parse_hp_token(toks[3])
+            hp_pct, fainted, hp_cur_ex, hp_max_ex = _parse_hp_detailed(toks[3])
             status = _parse_status_token(toks[3])
+            from_tag = " ".join(toks[4:]).lower() if len(toks) > 4 else ""
             sp = active_by_slot[tid][sl] or nick_to_species[tid].get(nick.lower(), nick)
             mon = teams[tid].get_pokemon(sp)
             if mon is not None:
+                prev_pct = float(mon.current_hp_pct)
+                mon_key = (tid, _norm_id(mon.base_species or mon.species))
+                prev_exact = hp_exact_by_mon.get(mon_key)
+                if prev_exact is not None and hp_max_ex is None and fainted:
+                    hp_max_ex = prev_exact[1]
+                    hp_cur_ex = 0
+                exact_delta: Optional[int] = None
+                if prev_exact is not None and hp_cur_ex is not None:
+                    exact_delta = max(0, prev_exact[0] - hp_cur_ex)
+                if hp_cur_ex is not None and hp_max_ex is not None:
+                    hp_exact_by_mon[mon_key] = (hp_cur_ex, hp_max_ex)
+                elif hp_cur_ex == 0 and prev_exact is not None:
+                    hp_exact_by_mon[mon_key] = (0, prev_exact[1])
+
+                # 1. Capture non-attack HP tick observations (Recoil, Sitrus, Leftovers, Life Orb, Burn, Sand)
+                if "[from]" in from_tag:
+                    if cmd == "-damage" and "recoil" in from_tag:
+                        last_atk = last_damage_by_attacker.get((tid, sl))
+                        src_exact = last_atk.get("exact_hp") if last_atk else None
+                        rec_frac = last_atk.get("recoil_frac") if last_atk else (1.0 / 3.0)
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="recoil",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                source_damage_hp_exact=src_exact,
+                                recoil_fraction=rec_frac,
+                                game_index=game_index,
+                            )
+                        )
+                    elif cmd == "-heal" and "sitrus berry" in from_tag:
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="sitrus",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                game_index=game_index,
+                            )
+                        )
+                    elif cmd == "-heal" and "leftovers" in from_tag:
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="leftovers",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                game_index=game_index,
+                            )
+                        )
+                    elif cmd == "-heal" and "grassy terrain" in from_tag:
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="grassy",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                game_index=game_index,
+                            )
+                        )
+                    elif cmd == "-damage" and "life orb" in from_tag:
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="life_orb",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                game_index=game_index,
+                            )
+                        )
+                    elif cmd == "-damage" and ("brn" in from_tag or "sandstorm" in from_tag):
+                        hp_tick_observations.append(
+                            HpTickObservation(
+                                trainer=tid,
+                                species=mon.species,
+                                turn=cur_turn_num,
+                                kind="burn" if "brn" in from_tag else "sand",
+                                hp_pct_before=prev_pct,
+                                hp_pct_after=hp_pct,
+                                game_index=game_index,
+                            )
+                        )
+
+                # 2. Capture direct move DamageObservation (opposite trainer hit, non-[from] passive chip)
+                elif (
+                    cmd == "-damage"
+                    and current_move_ctx is not None
+                    and not current_move_ctx["is_charge_turn"]
+                    and current_move_ctx["move_cat"] in ("Physical", "Special")
+                    and current_move_ctx["attacker_tid"] != tid
+                ):
+                    atk_tid = current_move_ctx["attacker_tid"]
+                    atk_sl = current_move_ctx["attacker_sl"]
+                    is_phys_m = current_move_ctx["move_cat"] == "Physical"
+                    infiltrator = current_move_ctx["attacker_ability"] == "Infiltrator"
+                    scr_on = (not infiltrator) and (
+                        (is_phys_m and (reflect_turns[tid] > 0 or aurora_veil_turns[tid] > 0))
+                        or ((not is_phys_m) and (light_screen_turns[tid] > 0 or aurora_veil_turns[tid] > 0))
+                    )
+                    ally_sl = "b" if sl == "a" else "a"
+                    ally_sp = active_by_slot[tid][ally_sl]
+                    ally_mon = teams[tid].get_pokemon(ally_sp) if ally_sp else None
+                    fg_on = (
+                        ally_mon is not None
+                        and not ally_mon.fainted
+                        and ally_mon.ability == "Friend Guard"
+                        and current_move_ctx["attacker_ability"] != "Mold Breaker"
+                    )
+                    tgt_key = (tid, sl)
+                    is_crit_hit = tgt_key in current_move_ctx["pending_crits"]
+                    existing_obs: Optional[DamageObservation] = current_move_ctx["obs_by_target"].get(tgt_key)
+                    if existing_obs is not None:
+                        # Multi-hit move (Dual Wingbeat, Scale Shot, Population Bomb, etc.)
+                        existing_obs.hits += 1
+                        existing_obs.hp_pct_after = hp_pct
+                        existing_obs.damage_pct = max(0.0, existing_obs.hp_pct_before - hp_pct)
+                        existing_obs.is_ohko = existing_obs.is_ohko or fainted
+                        existing_obs.is_crit = existing_obs.is_crit or is_crit_hit
+                        if exact_delta is not None and existing_obs.damage_hp_exact is not None:
+                            existing_obs.damage_hp_exact += exact_delta
+                    else:
+                        new_obs = DamageObservation(
+                            attacker=current_move_ctx["attacker_sp"],
+                            defender=mon.species,
+                            move=current_move_ctx["move_name"],
+                            damage_pct=max(0.0, prev_pct - hp_pct),
+                            turn=cur_turn_num,
+                            weather=current_move_ctx["weather"],
+                            terrain=current_move_ctx["terrain"],
+                            attacker_boosts=dict(current_move_ctx["attacker_boosts"]),
+                            defender_boosts=dict(mon.boosts),
+                            is_crit=is_crit_hit,
+                            effectiveness=current_move_ctx["pending_eff"].get(tgt_key),
+                            hits=1,
+                            attacker_trainer=atk_tid,
+                            defender_trainer=tid,
+                            damage_hp_exact=exact_delta,
+                            defender_max_hp_exact=hp_max_ex,
+                            hp_pct_before=prev_pct,
+                            hp_pct_after=hp_pct,
+                            is_ohko=fainted,
+                            focus_sash_or_sturdy=False,
+                            is_spread_multi_target=bool(current_move_ctx["is_spread_multi_target"]),
+                            helping_hand=bool(current_move_ctx["helping_hand"]),
+                            friend_guard=fg_on,
+                            screen_active=scr_on,
+                            attacker_burned=bool(current_move_ctx["attacker_burned"]),
+                            attacker_is_mega=bool(current_move_ctx["attacker_is_mega"]),
+                            defender_is_mega=bool(mon.is_mega),
+                            attacker_item=current_move_ctx["attacker_item"],
+                            defender_item=mon.item,
+                            attacker_ability=current_move_ctx["attacker_ability"],
+                            defender_ability=mon.ability,
+                            attacker_hp_pct=float(current_move_ctx["attacker_hp_pct"]),
+                            boosts_include_charge_spa=bool(current_move_ctx["boosts_include_charge_spa"]),
+                            game_index=game_index,
+                        )
+                        damage_observations.append(new_obs)
+                        current_move_ctx["obs_by_target"][tgt_key] = new_obs
+                        if exact_delta is not None:
+                            last_damage_by_attacker[(atk_tid, atk_sl)] = {
+                                "exact_hp": exact_delta,
+                                "recoil_frac": current_move_ctx["move_recoil_frac"],
+                            }
+
                 mon.current_hp_pct = hp_pct
                 mon.fainted = fainted
                 if status:
@@ -663,16 +1208,33 @@ def parse_showdown_replay(
             if mon is not None:
                 mon.current_hp_pct = 0.0
                 mon.fainted = True
+                mon.must_recharge = False
             if cur_turn_snap is not None:
                 cur_turn_snap.events.faints.append({"trainer": tid, "species": sp})
 
         elif cmd == "-enditem" and len(toks) >= 4:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
             tid = wire_to_trainer(wire_s)
+            ended_item = _canonical_db_name(toks[3].strip(), items_map)
             sp = active_by_slot[tid][sl] or nick_to_species[tid].get(nick.lower(), nick)
             mon = teams[tid].get_pokemon(sp)
             if mon is not None:
+                if ended_item == "Focus Sash" and current_move_ctx is not None:
+                    obs_hit = current_move_ctx["obs_by_target"].get((tid, sl))
+                    if obs_hit is not None:
+                        obs_hit.focus_sash_or_sturdy = True
+                if mon.ability == "Unburden":
+                    mon.unburden_active = True
+                    turn_speed_invalidated = True
                 mon.item = None
+
+        elif cmd == "-activate" and len(toks) >= 4:
+            wire_s, sl, _ = _extract_slot_ident(toks[2])
+            tid = wire_to_trainer(wire_s)
+            if "sturdy" in toks[3].lower() and current_move_ctx is not None:
+                obs_hit = current_move_ctx["obs_by_target"].get((tid, sl))
+                if obs_hit is not None:
+                    obs_hit.focus_sash_or_sturdy = True
 
         elif cmd in ("-boost", "-unboost") and len(toks) >= 5:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
@@ -683,6 +1245,19 @@ def parse_showdown_replay(
             mon = teams[tid].get_pokemon(sp)
             if mon is not None and stat_k in mon.boosts:
                 mon.boosts[stat_k] = max(-6, min(6, mon.boosts[stat_k] + delta))
+                if stat_k == "spe" and not in_lead_entry_window:
+                    turn_speed_invalidated = True
+                # If Electro Shot / Meteor Beam boosts SpA right before hitting, keep current_move_ctx in sync!
+                if (
+                    current_move_ctx is not None
+                    and current_move_ctx["attacker_tid"] == tid
+                    and current_move_ctx["attacker_sl"] == sl
+                    and current_move_ctx["move_name"] in ("Electro Shot", "Meteor Beam")
+                    and stat_k == "spa"
+                    and not current_move_ctx["obs_by_target"]
+                ):
+                    current_move_ctx["attacker_boosts"]["spa"] = mon.boosts["spa"]
+                    current_move_ctx["boosts_include_charge_spa"] = True
 
         elif cmd == "-status" and len(toks) >= 4:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
@@ -690,7 +1265,10 @@ def parse_showdown_replay(
             sp = active_by_slot[tid][sl] or nick_to_species[tid].get(nick.lower(), nick)
             mon = teams[tid].get_pokemon(sp)
             if mon is not None:
-                mon.status = toks[3].strip().lower()
+                st_code = toks[3].strip().lower()
+                mon.status = st_code
+                if st_code == "par":
+                    turn_speed_invalidated = True
 
         elif cmd == "-curestatus" and len(toks) >= 3:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
@@ -705,25 +1283,50 @@ def parse_showdown_replay(
             is_upkeep = any("[upkeep]" in t.lower() for t in toks[3:])
             mapped = _WEATHER_MAP.get(_norm_id(w_raw))
             if not is_upkeep:
+                # Check if weather came from a Turn-0 lead switch-in ability (`[of] pXa: Name`)
+                of_tok = next((t for t in toks[3:] if "[of]" in t), "")
+                ab_tok = next((t for t in toks[3:] if "[from] ability:" in t.lower()), "")
+                if in_lead_entry_window and of_tok and ab_tok:
+                    of_ident = of_tok.split("[of]", 1)[1].strip()
+                    w_s, w_sl, w_nick = _extract_slot_ident(of_ident)
+                    w_tid = wire_to_trainer(w_s)
+                    w_sp = active_by_slot[w_tid][w_sl] or nick_to_species[w_tid].get(w_nick.lower(), w_nick)
+                    ab_lbl = ab_tok.split("ability:", 1)[1].strip()
+                    _record_ability_entry(w_tid, w_sl, w_sp, ab_lbl)
                 weather = mapped
                 weather_turns = 5 if mapped else 0
+                if not in_lead_entry_window:
+                    turn_speed_invalidated = True
                 if cur_turn_snap is not None and mapped:
                     cur_turn_snap.events.weather_changes.append(mapped)
 
         elif cmd == "-fieldstart" and len(toks) >= 3:
             eff = toks[2].lower()
+            of_tok = next((t for t in toks[3:] if "[of]" in t), "")
+            ab_tok = next((t for t in toks[3:] if "[from] ability:" in t.lower()), "")
+            if in_lead_entry_window and of_tok and ab_tok:
+                of_ident = of_tok.split("[of]", 1)[1].strip()
+                f_s, f_sl, f_nick = _extract_slot_ident(of_ident)
+                f_tid = wire_to_trainer(f_s)
+                f_sp = active_by_slot[f_tid][f_sl] or nick_to_species[f_tid].get(f_nick.lower(), f_nick)
+                ab_lbl = ab_tok.split("ability:", 1)[1].strip()
+                _record_ability_entry(f_tid, f_sl, f_sp, ab_lbl)
             if "trick room" in eff:
                 trick_room_turns = 5
+                turn_speed_invalidated = True
             else:
                 for k, v in _TERRAIN_MAP.items():
                     if k in _norm_id(eff):
                         terrain = v
                         terrain_turns = 5
+                        if not in_lead_entry_window:
+                            turn_speed_invalidated = True
 
         elif cmd == "-fieldend" and len(toks) >= 3:
             eff = toks[2].lower()
             if "trick room" in eff:
                 trick_room_turns = 0
+                turn_speed_invalidated = True
             else:
                 for k in _TERRAIN_MAP:
                     if k in _norm_id(eff):
@@ -735,6 +1338,7 @@ def parse_showdown_replay(
             eff = _norm_id(toks[3])
             if "tailwind" in eff:
                 tailwind_turns[tid] = 4
+                turn_speed_invalidated = True
             elif "reflect" in eff:
                 reflect_turns[tid] = 5
             elif "lightscreen" in eff:
@@ -747,6 +1351,7 @@ def parse_showdown_replay(
             eff = _norm_id(toks[3])
             if "tailwind" in eff:
                 tailwind_turns[tid] = 0
+                turn_speed_invalidated = True
             elif "reflect" in eff:
                 reflect_turns[tid] = 0
             elif "lightscreen" in eff:
@@ -759,6 +1364,8 @@ def parse_showdown_replay(
             tid = wire_to_trainer(wire_s)
             sp = active_by_slot[tid][sl] or nick
             cur_turn_snap.events.crits.append({"target_trainer": tid, "target_species": sp})
+            if current_move_ctx is not None:
+                current_move_ctx["pending_crits"].add((tid, sl))
 
         elif cmd == "-miss" and len(toks) >= 3 and cur_turn_snap is not None:
             wire_s, sl, nick = _extract_slot_ident(toks[2])
@@ -768,6 +1375,7 @@ def parse_showdown_replay(
 
         elif cmd == "upkeep":
             in_upkeep_phase = True
+            current_move_ctx = None
             # Decrement field timers & update active_turns + protect streak at End-of-Turn
             if weather_turns > 0:
                 weather_turns -= 1
@@ -801,6 +1409,10 @@ def parse_showdown_replay(
     for snap in turns:
         snap.battle_state.trainer_1.battle_roster = list(brought_order["trainer_1"])
         snap.battle_state.trainer_2.battle_roster = list(brought_order["trainer_2"])
+    if turns:
+        turns[-1].battle_state.speed_observations = list(speed_observations)
+        turns[-1].battle_state.damage_observations = list(damage_observations)
+        turns[-1].battle_state.hp_tick_observations = list(hp_tick_observations)
 
     return ParsedReplay(
         replay_id=replay_id,
@@ -815,4 +1427,10 @@ def parse_showdown_replay(
         trainer_1_brought=list(brought_order["trainer_1"]),
         trainer_2_brought=list(brought_order["trainer_2"]),
         turns=turns,
+        speed_observations=speed_observations,
+        damage_observations=damage_observations,
+        hp_tick_observations=hp_tick_observations,
+        trainer_1_showteam_ots=showteam_ots["trainer_1"],
+        trainer_2_showteam_ots=showteam_ots["trainer_2"],
+        game_index=game_index,
     )

@@ -8,8 +8,6 @@ Enforces strict trainer_1 (POV/User) and trainer_2 (Opponent) identifiers.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 import re
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -875,9 +873,9 @@ def parse_showdown_chat_log(
             weather = "Sand"
         elif "The sandstorm subsided" in line:
             weather = None
-        elif "started to snow" in line or "started to hail" in line:
+        elif "started to snow" in line or "started to hail" in line:  # Legacy Showdown replay compatibility
             weather = "Snow"
-        elif "The snow stopped" in line or "The hail stopped" in line:
+        elif "The snow stopped" in line or "The hail stopped" in line:  # Legacy Showdown replay compatibility
             weather = None
         elif "Grass grew to cover the battlefield" in line:
             terrain = "Grassy"

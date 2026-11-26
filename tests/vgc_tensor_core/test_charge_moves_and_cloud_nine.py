@@ -349,6 +349,171 @@ class TestChargeMovesAndCloudNine(unittest.TestCase):
         self.assertEqual(eval_es_no_rain.recommended_prior_scale, 0.10)
         self.assertTrue(any("charging turn" in r for r in eval_es_no_rain.reasons))
 
+    def test_08_recharge_moves_compile_flag_from_duckdb(self) -> None:
+        """Verify DuckDB flags.recharge compiles MoveIdx.IS_RECHARGE_MOVE for Hyper Beam, Giga Impact, etc."""
+        for mv_name in (
+            "Hyper Beam",
+            "Giga Impact",
+            "Blast Burn",
+            "Hydro Cannon",
+            "Frenzy Plant",
+            "Rock Wrecker",
+            "Meteor Assault",
+        ):
+            vec = self.compiler.compile_move_vector(mv_name)
+            self.assertEqual(
+                float(vec[MoveIdx.IS_RECHARGE_MOVE]),
+                1.0,
+                f"Expected IS_RECHARGE_MOVE == 1.0 for {mv_name}",
+            )
+        for normal_mv in ("Hyper Voice", "Quick Attack", "Protect", "Heat Wave"):
+            vec = self.compiler.compile_move_vector(normal_mv)
+            self.assertEqual(
+                float(vec[MoveIdx.IS_RECHARGE_MOVE]),
+                0.0,
+                f"Expected IS_RECHARGE_MOVE == 0.0 for {normal_mv}",
+            )
+
+    def test_09_hyper_beam_sets_recharge_and_turn_after_locks_slot_without_protect_bait(self) -> None:
+        """Verify Hyper Beam inflicts MUST_RECHARGE on Turn T and completely immobilizes Sylveon on Turn T+1."""
+        from engine.solver.game_theory import decode_slot_choice, solve_turn_equilibrium
+        from engine.vgc_tensor_core.phases_pre_attack import execute_pre_attack_phases
+        from engine.vgc_tensor_core.state_machine import VgcTensorStateMachine, execute_end_of_turn
+
+        # Turn T: Sylveon (trainer_2 A) fires Hyper Beam into sturdy trainer_1 A (Charizard)
+        rosters_t = [
+            {
+                "species": "Charizard",
+                "types": ["Fire", "Flying"],
+                "hp_max": 300,
+                "hp_cur": 300,
+                "stats": {"atk": 100, "def": 110, "spa": 160, "spd": 130, "spe": 150},
+                "ability": "Blaze",
+                "moves": ["Flamethrower", "Heat Wave", "Air Slash", "Protect"],
+            },
+            {"species": "DummyAlly", "alive": 0.0, "hp_max": 100, "hp_cur": 0, "moves": ["Protect", "Protect", "Protect", "Protect"]},
+            {"species": "Bench1", "alive": 0.0, "hp_max": 100, "hp_cur": 0, "moves": ["Protect", "Protect", "Protect", "Protect"]},
+            {"species": "Bench2", "alive": 0.0, "hp_max": 100, "hp_cur": 0, "moves": ["Protect", "Protect", "Protect", "Protect"]},
+            {
+                "species": "Sylveon",
+                "types": ["Fairy"],
+                "hp_max": 200,
+                "hp_cur": 200,
+                "stats": {"atk": 70, "def": 90, "spa": 160, "spd": 150, "spe": 90},
+                "ability": "Pixilate",
+                "moves": ["Hyper Beam", "Hyper Voice", "Quick Attack", "Detect"],
+            },
+            {"species": "DummyFoe", "alive": 0.0, "hp_max": 100, "hp_cur": 0, "moves": ["Protect", "Protect", "Protect", "Protect"]},
+            {
+                "species": "BenchFoe1",
+                "types": ["Normal"],
+                "hp_max": 160,
+                "hp_cur": 160,
+                "stats": {"atk": 100, "def": 100, "spa": 100, "spd": 100, "spe": 100},
+                "ability": "Intimidate",
+                "moves": ["Protect", "Protect", "Protect", "Protect"],
+            },
+            {"species": "BenchFoe2", "alive": 0.0, "hp_max": 100, "hp_cur": 0, "moves": ["Protect", "Protect", "Protect", "Protect"]},
+        ]
+        state_t = self.compiler.compile_battle_state(rosters_t, field_spec={"weather": "clear"})
+        # Charizard uses Flamethrower (0) on Sylveon (bucket 0); Sylveon uses Hyper Beam (0) on Charizard (bucket 0)
+        t1_c = np.array([[0, 0]], dtype=np.int64)
+        t2_c = np.array([[0, 0]], dtype=np.int64)
+        pre_t = execute_pre_attack_phases(
+            state_t.field_tensor, state_t.roster_tensor, state_t.moves_tensor, t1_c, t2_c, self.tables
+        )
+        att_t = execute_attack_cascade(
+            pre_t.F, pre_t.P, pre_t.M_moves, t1_c, t2_c, pre_t, self.tables, num_mc_samples=32, rng_seed=11
+        )
+        eot_t = execute_end_of_turn(att_t.F, att_t.P, att_t.M_moves, self.tables)
+        # Every thread where Hyper Beam connected (90% acc) and Sylveon survived must carry MUST_RECHARGE == 1.0 into EOT!
+        rech_vals = eot_t.P[0, 0, :, SLOT_TRAINER_2_A, MonIdx.MUST_RECHARGE]
+        rech_frac = float(np.mean(rech_vals.detach().cpu().numpy() if hasattr(rech_vals, "detach") else rech_vals))
+        self.assertGreater(rech_frac, 0.70, f"Expected Hyper Beam to set MUST_RECHARGE on connected hits, got frac={rech_frac}")
+
+        # Turn T+1: Sylveon starts locked in must_recharge=1.0 (even with a healthy bench!)
+        rosters_t1 = [dict(r) for r in rosters_t]
+        rosters_t1[0]["hp_cur"] = 120  # Charizard low enough that Hyper Voice would threaten if Sylveon could act!
+        rosters_t1[4]["must_recharge"] = 1.0
+        state_t1 = self.compiler.compile_battle_state(rosters_t1, field_spec={"weather": "clear"})
+
+        # 1. Pruner must lock Sylveon to exactly 1 canonical forced-recharge action (no moves, no switches!)
+        t2_mask = self.logic_engine.prune_side_26x26_tensor_actions(state_t1, "trainer_2")
+        c2_np = t2_mask.pruned_choices.detach().cpu().numpy() if hasattr(t2_mask.pruned_choices, "detach") else np.asarray(t2_mask.pruned_choices)
+        self.assertEqual(len(c2_np), 1)
+        self.assertEqual(int(c2_np[0, 0]), 0)
+        self.assertEqual(decode_slot_choice(state_t1, "trainer_2", is_slot_a=True, choice_idx=0), "Sylveon: Recharge (forced)")
+
+        # 2. Attack cascade skips Sylveon (Charizard takes 0 damage!) and clears spent MUST_RECHARGE after Turn T+1
+        sm = VgcTensorStateMachine(backend="torch", device="cpu")
+        mask1, mask2, step_res = sm.simulate_pruned_turn(state_t1, num_simulations=32, rng_seed=42)
+        # Every surviving Charizard action leaves Charizard at full 120 HP (Sylveon cannot deal damage!)
+        c_hp_slice = step_res.mean_hp[:, :, SLOT_TRAINER_1_A]
+        min_c_hp = float(c_hp_slice.min().item() if hasattr(c_hp_slice, "min") else np.min(c_hp_slice))
+        self.assertAlmostEqual(min_c_hp, 120.0, places=3)
+        # After spending its recharge turn, Sylveon's MUST_RECHARGE is cleared to 0.0
+        post_rech = step_res.P[:, :, :, SLOT_TRAINER_2_A, MonIdx.MUST_RECHARGE]
+        post_rech_max = float(post_rech.max().item() if hasattr(post_rech, "max") else np.max(post_rech))
+        self.assertEqual(post_rech_max, 0.0)
+
+        # 3. Equilibrium must recommend attacking (Flamethrower), NEVER Charizard Protect against recharging Sylveon!
+        eq = solve_turn_equilibrium(state_t1, mask1, mask2, step_res)
+        best_desc = eq.recommendations[0].description
+        self.assertIn("Charizard: Flamethrower", best_desc, f"Expected Charizard attack, got: {best_desc}")
+        self.assertNotIn("Charizard: Protect", best_desc, f"Engine recommended Protect against a recharging Sylveon: {best_desc}")
+
+    def test_10_protocol_parser_tracks_mustrecharge_and_cant_recharge(self) -> None:
+        """Verify Showdown |-mustrecharge| sets must_recharge for next turn and |cant|...|recharge clears it cleanly."""
+        from apps.replay_coach.protocol_parser import parse_showdown_replay
+
+        log = """
+|player|p1|TrainerOne|1|
+|player|p2|TrainerTwo|1|
+|tier|[Gen 9 Champions] VGC 2026 Reg M-C
+|poke|p1|Charizard, L50, M|
+|poke|p1|Pelipper, L50, M|
+|poke|p2|Sylveon, L50, F|
+|poke|p2|Farigiraf, L50, M|
+|start
+|switch|p1a: Charizard|Charizard, L50, M|155/155
+|switch|p1b: Pelipper|Pelipper, L50, M|167/167
+|switch|p2a: Sylveon|Sylveon, L50, F|100/100
+|switch|p2b: Farigiraf|Farigiraf, L50, M|100/100
+|turn|1
+|move|p1a: Charizard|Protect|p1a: Charizard
+|move|p2a: Sylveon|Hyper Beam|p1b: Pelipper
+|-damage|p1b: Pelipper|20/167
+|-mustrecharge|p2a: Sylveon
+|move|p2b: Farigiraf|Protect|p2b: Farigiraf
+|move|p1b: Pelipper|Protect|p1b: Pelipper
+|upkeep
+|turn|2
+|move|p1a: Charizard|Heat Wave|p2a: Sylveon|[spread] p2a,p2b
+|-damage|p2a: Sylveon|60/100
+|-damage|p2b: Farigiraf|70/100
+|cant|p2a: Sylveon|recharge
+|move|p2b: Farigiraf|Psychic|p1b: Pelipper
+|-damage|p1b: Pelipper|0 fnt
+|faint|p1b: Pelipper
+|upkeep
+|turn|3
+|move|p1a: Charizard|Protect|p1a: Charizard
+|move|p2a: Sylveon|Hyper Voice|p1a: Charizard
+|upkeep
+"""
+        parsed = parse_showdown_replay(log, pov_trainer="TrainerOne")
+        self.assertEqual(len(parsed.turns), 3)
+
+        sylv_t1 = parsed.turns[0].battle_state.trainer_2.get_pokemon("Sylveon")
+        sylv_t2 = parsed.turns[1].battle_state.trainer_2.get_pokemon("Sylveon")
+        sylv_t3 = parsed.turns[2].battle_state.trainer_2.get_pokemon("Sylveon")
+
+        self.assertFalse(sylv_t1.must_recharge)
+        self.assertTrue(sylv_t2.must_recharge)
+        self.assertEqual(parsed.turns[1].trainer_2_slot_a_action.kind, "recharge")
+        self.assertEqual(parsed.turns[1].events.flinches, [])  # Recharge is NOT a flinch variance event!
+        self.assertFalse(sylv_t3.must_recharge)
+
 
 if __name__ == "__main__":
     unittest.main()

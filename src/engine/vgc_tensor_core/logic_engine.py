@@ -41,9 +41,7 @@ from .compiler import (
     CHOICE_SWITCH_BENCH1,
     CHOICE_SWITCH_BENCH2,
     CompiledBattleState,
-    ShowdownTensorCompiler,
     _parse_structured_field,
-    _to_id,
 )
 from .schema_and_tables import (
     AbilityID,
@@ -328,18 +326,6 @@ class LogicalConstraintEngine:
             ],
             recommended_prior_scale=0.11,
         )
-
-    def prune_impossible_actions(
-        self,
-        candidate_actions: List[Dict[str, Any]],
-    ) -> List[Dict[str, Any]]:
-        """Filter a list of candidate actions down to those that remain mechanically valid."""
-        valid_actions: List[Dict[str, Any]] = []
-        for action_kwargs in candidate_actions:
-            result = self.evaluate_slot_action(**action_kwargs)
-            if result.is_mechanically_valid:
-                valid_actions.append(action_kwargs)
-        return valid_actions
 
     def evaluate_slot_action(
         self,
@@ -719,6 +705,15 @@ class LogicalConstraintEngine:
         if user_vec[MonIdx.ALIVE_FLAG] <= 0.0:
             return valid_26, prior_26, risk_26, upside_26
 
+        # Hard Mechanical Invariant: Forced Recharge Turn (Hyper Beam, Giga Impact, Blast Burn, etc.)
+        # Pokémon cannot click any move, cannot Mega Evolve, and cannot voluntarily switch out.
+        if user_vec[MonIdx.MUST_RECHARGE] > 0.5:
+            valid_26[0] = 1.0
+            prior_26[0] = 1.0
+            risk_26[0] = 0.0
+            upside_26[0] = 0.0
+            return valid_26, prior_26, risk_26, upside_26
+
         moves_4 = m_np[user_slot]  # [4, 59]
         partner_vec = p_np[partner_slot]
         opp_a_vec = p_np[opp_a_slot]
@@ -759,9 +754,16 @@ class LogicalConstraintEngine:
         active_turns = float(user_vec[MonIdx.ACTIVE_TURNS])
         protect_count = float(user_vec[MonIdx.PROTECT_COUNTER])
         taunt_active = 1.0 if user_vec[MonIdx.TAUNT_TURNS] > 0.0 else 0.0
+        throat_chop_active = 1.0 if user_vec[MonIdx.THROAT_CHOP_TURNS] > 0.0 else 0.0
+        charged_move_idx = int(round(float(user_vec[MonIdx.CHARGED_MOVE_IDX]))) - 1  # -1 if none, 0..3 if charged
         encore_active = 1.0 if user_vec[MonIdx.ENCORE_TURNS] > 0.0 else 0.0
         last_move_idx = int(round(float(user_vec[MonIdx.LAST_MOVE_IDX])))
         choice_lock_idx = int(round(float(user_vec[MonIdx.CHOICE_LOCKED_MOVE])))
+        from .schema_and_tables import FieldOpID as _FopIDInit
+        user_has_tantrum = any(
+            int(round(float(moves_4[k_m, MoveIdx.FIELD_OP_ID]))) == int(_FopIDInit.STOMPING_TANTRUM)
+            for k_m in range(MOVES_PER_MON)
+        )
         user_ab = int(round(float(user_vec[MonIdx.ABILITY_ID])))
         can_mega_gate = (
             1.0
@@ -815,6 +817,8 @@ class LogicalConstraintEngine:
         opp_has_prio_threat = False
         for opp_act_s in (opp_a_slot, opp_b_slot):
             if p_np[opp_act_s, MonIdx.ALIVE_FLAG] <= 0.0:
+                continue
+            if p_np[opp_act_s, MonIdx.MUST_RECHARGE] > 0.5:
                 continue
             opp_s_vec = p_np[opp_act_s]
             opp_s_ab = int(round(float(opp_s_vec[MonIdx.ABILITY_ID])))
@@ -943,12 +947,16 @@ class LogicalConstraintEngine:
                     tgt_type2 = tgt_vec[MonIdx.TYPE2_START:MonIdx.TYPE2_END]
                     tgt_is_dark = float(tgt_type1[TYPE_TO_IDX["dark"]] + tgt_type2[TYPE_TO_IDX["dark"]])
 
-                    # 2. Choice Lock / Encore / Taunt Hard Gates
+                    # 2. Choice Lock / Encore / Taunt / Throat Chop / 2-Turn Charged Hard Gates
+                    if charged_move_idx >= 0 and m_idx != charged_move_idx:
+                        continue
                     if choice_lock_idx >= 0 and m_idx != choice_lock_idx:
                         continue
                     if encore_active > 0.0 and last_move_idx >= 0 and m_idx != last_move_idx:
                         continue
                     if is_status and taunt_active > 0.0:
+                        continue
+                    if m_vec[MoveIdx.IS_SOUND_MOVE] > 0.5 and throat_chop_active > 0.0:
                         continue
 
                     # 3. Turn-1 Gate (Fake Out / First Impression)
@@ -1036,6 +1044,8 @@ class LogicalConstraintEngine:
                             continue
                         if is_status and tgt_ab == AbilityID.GOOD_AS_GOLD:
                             continue
+                        if m_fop == int(_FopID.TAUNT) and tgt_ab == AbilityID.OBLIVIOUS and not user_has_mold_breaker:
+                            continue
                         if m_type_vec[TYPE_TO_IDX["fire"]] > 0.5 and tgt_ab == AbilityID.FLASH_FIRE:
                             continue
                         if m_type_vec[TYPE_TO_IDX["water"]] > 0.5 and tgt_ab in (
@@ -1066,7 +1076,7 @@ class LogicalConstraintEngine:
                     risk_val = 0.10
                     upside_val = 0.70
 
-                    if m_vec[MoveIdx.PROTECT_TYPE] >= 1.0 and protect_count >= 1.0:
+                    if m_vec[MoveIdx.PROTECT_TYPE] == 1.0 and protect_count >= 1.0:
                         succ_prob = (1.0 / 3.0) ** protect_count
                         risk_val = min(0.97, 1.0 - succ_prob)
                         upside_val = 0.85 if protect_count == 1.0 else 0.90
@@ -1094,9 +1104,16 @@ class LogicalConstraintEngine:
                     acc_val = min(1.0, max(0.0, acc_val))
 
                     if not is_status:
+                        from .schema_and_tables import FieldOpID as _FopIDDmg
+                        m_fop_dmg = int(round(float(m_vec[MoveIdx.FIELD_OP_ID])))
                         eff1 = float(m_type_vec @ self._type_chart_np @ tgt_type1)
                         raw_eff2 = float(m_type_vec @ self._type_chart_np @ tgt_type2)
                         eff2 = raw_eff2 + (1.0 - float(np.sum(tgt_type2)))
+                        if m_fop_dmg == int(_FopIDDmg.FREEZE_DRY):
+                            if tgt_type1[TYPE_TO_IDX["water"]] > 0.5:
+                                eff1 = 2.0
+                            if tgt_type2[TYPE_TO_IDX["water"]] > 0.5:
+                                eff2 = 2.0
                         eff_total = eff1 * eff2
 
                         # Scrappy bypasses Ghost immunity on Normal/Fighting moves
@@ -1134,9 +1151,15 @@ class LogicalConstraintEngine:
                             continue
 
                         if tgt_bucket == 2:
-                            prior_scale = 0.20
-                            risk_val = 0.65
-                            upside_val = 0.75
+                            # Intentional ally-immunity miss priming for Stomping Tantrum / Temper Flare (75 -> 150 BP next turn!)
+                            if eff_total == 0.0 and user_has_tantrum:
+                                prior_scale = 0.55
+                                risk_val = 0.35
+                                upside_val = 0.80
+                            else:
+                                prior_scale = 0.20
+                                risk_val = 0.65
+                                upside_val = 0.75
                         else:
                             if eff_total == 0.0:
                                 prior_scale = 0.15
@@ -1271,11 +1294,16 @@ class LogicalConstraintEngine:
         joint_valid[CHOICE_SWITCH_BENCH1, CHOICE_SWITCH_BENCH1] = 0.0
         joint_valid[CHOICE_SWITCH_BENCH2, CHOICE_SWITCH_BENCH2] = 0.0
 
-        # Cross-Slot Invariant 3: Helping Hand + Partner Status / Switch Zero-Effect Pruning
+        # Cross-Slot Invariant 3: Helping Hand + Partner Status / Switch / Recharge Zero-Effect Pruning
         from .schema_and_tables import FieldOpID
+        slot_a_recharging = p_np[slot_a, MonIdx.MUST_RECHARGE] > 0.5
+        slot_b_recharging = p_np[slot_b, MonIdx.MUST_RECHARGE] > 0.5
         for c_a in range(24):
             m_a = m_np[slot_a, (c_a % 12) % 4]
             if int(round(float(m_a[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                if slot_b_recharging:
+                    joint_valid[c_a, :] = 0.0
+                    continue
                 joint_valid[c_a, CHOICE_SWITCH_BENCH1] = 0.0
                 joint_valid[c_a, CHOICE_SWITCH_BENCH2] = 0.0
                 for c_b in range(24):
@@ -1286,6 +1314,9 @@ class LogicalConstraintEngine:
         for c_b in range(24):
             m_b = m_np[slot_b, (c_b % 12) % 4]
             if int(round(float(m_b[MoveIdx.FIELD_OP_ID]))) == int(FieldOpID.HELPING_HAND):
+                if slot_a_recharging:
+                    joint_valid[:, c_b] = 0.0
+                    continue
                 joint_valid[CHOICE_SWITCH_BENCH1, c_b] = 0.0
                 joint_valid[CHOICE_SWITCH_BENCH2, c_b] = 0.0
                 for c_a in range(24):

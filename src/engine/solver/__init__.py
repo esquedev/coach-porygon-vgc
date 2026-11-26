@@ -1,11 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Coach Porygon VGC — Game-Theoretic Equilibrium Solver & Bayesian Turn Advisor."""
+"""Coach Porygon VGC — Pure Game-Theoretic Equilibrium Solver (IEDS, Zero-Sum Nash LP, QRE)."""
 
-from .bayesian_aggregator import (
-    BayesianTurnAdvice,
-    CoachTurnAdvisor,
-    OpponentHypothesisEvaluation,
-)
 from .game_theory import (
     ActionRecommendation,
     DominatedActionRecord,
@@ -17,19 +12,26 @@ from .game_theory import (
     decode_slot_choice,
     format_equilibrium_coach_report,
     run_iterated_dominance_elimination,
-    solve_bayesian_zero_sum_nash,
     solve_quantal_response,
     solve_turn_equilibrium,
     solve_zero_sum_nash,
 )
 
+from .lead_matchup_solver import (
+    BringModeSpec,
+    LeadMatchupConfig,
+    LeadMatchupResult,
+    LeadMatchupSolver,
+)
+
 __all__ = [
     "ActionRecommendation",
-    "BayesianTurnAdvice",
-    "CoachTurnAdvisor",
+    "BringModeSpec",
     "DominatedActionRecord",
     "IEDSResult",
-    "OpponentHypothesisEvaluation",
+    "LeadMatchupConfig",
+    "LeadMatchupResult",
+    "LeadMatchupSolver",
     "QuantalResponseResult",
     "TurnEquilibriumResult",
     "ZeroSumNashResult",
@@ -37,9 +39,7 @@ __all__ = [
     "decode_slot_choice",
     "format_equilibrium_coach_report",
     "run_iterated_dominance_elimination",
-    "solve_bayesian_zero_sum_nash",
     "solve_quantal_response",
     "solve_turn_equilibrium",
     "solve_zero_sum_nash",
 ]
-

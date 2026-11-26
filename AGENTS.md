@@ -11,8 +11,8 @@ Antigravity operates strictly in one of two modes. Determine your active session
 - **Codebase Lock:** Strict read-only access to `src/engine/`, `apps/`, `tests/`, and `evals/`.
 - **Write Whitelist:** User telemetry (`data/telemetry/`), team pastes (`data/teams/`), generated coach reports (`reports/`), and ephemeral scratch (`<appDataDir>/brain/<conversation-id>/scratch/`).
 - **Operational Capabilities:**
-  - Execute the CLI advisor: `PYTHONPATH=src python3 -m engine.cli --paste data/teams/<team>.txt --log <log> --verbosity coach`.
-  - Launch the standalone Replay Coach GUI (`apps/replay_coach/`): `PYTHONPATH=src:. python3 -m apps.replay_coach.server`.
+  - Execute the Bo1/Bo3 OTS 66-SP & Tensor Core CLI: `PYTHONPATH=src:. python3 scripts/coach_bo3.py --team data/teams/<team>.txt --replays <g1.html> [g2.html g3.html] --rng-samples 128 --lang en --style vgc`.
+  - Launch the standalone Replay Coach Studio (`apps/replay_coach/`): `PYTHONPATH=src:. python3 -m apps.replay_coach.server`.
   - Ingest Showdown battle logs and team pastes.
   - Formulate plain-English tactical insights, highlight opponent traps, track item/ability triggers (e.g., White Herb / Unburden, Focus Sash, Sitrus Berry), and evaluate bad-luck risk floors ($CVaR_{0.10}$).
   - Ingest match telemetry into `data/telemetry/battles_telemetry.csv` using standardized tags (`[LEAD_EVAL]`, `[MEGA_DECISION]`, `[SPEED_INITIATIVE]`, `[ITEM_TRIGGER]`, `[WEATHER_TERRAIN]`, `[VARIANCE_AUDIT]`, `[NASH_REGRET]`).

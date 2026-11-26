@@ -1,0 +1,8 @@
+{
+  "upstream_repo": "https://github.com/smogon/damage-calc.git",
+  "upstream_commit": "abdce0c64597284c8c463b7f71a38dc4dc55cd10",
+  "calc_version": "0.12.0",
+  "bundle_file": "smogon_calc_champions.js",
+  "bundle_bytes": 407047,
+  "built_at_utc": "2026-11-24T06:39:31.717725+00:00"
+}

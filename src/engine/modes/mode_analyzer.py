@@ -14,7 +14,7 @@ import itertools
 from typing import Dict, List, Optional, Set, Tuple
 
 from engine.db_registry import VGCDataRegistry, get_registry
-from engine.game_rules import NATURE_MODS, TYPE_CHART, compute_champions_level_50_stats
+from engine.game_rules import TYPE_CHART, compute_champions_level_50_stats
 from engine.parser.models import ParsedPokemon
 from engine.parser.showdown_parser import parse_showdown_paste
 

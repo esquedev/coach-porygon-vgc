@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from engine.parser.models import StatSpread
 
@@ -142,6 +142,7 @@ class CompiledPokemonState:
     locked_move: Optional[str] = None
     taunt_turns: int = 0
     encore_move: Optional[str] = None
+    must_recharge: bool = False
 
 
 @dataclass

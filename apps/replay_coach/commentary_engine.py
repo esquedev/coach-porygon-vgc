@@ -12,7 +12,7 @@ registers:
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from engine.terminology import (
     get_rng_sampling_note,
@@ -39,6 +39,58 @@ def _classify_verdict_key(
     return "inaccuracy"
 
 
+_PILLAR_LABELS: Dict[str, Dict[str, str]] = {
+    "material": {
+        "es_vgc": "Material (HP y KOs)",
+        "en_vgc": "Material (HP & KOs)",
+        "es_scientific": "Material_KO",
+        "en_scientific": "Material_KO",
+    },
+    "threat": {
+        "es_vgc": "Presión de KO",
+        "en_vgc": "Lethal Pressure",
+        "es_scientific": "Amenaza_Letal",
+        "en_scientific": "Lethal_Threat",
+    },
+    "malposition": {
+        "es_vgc": "Mal Posicionamiento Rival",
+        "en_vgc": "Enemy Mal-Positioning",
+        "es_scientific": "Mal_Posicionamiento",
+        "en_scientific": "Mal_Positioning",
+    },
+    "restriction": {
+        "es_vgc": "Restricción de Opciones",
+        "en_vgc": "Option Lock",
+        "es_scientific": "Restriccion_Opciones",
+        "en_scientific": "Option_Restriction",
+    },
+    "status_boost": {
+        "es_vgc": "Estados y Boosts",
+        "en_vgc": "Status & Boosts",
+        "es_scientific": "Estados_Boosts",
+        "en_scientific": "Status_Boosts",
+    },
+    "two_turn_prime": {
+        "es_vgc": "Jugada Preparada (2 Turnos)",
+        "en_vgc": "2-Turn Primed Payoff",
+        "es_scientific": "Primed_2Turn",
+        "en_scientific": "Two_Turn_Prime",
+    },
+    "resources": {
+        "es_vgc": "Escudos y Recursos",
+        "en_vgc": "Shields & Resources",
+        "es_scientific": "Recursos_Escudos",
+        "en_scientific": "Resource_Shields",
+    },
+    "field_tempo": {
+        "es_vgc": "Control de Campo y Velocidad",
+        "en_vgc": "Field & Speed Tempo",
+        "es_scientific": "Tempo_Campo",
+        "en_scientific": "Field_Tempo",
+    },
+}
+
+
 def generate_deterministic_commentary(
     turn_number: int,
     actual_action: Dict[str, Any],
@@ -49,6 +101,7 @@ def generate_deterministic_commentary(
     field_context: Dict[str, Any],
     lang: str = "es",
     style: str = "vgc",
+    equity_breakdown: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Produce a zero-AI structured verdict, grade badge, and causal bullet list in the requested language and style."""
     lg = "en" if str(lang or "es").lower().strip().startswith("en") else "es"
@@ -465,6 +518,66 @@ def generate_deterministic_commentary(
         )
 
     # -------------------------------------------------------------------------
+    # 4b. 8-Pillar Victory Equity Drivers (Non-Material Tactical Edge)
+    # -------------------------------------------------------------------------
+    if isinstance(equity_breakdown, dict):
+        top_drivers = equity_breakdown.get("top_drivers") or []
+        prof_key = f"{lg}_{st}"
+        driver_strs: List[str] = []
+        mode_is_delta = False
+        for drv in top_drivers[:3]:
+            pkey = str(drv.get("pillar", ""))
+            if not pkey or pkey == "material":
+                continue
+            val = float(drv.get("value", 0.0))
+            if abs(val) < 0.03:
+                continue
+            if drv.get("mode") == "delta":
+                mode_is_delta = True
+            plabel = _PILLAR_LABELS.get(pkey, {}).get(prof_key, pkey)
+            driver_strs.append(f"{val:+.2f} {plabel}")
+
+        if driver_strs:
+            joined = " · ".join(driver_strs)
+            if not is_sci:
+                if lg == "es":
+                    prefix = (
+                        "Ventaja táctica clave de la mejor línea sobre tu jugada: "
+                        if mode_is_delta
+                        else "Factores tácticos clave de la posición al cierre del turno: "
+                    )
+                    tag = "Motores de Equity"
+                else:
+                    prefix = (
+                        "Key tactical edge of the top line over your play: "
+                        if mode_is_delta
+                        else "Key tactical drivers of the end-of-turn position: "
+                    )
+                    tag = "Equity Drivers"
+            else:
+                if lg == "es":
+                    prefix = (
+                        "ΔV_eq (Nash - Jugada) fuera de material: "
+                        if mode_is_delta
+                        else "Descomposición V_eq (pilares no materiales, 1 KO = 1.75): "
+                    )
+                    tag = "Atribucion_Equity_8_Pilares"
+                else:
+                    prefix = (
+                        "ΔV_eq (Nash - Played) non-material drivers: "
+                        if mode_is_delta
+                        else "V_eq 8-Pillar decomposition (non-material, 1 KO = 1.75): "
+                    )
+                    tag = "8_Pillar_Equity_Attribution"
+            bullets.append(
+                {
+                    "tag": tag,
+                    "tone": "info",
+                    "text": f"{prefix}{joined}.",
+                }
+            )
+
+    # -------------------------------------------------------------------------
     # 5. Field Tempo Context (Trick Room / Weather / Turn 1)
     # -------------------------------------------------------------------------
     if tr_turns > 0 or turn_number == 1:
@@ -528,6 +641,7 @@ def generate_all_commentary_variants(
     ieds_summary: Dict[str, Any],
     events: Dict[str, Any],
     field_context: Dict[str, Any],
+    equity_breakdown: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Dict[str, Any]]:
     """Pre-render all 4 combinations (`es_vgc`, `en_vgc`, `es_scientific`, `en_scientific`) for instant UI toggling."""
     variants: Dict[str, Dict[str, Any]] = {}
@@ -543,5 +657,6 @@ def generate_all_commentary_variants(
                 field_context=field_context,
                 lang=lg,
                 style=st,
+                equity_breakdown=equity_breakdown,
             )
     return variants

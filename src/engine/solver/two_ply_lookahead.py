@@ -13,13 +13,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 import threading
 import time
-from typing import Any, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
 from engine.solver.game_theory import solve_zero_sum_nash
 from engine.vgc_tensor_core.compiler import CompiledBattleState
-from engine.vgc_tensor_core.schema_and_tables import HAS_TORCH
+from engine.vgc_tensor_core.schema_and_tables import (
+    FieldOpID,
+    HAS_TORCH,
+    MOVES_PER_MON,
+    MonIdx,
+    MoveIdx,
+    TYPE_TO_IDX,
+)
 from engine.vgc_tensor_core.state_machine import (
     AnalysisCancelledError,
     VgcTensorStateMachine,
@@ -111,6 +118,100 @@ def _top_prior_choices(
     return c_np[top_idx]
 
 
+def _inject_two_turn_primed_candidates(
+    comp: CompiledBattleState,
+    choices_np: np.ndarray,
+    U_risk: np.ndarray,
+    selected: List[int],
+    is_trainer_1: bool,
+    max_primed_inject: int = 2,
+) -> List[int]:
+    """Reserve up to `max_primed_inject` Turn-1 slots for high-value 2-turn primed plays
+    (intentional ally-immunity Stomping Tantrum priming, 2-turn charge moves, Charge, or setup)
+    that might otherwise be eliminated by 1-ply Strict IEDS before Ply-2 Nash can evaluate them.
+    """
+    if max_primed_inject <= 0 or choices_np.shape[0] == 0:
+        return selected
+
+    p_np = comp.roster_tensor.detach().cpu().numpy() if (HAS_TORCH and isinstance(comp.roster_tensor, torch.Tensor)) else np.asarray(comp.roster_tensor)
+    m_np = comp.moves_tensor.detach().cpu().numpy() if (HAS_TORCH and isinstance(comp.moves_tensor, torch.Tensor)) else np.asarray(comp.moves_tensor)
+    act_slots = (0, 1) if is_trainer_1 else (4, 5)
+
+    # Identify which active slots hold 2-turn payoff or setup moves
+    primed_slots: Dict[int, str] = {}
+    for local_i, r_slot in enumerate(act_slots):
+        if p_np[r_slot, MonIdx.HP_CUR] <= 0.0:
+            continue
+        fops = [int(round(float(m_np[r_slot, k, MoveIdx.FIELD_OP_ID]))) for k in range(MOVES_PER_MON)]
+        wsures = [float(m_np[r_slot, k, MoveIdx.WEATHER_SURE_HIT]) for k in range(MOVES_PER_MON)]
+        has_setup = any(
+            m_np[r_slot, k, MoveIdx.CAT_STATUS] > 0.5
+            and m_np[r_slot, k, MoveIdx.STAT_DELTA_SELF] > 0.5
+            and float(np.sum(np.maximum(0.0, m_np[r_slot, k, MoveIdx.STAT_DELTA_ATK:MoveIdx.STAT_DELTA_SPE + 1]))) >= 2.0
+            for k in range(MOVES_PER_MON)
+        )
+        if int(FieldOpID.STOMPING_TANTRUM) in fops:
+            primed_slots[local_i] = "tantrum"
+        elif int(FieldOpID.CHARGE) in fops or int(FieldOpID.PHANTOM_FORCE) in fops or any(w in (10.0, 20.0, 30.0) for w in wsures) or has_setup:
+            primed_slots[local_i] = "charge_or_setup"
+
+    if not primed_slots:
+        return selected
+
+    # Compute baseline row/col security-expected scores
+    if is_trainer_1:
+        scores = 0.5 * U_risk.mean(axis=1) + 0.5 * U_risk.min(axis=1)
+        best_score = float(np.max(scores))
+    else:
+        scores = -(0.5 * U_risk.mean(axis=0) + 0.5 * U_risk.max(axis=0))
+        best_score = float(np.max(scores))
+
+    selected_set = set(selected)
+    primed_cands: List[tuple[float, int]] = []
+    for idx in range(choices_np.shape[0]):
+        if idx in selected_set:
+            continue
+        # Only protect candidates that don't catastrophically lose on Turn 1
+        if float(scores[idx]) < best_score - 0.85:
+            continue
+        is_primed_action = False
+        for local_i, mode in primed_slots.items():
+            c_val = int(choices_np[idx, local_i])
+            if c_val >= 24:
+                continue
+            r_slot = act_slots[local_i]
+            m_idx = (c_val % 12) % 4
+            tgt_b = ((c_val % 12) // 4) % 3
+            m_vec = m_np[r_slot, m_idx]
+            fop_c = int(round(float(m_vec[MoveIdx.FIELD_OP_ID])))
+            ws_c = float(m_vec[MoveIdx.WEATHER_SURE_HIT])
+            if mode == "tantrum" and tgt_b == 2 and m_vec[MoveIdx.BASE_POWER] > 0.0:
+                # Ally-target attack by a Stomping Tantrum / Temper Flare user (intentional ally-immunity priming!)
+                is_primed_action = True
+                break
+            if fop_c in (int(FieldOpID.CHARGE), int(FieldOpID.PHANTOM_FORCE)) or ws_c in (10.0, 20.0, 30.0):
+                is_primed_action = True
+                break
+            if (
+                m_vec[MoveIdx.CAT_STATUS] > 0.5
+                and m_vec[MoveIdx.STAT_DELTA_SELF] > 0.5
+                and float(np.sum(np.maximum(0.0, m_vec[MoveIdx.STAT_DELTA_ATK:MoveIdx.STAT_DELTA_SPE + 1]))) >= 2.0
+            ):
+                is_primed_action = True
+                break
+        if is_primed_action:
+            primed_cands.append((float(scores[idx]), idx))
+
+    if not primed_cands:
+        return selected
+
+    primed_cands.sort(key=lambda x: -x[0])
+    out = list(selected)
+    for _, cand_idx in primed_cands[:max_primed_inject]:
+        out.append(cand_idx)
+    return out
+
+
 def evaluate_two_ply_on_ieds_core(
     sm: VgcTensorStateMachine,
     comp: CompiledBattleState,
@@ -126,31 +227,16 @@ def evaluate_two_ply_on_ieds_core(
     max_ply2_actions: int = 8,
     rng_seed: int = 42,
     cancel_event: Optional[threading.Event] = None,
+    max_primed_inject: int = 2,
 ) -> TwoPlyLookaheadResult:
-    """Execute selective 2-Ply Nash lookahead on the Strict-IEDS surviving submatrix.
-
-    Args:
-        sm: Active `VgcTensorStateMachine` (CUDA GPU or CPU).
-        comp: Compiled Turn-1 `CompiledBattleState`.
-        c1_np: `[B1, 2]` array of legal `trainer_1` choice pairs.
-        c2_np: `[B2, 2]` array of legal `trainer_2` choice pairs.
-        U_risk_ply1: `[B1, B2]` Turn-1 risk-adjusted utility matrix.
-        surv_1_indices: Row indices surviving Strict IEDS for `trainer_1`.
-        surv_2_indices: Column indices surviving Strict IEDS for `trainer_2`.
-        gamma: Weight on Ply-2 continuation value (`0.35` default).
-        max_core_dim: Maximum surviving strategies per side expanded to Ply 2.
-        k_ply1_branch: Representative Turn-1 trajectories sampled to pick median EoT board.
-        k_ply2: Discrete RNG threads per Ply-2 matchup cell.
-        max_ply2_actions: Maximum prior-ranked Ply-2 choices evaluated per side.
-        rng_seed: Deterministic SplitMix64 seed base.
-        cancel_event: Optional `threading.Event` checked between expanded cells.
-
-    Returns:
-        `TwoPlyLookaheadResult` containing the blended payoff matrix and timing metrics.
+    """Execute selective 2-Ply Nash lookahead on the Strict-IEDS surviving submatrix
+    plus up to `max_primed_inject` reserved 2-turn primed candidate plays per side.
     """
     t0 = time.perf_counter()
     U_blended = np.array(U_risk_ply1, dtype=np.float64, copy=True)
     eval_1, eval_2 = _select_top_core_indices(U_risk_ply1, surv_1_indices, surv_2_indices, max_core_dim)
+    eval_1 = _inject_two_turn_primed_candidates(comp, c1_np, U_risk_ply1, eval_1, True, max_primed_inject)
+    eval_2 = _inject_two_turn_primed_candidates(comp, c2_np, U_risk_ply1, eval_2, False, max_primed_inject)
 
     if not eval_1 or not eval_2 or not HAS_TORCH:
         return TwoPlyLookaheadResult(
@@ -195,6 +281,8 @@ def evaluate_two_ply_on_ieds_core(
             eot1_prom.F,
             eot1_prom.P,
             extra_volatiles=step1_core.attack_cascade.extra_volatiles,
+            M_moves=eot1_prom.M_moves,
+            tables=sm.tables,
         )  # [C1, C2, K_branch]
         k_b = int(u_branch.shape[-1])
         med_pos = k_b // 2
@@ -214,14 +302,14 @@ def evaluate_two_ply_on_ieds_core(
                     win_code = int(eot1_prom.winner[ci, cj].item())
                     v2 = 4.0 if win_code == 1 else (-4.0 if win_code == 2 else 0.0)
                 else:
-                    f2 = eot1_prom.F[ci, cj, k_rep]
-                    p2 = eot1_prom.P[ci, cj, k_rep]
-                    m2 = eot1_prom.M_moves[ci, cj, k_rep]
+                    f_ply2 = eot1_prom.F[ci, cj, k_rep]
+                    roster_ply2 = eot1_prom.P[ci, cj, k_rep]
+                    moves_ply2 = eot1_prom.M_moves[ci, cj, k_rep]
 
                     comp2 = CompiledBattleState(
-                        field_tensor=f2,
-                        roster_tensor=p2,
-                        moves_tensor=m2,
+                        field_tensor=f_ply2,
+                        roster_tensor=roster_ply2,
+                        moves_tensor=moves_ply2,
                         backend="torch",
                         device=dev,
                         slot_species=comp.slot_species,
@@ -237,9 +325,9 @@ def evaluate_two_ply_on_ieds_core(
                     ch2_t2 = _top_prior_choices(mask2_t2, max_ply2_actions, dev)
 
                     res2 = sm.step(
-                        f2,
-                        p2,
-                        m2,
+                        f_ply2,
+                        roster_ply2,
+                        moves_ply2,
                         ch2_t1,
                         ch2_t2,
                         num_mc_samples=max(4, int(k_ply2)),

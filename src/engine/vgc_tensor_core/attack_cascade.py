@@ -48,13 +48,11 @@ from .compiler import (
     CHOICE_SWITCH_BENCH2,
 )
 from .phases_pre_attack import (
-    ACTIVE_SLOT_NAMES,
     ACTIVE_SLOTS,
     PreAttackPhaseResult,
     T_ELECTRIC,
     T_GRASSY,
     T_MISTY,
-    T_NONE,
     T_PSYCHIC,
     W_CLEAR,
     W_RAIN,
@@ -63,6 +61,7 @@ from .phases_pre_attack import (
     W_SUN,
     compute_active_effective_speeds,
     compute_per_thread_execution_orders,
+    compute_quick_claw_bonus_torch,
 )
 from .rng_engine import (
     CARTRIDGE_16_ROLLS,
@@ -176,16 +175,6 @@ def _acc_stage_ratio_torch(stage: "torch.Tensor") -> "torch.Tensor":
     b = torch.clamp(torch.round(stage), min=-6.0, max=6.0)
     three = torch.tensor(3.0, dtype=torch.float32, device=stage.device)
     return torch.maximum(three, three + b) / torch.maximum(three, three - b)
-
-
-def _stage_ratio_numpy(stage: np.ndarray) -> np.ndarray:
-    b = np.clip(np.round(stage), -6.0, 6.0)
-    return (np.maximum(2.0, 2.0 + b) / np.maximum(2.0, 2.0 - b)).astype(np.float32)
-
-
-def _acc_stage_ratio_numpy(stage: np.ndarray) -> np.ndarray:
-    b = np.clip(np.round(stage), -6.0, 6.0)
-    return (np.maximum(3.0, 3.0 + b) / np.maximum(3.0, 3.0 - b)).astype(np.float32)
 
 
 def _check_white_herb_and_unburden_torch(
@@ -408,6 +397,84 @@ def _check_mental_herb_and_unburden_torch(
         )
 
 
+def _apply_toxic_spikes_to_dynamic_slot_torch(
+    F_mc: "torch.Tensor",
+    P_mc: "torch.Tensor",
+    slot_idx: "torch.Tensor",
+    sw_mask: "torch.Tensor",
+    flags: "_RosterFeatureFlags",
+) -> None:
+    """Resolve Toxic Spikes (0/1/2 layers) on a mid-turn switched-in slot (`Eject Button`, `Red Card`,
+    `Emergency Exit`, or voluntary pivot) across `[B1, B2, K]` threads.
+    """
+    is_t1_s = slot_idx < 4
+    t1_ts = F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES]
+    t2_ts = F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES]
+    side_ts = torch.where(is_t1_s, t1_ts, t2_ts)
+    if not torch.any(sw_mask & (side_ts > 0.0)):
+        return
+
+    B1, B2, K = slot_idx.shape
+    s_exp = slot_idx.view(B1, B2, K, 1, 1).expand(B1, B2, K, 1, MON_DIM)
+    p_in = torch.gather(P_mc, 3, s_exp).squeeze(3)
+    in_alive = p_in[:, :, :, MonIdx.HP_CUR] > 0.0
+    grav_on = F_mc[:, :, :, FieldIdx.GRAVITY_TURNS] > 0.0
+    in_grounded = (p_in[:, :, :, MonIdx.GROUNDED_FLAG] > 0.5) | grav_on
+    active_entry = sw_mask & in_alive & in_grounded & (side_ts > 0.0)
+    if not torch.any(active_entry):
+        return
+
+    in_poison = (
+        (p_in[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["poison"]] > 0.5)
+        | (p_in[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["poison"]] > 0.5)
+    )
+    in_steel = (
+        (p_in[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["steel"]] > 0.5)
+        | (p_in[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]] > 0.5)
+    )
+
+    # 1. Grounded Poison-type absorbs & clears side's Toxic Spikes
+    absorbs = active_entry & in_poison
+    if torch.any(absorbs):
+        F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] = torch.where(
+            absorbs & is_t1_s, torch.zeros_like(t1_ts), t1_ts
+        )
+        F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] = torch.where(
+            absorbs & (~is_t1_s), torch.zeros_like(t2_ts), t2_ts
+        )
+
+    # 2. Grounded Healthy non-Poison, non-Steel mon takes Poison (1 layer) or Toxic (2 layers)
+    in_healthy = p_in[:, :, :, MonIdx.STATUS_HEALTHY] > 0.5
+    misty_on = F_mc[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5
+    sun_on = F_mc[:, :, :, FieldIdx.WEATHER_START + W_SUN] > 0.5
+    lg_block = (p_in[:, :, :, MonIdx.ABILITY_ID] == float(AbilityID.LEAF_GUARD)) & sun_on
+    afflicted = active_entry & (~in_poison) & (~in_steel) & in_healthy & (~misty_on) & (~lg_block)
+    if not torch.any(afflicted):
+        return
+
+    is_tox = afflicted & (side_ts >= 2.0)
+    is_psn = afflicted & (side_ts < 2.0)
+    cur_h = p_in[:, :, :, MonIdx.STATUS_HEALTHY]
+    cur_p = p_in[:, :, :, MonIdx.STATUS_POISON]
+    cur_tx = p_in[:, :, :, MonIdx.STATUS_TOXIC]
+    cur_tc = p_in[:, :, :, MonIdx.TOXIC_COUNTER]
+    P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY].scatter_(
+        3, slot_idx.unsqueeze(-1), torch.where(afflicted, torch.zeros_like(cur_h), cur_h).unsqueeze(-1)
+    )
+    P_mc[:, :, :, :, MonIdx.STATUS_POISON].scatter_(
+        3, slot_idx.unsqueeze(-1), torch.where(is_psn, torch.ones_like(cur_p), cur_p).unsqueeze(-1)
+    )
+    P_mc[:, :, :, :, MonIdx.STATUS_TOXIC].scatter_(
+        3, slot_idx.unsqueeze(-1), torch.where(is_tox, torch.ones_like(cur_tx), cur_tx).unsqueeze(-1)
+    )
+    P_mc[:, :, :, :, MonIdx.TOXIC_COUNTER].scatter_(
+        3, slot_idx.unsqueeze(-1), torch.where(is_tox, torch.ones_like(cur_tc), cur_tc).unsqueeze(-1)
+    )
+    if flags.has_lum_berry:
+        in_unv = _is_side_unnerved_torch(P_mc, slot_idx) if flags.has_unnerve else None
+        _check_lum_berry_and_unburden_torch(P_mc, slot_idx, blocked_mask=in_unv)
+
+
 @dataclass(frozen=True)
 class _RosterFeatureFlags:
     """Static roster feature summary computed once on CPU before the 4-actor cascade loop.
@@ -444,6 +511,16 @@ class _RosterFeatureFlags:
     has_thermal_exchange: bool
     has_protean: bool
     has_mega_sol: bool
+    has_magic_bounce: bool
+    has_cursed_body: bool
+    has_toxic_debris: bool
+    has_emergency_exit: bool
+    has_disguise: bool
+    has_quick_claw: bool
+    has_unaware: bool
+    has_water_bubble: bool
+    has_limber: bool
+    has_oblivious: bool
 
 
 def _build_roster_feature_flags(P: "torch.Tensor") -> _RosterFeatureFlags:
@@ -489,6 +566,16 @@ def _build_roster_feature_flags(P: "torch.Tensor") -> _RosterFeatureFlags:
         has_thermal_exchange=int(AbilityID.THERMAL_EXCHANGE) in ab_set,
         has_protean=int(AbilityID.PROTEAN) in ab_set,
         has_mega_sol=int(AbilityID.MEGA_SOL) in ab_set,
+        has_magic_bounce=int(AbilityID.MAGIC_BOUNCE) in ab_set,
+        has_cursed_body=int(AbilityID.CURSED_BODY) in ab_set,
+        has_toxic_debris=int(AbilityID.TOXIC_DEBRIS) in ab_set,
+        has_emergency_exit=int(AbilityID.EMERGENCY_EXIT) in ab_set,
+        has_disguise=int(AbilityID.DISGUISE) in ab_set,
+        has_quick_claw=int(ItemID.QUICK_CLAW) in it_set,
+        has_unaware=int(AbilityID.UNAWARE) in ab_set,
+        has_water_bubble=int(AbilityID.WATER_BUBBLE) in ab_set,
+        has_limber=int(AbilityID.LIMBER) in ab_set,
+        has_oblivious=int(AbilityID.OBLIVIOUS) in ab_set,
     )
 
 
@@ -534,13 +621,19 @@ def _execute_attack_cascade_torch(
 
     switched_4 = pre_attack_res.switched_mask.to(device).unsqueeze(2).expand(B1, B2, K, 4)
 
-    # Per-thread initial speed-tie execution order & dynamic turn-order state: [B1, B2, K, 4]
+    # Per-thread initial speed-tie & Quick Claw (20%) execution order: [B1, B2, K, 4]
+    qc_bonus_k = (
+        compute_quick_claw_bonus_torch(P_mc, rng_seed=seed)
+        if flags.has_quick_claw
+        else torch.zeros((B1, B2, K, 4), dtype=torch.float32, device=device)
+    )
     exec_order_k = compute_per_thread_execution_orders(
         F_mc=F_mc,
         eff_speeds=pre_attack_res.effective_speeds.to(device),
         eff_priorities=pre_attack_res.effective_priorities.to(device),
         num_sim_threads=K,
         rng_seed=seed,
+        P_mc=P_mc if flags.has_quick_claw else None,
     )
     prio_k = pre_attack_res.effective_priorities.to(device).unsqueeze(2).expand(B1, B2, K, 4)
     w_start_tie = counter_uniform_0_100_torch(
@@ -576,18 +669,21 @@ def _execute_attack_cascade_torch(
             extra_volatiles_dict[key] = t
         return t
 
+    # Track slots that started this turn locked in forced recharge (to clear ONLY them after the turn)
+    started_recharging = P_mc[:, :, :, :, MonIdx.MUST_RECHARGE] > 0.5
+
     for step_idx in range(4):
         if step_idx == 0:
             actor_act_idx = exec_order_k[:, :, :, 0].long()  # [B1, B2, K] in {0, 1, 2, 3}
         else:
             # Dynamically recompute effective speed & Trick Room order for remaining un-acted slots
-            cur_spe_k = compute_active_effective_speeds(F_mc, P_mc)  # [B1, B2, K, 4]
+            cur_spe_k = torch.clamp(compute_active_effective_speeds(F_mc, P_mc), min=0.0, max=4900.0)  # [B1, B2, K, 4]
             tr_act_k = (F_mc[:, :, :, FieldIdx.TRICK_ROOM_TURNS] > 0.0).float().unsqueeze(-1)
             tr_sign_k = 1.0 - 2.0 * tr_act_k
             dyn_scores_k = torch.where(
                 acted_mask_k,
                 torch.full_like(cur_spe_k, -1e9),
-                (prio_k * 10000.0) + (tr_sign_k * cur_spe_k) + jitter_k,
+                (prio_k * 10000.0) + qc_bonus_k + (tr_sign_k * cur_spe_k) + jitter_k,
             )
             actor_act_idx = torch.argmax(dyn_scores_k, dim=-1).long()
 
@@ -611,7 +707,25 @@ def _execute_attack_cascade_torch(
 
         actor_hp = p_actor[:, :, :, MonIdx.HP_CUR]
         actor_flinched = p_actor[:, :, :, MonIdx.FLINCHED] > 0.5
-        can_act = (actor_hp > 0.0) & (~actor_flinched) & (~switched) & (~is_switch_choice)
+        actor_recharging = p_actor[:, :, :, MonIdx.MUST_RECHARGE] > 0.5
+        # Snapshot previous-turn failure (for Stomping Tantrum / Temper Flare 2.0x BP) BEFORE resetting for this turn
+        actor_prev_failed = p_actor[:, :, :, MonIdx.LAST_MOVE_FAILED] > 0.5
+        actor_attempted = (actor_hp > 0.0) & (~switched) & (~is_switch_choice) & (~actor_recharging)
+        # Optimistically mark LAST_MOVE_FAILED = 1.0 for every attempting actor; cleared to 0.0 as soon as action succeeds!
+        if torch.any(actor_attempted):
+            cur_lmf = p_actor[:, :, :, MonIdx.LAST_MOVE_FAILED]
+            P_mc[:, :, :, :, MonIdx.LAST_MOVE_FAILED].scatter_(
+                3, actor_slot.unsqueeze(-1), torch.where(actor_attempted, torch.ones_like(cur_lmf), cur_lmf).unsqueeze(-1)
+            )
+
+        def _mark_actor_succeeded(succ_mask: "torch.Tensor") -> None:
+            if torch.any(succ_mask):
+                cur_f = torch.gather(P_mc[:, :, :, :, MonIdx.LAST_MOVE_FAILED], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.LAST_MOVE_FAILED].scatter_(
+                    3, actor_slot.unsqueeze(-1), torch.where(succ_mask, torch.zeros_like(cur_f), cur_f).unsqueeze(-1)
+                )
+
+        can_act = actor_attempted & (~actor_flinched)
 
         if not torch.any(can_act):
             continue
@@ -637,6 +751,21 @@ def _execute_attack_cascade_torch(
 
         move_type_idx = torch.argmax(chosen_move[:, :, :, MoveIdx.TYPE_START:MoveIdx.TYPE_END], dim=-1)
         cat_idx = torch.argmax(chosen_move[:, :, :, MoveIdx.CAT_START:MoveIdx.CAT_END], dim=-1)
+        # Mid-turn Taunt & Throat Chop Locks
+        is_taunt_blocked = (p_actor[:, :, :, MonIdx.TAUNT_TURNS] > 0.0) & (cat_idx == 2)
+        is_throat_chop_blocked = (p_actor[:, :, :, MonIdx.THROAT_CHOP_TURNS] > 0.0) & (
+            chosen_move[:, :, :, MoveIdx.IS_SOUND_MOVE] > 0.5
+        )
+        can_act = can_act & (~is_taunt_blocked) & (~is_throat_chop_blocked)
+        if not torch.any(can_act):
+            continue
+        # Clear previous-turn Glaive Rush vulnerability as soon as the user gets to execute a move
+        cur_grv_a = p_actor[:, :, :, MonIdx.GLAIVE_RUSH_VULN]
+        if torch.any(can_act & (cur_grv_a > 0.5)):
+            P_mc[:, :, :, :, MonIdx.GLAIVE_RUSH_VULN].scatter_(
+                3, actor_slot.unsqueeze(-1), torch.where(can_act, torch.zeros_like(cur_grv_a), cur_grv_a).unsqueeze(-1)
+            )
+            p_actor = torch.gather(P_mc, 3, act_slot_exp_mon).squeeze(3)
         base_power = chosen_move[:, :, :, MoveIdx.BASE_POWER]
         w_sure = chosen_move[:, :, :, MoveIdx.WEATHER_SURE_HIT]
         att_ab = p_actor[:, :, :, MonIdx.ABILITY_ID]
@@ -720,19 +849,63 @@ def _execute_attack_cascade_torch(
         )
         base_power = torch.where(is_ate_boost, torch.floor(base_power * 4915.0 / 4096.0), base_power)
 
-        # Dynamic Two-Turn Charging Move Gates (Turn 1: deals 0 damage if must charge)
+        # Dynamic Two-Turn Charging Move Gates (persisted across Ply 1 -> Ply 2 via CHARGED_MOVE_IDX & SEMI_INVULN)
+        actor_charged_code = torch.round(p_actor[:, :, :, MonIdx.CHARGED_MOVE_IDX]).long()
+        already_charged = actor_charged_code == (move_idx + 1)
+        if torch.any(can_act & already_charged):
+            P_mc[:, :, :, :, MonIdx.CHARGED_MOVE_IDX].scatter_(
+                3, actor_slot.unsqueeze(-1), torch.where(can_act & already_charged, torch.zeros_like(actor_hp), p_actor[:, :, :, MonIdx.CHARGED_MOVE_IDX]).unsqueeze(-1)
+            )
+            P_mc[:, :, :, :, MonIdx.SEMI_INVULN].scatter_(
+                3, actor_slot.unsqueeze(-1), torch.where(can_act & already_charged, torch.zeros_like(actor_hp), p_actor[:, :, :, MonIdx.SEMI_INVULN]).unsqueeze(-1)
+            )
+            p_actor = torch.gather(P_mc, 3, act_slot_exp_mon).squeeze(3)
+
         is_solar_charge = (w_sure == 10.0) & (w_idx_actor != W_SUN)
         is_electro_charge = (w_sure == 20.0) & (w_idx_actor != W_RAIN)
-        is_general_charge = (w_sure == 30.0)
-        must_charge = is_solar_charge | is_electro_charge | is_general_charge
-        base_power = torch.where(must_charge, torch.zeros_like(base_power), base_power)
+        is_general_charge = (w_sure == 30.0) | (
+            torch.round(chosen_move[:, :, :, MoveIdx.FIELD_OP_ID]).long() == int(FieldOpID.PHANTOM_FORCE)
+        )
+        must_charge = (is_solar_charge | is_electro_charge | is_general_charge) & (~already_charged)
+
+        # Turn-1 Charging Execution: queue CHARGED_MOVE_IDX, grant +1 SpA on Electro Shot charge, set SEMI_INVULN on Phantom Force
+        charge_fires = can_act & must_charge
+        if torch.any(charge_fires):
+            P_mc[:, :, :, :, MonIdx.CHARGED_MOVE_IDX].scatter_(
+                3,
+                actor_slot.unsqueeze(-1),
+                torch.where(charge_fires, (move_idx + 1).float(), p_actor[:, :, :, MonIdx.CHARGED_MOVE_IDX]).unsqueeze(-1),
+            )
+            is_pf_charge = charge_fires & (
+                torch.round(chosen_move[:, :, :, MoveIdx.FIELD_OP_ID]).long() == int(FieldOpID.PHANTOM_FORCE)
+            )
+            if torch.any(is_pf_charge):
+                P_mc[:, :, :, :, MonIdx.SEMI_INVULN].scatter_(
+                    3,
+                    actor_slot.unsqueeze(-1),
+                    torch.where(is_pf_charge, torch.ones_like(actor_hp), p_actor[:, :, :, MonIdx.SEMI_INVULN]).unsqueeze(-1),
+                )
+            is_el_charge_boost = charge_fires & (w_sure == 20.0)
+            if torch.any(is_el_charge_boost):
+                cur_spa_cb = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_SPA], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                el_cb_sign = torch.where(att_ab == float(AbilityID.CONTRARY), -torch.ones_like(cur_spa_cb), torch.ones_like(cur_spa_cb))
+                P_mc[:, :, :, :, MonIdx.BOOST_SPA].scatter_(
+                    3,
+                    actor_slot.unsqueeze(-1),
+                    torch.clamp(cur_spa_cb + torch.where(is_el_charge_boost, el_cb_sign, torch.zeros_like(cur_spa_cb)), -6.0, 6.0).unsqueeze(-1),
+                )
+            _mark_actor_succeeded(charge_fires)
+            can_act = can_act & (~charge_fires)
+            if not torch.any(can_act):
+                continue
+            p_actor = torch.gather(P_mc, 3, act_slot_exp_mon).squeeze(3)
 
         # Solar Beam / Blade base power halved in Rain, Sand, Snow when firing
         is_solar_halved = (w_sure == 10.0) & ((w_idx_actor == W_RAIN) | (w_idx_actor == W_SAND) | (w_idx_actor == W_SNOW))
         base_power = torch.where(is_solar_halved & (~must_charge), base_power * 0.5, base_power)
 
         # Electro Shot in Rain grants +1 SpA (-1 SpA if Contrary) immediately BEFORE calculating damage
-        is_electro_rain_boost = can_act & (w_sure == 20.0) & (w_idx_actor == W_RAIN) & (~must_charge)
+        is_electro_rain_boost = can_act & (w_sure == 20.0) & (w_idx_actor == W_RAIN) & (~must_charge) & (~already_charged)
         if torch.any(is_electro_rain_boost):
             cur_spa_b = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_SPA], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
             el_sign = torch.where(att_ab == float(AbilityID.CONTRARY), -torch.ones_like(cur_spa_b), torch.ones_like(cur_spa_b))
@@ -865,6 +1038,7 @@ def _execute_attack_cascade_torch(
             prot_lands = is_protect_move & spin_wheel_gate(
                 prot_succ_pct, seed=seed, event_id=int(RNGEventID.PROTECT_CHAIN), step_idx=step_idx
             )
+            _mark_actor_succeeded(prot_lands)
 
             std_prot = prot_lands & (protect_type == 1.0)
             if torch.any(std_prot):
@@ -1029,6 +1203,57 @@ def _execute_attack_cascade_torch(
                     applies_ps = m_perish & s_alive_ps & (~s_soundproof) & (ps_buf[:, :, :, act_s] <= 0.0)
                     ps_buf[:, :, :, act_s] = torch.where(applies_ps, torch.full_like(actor_hp, 3.0), ps_buf[:, :, :, act_s])
 
+            # Manual Toxic Spikes hazard move (stacks 0->1->2 on foe side; Magic Bounce reflects onto user side!)
+            m_ts = has_field_op & (field_op == int(FieldOpID.TOXIC_SPIKES))
+            if torch.any(m_ts):
+                ts_bounced = torch.zeros_like(m_ts)
+                if flags.has_magic_bounce:
+                    att_mb_ts = att_ab == float(AbilityID.MOLD_BREAKER)
+                    opp_a_s = torch.where(is_t1, SLOT_TRAINER_2_A, SLOT_TRAINER_1_A)
+                    opp_b_s = torch.where(is_t1, SLOT_TRAINER_2_B, SLOT_TRAINER_1_B)
+                    opp_a_mb = (
+                        (torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, opp_a_s.unsqueeze(-1)).squeeze(-1) > 0.0)
+                        & (torch.gather(P_mc[:, :, :, :, MonIdx.ABILITY_ID], 3, opp_a_s.unsqueeze(-1)).squeeze(-1) == float(AbilityID.MAGIC_BOUNCE))
+                    )
+                    opp_b_mb = (
+                        (torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, opp_b_s.unsqueeze(-1)).squeeze(-1) > 0.0)
+                        & (torch.gather(P_mc[:, :, :, :, MonIdx.ABILITY_ID], 3, opp_b_s.unsqueeze(-1)).squeeze(-1) == float(AbilityID.MAGIC_BOUNCE))
+                    )
+                    ts_bounced = m_ts & (opp_a_mb | opp_b_mb) & (~att_mb_ts)
+                sets_on_t1 = m_ts & ((~is_t1 & (~ts_bounced)) | (is_t1 & ts_bounced))
+                sets_on_t2 = m_ts & ((is_t1 & (~ts_bounced)) | ((~is_t1) & ts_bounced))
+                F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] = torch.where(
+                    sets_on_t1,
+                    torch.clamp(F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] + 1.0, max=2.0),
+                    F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES],
+                )
+                F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] = torch.where(
+                    sets_on_t2,
+                    torch.clamp(F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] + 1.0, max=2.0),
+                    F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES],
+                )
+                can_act = can_act & (~m_ts)
+
+            # Charge status move (sets CHARGE_ACTIVE = 1.0 for 2.0x next Electric move; +1 SpD handled in Block E)
+            m_charge = has_field_op & (field_op == int(FieldOpID.CHARGE))
+            if torch.any(m_charge):
+                cur_ch = torch.gather(P_mc[:, :, :, :, MonIdx.CHARGE_ACTIVE], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.CHARGE_ACTIVE].scatter_(
+                    3, actor_slot.unsqueeze(-1), torch.where(m_charge, torch.ones_like(cur_ch), cur_ch).unsqueeze(-1)
+                )
+
+            # Mark pure Field/Side/Support ops (Weather, Terrain, Tailwind, Trick Room, Gravity, Screens, Helping Hand, Follow Me, Perish Song, Haze, Toxic Spikes, Charge) as succeeded
+            non_target_fop = (
+                ((field_op >= 1) & (field_op <= 16))
+                | (field_op == int(FieldOpID.AURORA_VEIL))
+                | (field_op == int(FieldOpID.GRAVITY))
+                | ((field_op == int(FieldOpID.HAZE)) & (cat_idx == 2))
+                | (field_op == int(FieldOpID.PERISH_SONG))
+                | (field_op == int(FieldOpID.TOXIC_SPIKES))
+                | (field_op == int(FieldOpID.CHARGE))
+            )
+            _mark_actor_succeeded(has_field_op & non_target_fop)
+
         if not torch.any(can_act):
             continue
 
@@ -1038,17 +1263,14 @@ def _execute_attack_cascade_torch(
         recoil_pct = chosen_move[:, :, :, MoveIdx.RECOIL_PCT]
         target_type_code = torch.round(chosen_move[:, :, :, MoveIdx.TARGET_TYPE]).long()
 
-        # Expanding Force in Psychic Terrain (when attacker is grounded): 80 -> 120 BP and becomes ALL_ADJACENT_FOES
+        # Expanding Force in Psychic Terrain (exact FieldOpID — prevents collision with Psyshock/Extrasensory/Lumina Crash)
         tr_idx_now = torch.argmax(F_mc[:, :, :, FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END], dim=-1)
         grav_on_now = F_mc[:, :, :, FieldIdx.GRAVITY_TURNS] > 0.0
         att_grounded_now = (p_actor[:, :, :, MonIdx.GROUNDED_FLAG] > 0.5) | grav_on_now
         is_exp_force_psy = (
             (tr_idx_now == T_PSYCHIC)
             & att_grounded_now
-            & (move_type_idx == TYPE_TO_IDX["psychic"])
-            & (cat_idx == 1)
-            & (torch.abs(base_power - 80.0) < 0.5)
-            & (target_type_code == int(TargetType.SINGLE_FOE))
+            & (field_op == int(FieldOpID.EXPANDING_FORCE))
         )
         if torch.any(is_exp_force_psy):
             base_power = torch.where(is_exp_force_psy, torch.full_like(base_power, 120.0), base_power)
@@ -1079,6 +1301,7 @@ def _execute_attack_cascade_torch(
             heal_val = torch.clamp(torch.floor(max_a_hp * eff_heal_pct), min=1.0)
             new_a_hp = torch.clamp(cur_a_hp + torch.where(is_self_heal, heal_val, torch.zeros_like(heal_val)), max=max_a_hp)
             P_mc[:, :, :, :, MonIdx.HP_CUR].scatter_(3, actor_slot.unsqueeze(-1), new_a_hp.unsqueeze(-1))
+            _mark_actor_succeeded(is_self_heal)
 
         # ---------------------------------------------------------------------
         # E. SELF-TARGETING STAT BOOST MOVES (SWORDS DANCE / NASTY PLOT / TAIL GLOW)
@@ -1097,6 +1320,7 @@ def _execute_attack_cascade_torch(
                     P_mc[:, :, :, :, MonIdx.BOOST_START + s_i].scatter_(3, actor_slot.unsqueeze(-1), new_b.unsqueeze(-1))
             if flags.has_white_herb:
                 _check_white_herb_and_unburden_torch(P_mc, actor_slot)
+            _mark_actor_succeeded(is_self_status_boost)
             p_actor = torch.gather(P_mc, 3, act_slot_exp_mon).squeeze(3)
 
         # ---------------------------------------------------------------------
@@ -1229,15 +1453,24 @@ def _execute_attack_cascade_torch(
             eff_tgt_ab = torch.where(user_has_mold_breaker, torch.zeros_like(tgt_ab), tgt_ab)
             is_foe_target = tgt_slot != partner_slot
 
-            # Protect / Wide Guard / Quick Guard checks (Unseen Fist & Piercing Drill contact moves bypass Protect)
+            # Protect / Wide Guard / Quick Guard checks
+            # Pokémon Champions rule: Unseen Fist & Piercing Drill contact moves pierce Protect at 0.25x damage!
+            # Phantom Force / Shadow Force lift Protect at full 1.0x damage!
             is_contact_pre = chosen_move[:, :, :, MoveIdx.IS_CONTACT] > 0.5
-            bypasses_protect = is_contact_pre & (
+            is_phantom_pierce = field_op == int(FieldOpID.PHANTOM_FORCE)
+            bypasses_protect_champions = is_contact_pre & (
                 (att_ab == float(AbilityID.UNSEEN_FIST)) | (att_ab == float(AbilityID.PIERCING_DRILL))
             )
-            tgt_prot = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & (~bypasses_protect)
+            pierced_protect = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & bypasses_protect_champions & (~is_phantom_pierce)
+            tgt_prot = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & (~bypasses_protect_champions) & (~is_phantom_pierce)
             tgt_wg = is_spread & (p_tgt[:, :, :, MonIdx.WIDE_GUARD_ACTIVE] > 0.5)
             tgt_qg = (eff_move_prio > 0.0) & (p_tgt[:, :, :, MonIdx.QUICK_GUARD_ACTIVE] > 0.5) & is_foe_target
-            is_guarded = tgt_prot | tgt_wg | tgt_qg
+            tgt_semi_inv = (
+                (p_tgt[:, :, :, MonIdx.SEMI_INVULN] > 0.5)
+                & (att_ab != float(AbilityID.NO_GUARD))
+                & (tgt_ab != float(AbilityID.NO_GUARD))
+            )
+            is_guarded = tgt_prot | tgt_wg | tgt_qg | tgt_semi_inv
 
             valid_target = pass_mask & tgt_alive & (~is_guarded)
             if not torch.any(valid_target):
@@ -1297,9 +1530,10 @@ def _execute_attack_cascade_torch(
             good_as_gold_block = (cat_idx == 2) & (tgt_slot != actor_slot) & (eff_tgt_ab == float(AbilityID.GOOD_AS_GOLD))
             valid_target = valid_target & (~soundproof_block) & (~bulletproof_block) & (~good_as_gold_block)
 
-            # Sucker Punch / Upper Hand validation (fails if target already acted or chose Status/Switch)
+            # Sucker Punch (any damaging move) vs Upper Hand (strictly priority > 0 damaging move)
             is_sucker = field_op == int(FieldOpID.SUCKER_PUNCH)
-            if torch.any(valid_target & is_sucker):
+            is_upper_hand = field_op == int(FieldOpID.UPPER_HAND)
+            if torch.any(valid_target & (is_sucker | is_upper_hand)):
                 tgt_act_idx = torch.clamp(torch.where(tgt_slot < 2, tgt_slot, tgt_slot - 2), min=0, max=3)
                 tgt_already_acted = torch.gather(acted_mask_k, 3, tgt_act_idx.unsqueeze(-1)).squeeze(-1)
                 tgt_c_val = torch.gather(choices_4, 3, tgt_act_idx.unsqueeze(-1)).squeeze(-1)
@@ -1316,7 +1550,24 @@ def _execute_attack_cascade_torch(
                     tgt_mv_vec = torch.gather(m_flat_mc, 3, tgt_flat_mv).squeeze(3)
                 tgt_c_status = tgt_mv_vec[:, :, :, MoveIdx.CAT_STATUS] > 0.5
                 sucker_fails = is_sucker & (tgt_already_acted | tgt_c_sw | tgt_c_status)
-                valid_target = valid_target & (~sucker_fails)
+
+                # Upper Hand strictly requires target to be executing a priority > 0 damaging move
+                tgt_eff_prio = tgt_mv_vec[:, :, :, MoveIdx.PRIORITY]
+                tgt_gg = (
+                    (tgt_mv_vec[:, :, :, MoveIdx.GRASSY_PRIO_BOOST] > 0.5)
+                    & (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_GRASSY] > 0.5)
+                    & tgt_grounded
+                )
+                tgt_gw = (
+                    (tgt_ab == float(AbilityID.GALE_WINGS))
+                    & (tgt_mv_vec[:, :, :, MoveIdx.TYPE_START + TYPE_TO_IDX["flying"]] > 0.5)
+                    & (tgt_hp >= p_tgt[:, :, :, MonIdx.HP_MAX])
+                )
+                tgt_eff_prio = tgt_eff_prio + tgt_gg.float() + tgt_gw.float()
+                upper_hand_fails = is_upper_hand & (
+                    tgt_already_acted | tgt_c_sw | tgt_c_status | (tgt_eff_prio <= 0.0)
+                )
+                valid_target = valid_target & (~sucker_fails) & (~upper_hand_fails)
 
             # Elemental Absorption Abilities (Water Absorb/Dry Skin, Volt Absorb, Earth Eater, Motor Drive, Lightning Rod, Sap Sipper, Flash Fire)
             is_water_abs = (
@@ -1381,6 +1632,7 @@ def _execute_attack_cascade_torch(
                 heal_pp = torch.floor(max_t_hp * 0.50)
                 new_t_hp = torch.clamp(tgt_hp + torch.where(is_pollen_ally_heal, heal_pp, torch.zeros_like(heal_pp)), max=max_t_hp)
                 P_mc[:, :, :, :, MonIdx.HP_CUR].scatter_(3, tgt_slot.unsqueeze(-1), new_t_hp.unsqueeze(-1))
+                _mark_actor_succeeded(is_pollen_ally_heal)
                 valid_target = valid_target & (~is_pollen_ally_heal)
 
             if not torch.any(valid_target):
@@ -1397,10 +1649,12 @@ def _execute_attack_cascade_torch(
                 torch.full_like(raw_acc, 0.50),
                 raw_acc,
             )
+            tgt_glaive_vuln = p_tgt[:, :, :, MonIdx.GLAIVE_RUSH_VULN] > 0.5
             sure_hit = (
                 (raw_acc >= 1.005)
                 | (att_ab == float(AbilityID.NO_GUARD))
                 | (tgt_ab == float(AbilityID.NO_GUARD))
+                | tgt_glaive_vuln
                 | ((w_sure == 2.0) & (w_idx_actor == W_RAIN))
                 | ((w_sure == 4.0) & (w_idx_actor == W_SNOW))
             )
@@ -1449,31 +1703,91 @@ def _execute_attack_cascade_torch(
             actor_connected_any = actor_connected_any | move_hits
 
             # -----------------------------------------------------------------
-            # I. STATUS MOVE SECONDARY / PRIMARY EFFECTS ON TARGET
+            # I. STATUS MOVE SECONDARY / PRIMARY EFFECTS ON TARGET (WITH MAGIC BOUNCE)
             # -----------------------------------------------------------------
             is_status_move = cat_idx == 2
             status_hits = move_hits & is_status_move
             if torch.any(status_hits):
+                # Magic Bounce reflects foe-directed status moves back onto actor_slot (bypassed by Mold Breaker)
+                if flags.has_magic_bounce:
+                    mb_bounced = (
+                        status_hits
+                        & is_foe_target
+                        & (eff_tgt_ab == float(AbilityID.MAGIC_BOUNCE))
+                        & (att_ab != float(AbilityID.MAGIC_BOUNCE))
+                    )
+                else:
+                    mb_bounced = torch.zeros_like(status_hits)
+
+                if torch.any(mb_bounced):
+                    st_slot = torch.where(mb_bounced, actor_slot, tgt_slot)
+                    st_exp_mon = st_slot.view(B1, B2, K, 1, 1).expand(B1, B2, K, 1, MON_DIM)
+                    p_st_tgt = torch.gather(P_mc, 3, st_exp_mon).squeeze(3)
+                    st_ab = p_st_tgt[:, :, :, MonIdx.ABILITY_ID]
+                    eff_st_ab = torch.where(mb_bounced, st_ab, eff_tgt_ab)
+                    st_grounded = torch.where(
+                        mb_bounced,
+                        (p_st_tgt[:, :, :, MonIdx.GROUNDED_FLAG] > 0.5) | grav_on,
+                        tgt_grounded,
+                    )
+                    st_is_foe = is_foe_target | mb_bounced
+                else:
+                    st_slot = tgt_slot
+                    p_st_tgt = p_tgt
+                    st_ab = tgt_ab
+                    eff_st_ab = eff_tgt_ab
+                    st_grounded = tgt_grounded
+                    st_is_foe = is_foe_target
+
                 # Status infliction (Will-O-Wisp, Thunder Wave, Spore, Toxic, etc.)
                 sec_chance_pct = chosen_move[:, :, :, MoveIdx.SEC_STATUS_CHANCE] * 100.0
-                tgt_healthy = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
+                tgt_healthy = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY], 3, st_slot.unsqueeze(-1)).squeeze(-1) > 0.5
                 is_sleep_status = chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["sleep"]] > 0.5
+                is_burn_inflict = chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["burn"]] > 0.5
+                is_para_inflict = chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["paralyze"]] > 0.5
+                is_psn_inflict = (
+                    (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["poison"]] > 0.5)
+                    | (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["toxic"]] > 0.5)
+                )
                 elec_or_misty = (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_ELECTRIC] > 0.5) | (
                     F_mc[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5
                 )
-                terrain_blocks_status = tgt_grounded & (
+                terrain_blocks_status = st_grounded & (
                     (is_sleep_status & elec_or_misty)
                     | (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5)
                 )
-                leaf_guard_blocks = (eff_tgt_ab == float(AbilityID.LEAF_GUARD)) & (w_idx == W_SUN)
-                is_burn_inflict = chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["burn"]] > 0.5
-                thermal_ex_burn_block = is_burn_inflict & (eff_tgt_ab == float(AbilityID.THERMAL_EXCHANGE))
+                leaf_guard_blocks = (eff_st_ab == float(AbilityID.LEAF_GUARD)) & (w_idx == W_SUN)
+                st_is_fire = (
+                    (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["fire"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["fire"]] > 0.5)
+                )
+                st_is_elec = (
+                    (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["electric"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["electric"]] > 0.5)
+                )
+                st_is_psn_stl = (
+                    (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["poison"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["poison"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["steel"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["steel"]] > 0.5)
+                )
+                burn_immune = is_burn_inflict & (
+                    st_is_fire
+                    | (eff_st_ab == float(AbilityID.THERMAL_EXCHANGE))
+                    | (eff_st_ab == float(AbilityID.WATER_BUBBLE))
+                )
+                para_immune = is_para_inflict & (
+                    st_is_elec | (eff_st_ab == float(AbilityID.LIMBER))
+                )
+                psn_immune = is_psn_inflict & st_is_psn_stl
                 st_lands = (
                     status_hits
                     & tgt_healthy
                     & (~terrain_blocks_status)
                     & (~leaf_guard_blocks)
-                    & (~thermal_ex_burn_block)
+                    & (~burn_immune)
+                    & (~para_immune)
+                    & (~psn_immune)
                     & spin_wheel_gate(
                         sec_chance_pct, seed=seed, event_id=int(RNGEventID.SECONDARY_STATUS), step_idx=step_idx * 4 + pass_idx
                     )
@@ -1481,67 +1795,84 @@ def _execute_attack_cascade_torch(
                 if torch.any(st_lands):
                     for st_i in range(7):
                         new_st_bit = chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + st_i]
-                        cur_st_bit = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_START + st_i], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        cur_st_bit = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_START + st_i], 3, st_slot.unsqueeze(-1)).squeeze(-1)
                         P_mc[:, :, :, :, MonIdx.STATUS_START + st_i].scatter_(
-                            3, tgt_slot.unsqueeze(-1), torch.where(st_lands, new_st_bit, cur_st_bit).unsqueeze(-1)
+                            3, st_slot.unsqueeze(-1), torch.where(st_lands, new_st_bit, cur_st_bit).unsqueeze(-1)
                         )
-                    tgt_unnerved = _is_side_unnerved_torch(P_mc, tgt_slot) if flags.has_unnerve else None
+                    tgt_unnerved = _is_side_unnerved_torch(P_mc, st_slot) if flags.has_unnerve else None
                     if flags.has_chesto_berry:
-                        _check_chesto_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unnerved)
+                        _check_chesto_berry_and_unburden_torch(P_mc, st_slot, blocked_mask=tgt_unnerved)
                     if flags.has_lum_berry:
-                        _check_lum_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unnerved)
+                        _check_lum_berry_and_unburden_torch(P_mc, st_slot, blocked_mask=tgt_unnerved)
 
-                # Volatile Disruption Status Moves: Encore, Disable, Leech Seed, Yawn
-                m_encore = status_hits & (field_op == int(FieldOpID.ENCORE)) & (p_tgt[:, :, :, MonIdx.LAST_MOVE_IDX] >= 0.0)
-                if torch.any(m_encore):
-                    cur_enc = torch.gather(P_mc[:, :, :, :, MonIdx.ENCORE_TURNS], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
-                    P_mc[:, :, :, :, MonIdx.ENCORE_TURNS].scatter_(
-                        3, tgt_slot.unsqueeze(-1), torch.where(m_encore, torch.full_like(cur_enc, 3.0), cur_enc).unsqueeze(-1)
+                # Volatile Disruption Status Moves: Taunt, Encore, Disable, Leech Seed, Yawn
+                m_taunt = status_hits & (field_op == int(FieldOpID.TAUNT)) & (eff_st_ab != float(AbilityID.OBLIVIOUS))
+                if torch.any(m_taunt):
+                    cur_tnt = torch.gather(P_mc[:, :, :, :, MonIdx.TAUNT_TURNS], 3, st_slot.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.TAUNT_TURNS].scatter_(
+                        3, st_slot.unsqueeze(-1), torch.where(m_taunt, torch.full_like(cur_tnt, 3.0), cur_tnt).unsqueeze(-1)
                     )
                     if flags.has_mental_herb:
-                        _check_mental_herb_and_unburden_torch(P_mc, tgt_slot)
+                        _check_mental_herb_and_unburden_torch(P_mc, st_slot)
 
-                m_disable = status_hits & (field_op == int(FieldOpID.DISABLE)) & (p_tgt[:, :, :, MonIdx.LAST_MOVE_IDX] >= 0.0)
+                m_encore = status_hits & (field_op == int(FieldOpID.ENCORE)) & (p_st_tgt[:, :, :, MonIdx.LAST_MOVE_IDX] >= 0.0)
+                if torch.any(m_encore):
+                    cur_enc = torch.gather(P_mc[:, :, :, :, MonIdx.ENCORE_TURNS], 3, st_slot.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.ENCORE_TURNS].scatter_(
+                        3, st_slot.unsqueeze(-1), torch.where(m_encore, torch.full_like(cur_enc, 3.0), cur_enc).unsqueeze(-1)
+                    )
+                    if flags.has_mental_herb:
+                        _check_mental_herb_and_unburden_torch(P_mc, st_slot)
+
+                m_disable = status_hits & (field_op == int(FieldOpID.DISABLE)) & (p_st_tgt[:, :, :, MonIdx.LAST_MOVE_IDX] >= 0.0)
                 if torch.any(m_disable):
                     dis_buf = _get_ev("disabled")
-                    cur_dis = torch.gather(dis_buf, 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                    cur_dis = torch.gather(dis_buf, 3, st_slot.unsqueeze(-1)).squeeze(-1)
                     dis_buf.scatter_(
-                        3, tgt_slot.unsqueeze(-1), torch.where(m_disable, torch.ones_like(cur_dis), cur_dis).unsqueeze(-1)
+                        3, st_slot.unsqueeze(-1), torch.where(m_disable, torch.ones_like(cur_dis), cur_dis).unsqueeze(-1)
                     )
 
                 tgt_is_grass = (
-                    (p_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] > 0.5)
-                    | (p_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]] > 0.5)
+                    (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] > 0.5)
+                    | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]] > 0.5)
                 )
                 m_lseed = status_hits & (field_op == int(FieldOpID.LEECH_SEED)) & (~tgt_is_grass)
                 if torch.any(m_lseed):
                     ls_buf = _get_ev("leech_seed_src")
-                    cur_ls = torch.gather(ls_buf, 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                    cur_ls = torch.gather(ls_buf, 3, st_slot.unsqueeze(-1)).squeeze(-1)
+                    ls_healer = torch.where(mb_bounced, tgt_slot + 1, actor_slot + 1).float()
                     ls_buf.scatter_(
                         3,
-                        tgt_slot.unsqueeze(-1),
-                        torch.where(m_lseed & (cur_ls <= 0.0), (actor_slot + 1).float(), cur_ls).unsqueeze(-1),
+                        st_slot.unsqueeze(-1),
+                        torch.where(m_lseed & (cur_ls <= 0.0), ls_healer, cur_ls).unsqueeze(-1),
                     )
 
-                m_yawn = status_hits & (field_op == int(FieldOpID.YAWN)) & tgt_healthy & (~(tgt_grounded & elec_or_misty)) & (~leaf_guard_blocks)
+                m_yawn = status_hits & (field_op == int(FieldOpID.YAWN)) & tgt_healthy & (~(st_grounded & elec_or_misty)) & (~leaf_guard_blocks)
                 if torch.any(m_yawn):
                     yw_buf = _get_ev("yawned")
-                    cur_yw = torch.gather(yw_buf, 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                    cur_yw = torch.gather(yw_buf, 3, st_slot.unsqueeze(-1)).squeeze(-1)
                     yw_buf.scatter_(
-                        3, tgt_slot.unsqueeze(-1), torch.where(m_yawn, torch.ones_like(cur_yw), cur_yw).unsqueeze(-1)
+                        3, st_slot.unsqueeze(-1), torch.where(m_yawn, torch.ones_like(cur_yw), cur_yw).unsqueeze(-1)
                     )
+                    cur_yw_mon = torch.gather(P_mc[:, :, :, :, MonIdx.YAWN_ACTIVE], 3, st_slot.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.YAWN_ACTIVE].scatter_(
+                        3,
+                        st_slot.unsqueeze(-1),
+                        torch.where(m_yawn & (cur_yw_mon <= 0.0), torch.ones_like(cur_yw_mon), cur_yw_mon).unsqueeze(-1),
+                    )
+                _mark_actor_succeeded(status_hits)
 
                 # Target stat stage changes on status moves (Parting Shot, Charm, Scary Face, Fake Tears, Coaching)
                 tgt_stat_op = status_hits & (~stat_self_flag) & (stat_chance_pct > 0.0)
                 if torch.any(tgt_stat_op):
-                    tgt_drop_immune = is_foe_target & (
-                        (eff_tgt_ab == float(AbilityID.CLEAR_BODY))
-                        | (eff_tgt_ab == float(AbilityID.MIRROR_ARMOR))
+                    tgt_drop_immune = st_is_foe & (
+                        (eff_st_ab == float(AbilityID.CLEAR_BODY))
+                        | (eff_st_ab == float(AbilityID.MIRROR_ARMOR))
                         | (
-                            (eff_tgt_ab == float(AbilityID.FLOWER_VEIL))
+                            (eff_st_ab == float(AbilityID.FLOWER_VEIL))
                             & (
-                                (p_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] > 0.5)
-                                | (p_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]] > 0.5)
+                                (p_st_tgt[:, :, :, MonIdx.TYPE1_START + TYPE_TO_IDX["grass"]] > 0.5)
+                                | (p_st_tgt[:, :, :, MonIdx.TYPE2_START + TYPE_TO_IDX["grass"]] > 0.5)
                             )
                         )
                     )
@@ -1550,34 +1881,34 @@ def _execute_attack_cascade_torch(
                     )
                     if torch.any(stat_lands):
                         any_drop = torch.zeros_like(stat_lands)
-                        tgt_is_contrary = tgt_ab == float(AbilityID.CONTRARY)
+                        tgt_is_contrary = st_ab == float(AbilityID.CONTRARY)
                         for s_i in range(7):
                             delta_v = chosen_move[:, :, :, MoveIdx.STAT_DELTA_START + s_i]
                             if torch.any(stat_lands & (delta_v != 0.0)):
                                 eff_dv = torch.where(tgt_is_contrary, -delta_v, delta_v)
                                 if s_i == 0:
-                                    hc_blocks = is_foe_target & (eff_dv < 0.0) & (eff_tgt_ab == float(AbilityID.HYPER_CUTTER))
+                                    hc_blocks = st_is_foe & (eff_dv < 0.0) & (eff_st_ab == float(AbilityID.HYPER_CUTTER))
                                     eff_dv = torch.where(hc_blocks, torch.zeros_like(eff_dv), eff_dv)
-                                cur_b = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_START + s_i], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
-                                any_drop = any_drop | (stat_lands & is_foe_target & (eff_dv < 0.0) & (cur_b > -6.0))
+                                cur_b = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_START + s_i], 3, st_slot.unsqueeze(-1)).squeeze(-1)
+                                any_drop = any_drop | (stat_lands & st_is_foe & (eff_dv < 0.0) & (cur_b > -6.0))
                                 new_b = torch.clamp(cur_b + torch.where(stat_lands, eff_dv, torch.zeros_like(eff_dv)), min=-6.0, max=6.0)
-                                P_mc[:, :, :, :, MonIdx.BOOST_START + s_i].scatter_(3, tgt_slot.unsqueeze(-1), new_b.unsqueeze(-1))
-                        # Defiant / Competitive / White Herb on target
+                                P_mc[:, :, :, :, MonIdx.BOOST_START + s_i].scatter_(3, st_slot.unsqueeze(-1), new_b.unsqueeze(-1))
+                        # Defiant / Competitive / White Herb on recipient
                         if torch.any(any_drop):
-                            is_defiant = any_drop & (tgt_ab == float(AbilityID.DEFIANT))
+                            is_defiant = any_drop & (st_ab == float(AbilityID.DEFIANT))
                             if torch.any(is_defiant):
-                                cur_a = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_ATK], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                                cur_a = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_ATK], 3, st_slot.unsqueeze(-1)).squeeze(-1)
                                 P_mc[:, :, :, :, MonIdx.BOOST_ATK].scatter_(
-                                    3, tgt_slot.unsqueeze(-1), torch.clamp(cur_a + torch.where(is_defiant, torch.full_like(cur_a, 2.0), torch.zeros_like(cur_a)), -6.0, 6.0).unsqueeze(-1)
+                                    3, st_slot.unsqueeze(-1), torch.clamp(cur_a + torch.where(is_defiant, torch.full_like(cur_a, 2.0), torch.zeros_like(cur_a)), -6.0, 6.0).unsqueeze(-1)
                                 )
-                            is_comp = any_drop & (tgt_ab == float(AbilityID.COMPETITIVE))
+                            is_comp = any_drop & (st_ab == float(AbilityID.COMPETITIVE))
                             if torch.any(is_comp):
-                                cur_sa = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_SPA], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                                cur_sa = torch.gather(P_mc[:, :, :, :, MonIdx.BOOST_SPA], 3, st_slot.unsqueeze(-1)).squeeze(-1)
                                 P_mc[:, :, :, :, MonIdx.BOOST_SPA].scatter_(
-                                    3, tgt_slot.unsqueeze(-1), torch.clamp(cur_sa + torch.where(is_comp, torch.full_like(cur_sa, 2.0), torch.zeros_like(cur_sa)), -6.0, 6.0).unsqueeze(-1)
+                                    3, st_slot.unsqueeze(-1), torch.clamp(cur_sa + torch.where(is_comp, torch.full_like(cur_sa, 2.0), torch.zeros_like(cur_sa)), -6.0, 6.0).unsqueeze(-1)
                                 )
                             if flags.has_white_herb:
-                                _check_white_herb_and_unburden_torch(P_mc, tgt_slot)
+                                _check_white_herb_and_unburden_torch(P_mc, st_slot)
 
             # -----------------------------------------------------------------
             # J. DAMAGING MOVE MULTI-HIT DISCRETE LOOP (CRIT + 16-ROLL PER HIT)
@@ -1586,12 +1917,16 @@ def _execute_attack_cascade_torch(
             if not torch.any(dmg_move_hits):
                 continue
 
-            # Type effectiveness
+            # Type effectiveness (with Freeze-Dry 2.0x vs Water override)
             t1_idx = torch.argmax(p_tgt[:, :, :, MonIdx.TYPE1_START:MonIdx.TYPE1_END], dim=-1)
             t2_idx = torch.argmax(p_tgt[:, :, :, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1)
             has_t2 = torch.sum(p_tgt[:, :, :, MonIdx.TYPE2_START:MonIdx.TYPE2_END], dim=-1) > 0.5
             eff1 = type_chart[move_type_idx, t1_idx]
             eff2 = torch.where(has_t2, type_chart[move_type_idx, t2_idx], torch.ones_like(eff1))
+            is_freeze_dry = field_op == int(FieldOpID.FREEZE_DRY)
+            if torch.any(is_freeze_dry):
+                eff1 = torch.where(is_freeze_dry & (t1_idx == TYPE_TO_IDX["water"]), torch.full_like(eff1, 2.0), eff1)
+                eff2 = torch.where(is_freeze_dry & has_t2 & (t2_idx == TYPE_TO_IDX["water"]), torch.full_like(eff2, 2.0), eff2)
             type_eff = eff1 * eff2
 
             # Scrappy bypasses Ghost immunity on Normal/Fighting
@@ -1611,6 +1946,7 @@ def _execute_attack_cascade_torch(
             dmg_move_hits = dmg_move_hits & (type_eff > 0.0)
             if not torch.any(dmg_move_hits):
                 continue
+            _mark_actor_succeeded(dmg_move_hits)
 
             # Resolve discrete hit count per simulation thread (1..10)
             raw_exp_hits = chosen_move[:, :, :, MoveIdx.EXPECTED_HITS]
@@ -1723,7 +2059,9 @@ def _execute_attack_cascade_torch(
                 | ((~is_phys) & ((lscr_turns > 0.0) | (veil_turns > 0.0)))
             )
 
+            pre_move_t_hp = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tgt_slot.unsqueeze(-1)).squeeze(-1).clone()
             total_dmg_this_target = torch.zeros((B1, B2, K), dtype=torch.float32, device=device)
+            direct_dmg_this_target = torch.zeros((B1, B2, K), dtype=torch.float32, device=device)
 
             for hit_idx in range(max_hits):
                 cur_t_hp = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
@@ -1743,9 +2081,12 @@ def _execute_attack_cascade_torch(
                     act_idx_0 = exec_order_k[:, :, 0, step_idx].long()
                     crits_landed_count.scatter_add_(2, act_idx_0.unsqueeze(-1), crit_step.unsqueeze(-1))
 
-                # Crits ignore negative attack stages and positive defense stages
+                # Crits ignore negative attack stages and positive defense stages; Unaware ignores opposing boosts
                 eff_atk_stage = torch.where(is_crit, torch.clamp(raw_atk_stage, min=0.0), raw_atk_stage)
                 eff_def_stage = torch.where(is_crit, torch.clamp(raw_def_stage, max=0.0), raw_def_stage)
+                if flags.has_unaware:
+                    eff_atk_stage = torch.where(eff_tgt_ab == float(AbilityID.UNAWARE), torch.zeros_like(eff_atk_stage), eff_atk_stage)
+                    eff_def_stage = torch.where(att_ab == float(AbilityID.UNAWARE), torch.zeros_like(eff_def_stage), eff_def_stage)
 
                 A = raw_atk_stat * _stage_ratio_torch(eff_atk_stage)
                 D = torch.clamp(raw_def_stat * _stage_ratio_torch(eff_def_stage), min=1.0)
@@ -1773,11 +2114,22 @@ def _execute_attack_cascade_torch(
                     A,
                 )
 
-                # Thick Fat (halves attacker's effective Attack/SpA on Fire and Ice moves)
+                # Thick Fat (halves attacker's effective Attack/SpA on Fire and Ice moves) & Water Bubble (0.5x Fire def / 2.0x Water off)
                 is_thick_fat = (eff_tgt_ab == float(AbilityID.THICK_FAT)) & (
                     (move_type_idx == TYPE_TO_IDX["fire"]) | (move_type_idx == TYPE_TO_IDX["ice"])
                 )
                 A = torch.where(is_thick_fat, torch.floor(A * 0.5), A)
+                if flags.has_water_bubble:
+                    A = torch.where(
+                        (eff_tgt_ab == float(AbilityID.WATER_BUBBLE)) & (move_type_idx == TYPE_TO_IDX["fire"]),
+                        torch.floor(A * 0.5),
+                        A,
+                    )
+                    A = torch.where(
+                        (att_ab == float(AbilityID.WATER_BUBBLE)) & (move_type_idx == TYPE_TO_IDX["water"]),
+                        A * 2.0,
+                        A,
+                    )
 
                 # Ability & Item modifiers on A and D
                 A = torch.where(is_phys & (att_ab == float(AbilityID.HUGE_POWER)), A * 2.0, A)
@@ -1868,6 +2220,22 @@ def _execute_attack_cascade_torch(
                     )
                 )
                 bp_eff = torch.where(is_sand_force_move, torch.floor(bp_eff * 5325.0 / 4096.0), bp_eff)
+                # Knock Off 1.5x BP boost vs removable held item (Mega Stones are unremovable in Champions!)
+                cur_t_item_act_pre = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
+                cur_t_item_pre = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ID], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                knock_off_removable = (
+                    (field_op == int(FieldOpID.KNOCK_OFF))
+                    & cur_t_item_act_pre
+                    & (cur_t_item_pre != float(ItemID.NONE))
+                    & (cur_t_item_pre != float(ItemID.MEGA_STONE))
+                )
+                bp_eff = torch.where(knock_off_removable, torch.floor(bp_eff * 6144.0 / 4096.0), bp_eff)
+                # Stomping Tantrum / Temper Flare: 2.0x BP (75 -> 150) when user's previous turn action failed!
+                is_tantrum_boost = (field_op == int(FieldOpID.STOMPING_TANTRUM)) & actor_prev_failed
+                bp_eff = torch.where(is_tantrum_boost, bp_eff * 2.0, bp_eff)
+                # Charge: 2.0x BP on user's next Electric damaging move (consumed after hit)
+                is_charge_elec_boost = (p_actor[:, :, :, MonIdx.CHARGE_ACTIVE] > 0.5) & (move_type_idx == TYPE_TO_IDX["electric"])
+                bp_eff = torch.where(is_charge_elec_boost, bp_eff * 2.0, bp_eff)
                 bp_eff = torch.floor(bp_eff * hh_mult)
                 base_calc = torch.floor((22.0 * bp_eff * (A / D)) / 50.0) + 2.0
 
@@ -1942,6 +2310,11 @@ def _execute_attack_cascade_torch(
                 if hit_idx == 1:
                     base_calc = torch.where(is_parental_bond, torch.floor(base_calc * 0.25), base_calc)
 
+                # Pokémon Champions rule: Unseen Fist / Piercing Drill deal 0.25x damage through Protect
+                base_calc = torch.where(pierced_protect, torch.floor(base_calc * 0.25), base_calc)
+                # Glaive Rush vulnerability: incoming attacks deal 2.0x damage until user acts again
+                base_calc = torch.where(tgt_glaive_vuln, torch.floor(base_calc * 2.0), base_calc)
+
                 # Type-Boosting Item (1.2x on matching item boost type), Expert Belt (1.2x on Super Effective), Life Orb (5324/4096 ~ 1.3x)
                 item_boost_type = torch.round(p_actor[:, :, :, MonIdx.ITEM_BOOST_TYPE]).long()
                 is_tb_item = (
@@ -1956,7 +2329,14 @@ def _execute_attack_cascade_torch(
                     is_lo = act_item_active & (act_item == float(ItemID.LIFE_ORB))
                     base_calc = torch.where(is_lo, torch.floor(base_calc * 5324.0 / 4096.0), base_calc)
 
-                # Type-Resist Berries (0.5x on matching super-effective hit or Chilan Berry on Normal)
+                # Disguise shield check (blocks hit damage & berry/sash consumption; deals 1/8 max HP bust chip; bypassed by Mold Breaker)
+                if flags.has_disguise:
+                    cur_t_disguise = torch.gather(P_mc[:, :, :, :, MonIdx.DISGUISE_INTACT], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                    disguise_busts = hit_active & (eff_tgt_ab == float(AbilityID.DISGUISE)) & (cur_t_disguise > 0.5)
+                else:
+                    disguise_busts = torch.zeros_like(hit_active)
+
+                # Type-Resist Berries (0.5x on matching super-effective hit or Chilan Berry on Normal; skipped if Disguise busts)
                 cur_t_item_act = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
                 cur_t_item = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ID], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
                 if flags.has_resist_berry:
@@ -1965,6 +2345,7 @@ def _execute_attack_cascade_torch(
                     rb_unnerved = _is_side_unnerved_torch(P_mc, tgt_slot) if flags.has_unnerve else None
                     resist_berry_triggers = (
                         hit_active
+                        & (~disguise_busts)
                         & cur_t_item_act
                         & (berry_matched_type >= 0)
                         & (berry_matched_type == move_type_idx)
@@ -1989,9 +2370,10 @@ def _execute_attack_cascade_torch(
 
                 dmg_hit = torch.clamp(base_calc, min=1.0)
 
-                # Focus Sash & Sturdy 1-HP Clamp (consumes Focus Sash so Hit 2+ KOs!)
+                # Focus Sash & Sturdy 1-HP Clamp (consumes Focus Sash so Hit 2+ KOs; skipped if Disguise busts!)
                 sash_triggers = (
                     hit_active
+                    & (~disguise_busts)
                     & (cur_t_hp >= max_t_hp)
                     & (dmg_hit >= cur_t_hp)
                     & cur_t_item_act
@@ -1999,12 +2381,21 @@ def _execute_attack_cascade_torch(
                 )
                 sturdy_triggers = (
                     hit_active
+                    & (~disguise_busts)
                     & (cur_t_hp >= max_t_hp)
                     & (dmg_hit >= cur_t_hp)
                     & (eff_tgt_ab == float(AbilityID.STURDY))
                 )
 
                 applied_dmg = torch.where(sash_triggers | sturdy_triggers, cur_t_hp - 1.0, dmg_hit)
+                if torch.any(disguise_busts):
+                    bust_chip = torch.clamp(torch.floor(max_t_hp / 8.0), min=1.0)
+                    applied_dmg = torch.where(disguise_busts, bust_chip, applied_dmg)
+                    P_mc[:, :, :, :, MonIdx.DISGUISE_INTACT].scatter_(
+                        3,
+                        tgt_slot.unsqueeze(-1),
+                        torch.where(disguise_busts, torch.zeros_like(cur_t_hp), cur_t_disguise).unsqueeze(-1),
+                    )
                 applied_dmg = torch.where(hit_active, applied_dmg, torch.zeros_like(applied_dmg))
 
                 if flags.has_focus_sash and torch.any(sash_triggers):
@@ -2021,9 +2412,9 @@ def _execute_attack_cascade_torch(
                             3, tgt_slot.unsqueeze(-1), torch.where(is_sash_unb, torch.ones_like(cur_unb), cur_unb).unsqueeze(-1)
                         )
 
-                # Air Balloon pops upon taking damaging hit
+                # Air Balloon pops upon taking damaging hit (not when Disguise absorbs it)
                 if flags.has_air_balloon:
-                    balloon_pops = hit_active & (applied_dmg > 0.0) & cur_t_item_act & (cur_t_item == float(ItemID.AIR_BALLOON))
+                    balloon_pops = hit_active & (~disguise_busts) & (applied_dmg > 0.0) & cur_t_item_act & (cur_t_item == float(ItemID.AIR_BALLOON))
                     if torch.any(balloon_pops):
                         P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE].scatter_(
                             3,
@@ -2050,6 +2441,7 @@ def _execute_attack_cascade_torch(
                 P_mc[:, :, :, :, MonIdx.ALIVE_FLAG].scatter_(3, tgt_slot.unsqueeze(-1), (new_t_hp > 0.0).float().unsqueeze(-1))
 
                 total_dmg_this_target = total_dmg_this_target + applied_dmg
+                direct_dmg_this_target = direct_dmg_this_target + torch.where(disguise_busts, torch.zeros_like(applied_dmg), applied_dmg)
 
                 # Contact Punish (Rough Skin 1/8 max HP, Rocky Helmet 1/6 max HP, Flame Body 30% burn)
                 if flags.has_contact_punish:
@@ -2074,6 +2466,7 @@ def _execute_attack_cascade_torch(
                             & (att_t1 != TYPE_TO_IDX["fire"])
                             & (~(att_has_t2 & (att_t2 == TYPE_TO_IDX["fire"])))
                             & (att_ab != float(AbilityID.THERMAL_EXCHANGE))
+                            & (att_ab != float(AbilityID.WATER_BUBBLE))
                             & (~((att_ab == float(AbilityID.LEAF_GUARD)) & (w_idx == W_SUN)))
                         )
                         if torch.any(fb_cand):
@@ -2300,6 +2693,7 @@ def _execute_attack_cascade_torch(
 
             # Clear Smog resets target's stat stages to 0.0 on damaging hit; Salt Cure applies EoT Salt Cure
             surv_t_hp = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+            max_t_hp_post = torch.gather(P_mc[:, :, :, :, MonIdx.HP_MAX], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
             is_clear_smog = dmg_move_hits & (surv_t_hp > 0.0) & (field_op == int(FieldOpID.HAZE))
             if torch.any(is_clear_smog):
                 for s_i in range(7):
@@ -2316,23 +2710,112 @@ def _execute_attack_cascade_torch(
                     3, tgt_slot.unsqueeze(-1), torch.where(is_salt_cure_hit, torch.ones_like(cur_sc), cur_sc).unsqueeze(-1)
                 )
 
+            # Knock Off item removal (non-Mega Stone items removed on hit; triggers Unburden & clears Choice lock / Air Balloon)
+            if torch.any(dmg_move_hits & (field_op == int(FieldOpID.KNOCK_OFF))):
+                ko_it_act = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
+                ko_it_id = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ID], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                ko_removes = (
+                    dmg_move_hits
+                    & (surv_t_hp > 0.0)
+                    & (direct_dmg_this_target > 0.0)
+                    & (field_op == int(FieldOpID.KNOCK_OFF))
+                    & ko_it_act
+                    & (ko_it_id != float(ItemID.NONE))
+                    & (ko_it_id != float(ItemID.MEGA_STONE))
+                )
+                if torch.any(ko_removes):
+                    P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE].scatter_(
+                        3, tgt_slot.unsqueeze(-1), torch.where(ko_removes, torch.zeros_like(surv_t_hp), ko_it_act.float()).unsqueeze(-1)
+                    )
+                    cur_cl = torch.gather(P_mc[:, :, :, :, MonIdx.CHOICE_LOCKED_MOVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.CHOICE_LOCKED_MOVE].scatter_(
+                        3, tgt_slot.unsqueeze(-1), torch.where(ko_removes, torch.full_like(cur_cl, -1.0), cur_cl).unsqueeze(-1)
+                    )
+                    ko_was_bal = ko_removes & (ko_it_id == float(ItemID.AIR_BALLOON))
+                    if torch.any(ko_was_bal):
+                        now_gr_ko = (~tgt_is_flying) & (tgt_ab != float(AbilityID.LEVITATE)) & (tgt_ab != float(AbilityID.EELEVATE))
+                        cur_gr_ko = torch.gather(P_mc[:, :, :, :, MonIdx.GROUNDED_FLAG], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        P_mc[:, :, :, :, MonIdx.GROUNDED_FLAG].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(ko_was_bal & now_gr_ko, torch.ones_like(cur_gr_ko), cur_gr_ko).unsqueeze(-1)
+                        )
+                    ko_unb = ko_removes & (tgt_ab == float(AbilityID.UNBURDEN))
+                    if torch.any(ko_unb):
+                        cur_unb_ko = torch.gather(P_mc[:, :, :, :, MonIdx.UNBURDEN_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        P_mc[:, :, :, :, MonIdx.UNBURDEN_ACTIVE].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(ko_unb, torch.ones_like(cur_unb_ko), cur_unb_ko).unsqueeze(-1)
+                        )
+
+            # Mortal Spin / Rapid Spin clears Toxic Spikes on actor's own side
+            is_haz_clear = dmg_move_hits & (field_op == int(FieldOpID.HAZARD_CLEAR)) & (cur_a_hp > 0.0)
+            if torch.any(is_haz_clear):
+                F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] = torch.where(
+                    is_haz_clear & is_t1, torch.zeros_like(cur_a_hp), F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES]
+                )
+                F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] = torch.where(
+                    is_haz_clear & (~is_t1), torch.zeros_like(cur_a_hp), F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES]
+                )
+
+            # Throat Chop: blocks target's Sound moves for 2 turns
+            is_tc_hit = dmg_move_hits & (surv_t_hp > 0.0) & (direct_dmg_this_target > 0.0) & (field_op == int(FieldOpID.THROAT_CHOP))
+            if torch.any(is_tc_hit):
+                cur_tc_t = torch.gather(P_mc[:, :, :, :, MonIdx.THROAT_CHOP_TURNS], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.THROAT_CHOP_TURNS].scatter_(
+                    3, tgt_slot.unsqueeze(-1), torch.where(is_tc_hit, torch.full_like(cur_tc_t, 2.0), cur_tc_t).unsqueeze(-1)
+                )
+
+            # Glaive Rush: marks user vulnerable (2.0x incoming damage & sure-hit) until user moves again
+            is_gr_used = dmg_move_hits & (cur_a_hp > 0.0) & (field_op == int(FieldOpID.GLAIVE_RUSH))
+            if torch.any(is_gr_used):
+                cur_gr_a = torch.gather(P_mc[:, :, :, :, MonIdx.GLAIVE_RUSH_VULN], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.GLAIVE_RUSH_VULN].scatter_(
+                    3, actor_slot.unsqueeze(-1), torch.where(is_gr_used, torch.ones_like(cur_gr_a), cur_gr_a).unsqueeze(-1)
+                )
+
+            # Consume Charge boost once an Electric damaging move connects
+            is_charge_consumed = dmg_move_hits & (move_type_idx == TYPE_TO_IDX["electric"]) & (p_actor[:, :, :, MonIdx.CHARGE_ACTIVE] > 0.5)
+            if torch.any(is_charge_consumed):
+                cur_chg_a = torch.gather(P_mc[:, :, :, :, MonIdx.CHARGE_ACTIVE], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.CHARGE_ACTIVE].scatter_(
+                    3, actor_slot.unsqueeze(-1), torch.where(is_charge_consumed, torch.zeros_like(cur_chg_a), cur_chg_a).unsqueeze(-1)
+                )
+
             # Check surviving target for secondary effects (Sheer Force & Shield Dust suppress secondary effects)
             sec_blocked = sheer_force_active | (eff_tgt_ab == float(AbilityID.SHIELD_DUST))
-            can_proc_sec = dmg_move_hits & (surv_t_hp > 0.0) & (~sec_blocked)
+            can_proc_sec = dmg_move_hits & (surv_t_hp > 0.0) & (direct_dmg_this_target > 0.0) & (~sec_blocked)
 
-            # Secondary Status Wheel (Scald 30% burn, Thunderbolt 10% para, etc.; blocked by Leaf Guard in Sun / Thermal Exchange burn)
+            # Secondary Status Wheel (Scald 30% burn, Thunderbolt 10% para, etc.; blocked by Leaf Guard/Thermal Exchange/Water Bubble/Limber)
             sec_st_pct = chosen_move[:, :, :, MoveIdx.SEC_STATUS_CHANCE] * 100.0
             if torch.any(can_proc_sec & (sec_st_pct > 0.0)):
                 tgt_healthy = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
                 leaf_guard_sec_block = (eff_tgt_ab == float(AbilityID.LEAF_GUARD)) & (w_idx == W_SUN)
                 sec_burn_block = (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["burn"]] > 0.5) & (
-                    eff_tgt_ab == float(AbilityID.THERMAL_EXCHANGE)
+                    (eff_tgt_ab == float(AbilityID.THERMAL_EXCHANGE))
+                    | (eff_tgt_ab == float(AbilityID.WATER_BUBBLE))
+                    | (t1_idx == TYPE_TO_IDX["fire"])
+                    | (has_t2 & (t2_idx == TYPE_TO_IDX["fire"]))
                 )
+                sec_para_block = (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["paralyze"]] > 0.5) & (
+                    (eff_tgt_ab == float(AbilityID.LIMBER))
+                    | (t1_idx == TYPE_TO_IDX["electric"])
+                    | (has_t2 & (t2_idx == TYPE_TO_IDX["electric"]))
+                )
+                sec_psn_block = (
+                    (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["poison"]] > 0.5)
+                    | (chosen_move[:, :, :, MoveIdx.SEC_STATUS_START + STATUS_TO_IDX["toxic"]] > 0.5)
+                ) & (
+                    (t1_idx == TYPE_TO_IDX["poison"])
+                    | (t1_idx == TYPE_TO_IDX["steel"])
+                    | (has_t2 & ((t2_idx == TYPE_TO_IDX["poison"]) | (t2_idx == TYPE_TO_IDX["steel"])))
+                )
+                sec_misty_block = tgt_grounded & (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5)
                 sec_st_lands = (
                     can_proc_sec
                     & tgt_healthy
                     & (~leaf_guard_sec_block)
                     & (~sec_burn_block)
+                    & (~sec_para_block)
+                    & (~sec_psn_block)
+                    & (~sec_misty_block)
                     & spin_wheel_gate(
                         sec_st_pct, seed=seed, event_id=int(RNGEventID.SECONDARY_STATUS), step_idx=step_idx * 4 + pass_idx
                     )
@@ -2349,6 +2832,71 @@ def _execute_attack_cascade_torch(
                         _check_chesto_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unv_sec)
                     if flags.has_lum_berry:
                         _check_lum_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unv_sec)
+
+            # Dire Claw Champions 30% Tri-Status Spinning-Wheel (uniform 1/3 Poison, 1/3 Paralyze, 1/3 Sleep)
+            dc_cand = can_proc_sec & (field_op == int(FieldOpID.DIRE_CLAW))
+            if torch.any(dc_cand):
+                tgt_healthy_dc = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
+                lg_dc_block = (eff_tgt_ab == float(AbilityID.LEAF_GUARD)) & (w_idx == W_SUN)
+                misty_dc_block = tgt_grounded & (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_MISTY] > 0.5)
+                elec_dc_block = tgt_grounded & (F_mc[:, :, :, FieldIdx.TERRAIN_START + T_ELECTRIC] > 0.5)
+                dc_procs = (
+                    dc_cand
+                    & tgt_healthy_dc
+                    & (~lg_dc_block)
+                    & (~misty_dc_block)
+                    & spin_wheel_gate(
+                        torch.full_like(surv_t_hp, 30.0),
+                        seed=seed,
+                        event_id=int(RNGEventID.SECONDARY_STATUS),
+                        step_idx=step_idx * 4 + pass_idx,
+                        hit_idx=48,
+                    )
+                )
+                if torch.any(dc_procs):
+                    w_dc = counter_uniform_0_100_torch(
+                        (B1, B2, K), device, seed, int(RNGEventID.DIRE_CLAW_TRI_STATUS), step_idx=step_idx * 4 + pass_idx, sub_draw=0
+                    )
+                    d_dc = counter_uniform_0_100_torch(
+                        (B1, B2, K), device, seed, int(RNGEventID.DIRE_CLAW_TRI_STATUS), step_idx=step_idx * 4 + pass_idx, sub_draw=1
+                    )
+                    tri_u = torch.remainder(d_dc - w_dc + 100.0, 100.0)
+                    tgt_psn_imm = (
+                        (t1_idx == TYPE_TO_IDX["poison"])
+                        | (t1_idx == TYPE_TO_IDX["steel"])
+                        | (has_t2 & ((t2_idx == TYPE_TO_IDX["poison"]) | (t2_idx == TYPE_TO_IDX["steel"])))
+                    )
+                    tgt_par_imm = (
+                        (eff_tgt_ab == float(AbilityID.LIMBER))
+                        | (t1_idx == TYPE_TO_IDX["electric"])
+                        | (has_t2 & (t2_idx == TYPE_TO_IDX["electric"]))
+                    )
+                    dc_psn = dc_procs & (tri_u < (100.0 / 3.0)) & (~tgt_psn_imm)
+                    dc_par = dc_procs & (tri_u >= (100.0 / 3.0)) & (tri_u < (200.0 / 3.0)) & (~tgt_par_imm)
+                    dc_slp = dc_procs & (tri_u >= (200.0 / 3.0)) & (~elec_dc_block)
+                    dc_any = dc_psn | dc_par | dc_slp
+                    if torch.any(dc_any):
+                        cur_h_dc = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        cur_p_dc = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_POISON], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        cur_pa_dc = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_PARALYZE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        cur_s_dc = torch.gather(P_mc[:, :, :, :, MonIdx.STATUS_SLEEP], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                        P_mc[:, :, :, :, MonIdx.STATUS_HEALTHY].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(dc_any, torch.zeros_like(cur_h_dc), cur_h_dc).unsqueeze(-1)
+                        )
+                        P_mc[:, :, :, :, MonIdx.STATUS_POISON].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(dc_psn, torch.ones_like(cur_p_dc), cur_p_dc).unsqueeze(-1)
+                        )
+                        P_mc[:, :, :, :, MonIdx.STATUS_PARALYZE].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(dc_par, torch.ones_like(cur_pa_dc), cur_pa_dc).unsqueeze(-1)
+                        )
+                        P_mc[:, :, :, :, MonIdx.STATUS_SLEEP].scatter_(
+                            3, tgt_slot.unsqueeze(-1), torch.where(dc_slp, torch.ones_like(cur_s_dc), cur_s_dc).unsqueeze(-1)
+                        )
+                        tgt_unv_dc = _is_side_unnerved_torch(P_mc, tgt_slot) if flags.has_unnerve else None
+                        if flags.has_chesto_berry:
+                            _check_chesto_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unv_dc)
+                        if flags.has_lum_berry:
+                            _check_lum_berry_and_unburden_torch(P_mc, tgt_slot, blocked_mask=tgt_unv_dc)
 
             # Secondary Target Stat Drops (Icy Wind -1 Spe, Snarl -1 SpA, Mystical Fire -1 SpA, etc.)
             if torch.any(can_proc_sec & (~stat_self_flag) & (stat_chance_pct > 0.0)):
@@ -2417,21 +2965,84 @@ def _execute_attack_cascade_torch(
                         3, tgt_slot.unsqueeze(-1), torch.where(flinch_lands, torch.ones_like(cur_fl), cur_fl).unsqueeze(-1)
                     )
 
-            # Reactive Defender Items: Eject Button (defender pivots out) & Red Card (attacker forced out)
-            if flags.has_eject_red_card:
+            # Toxic Debris (Glimmora: stacks +1 Toxic Spikes on attacker's side when hit by a Physical move, max 2)
+            if flags.has_toxic_debris:
+                td_trig = (
+                    dmg_move_hits
+                    & is_phys
+                    & (direct_dmg_this_target > 0.0)
+                    & (tgt_ab == float(AbilityID.TOXIC_DEBRIS))
+                )
+                if torch.any(td_trig):
+                    F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] = torch.where(
+                        td_trig & is_t1,
+                        torch.clamp(F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES] + 1.0, max=2.0),
+                        F_mc[:, :, :, FieldIdx.TRAINER_1_TOXIC_SPIKES],
+                    )
+                    F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] = torch.where(
+                        td_trig & (~is_t1),
+                        torch.clamp(F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES] + 1.0, max=2.0),
+                        F_mc[:, :, :, FieldIdx.TRAINER_2_TOXIC_SPIKES],
+                    )
+
+            # Cursed Body (30% chance to disable attacker's move when hit by a damaging move)
+            if flags.has_cursed_body:
+                cb_cand = (
+                    dmg_move_hits
+                    & (direct_dmg_this_target > 0.0)
+                    & (tgt_ab == float(AbilityID.CURSED_BODY))
+                    & (torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, actor_slot.unsqueeze(-1)).squeeze(-1) > 0.0)
+                )
+                if torch.any(cb_cand):
+                    cb_procs = cb_cand & spin_wheel_gate(
+                        torch.full_like(surv_t_hp, 30.0),
+                        seed=seed,
+                        event_id=int(RNGEventID.CURSED_BODY),
+                        step_idx=step_idx * 4 + pass_idx,
+                    )
+                    if torch.any(cb_procs):
+                        dis_buf_cb = _get_ev("disabled")
+                        cur_dis_cb = torch.gather(dis_buf_cb, 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                        dis_buf_cb.scatter_(
+                            3, actor_slot.unsqueeze(-1), torch.where(cb_procs, torch.ones_like(cur_dis_cb), cur_dis_cb).unsqueeze(-1)
+                        )
+
+            # Reactive Defender Items (Eject Button / Red Card) & Emergency Exit (Golisopod <= 50% HP forced switch)
+            if flags.has_eject_red_card or flags.has_emergency_exit:
                 t_it_act_post = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1) > 0.5
                 t_it_id_post = torch.gather(P_mc[:, :, :, :, MonIdx.ITEM_ID], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
-                ej_trig = dmg_move_hits & (total_dmg_this_target > 0.0) & (surv_t_hp > 0.0) & t_it_act_post & (t_it_id_post == float(ItemID.EJECT_BUTTON))
-                if torch.any(ej_trig):
+                ej_trig = (
+                    dmg_move_hits
+                    & (total_dmg_this_target > 0.0)
+                    & (surv_t_hp > 0.0)
+                    & t_it_act_post
+                    & (t_it_id_post == float(ItemID.EJECT_BUTTON))
+                    if flags.has_eject_red_card
+                    else torch.zeros_like(dmg_move_hits)
+                )
+                ee_trig = (
+                    dmg_move_hits
+                    & (total_dmg_this_target > 0.0)
+                    & (pre_move_t_hp > (max_t_hp_post * 0.5))
+                    & (surv_t_hp > 0.0)
+                    & (surv_t_hp <= (max_t_hp_post * 0.5))
+                    & (tgt_ab == float(AbilityID.EMERGENCY_EXIT))
+                    if flags.has_emergency_exit
+                    else torch.zeros_like(dmg_move_hits)
+                )
+                def_forced_sw = ej_trig | ee_trig
+                if torch.any(def_forced_sw):
                     tb1 = torch.where(tgt_is_t1, SLOT_TRAINER_1_BENCH1, SLOT_TRAINER_2_BENCH1)
                     tb2 = torch.where(tgt_is_t1, SLOT_TRAINER_1_BENCH2, SLOT_TRAINER_2_BENCH2)
                     tb1_al = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tb1.unsqueeze(-1)).squeeze(-1) > 0.0
                     tb2_al = torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, tb2.unsqueeze(-1)).squeeze(-1) > 0.0
-                    ej_can = ej_trig & (tb1_al | tb2_al)
+                    ej_can = def_forced_sw & (tb1_al | tb2_al)
                     if torch.any(ej_can):
-                        P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE].scatter_(
-                            3, tgt_slot.unsqueeze(-1), torch.where(ej_can, torch.zeros_like(surv_t_hp), t_it_act_post.float()).unsqueeze(-1)
-                        )
+                        ej_item_consume = ej_can & ej_trig
+                        if torch.any(ej_item_consume):
+                            P_mc[:, :, :, :, MonIdx.ITEM_ACTIVE].scatter_(
+                                3, tgt_slot.unsqueeze(-1), torch.where(ej_item_consume, torch.zeros_like(surv_t_hp), t_it_act_post.float()).unsqueeze(-1)
+                            )
                         chosen_tb = torch.where(tb1_al, tb1, tb2)
                         persist_mask = tables.switch_persist_mask.to(device).view(1, 1, 1, MON_DIM)
                         t_exp = tgt_slot.view(B1, B2, K, 1, 1).expand(B1, B2, K, 1, MON_DIM)
@@ -2450,6 +3061,7 @@ def _execute_attack_cascade_torch(
                         ej_me = ej_can.view(B1, B2, K, 1, 1)
                         M_mc.scatter_(3, t_me, torch.where(ej_me, m_tbc, m_tc).unsqueeze(3))
                         M_mc.scatter_(3, tb_me, torch.where(ej_me, m_tc, m_tbc).unsqueeze(3))
+                        _apply_toxic_spikes_to_dynamic_slot_torch(F_mc, P_mc, tgt_slot, ej_can, flags)
 
                 rc_trig = (
                     dmg_move_hits
@@ -2458,6 +3070,8 @@ def _execute_attack_cascade_torch(
                     & (torch.gather(P_mc[:, :, :, :, MonIdx.HP_CUR], 3, actor_slot.unsqueeze(-1)).squeeze(-1) > 0.0)
                     & t_it_act_post
                     & (t_it_id_post == float(ItemID.RED_CARD))
+                    if flags.has_eject_red_card
+                    else torch.zeros_like(dmg_move_hits)
                 )
                 if torch.any(rc_trig):
                     ab1 = torch.where(is_t1, SLOT_TRAINER_1_BENCH1, SLOT_TRAINER_2_BENCH1)
@@ -2493,6 +3107,7 @@ def _execute_attack_cascade_torch(
                         rc_me = rc_can.view(B1, B2, K, 1, 1)
                         M_mc.scatter_(3, a_me, torch.where(rc_me, m_abc, m_ac).unsqueeze(3))
                         M_mc.scatter_(3, ab_me, torch.where(rc_me, m_ac, m_abc).unsqueeze(3))
+                        _apply_toxic_spikes_to_dynamic_slot_torch(F_mc, P_mc, actor_slot, rc_can, flags)
 
         # Explosion / Self-Destruct / Misty Explosion self-faint (always faints user when executed without Damp)
         exp_faint = can_act & is_explosion_move
@@ -2545,6 +3160,17 @@ def _execute_attack_cascade_torch(
                 act_unv_end = _is_side_unnerved_torch(P_mc, actor_slot) if flags.has_unnerve else None
                 _check_sitrus_berry_and_unburden_torch(P_mc, actor_slot, blocked_mask=act_unv_end)
 
+            # Post-Attack Forced Recharge Flag (Hyper Beam, Giga Impact, Blast Burn, Hydro Cannon, etc.)
+            is_recharge_move = chosen_move[:, :, :, MoveIdx.IS_RECHARGE_MOVE] > 0.5
+            inflicts_recharge = actor_connected_any & is_recharge_move & (cur_a_hp > 0.0)
+            if torch.any(inflicts_recharge):
+                cur_rech = torch.gather(P_mc[:, :, :, :, MonIdx.MUST_RECHARGE], 3, actor_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.MUST_RECHARGE].scatter_(
+                    3,
+                    actor_slot.unsqueeze(-1),
+                    torch.where(inflicts_recharge, torch.ones_like(cur_rech), cur_rech).unsqueeze(-1),
+                )
+
             # Mid-Turn Self-Pivot Moves (U-turn, Volt Switch, Flip Turn, Parting Shot)
             sw_mode = chosen_move[:, :, :, MoveIdx.SWITCH_MODE]
             is_pivot = actor_connected_any & (sw_mode == 1.0) & (cur_a_hp > 0.0)
@@ -2579,6 +3205,16 @@ def _execute_attack_cascade_torch(
                     piv_m_exp = can_pivot.view(B1, B2, K, 1, 1)
                     M_mc.scatter_(3, act_m_exp, torch.where(piv_m_exp, m_bn_cur, m_act_cur).unsqueeze(3))
                     M_mc.scatter_(3, bn_m_exp, torch.where(piv_m_exp, m_act_cur, m_bn_cur).unsqueeze(3))
+                    _apply_toxic_spikes_to_dynamic_slot_torch(F_mc, P_mc, actor_slot, can_pivot, flags)
+
+    # Clear spent recharge lock ONLY for slots that started this turn recharging
+    # (Preserves newly inflicted MUST_RECHARGE = 1.0 from Hyper Beam/Giga Impact into EOT & Ply-2!)
+    if torch.any(started_recharging):
+        P_mc[:, :, :, :, MonIdx.MUST_RECHARGE] = torch.where(
+            started_recharging,
+            torch.zeros_like(P_mc[:, :, :, :, MonIdx.MUST_RECHARGE]),
+            P_mc[:, :, :, :, MonIdx.MUST_RECHARGE],
+        )
 
     # -------------------------------------------------------------------------
     # STATISTICAL AGGREGATION ACROSS ALL K SIMULATION THREADS

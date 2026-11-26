@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 390" width="1120" height="390" role="img" aria-label="Branchless Phase 1 Switch-In plus Intimidate Defiant White Herb Tensor Operation">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#060a14"/>
+      <stop offset="100%" stop-color="#0d1526"/>
+    </linearGradient>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22d3ee"/>
+    </marker>
+    <style>
+      .t { font: 800 18px 'Segoe UI', Inter, system-ui, sans-serif; fill: #f8fafc; }
+      .s { font: 500 12px 'Segoe UI', Inter, system-ui, sans-serif; fill: #94a3b8; }
+      .h { font: 800 13px 'Segoe UI', Inter, system-ui, sans-serif; fill: #22d3ee; }
+      .r { font: 600 11.5px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #e2e8f0; }
+      .g { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #86efac; }
+      .w { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #facc15; }
+      .b { font: 700 11px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #fda4af; }
+    </style>
+  </defs>
+
+  <rect width="1120" height="390" rx="14" fill="url(#bg2)" stroke="#1e2d4d" stroke-width="2"/>
+  <text x="26" y="34" class="t">Phase 1 Branchless Tensor Operation — Switch-In + Intimidate + Defiant + White Herb / Unburden</text>
+  <text x="26" y="54" class="s">Zero Python if-branches: swaps active/bench rows via permutation Π and resolves enemy ability/item traps simultaneously across K RNG threads</text>
+
+  <!-- Step 1: Before -->
+  <rect x="26" y="76" width="290" height="232" rx="10" fill="#0d1526" stroke="#334155"/>
+  <text x="40" y="100" class="h">P_before (8 Slots × 96)</text>
+  <rect x="40" y="112" width="262" height="34" rx="6" fill="#131f37" stroke="#38bdf8"/>
+  <text x="50" y="133" class="r">r0 [t1_A] Charizard (SpA +2)</text>
+  <rect x="40" y="152" width="262" height="34" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="50" y="173" class="r">r1 [t1_B] Rillaboom</text>
+  <rect x="40" y="192" width="262" height="34" rx="6" fill="#2a1626" stroke="#f43f5e"/>
+  <text x="50" y="213" class="r">r2 [t1_B1] Incineroar (Intim.)</text>
+  <rect x="40" y="236" width="262" height="28" rx="6" fill="#131f37" stroke="#facc15"/>
+  <text x="50" y="254" class="r">r4 [t2_A] Kingambit (Defiant)</text>
+  <rect x="40" y="268" width="262" height="28" rx="6" fill="#131f37" stroke="#a855f7"/>
+  <text x="50" y="286" class="r">r5 [t2_B] Sneasler (White Herb)</text>
+
+  <!-- Arrow 1 -->
+  <line x1="322" y1="190" x2="366" y2="190" stroke="#22d3ee" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- Step 2: Permutation + Masks -->
+  <rect x="374" y="76" width="356" height="232" rx="10" fill="#0d1526" stroke="#22d3ee"/>
+  <text x="390" y="100" class="h">Branchless Matrix Ops (1 GPU Pass)</text>
+  <rect x="390" y="114" width="324" height="52" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="400" y="134" class="w">1) Swap &amp; Reset Outgoing Boosts:</text>
+  <text x="400" y="153" class="r">P' = Π_swap · (m_persist ⊙ P_before)</text>
+
+  <rect x="390" y="174" width="324" height="58" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="400" y="194" class="w">2) Intimidate Gate on trainer_2 Active:</text>
+  <text x="400" y="212" class="r">g_int = (is_switch_in ∧ ability==INTIM)</text>
+  <text x="400" y="226" class="b">P'[4:6, BOOST_ATK] -= g_int · (1 − g_immune)</text>
+
+  <rect x="390" y="240" width="324" height="56" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="400" y="260" class="w">3) Counter-Trap &amp; Item Consumption Gates:</text>
+  <text x="400" y="276" class="g">Defiant: +2 Atk   |   White Herb: &lt;0 → 0</text>
+  <text x="400" y="290" class="g">Unburden: item_lost → 2× Effective Speed</text>
+
+  <!-- Arrow 2 -->
+  <line x1="736" y1="190" x2="780" y2="190" stroke="#22d3ee" stroke-width="2.5" marker-end="url(#arr)"/>
+
+  <!-- Step 3: After -->
+  <rect x="788" y="76" width="306" height="232" rx="10" fill="#0d1526" stroke="#22c55e"/>
+  <text x="802" y="100" class="h" fill="#86efac">P_after (Trap Exposed to Nash!)</text>
+  <rect x="802" y="112" width="278" height="34" rx="6" fill="#2a1626" stroke="#f43f5e"/>
+  <text x="812" y="133" class="r">r0 [t1_A] Incineroar (Active)</text>
+  <rect x="802" y="152" width="278" height="34" rx="6" fill="#131f37" stroke="#1e2d4d"/>
+  <text x="812" y="173" class="r">r1 [t1_B] Rillaboom (Active)</text>
+  <rect x="802" y="192" width="278" height="34" rx="6" fill="#131f37" stroke="#475569"/>
+  <text x="812" y="213" class="r">r2 [t1_B1] Charizard (SpA 0)</text>
+  <rect x="802" y="236" width="278" height="28" rx="6" fill="#2b1218" stroke="#f43f5e"/>
+  <text x="812" y="254" class="b">r4 [t2_A] Kingambit → Atk +1 !!</text>
+  <rect x="802" y="268" width="278" height="28" rx="6" fill="#2b1218" stroke="#f43f5e"/>
+  <text x="812" y="286" class="b">r5 [t2_B] Sneasler → Atk 0 · 2×Spe !!</text>
+
+  <rect x="26" y="324" width="1068" height="44" rx="8" fill="#111b30" stroke="#facc15" stroke-width="1"/>
+  <text x="44" y="351" class="w">Result: The GPU automatically penalizes switching Incineroar into Kingambit + White Herb Sneasler in IEDS, Nash LP &amp; LQRE without hardcoded heuristics.</text>
+</svg>
