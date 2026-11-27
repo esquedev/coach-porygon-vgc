@@ -7,6 +7,14 @@ REM ============================================================================
 title Coach Porygon VGC - Replay Coach Studio
 cd /d "%~dp0"
 
+REM Strip Windows Mark-of-the-Web (Zone.Identifier) from CoachPorygonStudio.exe if present so SmartScreen does not block it
+if exist "CoachPorygonStudio.exe" (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '.\CoachPorygonStudio.exe' -ErrorAction SilentlyContinue" >nul 2>&1
+)
+if exist "dist\CoachPorygonStudio.exe" (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '.\dist\CoachPorygonStudio.exe' -ErrorAction SilentlyContinue" >nul 2>&1
+)
+
 echo.
 echo ============================================================================
 echo   Coach Porygon VGC - Replay Coach Studio (Windows Launcher)

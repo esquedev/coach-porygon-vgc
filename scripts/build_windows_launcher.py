@@ -26,7 +26,49 @@ import zlib
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENTRY_SCRIPT = REPO_ROOT / "apps" / "replay_coach" / "launcher_entry.py"
 ICON_PATH = REPO_ROOT / "assets" / "coach_porygon.ico"
+VERSION_INFO_PATH = REPO_ROOT / "build" / "windows_version_info.txt"
 DIST_DIR = REPO_ROOT / "dist"
+
+
+def generate_windows_version_info(output_path: Path = VERSION_INFO_PATH) -> Path:
+    """Write a complete Windows PE `VSVersionInfo` resource file to reduce Defender/SmartScreen false positives."""
+    content = """# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(0, 4, 0, 0),
+    prodvers=(0, 4, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'Coach Porygon VGC Open Source'),
+            StringStruct('FileDescription', 'Coach Porygon VGC - Replay Coach Studio Launcher'),
+            StringStruct('FileVersion', '0.4.0.0'),
+            StringStruct('InternalName', 'CoachPorygonStudio'),
+            StringStruct('LegalCopyright', 'Copyright (c) 2026 Coach Porygon VGC Contributors (AGPL-3.0)'),
+            StringStruct('OriginalFilename', 'CoachPorygonStudio.exe'),
+            StringStruct('ProductName', 'Coach Porygon VGC Studio'),
+            StringStruct('ProductVersion', '0.4.0.0')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"""
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(content, encoding="utf-8")
+    return output_path
 
 
 def _png_chunk(chunk_type: bytes, data: bytes) -> bytes:
@@ -143,6 +185,7 @@ def build_pyinstaller_command(
     icon_path: Path = ICON_PATH,
     entry_script: Path = ENTRY_SCRIPT,
     dist_dir: Path = DIST_DIR,
+    version_file: Path = VERSION_INFO_PATH,
 ) -> List[str]:
     """Construct the canonical PyInstaller command for the lightweight launcher `.exe`."""
     return [
@@ -151,12 +194,15 @@ def build_pyinstaller_command(
         "PyInstaller",
         "--onefile",
         "--console",
+        "--noupx",
         "--clean",
         "--noconfirm",
         "--name",
         "CoachPorygonStudio",
         "--icon",
         str(icon_path),
+        "--version-file",
+        str(version_file),
         "--distpath",
         str(dist_dir),
         str(entry_script),
@@ -187,7 +233,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.icon_only:
         return 0
 
-    cmd = build_pyinstaller_command(icon_path=icon)
+    ver_file = generate_windows_version_info(VERSION_INFO_PATH)
+    print(f"[OK] Generated Windows PE VSVersionInfo resource: {ver_file}")
+
+    cmd = build_pyinstaller_command(icon_path=icon, version_file=ver_file)
     if args.check:
         print("[CHECK] Entry script verified:", ENTRY_SCRIPT)
         print("[CHECK] Planned PyInstaller command:")
