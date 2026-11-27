@@ -62,6 +62,15 @@ if [ "$NEED_INSTALL" -eq 0 ]; then
     fi
 fi
 
+# Self-healing CUDA upgrade: if NVIDIA drivers were installed after .venv was created with CPU-only torch
+if [ "$NEED_INSTALL" -eq 0 ] && [ "$(uname -s)" = "Linux" ] && command -v nvidia-smi >/dev/null 2>&1; then
+    if ! "$VENV_PY" -c "import sys, torch; sys.exit(0 if getattr(torch.version, 'cuda', None) else 1)" >/dev/null 2>&1; then
+        echo "[3/4] NVIDIA GPU driver detected, upgrading CPU-only PyTorch in .venv to CUDA 12.4..."
+        "$VENV_PY" -m pip install --upgrade --force-reinstall --no-deps torch --index-url https://download.pytorch.org/whl/cu124 || true
+        "$VENV_PY" -m pip install torch --index-url https://download.pytorch.org/whl/cu124 || true
+    fi
+fi
+
 if [ "$NEED_INSTALL" -eq 1 ]; then
     echo "[3/4] Syncing runtime dependencies into .venv (first-time setup may take a few minutes)..."
     "$VENV_PY" -m pip install --upgrade pip

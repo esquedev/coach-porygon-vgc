@@ -52,14 +52,21 @@ from engine.vgc_tensor_core.victory_equity import EQUITY_ENGINE_VERSION
 
 from .gpu_coach_engine import GPUReplayCoachEngine, compute_match_summary
 from .ots_db import (
+    DEFAULT_OPPONENT_PASTE,
+    DEFAULT_TRAINER_1_PASTE,
     OTSRosterDatabase,
+    canonical_mode_key,
     compute_lead_lab_matchup_hash,
     resolve_sprite_urls,
 )
 from .protocol_parser import (
     ParsedReplay,
+    anonymize_showdown_log_text,
+    assign_bo3_game_numbers,
     format_evless_ots_paste,
+    format_showdown_opponent_label,
     parse_showdown_replay,
+    sort_replay_entries,
 )
 
 APP_ROOT = Path(__file__).resolve().parent
@@ -85,6 +92,7 @@ class ReplayCoachAppState:
         self.lock = threading.Lock()
         self._stream_cancel_lock = threading.Lock()
         self._active_cancel_event: Optional[threading.Event] = None
+        self._active_stream_coord: Optional[threading.Thread] = None
         self.ots_db = OTSRosterDatabase(db_path=db_path) if db_path is not None else OTSRosterDatabase()
         self.gpu_engine = GPUReplayCoachEngine(self.ots_db, device=device)
         self.raw_replay_html: str = ""
@@ -129,13 +137,23 @@ class ReplayCoachAppState:
             )
 
     def start_new_stream_cancel_event(self) -> threading.Event:
-        """Cancel any previously running SSE analysis and register a fresh cancellation event."""
+        """Cancel any previously running SSE analysis, wait for it to stop, and register a fresh event."""
+        prev_coord: Optional[threading.Thread] = None
         with self._stream_cancel_lock:
             if self._active_cancel_event is not None:
                 self._active_cancel_event.set()
+            prev_coord = self._active_stream_coord
+        if prev_coord is not None and prev_coord.is_alive():
+            prev_coord.join(timeout=4.0)
+        with self._stream_cancel_lock:
             ev = threading.Event()
             self._active_cancel_event = ev
             return ev
+
+    def register_stream_coordinator(self, coord_thread: threading.Thread) -> None:
+        """Track the active SSE coordinator thread so overlapping streams never run simultaneously."""
+        with self._stream_cancel_lock:
+            self._active_stream_coord = coord_thread
 
     def cancel_active_stream(self) -> bool:
         """Signal any currently running analysis stream to abort cleanly between tiles/chunks."""
@@ -238,11 +256,19 @@ class ReplayCoachAppState:
         if not items:
             raise ValueError("Provide 1 to 3 non-empty Showdown replay files.")
 
+        items, orig_order = sort_replay_entries(items)
+        game_nums = assign_bo3_game_numbers(items)
+
         parsed_list: List[ParsedReplay] = []
         resolved_pov = pov_trainer
-        for idx, it in enumerate(items, 1):
-            p = parse_showdown_replay(it["raw_input"], pov_trainer=resolved_pov, game_index=idx)
-            if idx == 1 and not resolved_pov:
+        for pos, (it, g_num) in enumerate(zip(items, game_nums), 1):
+            p = parse_showdown_replay(
+                it["raw_input"],
+                pov_trainer=resolved_pov,
+                game_index=g_num,
+                anonymize_opponent=True,
+            )
+            if pos == 1 and not resolved_pov:
                 resolved_pov = p.trainer_1_name
             parsed_list.append(p)
 
@@ -266,10 +292,11 @@ class ReplayCoachAppState:
         games_meta: List[Dict[str, Any]] = []
         with self.lock:
             self.bo3_games = []
-            for idx, (it, p) in enumerate(zip(items, parsed_list), 1):
+            for it, p, g_num in zip(items, parsed_list, game_nums):
                 is_win = bool(p.winner and p.winner.lower() == p.trainer_1_name.lower())
                 g_rec = {
-                    "game_index": idx,
+                    "game_index": g_num,
+                    "wire_game_number": p.wire_game_number,
                     "filename": it["filename"],
                     "raw_input": it["raw_input"],
                     "replay_id": p.replay_id,
@@ -278,12 +305,15 @@ class ReplayCoachAppState:
                     "is_t1_win": is_win,
                     "num_turns": len(p.turns),
                     "has_showteam": bool(p.trainer_2_showteam_ots),
+                    "trainer_1_elo": p.trainer_1_elo,
+                    "trainer_2_elo": p.trainer_2_elo,
                     "parsed": p,
                 }
                 self.bo3_games.append(g_rec)
                 games_meta.append(
                     {
-                        "game_index": idx,
+                        "game_index": g_num,
+                        "wire_game_number": p.wire_game_number,
                         "filename": it["filename"],
                         "replay_id": p.replay_id,
                         "format_name": p.format_name,
@@ -291,6 +321,8 @@ class ReplayCoachAppState:
                         "is_t1_win": is_win,
                         "num_turns": len(p.turns),
                         "has_showteam": bool(p.trainer_2_showteam_ots),
+                        "trainer_1_elo": p.trainer_1_elo,
+                        "trainer_2_elo": p.trainer_2_elo,
                     }
                 )
             self.active_game_index = 0
@@ -304,11 +336,15 @@ class ReplayCoachAppState:
             "is_bo3": len(games_meta) > 1,
             "games_count": len(games_meta),
             "active_game_index": 0,
+            "sorted_order": orig_order,
             "games": games_meta,
             "replay_id": first.replay_id,
             "format_name": first.format_name,
             "trainer_1_name": first.trainer_1_name,
             "trainer_2_name": first.trainer_2_name,
+            "trainer_1_elo": first.trainer_1_elo,
+            "trainer_2_elo": first.trainer_2_elo,
+            "is_anonymized_opponent": first.is_anonymized_opponent,
             "winner": first.winner,
             "num_turns": len(first.turns),
             "trainer_1_preview": [
@@ -336,10 +372,16 @@ class ReplayCoachAppState:
         """Pool 1..3 replays + `trainer_1` 66-SP + `trainer_2` OTS to solve exact clamped SP bounds."""
         raw_items: List[str] = []
         if replays:
-            for entry in list(replays)[:3]:
-                raw_txt = str(entry.get("raw_input") or "").strip() if isinstance(entry, dict) else str(entry or "").strip()
-                if raw_txt:
-                    raw_items.append(raw_txt)
+            sortable = [
+                {
+                    "filename": str(entry.get("filename") or f"Game {i}").strip() if isinstance(entry, dict) else f"Game {i}",
+                    "raw_input": str(entry.get("raw_input") or "").strip() if isinstance(entry, dict) else str(entry or "").strip(),
+                }
+                for i, entry in enumerate(list(replays)[:3], 1)
+            ]
+            sortable = [x for x in sortable if x["raw_input"]]
+            sortable, _ = sort_replay_entries(sortable)
+            raw_items = [x["raw_input"] for x in sortable]
         elif use_sample and SAMPLE_REPLAY_PATH.exists():
             raw_items.append(SAMPLE_REPLAY_PATH.read_text(encoding="utf-8"))
         else:
@@ -352,8 +394,15 @@ class ReplayCoachAppState:
         if not raw_items:
             raise ValueError("Load 1 to 3 Showdown replays first before running 66-SP inference.")
 
-        # Resolve POV trainer
-        prelim0 = parse_showdown_replay(raw_items[0], pov_trainer=pov_trainer or self.pov_trainer or None, game_index=1)
+        # Resolve POV trainer & true wire Game #s
+        raw_dicts = [{"filename": f"Game {i}", "raw_input": r} for i, r in enumerate(raw_items, 1)]
+        g_nums_inf = assign_bo3_game_numbers(raw_dicts)
+        prelim0 = parse_showdown_replay(
+            raw_items[0],
+            pov_trainer=pov_trainer or self.pov_trainer or None,
+            game_index=g_nums_inf[0],
+            anonymize_opponent=True,
+        )
         resolved_pov = prelim0.trainer_1_name
 
         # Resolve trainer_1 exact 66-SP sets
@@ -371,12 +420,13 @@ class ReplayCoachAppState:
         # Parse all 1..N replays with trainer_1 exact sets for lossless damage/speed extraction
         parsed_replays: List[ParsedReplay] = []
         t2_showteam_pooled: Dict[str, Any] = {}
-        for idx, raw_txt in enumerate(raw_items, 1):
+        for raw_txt, g_num in zip(raw_items, g_nums_inf):
             pr = parse_showdown_replay(
                 raw_txt,
                 pov_trainer=resolved_pov,
                 trainer_1_ots_sets=t1_sets,
-                game_index=idx,
+                game_index=g_num,
+                anonymize_opponent=True,
             )
             parsed_replays.append(pr)
             for k, v in (pr.trainer_2_showteam_ots or {}).items():
@@ -455,10 +505,14 @@ class ReplayCoachAppState:
             if not raw_items:
                 raise ValueError("No replay files available to load.")
 
+            raw_items, _ = sort_replay_entries(raw_items)
+            game_nums = assign_bo3_game_numbers(raw_items)
+
             prelim0 = parse_showdown_replay(
                 raw_items[0]["raw_input"],
                 pov_trainer=pov_trainer or self.pov_trainer or None,
-                game_index=1,
+                game_index=game_nums[0],
+                anonymize_opponent=True,
             )
             resolved_pov = prelim0.trainer_1_name
 
@@ -488,14 +542,36 @@ class ReplayCoachAppState:
                 rid1 = str(t1_save_meta.get("roster_id") or f"{prelim0.trainer_1_name.lower()}_ots").strip()
                 rid1 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid1)
                 dname1 = str(t1_save_meta.get("display_name") or f"{prelim0.trainer_1_name} — Full OTS").strip()
-                self.ots_db.save_roster(rid1, dname1, prelim0.trainer_1_name, t1_paste_text)
+                self.ots_db.save_roster(
+                    rid1,
+                    dname1,
+                    prelim0.trainer_1_name,
+                    t1_paste_text,
+                    team_scope="own",
+                    archetype=str(t1_save_meta.get("archetype") or ""),
+                    regulation=str(t1_save_meta.get("regulation") or "Reg M-C"),
+                    source_type="personal",
+                )
                 t1_roster_id = rid1
 
             if finalized_t2_paste and t2_save_meta and t2_save_meta.get("save_to_db"):
-                rid2 = str(t2_save_meta.get("roster_id") or f"{prelim0.trainer_2_name.lower()}_ots").strip()
+                anon_lbl = format_showdown_opponent_label(prelim0.trainer_2_elo)
+                slug_hash = hashlib.sha1(finalized_t2_paste.encode("utf-8")).hexdigest()[:8]
+                elo_tag = f"elo{prelim0.trainer_2_elo}" if prelim0.trainer_2_elo else "unrated"
+                rid2 = str(t2_save_meta.get("roster_id") or f"showdown_{elo_tag}_{slug_hash}").strip()
                 rid2 = re.sub(r"[^a-zA-Z0-9_-]", "_", rid2)
-                dname2 = str(t2_save_meta.get("display_name") or f"{prelim0.trainer_2_name} — Full OTS").strip()
-                self.ots_db.save_roster(rid2, dname2, prelim0.trainer_2_name, finalized_t2_paste)
+                dname2 = str(t2_save_meta.get("display_name") or anon_lbl).strip()
+                self.ots_db.save_roster(
+                    rid2,
+                    dname2,
+                    anon_lbl,
+                    finalized_t2_paste,
+                    team_scope="rival",
+                    archetype=str(t2_save_meta.get("archetype") or ""),
+                    regulation=str(t2_save_meta.get("regulation") or "Reg M-C"),
+                    source_type="showdown_ladder",
+                    opponent_elo=prelim0.trainer_2_elo,
+                )
                 t2_roster_id = rid2
 
             # Resolve Trainer 1 paste
@@ -511,6 +587,8 @@ class ReplayCoachAppState:
                 )
                 paste1 = r1["paste_text"] if r1 else ""
                 self.t1_roster_id = r1["roster_id"] if r1 else None
+                if not paste1 and prelim0.trainer_1_name.lower() == "treces_gc" and DEFAULT_TRAINER_1_PASTE.exists():
+                    paste1 = DEFAULT_TRAINER_1_PASTE.read_text(encoding="utf-8")
 
             # Resolve Trainer 2 paste
             paste2 = ""
@@ -525,24 +603,32 @@ class ReplayCoachAppState:
                 )
                 paste2 = r2["paste_text"] if r2 else ""
                 self.t2_roster_id = r2["roster_id"] if r2 else None
+                if (
+                    not paste2
+                    and (prelim0.raw_trainer_2_name.lower() == "matchagotme" or prelim0.trainer_2_name.lower() == "matchagotme")
+                    and DEFAULT_OPPONENT_PASTE.exists()
+                ):
+                    paste2 = DEFAULT_OPPONENT_PASTE.read_text(encoding="utf-8")
 
             t1_sets = self.ots_db.get_parsed_sets_by_species(paste1) if paste1 else {}
             t2_sets = self.ots_db.get_parsed_sets_by_species(paste2) if paste2 else {}
 
-            # Parse every game in the bundle with exact finalized sets
+            # Parse every game in the bundle with exact finalized sets & preserved wire Game #
             new_bo3: List[Dict[str, Any]] = []
-            for idx, it in enumerate(raw_items, 1):
+            for it, g_num in zip(raw_items, game_nums):
                 pr = parse_showdown_replay(
                     it["raw_input"],
                     pov_trainer=resolved_pov,
                     trainer_1_ots_sets=t1_sets,
                     trainer_2_ots_sets=t2_sets,
-                    game_index=idx,
+                    game_index=g_num,
+                    anonymize_opponent=True,
                 )
                 is_win = bool(pr.winner and pr.winner.lower() == pr.trainer_1_name.lower())
                 new_bo3.append(
                     {
-                        "game_index": idx,
+                        "game_index": g_num,
+                        "wire_game_number": pr.wire_game_number,
                         "filename": it["filename"],
                         "raw_input": it["raw_input"],
                         "replay_id": pr.replay_id,
@@ -551,6 +637,8 @@ class ReplayCoachAppState:
                         "is_t1_win": is_win,
                         "num_turns": len(pr.turns),
                         "has_showteam": bool(pr.trainer_2_showteam_ots),
+                        "trainer_1_elo": pr.trainer_1_elo,
+                        "trainer_2_elo": pr.trainer_2_elo,
                         "parsed": pr,
                     }
                 )
@@ -1149,6 +1237,11 @@ class ReplayCoachAppState:
                 "format_name": rep.format_name,
                 "trainer_1_name": rep.trainer_1_name,
                 "trainer_2_name": rep.trainer_2_name,
+                "trainer_1_elo": rep.trainer_1_elo,
+                "trainer_2_elo": rep.trainer_2_elo,
+                "wire_game_number": rep.wire_game_number,
+                "game_index": rep.game_index,
+                "is_anonymized_opponent": rep.is_anonymized_opponent,
                 "pov_is_right_side": rep.pov_is_right_side,
                 "winner": rep.winner,
                 "num_turns": len(rep.turns),
@@ -1170,13 +1263,25 @@ class ReplayCoachAppState:
         if rep is None:
             return "<!doctype html><html><body style='background:#0f172a;color:#94a3b8;font-family:sans-serif;padding:24px'>No replay loaded yet. Complete Step 1 (Match Setup) to start.</body></html>"
 
-        escaped_log = re.sub(r"</script", r"<\/script", rep.raw_log_text, flags=re.IGNORECASE)
+        embed_log = rep.raw_log_text
+        if rep.is_anonymized_opponent and rep.raw_trainer_2_name:
+            opp_wire = ("p" + "1") if rep.pov_is_right_side else ("p" + "2")
+            embed_log = anonymize_showdown_log_text(
+                embed_log,
+                opp_wire=opp_wire,
+                raw_opp_name=rep.raw_trainer_2_name,
+                anon_label=rep.trainer_2_name,
+            )
+        escaped_log = re.sub(r"</script", r"<\/script", embed_log, flags=re.IGNORECASE)
         escaped_log = escaped_log.replace("<!--", r"<\!--")
-        embed_src = (
+        # Load local patched /vendor/replay-embed.js as primary so battle-animations.js (BattleScene)
+        # and battle-animations-moves.js (BattleMoveAnims) are ALWAYS loaded in strict async=false order.
+        primary_embed_src = (
             "/vendor/replay-embed.js"
             if (VENDOR_DIR / "replay-embed.js").exists()
             else "https://play.pokemonshowdown.com/js/replay-embed.js"
         )
+        fallback_embed_src = "https://play.pokemonshowdown.com/js/replay-embed.js"
         flip_js = "true" if rep.pov_is_right_side else "false"
         title_str = html_lib.escape(f"{rep.trainer_1_name} vs. {rep.trainer_2_name}")
 
@@ -1222,13 +1327,16 @@ class ReplayCoachAppState:
   <div class="replay-controls-2"></div>
   <script type="text/plain" class="battle-log-data">{escaped_log}</script>
 </div>
-<script src="{embed_src}"></script>
+<script src="{primary_embed_src}" onerror="(function(){{var fb='{fallback_embed_src}';if(!fb)return;var s=document.createElement('script');s.async=false;s.src=fb;document.head.appendChild(s);}})();"></script>
 <script>
 (function() {{
   const SHOULD_FLIP = {flip_js};
   let flippedOnce = false;
   let lastTurnPosted = -1;
   let lastPausedPosted = null;
+  let singleTurnTarget = null;
+  let suppressTurnNotify = false;
+  const pendingMessages = [];
 
   function postPlayerState() {{
     if (!window.Replays || !window.Replays.battle) return;
@@ -1252,15 +1360,81 @@ class ReplayCoachAppState:
 
   function notifyParentTurn(turnVal) {{
     postPlayerState();
+    if (suppressTurnNotify) return;
     if (typeof turnVal === 'number' && turnVal !== lastTurnPosted) {{
       lastTurnPosted = turnVal;
       window.parent.postMessage({{ type: 'TURN_CHANGED', turn: turnVal, paused: !!(window.Replays && window.Replays.battle && window.Replays.battle.paused) }}, '*');
     }}
   }}
 
+  function handleParentCommand(msg) {{
+    if (!msg || !msg.type) return;
+    if (!window.Replays || !window.Replays.battle) {{
+      pendingMessages.push(msg);
+      return;
+    }}
+    const battle = window.Replays.battle;
+    if (msg.type === 'SEEK_TURN' && typeof msg.turn === 'number') {{
+      try {{
+        suppressTurnNotify = true;
+        battle.pause();
+        battle.seekTurn(msg.turn);
+        lastTurnPosted = msg.turn;
+        suppressTurnNotify = false;
+        if (msg.animate !== false) {{
+          singleTurnTarget = msg.turn;
+          if (battle.paused) battle.play();
+        }} else {{
+          singleTurnTarget = null;
+        }}
+        postPlayerState();
+      }} catch (e) {{
+        suppressTurnNotify = false;
+      }}
+    }} else if (msg.type === 'STEP_TURN' && typeof msg.delta === 'number') {{
+      try {{
+        singleTurnTarget = null;
+        battle.pause();
+        battle.seekBy(msg.delta);
+        notifyParentTurn(battle.turn);
+      }} catch (e) {{}}
+    }} else if (msg.type === 'SWITCH_VIEWPOINT') {{
+      try {{ battle.switchViewpoint(); }} catch (e) {{}}
+    }} else if (msg.type === 'SET_SPEED' && typeof msg.speed === 'string') {{
+      try {{ window.Replays.changeSetting('speed', msg.speed); }} catch (e) {{}}
+    }} else if (msg.type === 'TOGGLE_PLAY') {{
+      try {{
+        singleTurnTarget = null;
+        if (battle.paused) battle.play();
+        else battle.pause();
+        postPlayerState();
+      }} catch (e) {{}}
+    }} else if (msg.type === 'PLAY') {{
+      try {{
+        singleTurnTarget = null;
+        if (typeof msg.turn === 'number') {{
+          suppressTurnNotify = true;
+          battle.seekTurn(msg.turn);
+          lastTurnPosted = msg.turn;
+          suppressTurnNotify = false;
+        }}
+        if (battle.paused) battle.play();
+        postPlayerState();
+      }} catch (e) {{
+        suppressTurnNotify = false;
+      }}
+    }} else if (msg.type === 'PAUSE') {{
+      try {{
+        singleTurnTarget = null;
+        if (!battle.paused) battle.pause();
+        postPlayerState();
+      }} catch (e) {{}}
+    }}
+  }}
+
   function wireShowdownBridge() {{
     if (!window.Replays || !window.Replays.battle) {{
-      setTimeout(wireShowdownBridge, 150);
+      setTimeout(wireShowdownBridge, 120);
       return;
     }}
     const battle = window.Replays.battle;
@@ -1271,6 +1445,14 @@ class ReplayCoachAppState:
       try {{ battle.switchViewpoint(); }} catch (e) {{}}
     }}
     battle.subscribe(function() {{
+      if (singleTurnTarget !== null && (battle.turn > singleTurnTarget || battle.ended)) {{
+        const completedTurn = singleTurnTarget;
+        singleTurnTarget = null;
+        try {{ if (!battle.paused) battle.pause(); }} catch (e) {{}}
+        lastTurnPosted = completedTurn;
+        postPlayerState();
+        return;
+      }}
       notifyParentTurn(battle.turn);
     }});
     try {{
@@ -1283,50 +1465,17 @@ class ReplayCoachAppState:
       if (wrap) new ResizeObserver(postIframeHeight).observe(wrap);
     }}
     window.parent.postMessage({{ type: 'PLAYER_READY', turn: battle.turn, paused: !!battle.paused }}, '*');
+    while (pendingMessages.length > 0) {{
+      handleParentCommand(pendingMessages.shift());
+    }}
   }}
 
   window.addEventListener('message', function(ev) {{
-    const msg = ev.data || {{}};
-    if (!window.Replays || !window.Replays.battle) return;
-    const battle = window.Replays.battle;
-    if (msg.type === 'SEEK_TURN' && typeof msg.turn === 'number') {{
-      try {{
-        if (msg.pause !== false) battle.pause();
-        battle.seekTurn(msg.turn);
-        notifyParentTurn(battle.turn);
-      }} catch (e) {{}}
-    }} else if (msg.type === 'STEP_TURN' && typeof msg.delta === 'number') {{
-      try {{
-        battle.pause();
-        battle.seekBy(msg.delta);
-        notifyParentTurn(battle.turn);
-      }} catch (e) {{}}
-    }} else if (msg.type === 'SWITCH_VIEWPOINT') {{
-      try {{ battle.switchViewpoint(); }} catch (e) {{}}
-    }} else if (msg.type === 'SET_SPEED' && typeof msg.speed === 'string') {{
-      try {{ window.Replays.changeSetting('speed', msg.speed); }} catch (e) {{}}
-    }} else if (msg.type === 'TOGGLE_PLAY') {{
-      try {{
-        if (battle.paused) battle.play();
-        else battle.pause();
-        postPlayerState();
-      }} catch (e) {{}}
-    }} else if (msg.type === 'PLAY') {{
-      try {{
-        if (typeof msg.turn === 'number') battle.seekTurn(msg.turn);
-        if (battle.paused) battle.play();
-        postPlayerState();
-      }} catch (e) {{}}
-    }} else if (msg.type === 'PAUSE') {{
-      try {{
-        if (!battle.paused) battle.pause();
-        postPlayerState();
-      }} catch (e) {{}}
-    }}
+    handleParentCommand(ev.data || {{}});
   }});
 
   window.addEventListener('load', function() {{
-    setTimeout(wireShowdownBridge, 250);
+    setTimeout(wireShowdownBridge, 180);
   }});
 }})();
 </script>
@@ -1500,21 +1649,34 @@ class ReplayCoachAppState:
         t2_ots_paste_text: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Solve exact clamped 66-SP bounds for Lead Lab Team 2 from 1–3 Bo3 scouting logs + OTS."""
-        raw_items: List[str] = []
-        for entry in list(replays or [])[:3]:
+        sortable_lead: List[Dict[str, str]] = []
+        for idx_l, entry in enumerate(list(replays or [])[:3], 1):
             raw_txt = (
                 str(entry.get("raw_input") or "").strip()
                 if isinstance(entry, dict)
                 else str(entry or "").strip()
             )
+            fname_l = (
+                str(entry.get("filename") or f"Game {idx_l}").strip()
+                if isinstance(entry, dict)
+                else f"Game {idx_l}"
+            )
             if raw_txt:
-                raw_items.append(raw_txt)
+                sortable_lead.append({"filename": fname_l, "raw_input": raw_txt})
+        sortable_lead, _ = sort_replay_entries(sortable_lead)
+        lead_game_nums = assign_bo3_game_numbers(sortable_lead)
+        raw_items: List[str] = [x["raw_input"] for x in sortable_lead]
         if not raw_items:
             raise ValueError(
                 "Upload 1 to 3 Bo3 scouting Showdown replay logs to infer clamped 66-SP bounds for an EV-less opponent OTS."
             )
 
-        prelim0 = parse_showdown_replay(raw_items[0], pov_trainer=pov_trainer or None, game_index=1)
+        prelim0 = parse_showdown_replay(
+            raw_items[0],
+            pov_trainer=pov_trainer or None,
+            game_index=lead_game_nums[0],
+            anonymize_opponent=True,
+        )
         resolved_pov = prelim0.trainer_1_name
 
         paste1 = (t1_paste_text or "").strip()
@@ -1530,12 +1692,13 @@ class ReplayCoachAppState:
 
         parsed_replays: List[ParsedReplay] = []
         t2_showteam_pooled: Dict[str, Any] = {}
-        for idx, raw_txt in enumerate(raw_items, 1):
+        for raw_txt, g_num in zip(raw_items, lead_game_nums):
             pr = parse_showdown_replay(
                 raw_txt,
                 pov_trainer=resolved_pov,
                 trainer_1_ots_sets=t1_sets,
-                game_index=idx,
+                game_index=g_num,
+                anonymize_opponent=True,
             )
             parsed_replays.append(pr)
             for k, v in (pr.trainer_2_showteam_ots or {}).items():
@@ -1853,6 +2016,7 @@ class ReplayCoachAppState:
         t2_paste_text: Optional[str] = None,
         t2_user_spreads: Optional[Dict[str, Dict[str, int]]] = None,
         preset: str = "balanced",
+        compute_mode: str = "auto",
         require_explicit_spreads: bool = True,
     ) -> Dict[str, Any]:
         """Validate both 66-SP teams and register a streamable Factored `90 × 90` Lead Lab job."""
@@ -1869,6 +2033,7 @@ class ReplayCoachAppState:
             preset=preset,
             device=solver.device_str,
             require_explicit_spreads=require_explicit_spreads,
+            compute_mode=compute_mode,
         )
         # Validate spreads & precompile pools upfront so bare EV-less OTS fails immediately with HTTP 400
         pool_t1 = solver._precompile_team_pool(
@@ -1921,6 +2086,7 @@ class ReplayCoachAppState:
             "job_id": job_id,
             "matchup_hash": matchup_hash,
             "preset": cfg.preset,
+            "compute_mode": cfg.compute_mode,
             "device": self.gpu_engine.device_name,
             "device_type": self.gpu_engine.device_type,
             "t1_label": t1_label,
@@ -1949,15 +2115,46 @@ class ReplayCoachAppState:
         mode_2_idx: int,
         num_mc: int = 128,
         force_recompute: bool = False,
+        lead_1: Optional[Sequence[str]] = None,
+        bench_1: Optional[Sequence[str]] = None,
+        lead_2: Optional[Sequence[str]] = None,
+        bench_2: Optional[Sequence[str]] = None,
     ) -> Dict[str, Any]:
         """Run (or serve cached) full unpruned Turn-1 GPU audit (`K=128`) on one exact 4v4 matchup."""
         job = self.get_lead_lab_job(job_id)
         if job is None:
             raise ValueError(f"Lead Lab session expired or not found: '{job_id}'")
 
+        solver = self._get_lead_solver()
+        # Resolve exact mode indices by species identity whenever explicit lead/bench species are supplied,
+        # eliminating positional drift across Vault reloads or reordered pastes.
+        resolved_m1 = int(mode_1_idx)
+        resolved_m2 = int(mode_2_idx)
+        pool_t1 = solver._precompile_team_pool(
+            job["t1_paste"], trainer_id="trainer_1", require_explicit_spreads=False
+        )
+        pool_t2 = solver._precompile_team_pool(
+            job["t2_paste"], trainer_id="trainer_2", require_explicit_spreads=False
+        )
+        if lead_1 and bench_1:
+            want_k1 = canonical_mode_key(lead_1, bench_1)
+            for cand in pool_t1.modes:
+                if canonical_mode_key(cand.lead_species, cand.bench_species) == want_k1:
+                    resolved_m1 = int(cand.mode_idx)
+                    break
+        if lead_2 and bench_2:
+            want_k2 = canonical_mode_key(lead_2, bench_2)
+            for cand in pool_t2.modes:
+                if canonical_mode_key(cand.lead_species, cand.bench_species) == want_k2:
+                    resolved_m2 = int(cand.mode_idx)
+                    break
+
+        m1_spec = pool_t1.modes[max(0, min(len(pool_t1.modes) - 1, resolved_m1))]
+        m2_spec = pool_t2.modes[max(0, min(len(pool_t2.modes) - 1, resolved_m2))]
+
         m_hash = str(job.get("matchup_hash") or "")
-        t1_mk = f"m{int(mode_1_idx)}"
-        t2_mk = f"m{int(mode_2_idx)}"
+        t1_mk = canonical_mode_key(m1_spec.lead_species, m1_spec.bench_species)
+        t2_mk = canonical_mode_key(m2_spec.lead_species, m2_spec.bench_species)
 
         if m_hash and not force_recompute:
             cached = self.ots_db.get_cached_deep_audit(
@@ -1965,16 +2162,19 @@ class ReplayCoachAppState:
                 t1_mode_key=t1_mk,
                 t2_mode_key=t2_mk,
                 engine_version=EQUITY_ENGINE_VERSION,
+                expected_lead_1=m1_spec.lead_species,
+                expected_bench_1=m1_spec.bench_species,
+                expected_lead_2=m2_spec.lead_species,
+                expected_bench_2=m2_spec.bench_species,
             )
             if cached is not None:
                 return cached
 
-        solver = self._get_lead_solver()
         board, m1, m2, events = solver.build_turn1_battle_state(
             trainer_1_paste=job["t1_paste"],
             trainer_2_paste=job["t2_paste"],
-            mode_1_idx=int(mode_1_idx),
-            mode_2_idx=int(mode_2_idx),
+            mode_1_idx=resolved_m1,
+            mode_2_idx=resolved_m2,
         )
         audit = self.gpu_engine.analyze_compiled_turn1(
             comp=board,
@@ -1998,6 +2198,45 @@ class ReplayCoachAppState:
             except Exception:
                 pass
         return audit
+
+    def run_lead_lab_deep_turn1_batch(
+        self,
+        job_id: str,
+        pairs: Sequence[Dict[str, Any]],
+        num_mc: int = 128,
+        force_recompute: bool = False,
+    ) -> Dict[str, Any]:
+        """Run (or serve cached) deep unpruned Turn-1 audits for up to 8 `(own_lead, opp_lead)` pairs."""
+        clean_pairs = list(pairs or [])[:8]
+        if not clean_pairs:
+            raise ValueError("Provide at least one `(lead_1, bench_1, lead_2, bench_2)` pair to audit.")
+        audits: List[Dict[str, Any]] = []
+        cached_count = 0
+        computed_count = 0
+        for p in clean_pairs:
+            audit = self.run_lead_lab_deep_turn1(
+                job_id=job_id,
+                mode_1_idx=int(p.get("mode_1_idx", 0)),
+                mode_2_idx=int(p.get("mode_2_idx", 0)),
+                num_mc=num_mc,
+                force_recompute=force_recompute,
+                lead_1=p.get("lead_1"),
+                bench_1=p.get("bench_1"),
+                lead_2=p.get("lead_2"),
+                bench_2=p.get("bench_2"),
+            )
+            if audit.get("from_vault_cache"):
+                cached_count += 1
+            else:
+                computed_count += 1
+            audits.append(audit)
+        return {
+            "ok": True,
+            "count": len(audits),
+            "cached_count": cached_count,
+            "computed_count": computed_count,
+            "audits": audits,
+        }
 
 
 MAX_JSON_BODY_BYTES = 10 * 1024 * 1024  # 10 MiB hard cap against local memory DoS
@@ -2030,10 +2269,10 @@ def make_handler(app_state: ReplayCoachAppState):
         def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
             return
 
-        def _send_security_headers(self) -> None:
+        def _send_security_headers(self, referrer_policy: str = "no-referrer") -> None:
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("X-Frame-Options", "SAMEORIGIN")
-            self.send_header("Referrer-Policy", "no-referrer")
+            self.send_header("Referrer-Policy", referrer_policy)
             self.send_header("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
 
         def _is_trusted_host(self) -> bool:
@@ -2061,12 +2300,13 @@ def make_handler(app_state: ReplayCoachAppState):
             data: bytes,
             content_type: str,
             status: int = HTTPStatus.OK,
+            referrer_policy: str = "no-referrer",
         ) -> None:
             self.send_response(status)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-store")
-            self._send_security_headers()
+            self._send_security_headers(referrer_policy=referrer_policy)
             self.end_headers()
             self.wfile.write(data)
 
@@ -2124,7 +2364,25 @@ def make_handler(app_state: ReplayCoachAppState):
                 self._send_json(summary)
                 return
             if path == "/api/rosters":
-                self._send_json({"rosters": app_state.ots_db.list_rosters()})
+                scope_q = qs.get("scope", [""])[0]
+                self._send_json({"rosters": app_state.ots_db.list_rosters(team_scope=scope_q or None)})
+                return
+            if path == "/api/rosters/search":
+                try:
+                    min_elo_raw = qs.get("min_elo", [""])[0].strip()
+                    max_elo_raw = qs.get("max_elo", [""])[0].strip()
+                    res = app_state.ots_db.search_rosters(
+                        scope=qs.get("scope", [""])[0],
+                        archetype=qs.get("archetype", [""])[0],
+                        regulation=qs.get("regulation", [""])[0],
+                        source_type=qs.get("source_type", [""])[0],
+                        q=qs.get("q", [""])[0],
+                        min_elo=int(min_elo_raw) if min_elo_raw.isdigit() else None,
+                        max_elo=int(max_elo_raw) if max_elo_raw.isdigit() else None,
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/api/telemetry/summary":
                 try:
@@ -2136,7 +2394,11 @@ def make_handler(app_state: ReplayCoachAppState):
             if path == "/api/replay-player":
                 with app_state.lock:
                     html_doc = app_state.render_official_showdown_player_html()
-                self._send_bytes(html_doc.encode("utf-8"), "text/html; charset=utf-8")
+                self._send_bytes(
+                    html_doc.encode("utf-8"),
+                    "text/html; charset=utf-8",
+                    referrer_policy="strict-origin-when-cross-origin",
+                )
                 return
             if path == "/api/reg-md-scout":
                 report_path = REPO_ROOT / "reports" / "reg_md_meta_scout.html"
@@ -2209,10 +2471,20 @@ def make_handler(app_state: ReplayCoachAppState):
                     self._send_json({"error": str(exc)}, status=HTTPStatus.INTERNAL_SERVER_ERROR)
                 return
             if path == "/api/analyze/stream":
+                import queue as _queue
+
                 num_mc = int(qs.get("num_mc", ["128"])[0])
                 start_turn = int(qs.get("start_turn", ["1"])[0])
-                force = qs.get("force", ["0"])[0] in ("1", "true", "yes")
                 two_ply = qs.get("two_ply", ["0"])[0] in ("1", "true", "yes")
+                compute_mode = str(qs.get("compute_mode", ["auto"])[0] or "auto").strip().lower()
+                raw_skip = str(qs.get("skip_turns", [""])[0] or "").strip()
+                skip_turns_list: List[int] = []
+                if raw_skip:
+                    for tok in raw_skip.split(","):
+                        tok = tok.strip()
+                        if tok.isdigit():
+                            skip_turns_list.append(int(tok))
+
                 with app_state.lock:
                     rep = app_state.replay
                 if rep is None:
@@ -2234,53 +2506,181 @@ def make_handler(app_state: ReplayCoachAppState):
                     except (BrokenPipeError, ConnectionResetError):
                         return False
 
-                all_turn_results: List[Dict[str, Any]] = []
                 total_turns = len(rep.turns)
                 cancel_event = app_state.start_new_stream_cancel_event()
+                sse_q: "_queue.Queue[Optional[Tuple[str, Any]]]" = _queue.Queue()
+                status_lock = threading.Lock()
+                active_workers: Dict[str, Dict[str, Any]] = {}
+                completed_by_turn: Dict[int, Dict[str, Any]] = {}
 
-                for idx, snap in enumerate(rep.turns, 1):
-                    if snap.turn_number < start_turn:
-                        continue
-                    if cancel_event.is_set():
-                        _write_sse("cancelled", {"turn": snap.turn_number})
+                def _emit_worker_snapshot(extra: Optional[Dict[str, Any]] = None) -> None:
+                    with status_lock:
+                        snap_workers = [
+                            dict(active_workers[k])
+                            for k in sorted(active_workers.keys(), key=lambda x: (0 if x == "GPU" else 1, x))
+                        ]
+                        done_turns_sorted = sorted(completed_by_turn.keys())
+                        payload: Dict[str, Any] = {
+                            "active_workers": snap_workers,
+                            "completed_count": len(done_turns_sorted),
+                            "completed_turns": done_turns_sorted,
+                            "total_turns": total_turns,
+                        }
+                        if extra:
+                            payload.update(extra)
+                    sse_q.put(("worker_progress", payload))
+
+                def _on_plan(plan: Dict[str, Any]) -> None:
+                    sse_q.put(("scheduler", plan))
+
+                def _on_worker_start(t_num: int, w_lbl: str, hw_name: str) -> None:
+                    with status_lock:
+                        active_workers[w_lbl] = {
+                            "worker": w_lbl,
+                            "hardware_device": hw_name,
+                            "turn": int(t_num),
+                            "pct": 0,
+                            "phase": "COMPILE",
+                            "state": "running",
+                        }
+                    _emit_worker_snapshot({"event_kind": "start", "turn": int(t_num), "worker": w_lbl, "hardware_device": hw_name})
+
+                def _on_log(log_entry: Dict[str, Any]) -> None:
+                    # Buffer full per-turn logs inside each worker's result; stream ONLY compact
+                    # non-interleaved hardware status updates while parallel workers run.
+                    w_lbl = str(log_entry.get("compute_worker") or "GPU")
+                    hw_dev = str(log_entry.get("hardware_device") or app_state.gpu_engine.device_name)
+                    t_num = int(log_entry.get("turn") or 0)
+                    ph = str(log_entry.get("phase") or "")
+                    if log_entry.get("in_place") or ph in ("COMPILE", "PRUNE", "IEDS", "NASH_QRE", "VERDICT"):
+                        with status_lock:
+                            cur = active_workers.get(w_lbl, {})
+                            pct_val = int(log_entry.get("pct")) if "pct" in log_entry else int(cur.get("pct") or 0)
+                            if ph == "VERDICT":
+                                pct_val = 100
+                            active_workers[w_lbl] = {
+                                "worker": w_lbl,
+                                "hardware_device": hw_dev,
+                                "turn": t_num,
+                                "pct": pct_val,
+                                "phase": ph,
+                                "state": "done_turn" if ph == "VERDICT" else "running",
+                            }
+                        _emit_worker_snapshot({"event_kind": "progress", "turn": t_num, "worker": w_lbl, "hardware_device": hw_dev})
+
+                def _on_turn(res: Dict[str, Any]) -> None:
+                    t_num = int(res.get("turn") or 0)
+                    w_lbl = str(res.get("compute_worker") or "GPU")
+                    hw_dev = str(res.get("hardware_device") or res.get("device") or w_lbl)
+                    with status_lock:
+                        completed_by_turn[t_num] = res
+                        active_workers[w_lbl] = {
+                            "worker": w_lbl,
+                            "hardware_device": hw_dev,
+                            "turn": t_num,
+                            "pct": 100,
+                            "phase": "DONE",
+                            "state": "idle",
+                        }
+                    _emit_worker_snapshot(
+                        {
+                            "event_kind": "turn_done",
+                            "turn": t_num,
+                            "worker": w_lbl,
+                            "hardware_device": hw_dev,
+                            "verdict_key": res.get("verdict_key"),
+                            "elapsed_s": res.get("elapsed_s"),
+                        }
+                    )
+
+                def _on_err(t_num: int, w_lbl: str, exc: Exception) -> None:
+                    if isinstance(exc, AnalysisCancelledError):
                         return
+                    sse_q.put(("error", {"turn": t_num, "compute_worker": w_lbl, "error": str(exc)}))
 
-                    def _on_phase_log(log_entry: Dict[str, Any], t_idx: int = idx) -> None:
-                        log_entry["turn_index"] = t_idx
-                        log_entry["total_turns"] = total_turns
-                        if not _write_sse("log", log_entry):
-                            cancel_event.set()
-
+                def _coordinator() -> None:
                     try:
-                        res = app_state.gpu_engine.analyze_turn(
+                        # Wait until ALL parallel workers finish and join cleanly before reconstructing
+                        # the strictly ordered (Turn 1 -> Turn N) hardware-tagged log & turn payloads!
+                        ordered_res, sched_stats = app_state.gpu_engine.analyze_match_parallel(
                             rep,
-                            turn_number=snap.turn_number,
-                            min_prior=0.0,
+                            start_turn=start_turn,
                             num_mc=num_mc,
-                            force_recompute=force,
                             enable_two_ply=two_ply,
-                            log_cb=_on_phase_log,
+                            compute_mode=compute_mode,
+                            skip_turns=skip_turns_list,
+                            on_scheduler_plan=_on_plan,
+                            on_worker_start=_on_worker_start,
+                            on_log=_on_log,
+                            on_turn=_on_turn,
+                            on_error=_on_err,
                             cancel_event=cancel_event,
                         )
-                        all_turn_results.append(res)
-                        if not _write_sse("turn", res):
-                            cancel_event.set()
-                            return
+                        reconstructed_logs = app_state.gpu_engine.reconstruct_ordered_match_logs(
+                            ordered_res,
+                            sched_stats=sched_stats,
+                            gpu_device_name=app_state.gpu_engine.device_name,
+                        )
+                        if cancel_event.is_set():
+                            sse_q.put(
+                                (
+                                    "cancelled",
+                                    {
+                                        "turn": start_turn,
+                                        "ordered_turns": ordered_res,
+                                        "reconstructed_logs": reconstructed_logs,
+                                        "scheduler_stats": sched_stats.to_dict(),
+                                    },
+                                )
+                            )
+                        else:
+                            sse_q.put(
+                                (
+                                    "done",
+                                    {
+                                        "ordered_turns": ordered_res,
+                                        "reconstructed_logs": reconstructed_logs,
+                                        "match_summary": compute_match_summary(ordered_res),
+                                        "scheduler_stats": sched_stats.to_dict(),
+                                    },
+                                )
+                            )
                     except AnalysisCancelledError:
-                        _write_sse("cancelled", {"turn": snap.turn_number})
-                        return
-                    except (BrokenPipeError, ConnectionResetError):
-                        cancel_event.set()
-                        return
+                        with status_lock:
+                            partial_ordered = [completed_by_turn[t] for t in sorted(completed_by_turn.keys())]
+                        partial_logs = app_state.gpu_engine.reconstruct_ordered_match_logs(
+                            partial_ordered,
+                            sched_stats=None,
+                            gpu_device_name=app_state.gpu_engine.device_name,
+                        )
+                        sse_q.put(
+                            (
+                                "cancelled",
+                                {
+                                    "turn": start_turn,
+                                    "ordered_turns": partial_ordered,
+                                    "reconstructed_logs": partial_logs,
+                                },
+                            )
+                        )
                     except Exception as exc:
-                        if not _write_sse("error", {"turn": snap.turn_number, "error": str(exc)}):
-                            cancel_event.set()
-                            return
+                        sse_q.put(("error", {"turn": 0, "error": str(exc)}))
+                    finally:
+                        sse_q.put(None)
 
-                summary_payload = {
-                    "match_summary": compute_match_summary(all_turn_results),
-                }
-                _write_sse("done", summary_payload)
+                coord_thread = threading.Thread(target=_coordinator, name="porygon-sse-coordinator", daemon=True)
+                app_state.register_stream_coordinator(coord_thread)
+                coord_thread.start()
+
+                while True:
+                    item = sse_q.get()
+                    if item is None:
+                        break
+                    ev_name, ev_payload = item
+                    if not _write_sse(ev_name, ev_payload):
+                        cancel_event.set()
+                        break
+                coord_thread.join(timeout=4.0)
                 return
 
             if path == "/api/lead-lab/stream":
@@ -2514,10 +2914,36 @@ def make_handler(app_state: ReplayCoachAppState):
                         display_name=str(body.get("display_name") or "").strip(),
                         trainer_hint=str(body.get("trainer_hint") or "").strip(),
                         paste_text=str(body.get("paste_text") or ""),
+                        team_scope=str(body.get("team_scope") or "own"),
+                        archetype=str(body.get("archetype") or ""),
+                        regulation=str(body.get("regulation") or "Reg M-C"),
+                        source_type=str(body.get("source_type") or ""),
+                        opponent_elo=body.get("opponent_elo"),
+                        notes=str(body.get("notes") or ""),
                     )
-                    self._send_json({"saved": saved, "rosters": app_state.ots_db.list_rosters()})
+                    self._send_json({"ok": True, "saved": saved, "rosters": app_state.ots_db.list_rosters()})
                 except Exception as exc:
-                    self._send_json({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/rosters/update-meta":
+                try:
+                    rid = str(body.get("roster_id") or "").strip()
+                    updated = app_state.ots_db.update_roster_meta(
+                        roster_id=rid,
+                        display_name=body.get("display_name"),
+                        team_scope=body.get("team_scope"),
+                        archetype=body.get("archetype"),
+                        regulation=body.get("regulation"),
+                        opponent_elo=body.get("opponent_elo"),
+                        notes=body.get("notes"),
+                    )
+                    if updated is None:
+                        self._send_json({"ok": False, "error": f"Roster not found: {rid}"}, status=HTTPStatus.NOT_FOUND)
+                        return
+                    self._send_json({"ok": True, "updated": updated, "rosters": app_state.ots_db.list_rosters()})
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return
 
             if path == "/api/rosters/delete":
@@ -2588,6 +3014,7 @@ def make_handler(app_state: ReplayCoachAppState):
                         t2_paste_text=body.get("t2_paste_text"),
                         t2_user_spreads=body.get("t2_user_spreads"),
                         preset=str(body.get("preset") or "balanced"),
+                        compute_mode=str(body.get("compute_mode") or "auto"),
                     )
                     self._send_json(res)
                 except Exception as exc:
@@ -2639,6 +3066,23 @@ def make_handler(app_state: ReplayCoachAppState):
                         job_id=str(body.get("job_id") or "").strip(),
                         mode_1_idx=int(body.get("mode_1_idx", 0)),
                         mode_2_idx=int(body.get("mode_2_idx", 0)),
+                        num_mc=int(body.get("num_mc") or 128),
+                        force_recompute=bool(body.get("force_recompute", False)),
+                        lead_1=body.get("lead_1"),
+                        bench_1=body.get("bench_1"),
+                        lead_2=body.get("lead_2"),
+                        bench_2=body.get("bench_2"),
+                    )
+                    self._send_json(res)
+                except Exception as exc:
+                    self._send_json({"ok": False, "error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            if path == "/api/lead-lab/deep-turn1-batch":
+                try:
+                    res = app_state.run_lead_lab_deep_turn1_batch(
+                        job_id=str(body.get("job_id") or "").strip(),
+                        pairs=body.get("pairs") or [],
                         num_mc=int(body.get("num_mc") or 128),
                         force_recompute=bool(body.get("force_recompute", False)),
                     )

@@ -36,7 +36,7 @@ Given two Regulation M-C teams (`trainer_1` vs `trainer_2`, 4–6 Pokémon each)
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from itertools import combinations
 import threading
 import time
@@ -183,6 +183,7 @@ class LeadMatchupConfig:
     rng_seed: int = 42
     tile_size: int = 20
     device: Optional[str] = None
+    compute_mode: str = "auto"
     require_explicit_spreads: bool = True
 
     @classmethod
@@ -191,12 +192,19 @@ class LeadMatchupConfig:
         preset: str = "balanced",
         device: Optional[str] = None,
         require_explicit_spreads: bool = True,
+        compute_mode: str = "auto",
     ) -> "LeadMatchupConfig":
         """Construct a hardware-aware configuration from `'fast'`, `'balanced'`, or `'tournament'`."""
         clean = str(preset or "balanced").strip().lower()
+        clean_mode = str(compute_mode or "auto").strip().lower()
+        if clean_mode not in ("auto", "hybrid", "gpu_only", "cpu_parallel"):
+            clean_mode = "auto"
         use_cuda = bool(
-            (device == "cuda")
-            or (device is None and HAS_TORCH and torch.cuda.is_available())
+            clean_mode != "cpu_parallel"
+            and (
+                (device is not None and str(device).startswith("cuda"))
+                or (device is None and HAS_TORCH and torch.cuda.is_available())
+            )
         )
         if clean == "fast":
             return cls(
@@ -206,6 +214,7 @@ class LeadMatchupConfig:
                 cap_switch_per_mon=3,
                 tile_size=16,
                 device=device,
+                compute_mode=clean_mode,
                 require_explicit_spreads=require_explicit_spreads,
             )
         if clean == "tournament":
@@ -216,6 +225,7 @@ class LeadMatchupConfig:
                 cap_switch_per_mon=5,
                 tile_size=20,
                 device=device,
+                compute_mode=clean_mode,
                 require_explicit_spreads=require_explicit_spreads,
             )
         return cls(
@@ -225,6 +235,7 @@ class LeadMatchupConfig:
             cap_switch_per_mon=4,
             tile_size=20,
             device=device,
+            compute_mode=clean_mode,
             require_explicit_spreads=require_explicit_spreads,
         )
 
@@ -292,6 +303,9 @@ class LeadMatchupResult:
     preset: str
     elapsed_s: float
     total_modes_evaluated: int
+    hardware_device_name: str = ""
+    worker_cell_counts: Dict[str, int] = field(default_factory=dict)
+    compute_mode: str = "auto"
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize the full `90 × 90` Nash result into a JSON-ready payload for Studio UI."""
@@ -312,11 +326,12 @@ class LeadMatchupResult:
             "payoff_matrix": np.round(self.payoff_matrix, 3).tolist(),
             "heatmap_cells": self.heatmap_cells,
             "device_used": self.device_used,
+            "hardware_device_name": self.hardware_device_name or self.device_used,
+            "worker_cell_counts": dict(self.worker_cell_counts),
+            "compute_mode": self.compute_mode,
             "preset": self.preset,
             "elapsed_s": round(float(self.elapsed_s), 2),
             "total_modes_evaluated": int(self.total_modes_evaluated),
-            "num_t1_modes": len(self.modes_t1),
-            "num_t2_modes": len(self.modes_t2),
             "num_t1_leads": len(self.trainer_1_leads),
             "num_t2_leads": len(self.trainer_2_leads),
         }
@@ -556,6 +571,98 @@ def _partition_bench_chunks(rem_indices: Sequence[int]) -> List[Tuple[int, int]]
     ]
 
 
+_PROC_LEAD_SOLVER: Optional["LeadMatchupSolver"] = None
+_PROC_LEAD_POOL_CACHE: Dict[
+    Tuple[str, str, bool],
+    Tuple[CompiledTeamPool, CompiledTeamPool, np.ndarray, np.ndarray],
+] = {}
+_LEAD_MP_LOCK = threading.Lock()
+_LEAD_MP_EXECUTOR: Any = None
+_LEAD_MP_WORKERS: int = 0
+
+
+def _init_lead_cpu_worker_process(omp_threads: int) -> None:
+    """Initialize a persistent Zero-GIL CPU `LeadMatchupSolver` inside a worker subprocess."""
+    global _PROC_LEAD_SOLVER, _PROC_LEAD_POOL_CACHE
+    if HAS_TORCH:
+        try:
+            torch.set_num_threads(max(1, int(omp_threads)))
+        except Exception:
+            pass
+    _PROC_LEAD_POOL_CACHE = {}
+    _PROC_LEAD_SOLVER = LeadMatchupSolver(device="cpu")
+
+
+def _eval_lead_cell_in_worker_process(
+    t1_paste: str,
+    t2_paste: str,
+    require_explicit_spreads: bool,
+    lead_1_idx: int,
+    lead_2_idx: int,
+    cfg: LeadMatchupConfig,
+) -> Dict[str, Any]:
+    """Evaluate one `(lead_1_idx, lead_2_idx)` cell inside an isolated Zero-GIL CPU worker process."""
+    global _PROC_LEAD_SOLVER, _PROC_LEAD_POOL_CACHE
+    if _PROC_LEAD_SOLVER is None:
+        _PROC_LEAD_SOLVER = LeadMatchupSolver(device="cpu")
+    cache_key = (t1_paste, t2_paste, bool(require_explicit_spreads))
+    cached = _PROC_LEAD_POOL_CACHE.get(cache_key)
+    if cached is None:
+        if len(_PROC_LEAD_POOL_CACHE) >= 2:
+            _PROC_LEAD_POOL_CACHE.clear()
+        pool_trainer_1 = _PROC_LEAD_SOLVER._precompile_team_pool(
+            t1_paste, trainer_id="trainer_1", require_explicit_spreads=require_explicit_spreads
+        )
+        pool_trainer_2 = _PROC_LEAD_SOLVER._precompile_team_pool(
+            t2_paste, trainer_id="trainer_2", require_explicit_spreads=require_explicit_spreads
+        )
+        pr12, pr21 = _PROC_LEAD_SOLVER._compute_pairwise_pressure(pool_trainer_1, pool_trainer_2)
+        cached = (pool_trainer_1, pool_trainer_2, pr12, pr21)
+        _PROC_LEAD_POOL_CACHE[cache_key] = cached
+    pool_t1, pool_t2, pressure_12, pressure_21 = cached
+    return _PROC_LEAD_SOLVER._evaluate_lead_pair_factored(
+        pool_t1=pool_t1,
+        pool_t2=pool_t2,
+        lead_1_idx=lead_1_idx,
+        lead_2_idx=lead_2_idx,
+        pressure_12=pressure_12,
+        pressure_21=pressure_21,
+        config=cfg,
+        cancel_event=None,
+    )
+
+
+def _get_lead_cpu_process_pool(num_workers: int, omp_threads: int) -> Any:
+    """Return a persistent `spawn`-based `ProcessPoolExecutor` for Zero-GIL CPU lead workers."""
+    global _LEAD_MP_EXECUTOR, _LEAD_MP_WORKERS
+    import atexit
+    import concurrent.futures as _cf
+    import multiprocessing as _mp
+
+    with _LEAD_MP_LOCK:
+        if _LEAD_MP_EXECUTOR is not None and _LEAD_MP_WORKERS == num_workers:
+            return _LEAD_MP_EXECUTOR
+        if _LEAD_MP_EXECUTOR is not None:
+            try:
+                _LEAD_MP_EXECUTOR.shutdown(wait=False, cancel_futures=True)
+            except Exception:
+                pass
+            _LEAD_MP_EXECUTOR = None
+        try:
+            ctx = _mp.get_context("spawn")
+            _LEAD_MP_EXECUTOR = _cf.ProcessPoolExecutor(
+                max_workers=max(1, int(num_workers)),
+                mp_context=ctx,
+                initializer=_init_lead_cpu_worker_process,
+                initargs=(max(1, int(omp_threads)),),
+            )
+            _LEAD_MP_WORKERS = int(num_workers)
+            atexit.register(lambda ex=_LEAD_MP_EXECUTOR: ex.shutdown(wait=False, cancel_futures=True))
+            return _LEAD_MP_EXECUTOR
+        except Exception:
+            return None
+
+
 class LeadMatchupSolver:
     """Factored `90 × 90` (`8,100`-Mode) Regulation M-C Turn-1 Lead & Bring Nash Solver.
 
@@ -588,6 +695,19 @@ class LeadMatchupSolver:
             backend=self.backend,
             device=self.device_str,
         )
+        self._cpu_pool_lock = threading.Lock()
+        self._cpu_worker_solvers: Dict[int, "LeadMatchupSolver"] = {}
+
+    def _get_cpu_worker_solver(self, worker_idx: int) -> "LeadMatchupSolver":
+        """Return a cached thread-local CPU `LeadMatchupSolver` for `worker_idx` (zero cold-init overhead)."""
+        if self.device_str == "cpu" and worker_idx == 0:
+            return self
+        with self._cpu_pool_lock:
+            ws = self._cpu_worker_solvers.get(worker_idx)
+            if ws is None:
+                ws = LeadMatchupSolver(repo=self.repo, device="cpu")
+                self._cpu_worker_solvers[worker_idx] = ws
+            return ws
 
     def _precompile_team_pool(
         self,
@@ -1273,38 +1393,110 @@ class LeadMatchupSolver:
         ]
 
         completed = 0
-        for l1_i in range(num_l1):
-            for l2_i in range(num_l2):
-                if cancel_event is not None and cancel_event.is_set():
-                    raise AnalysisCancelledError("90×90 Lead Lab sweep cancelled by user.")
+        worker_cell_counts: Dict[str, int] = {}
+        has_cuda = bool(
+            HAS_TORCH and str(self.device_str).startswith("cuda") and torch.cuda.is_available()
+        )
+        gpu_hw_name = (
+            torch.cuda.get_device_name(self.device_str) if has_cuda else "CPU (PyTorch)"
+        )
+        cpu_hw_name = "CPU (PyTorch)"
 
-                cell = self._evaluate_lead_pair_factored(
-                    pool_t1=pool_t1,
-                    pool_t2=pool_t2,
-                    lead_1_idx=l1_i,
-                    lead_2_idx=l2_i,
-                    pressure_12=pressure_12,
-                    pressure_21=pressure_21,
-                    config=cfg,
-                    cancel_event=cancel_event,
-                )
+        from collections import deque as _deque
+        import os as _os
+        from engine.solver.hybrid_scheduler import resolve_worker_topology
+
+        cpu_cores = max(1, int(_os.cpu_count() or 4))
+        topo = resolve_worker_topology(
+            mode=getattr(cfg, "compute_mode", "auto"),
+            has_cuda=has_cuda,
+            cpu_count=cpu_cores,
+            total_turns=total_lead_pairs,
+        )
+        eff_mode = str(topo["mode"])
+        use_gpu = bool(topo["use_gpu"])
+        num_cpu_workers = int(topo["cpu_workers"])
+        # In pure CPU mode with >=4 lead pairs, cap CPU workers to min(4, cpu_cores // 3) for optimal BLAS scaling
+        if not use_gpu and total_lead_pairs >= 4:
+            num_cpu_workers = min(4, max(1, cpu_cores // 3), total_lead_pairs)
+
+        hw_name = (
+            f"{gpu_hw_name} + CPU ({num_cpu_workers}W)"
+            if (use_gpu and num_cpu_workers > 0)
+            else (gpu_hw_name if use_gpu else f"{cpu_hw_name} ({num_cpu_workers}W)")
+        )
+
+        # Dual-End Hybrid GPU + Multi-CPU Work-Stealing Queue with strict single-claim deduplication:
+        # - GPU worker pops lead pairs from the LEFT: (0,0) -> (14,14)
+        # - CPU worker(s) steal lead pairs from the RIGHT: (14,14) -> (0,0) in Hybrid mode
+        #   (or pop from the LEFT in pure CPU-parallel mode) with a tail-straggler makespan guard.
+        if use_gpu or num_cpu_workers >= 1:
+            reserved = 4 if use_gpu else 0
+            threads_per_cpu = max(1, min(4, max(1, cpu_cores - reserved) // max(1, num_cpu_workers)))
+            # Use Zero-GIL Multi-Process CPU Worker Pool for full Hybrid sweeps (K >= 16, e.g. fast/balanced/tournament)
+            # so multi-core CPU workers never contend for the parent process's Python GIL during CUDA kernel launches!
+            use_mp_cpu = bool(
+                use_gpu
+                and num_cpu_workers >= 1
+                and total_lead_pairs >= 16
+                and (int(cfg.num_rng_samples) >= 16 or _os.environ.get("PORYGON_LEAD_MP_POOL") == "1")
+            )
+            mp_pool = (
+                _get_lead_cpu_process_pool(num_cpu_workers, threads_per_cpu)
+                if use_mp_cpu
+                else None
+            )
+            if mp_pool is None:
+                for wi in range(num_cpu_workers):
+                    self._get_cpu_worker_solver(wi)
+
+            prev_threads = int(torch.get_num_threads()) if HAS_TORCH else None
+            if HAS_TORCH and num_cpu_workers >= 1 and mp_pool is None:
+                try:
+                    torch.set_num_threads(threads_per_cpu)
+                except Exception:
+                    pass
+
+            pair_q = _deque((l1_i, l2_i) for l1_i in range(num_l1) for l2_i in range(num_l2))
+            claimed_pairs: set[Tuple[int, int]] = set()
+            q_lock = threading.Lock()
+            out_lock = threading.Lock()
+            gpu_active = threading.Event()
+            worker_errors: List[Exception] = []
+
+            def _record_completed_cell(
+                l1_i: int,
+                l2_i: int,
+                cell: Dict[str, Any],
+                w_label: str,
+                w_hw: str,
+            ) -> None:
+                nonlocal completed
                 raw_sub = cell.pop("_raw_sub_scores")
+                cell["compute_worker"] = w_label
+                cell["hardware_device"] = w_hw
                 r0 = l1_i * num_b1
                 c0 = l2_i * num_b2
-                payoff_matrix[r0 : r0 + num_b1, c0 : c0 + num_b2] = raw_sub
-                heatmap_cells[l1_i][l2_i] = cell
-
-                completed += 1
+                with out_lock:
+                    payoff_matrix[r0 : r0 + num_b1, c0 : c0 + num_b2] = raw_sub
+                    heatmap_cells[l1_i][l2_i] = cell
+                    worker_cell_counts[w_label] = worker_cell_counts.get(w_label, 0) + 1
+                    completed += 1
+                    cur_completed = completed
+                    counts_snap = dict(worker_cell_counts)
                 if progress_cb is not None:
                     elapsed_now = time.perf_counter() - t_start
-                    rate = elapsed_now / max(1, completed)
-                    eta_s = max(0.0, rate * (total_lead_pairs - completed))
+                    rate = elapsed_now / max(1, cur_completed)
+                    eta_s = max(0.0, rate * (total_lead_pairs - cur_completed))
                     progress_cb(
                         {
                             "lead_1_idx": l1_i,
                             "lead_2_idx": l2_i,
-                            "completed": completed,
+                            "completed": cur_completed,
                             "total": total_lead_pairs,
+                            "compute_worker": w_label,
+                            "hardware_device": w_hw,
+                            "worker_cell_counts": counts_snap,
                             "score": cell["score"],
                             "cvar_10": cell["cvar_10"],
                             "best_t1_bench": cell["best_t1_bench"],
@@ -1314,6 +1506,138 @@ class LeadMatchupSolver:
                             "eta_s": round(eta_s, 1),
                         }
                     )
+
+            def _gpu_lead_worker() -> None:
+                w_label = "GPU"
+                gpu_active.set()
+                try:
+                    while True:
+                        if cancel_event is not None and cancel_event.is_set():
+                            return
+                        pair_item: Optional[Tuple[int, int]] = None
+                        with q_lock:
+                            while pair_q:
+                                cand = pair_q.popleft()
+                                if cand not in claimed_pairs:
+                                    claimed_pairs.add(cand)
+                                    pair_item = cand
+                                    break
+                        if pair_item is None:
+                            return
+                        l1_i, l2_i = pair_item
+                        try:
+                            cell = self._evaluate_lead_pair_factored(
+                                pool_t1=pool_t1,
+                                pool_t2=pool_t2,
+                                lead_1_idx=l1_i,
+                                lead_2_idx=l2_i,
+                                pressure_12=pressure_12,
+                                pressure_21=pressure_21,
+                                config=cfg,
+                                cancel_event=cancel_event,
+                            )
+                        except AnalysisCancelledError:
+                            return
+                        except Exception as exc:
+                            with out_lock:
+                                worker_errors.append(exc)
+                            return
+                        _record_completed_cell(l1_i, l2_i, cell, w_label, gpu_hw_name)
+                finally:
+                    gpu_active.clear()
+
+            def _cpu_lead_worker(worker_idx: int) -> None:
+                w_label = f"CPU-W{worker_idx + 1}"
+                w_solver = None if mp_pool is not None else self._get_cpu_worker_solver(worker_idx)
+                my_claimed = 0
+                tail_guard = max(2, num_cpu_workers)
+                while True:
+                    if cancel_event is not None and cancel_event.is_set():
+                        return
+                    pair_item: Optional[Tuple[int, int]] = None
+                    with q_lock:
+                        # Tail-straggler makespan guard in Hybrid GPU+CPU mode:
+                        # Once this CPU worker has already stolen at least 1 cell and GPU is actively running,
+                        # leave the last `tail_guard` cells in the queue for the faster GPU so CPU never causes a tail stall.
+                        if use_gpu and gpu_active.is_set() and my_claimed >= 1 and len(pair_q) <= tail_guard:
+                            return
+                        while pair_q:
+                            cand = pair_q.pop() if use_gpu else pair_q.popleft()
+                            if cand not in claimed_pairs:
+                                claimed_pairs.add(cand)
+                                pair_item = cand
+                                my_claimed += 1
+                                break
+                    if pair_item is None:
+                        return
+                    l1_i, l2_i = pair_item
+                    try:
+                        if mp_pool is not None:
+                            fut = mp_pool.submit(
+                                _eval_lead_cell_in_worker_process,
+                                trainer_1_paste,
+                                trainer_2_paste,
+                                bool(cfg.require_explicit_spreads),
+                                l1_i,
+                                l2_i,
+                                cfg,
+                            )
+                            cell = fut.result()
+                        else:
+                            assert w_solver is not None
+                            cell = w_solver._evaluate_lead_pair_factored(
+                                pool_t1=pool_t1,
+                                pool_t2=pool_t2,
+                                lead_1_idx=l1_i,
+                                lead_2_idx=l2_i,
+                                pressure_12=pressure_12,
+                                pressure_21=pressure_21,
+                                config=cfg,
+                                cancel_event=cancel_event,
+                            )
+                    except AnalysisCancelledError:
+                        return
+                    except Exception as exc:
+                        with out_lock:
+                            worker_errors.append(exc)
+                        return
+                    if cancel_event is not None and cancel_event.is_set():
+                        return
+                    _record_completed_cell(l1_i, l2_i, cell, w_label, cpu_hw_name)
+
+            try:
+                workers: List[threading.Thread] = []
+                if use_gpu:
+                    workers.append(
+                        threading.Thread(
+                            target=_gpu_lead_worker,
+                            name="porygon-lead-gpu",
+                            daemon=True,
+                        )
+                    )
+                for wi in range(num_cpu_workers):
+                    workers.append(
+                        threading.Thread(
+                            target=_cpu_lead_worker,
+                            args=(wi,),
+                            name=f"porygon-lead-cpu-{wi + 1}",
+                            daemon=True,
+                        )
+                    )
+                for th in workers:
+                    th.start()
+                for th in workers:
+                    th.join()
+            finally:
+                if prev_threads is not None and HAS_TORCH:
+                    try:
+                        torch.set_num_threads(prev_threads)
+                    except Exception:
+                        pass
+            if cancel_event is not None and cancel_event.is_set():
+                raise AnalysisCancelledError("90×90 Lead Lab sweep cancelled by user.")
+            if worker_errors:
+                raise worker_errors[0]
 
         # Solve Global 90×90 Zero-Sum Nash Equilibrium LP + Logit QRE
         global_nash = solve_zero_sum_nash(payoff_matrix)
@@ -1423,6 +1747,9 @@ class LeadMatchupSolver:
             preset=cfg.preset,
             elapsed_s=elapsed_total,
             total_modes_evaluated=num_m1 * num_m2,
+            hardware_device_name=hw_name,
+            worker_cell_counts=worker_cell_counts,
+            compute_mode=eff_mode,
         )
 
     def build_turn1_battle_state(

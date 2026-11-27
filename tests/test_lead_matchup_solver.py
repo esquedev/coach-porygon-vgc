@@ -619,7 +619,17 @@ Modest Nature
         a2 = app_state.run_lead_lab_deep_turn1(loaded["job_id"], mode_1_idx=0, mode_2_idx=0, num_mc=32)
         self.assertTrue(a2["ok"])
         self.assertTrue(a2["from_vault_cache"])
-        self.assertIn("m0__m0", ots_db.list_cached_deep_audit_keys(saved["matchup_hash"]))
+        from apps.replay_coach.ots_db import canonical_deep_audit_cell_key
+
+        expected_cell_key = canonical_deep_audit_cell_key(
+            a1["mode_1"]["lead_species"],
+            a1["mode_1"]["bench_species"],
+            a1["mode_2"]["lead_species"],
+            a1["mode_2"]["bench_species"],
+        )
+        self.assertEqual(a1["audit_cell_key"], expected_cell_key)
+        self.assertEqual(a2["audit_cell_key"], expected_cell_key)
+        self.assertIn(expected_cell_key, ots_db.list_cached_deep_audit_keys(saved["matchup_hash"]))
 
         # Cascade delete removes both run and cached deep audits
         self.assertTrue(ots_db.delete_lead_lab_run(saved["run_id"]))

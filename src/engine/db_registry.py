@@ -1,4 +1,6 @@
 # engine/db_registry.py
+import copy
+import threading
 import duckdb
 from pathlib import Path
 from typing import Any
@@ -12,9 +14,24 @@ MUNCHSTATS_ARCHIVE_DIR = DATA_DIR / "munchstats" / "raw" / "archive"
 
 class VGCDataRegistry:
     def __init__(self):
-        # In-memory DuckDB session (ultra-fast, zero-lock)
+        # In-memory DuckDB session with thread-local cursors for safe multi-threaded execution
         self.con = duckdb.connect(database=":memory:")
+        self._cursor_lock = threading.Lock()
+        self._thread_local = threading.local()
+        self._cache_lock = threading.Lock()
+        self._pokemon_cache: dict[str, Any] = {}
+        self._move_cache: dict[str, Any] = {}
+        self._condition_cache: dict[str, Any] = {}
         self._init_views()
+
+    def _get_cursor(self) -> duckdb.DuckDBPyConnection:
+        """Return a thread-local DuckDB cursor so concurrent CPU/GPU workers never collide."""
+        cur = getattr(self._thread_local, "cursor", None)
+        if cur is None:
+            with self._cursor_lock:
+                cur = self.con.cursor()
+            self._thread_local.cursor = cur
+        return cur
 
     def _init_views(self):
         """Creates unified SQL views across Showdown and all Munchstats tournament archives."""
@@ -143,52 +160,79 @@ class VGCDataRegistry:
             """)
 
     def query(self, sql: str, params: tuple | list = ()) -> list[dict[str, Any]]:
-        """Runs arbitrary SQL and returns results as a list of dicts."""
-        rel = self.con.execute(sql, params)
+        """Runs arbitrary SQL thread-safely via a per-thread DuckDB cursor and returns dicts."""
+        cur = self._get_cursor()
+        rel = cur.execute(sql, params)
         cols = [desc[0] for desc in rel.description] if rel.description else []
         return [dict(zip(cols, row)) for row in rel.fetchall()]
 
-    # --- High-Frequency Lookup Helpers ---
+    # --- High-Frequency Lookup Helpers (thread-safe read-only caches) ---
 
     def get_pokemon(self, name_or_id: str) -> dict[str, Any] | None:
         """Fetch a Pokédex entry by canonical ID, display name, or `<name>-<baseForme>` alias."""
         raw_lower = name_or_id.strip().lower()
         clean = "".join(ch for ch in raw_lower if ch.isalnum())
+        cache_key = f"{clean}|{raw_lower}"
+        with self._cache_lock:
+            if cache_key in self._pokemon_cache:
+                cached = self._pokemon_cache[cache_key]
+                return copy.deepcopy(cached) if cached is not None else None
         res = self.query(
             "SELECT * FROM pokedex WHERE LOWER(id) = ? OR LOWER(name) = ? LIMIT 1;",
             (clean, raw_lower),
         )
-        if res:
-            return res[0]
-        # Fallback for Showdown baseForme aliases (e.g., 'Maushold-Three' -> 'maushold',
-        # 'Palafin-Zero' -> 'palafin', 'Mimikyu-Disguised' -> 'mimikyu').
-        res = self.query(
-            """
-            SELECT * FROM pokedex
-            WHERE baseForme IS NOT NULL
-              AND LOWER(id) || LOWER(REGEXP_REPLACE(baseForme, '[^a-zA-Z0-9]', '', 'g')) = ?
-            LIMIT 1;
-            """,
-            (clean,),
-        )
-        return res[0] if res else None
+        found = res[0] if res else None
+        if found is None:
+            # Fallback for Showdown baseForme aliases (e.g., 'Maushold-Three' -> 'maushold',
+            # 'Palafin-Zero' -> 'palafin', 'Mimikyu-Disguised' -> 'mimikyu').
+            res = self.query(
+                """
+                SELECT * FROM pokedex
+                WHERE baseForme IS NOT NULL
+                  AND LOWER(id) || LOWER(REGEXP_REPLACE(baseForme, '[^a-zA-Z0-9]', '', 'g')) = ?
+                LIMIT 1;
+                """,
+                (clean,),
+            )
+            found = res[0] if res else None
+        with self._cache_lock:
+            self._pokemon_cache[cache_key] = copy.deepcopy(found) if found is not None else None
+        return found
 
     def get_move(self, name_or_id: str) -> dict[str, Any] | None:
-        clean = name_or_id.strip().lower().replace(" ", "").replace("-", "")
+        raw_lower = name_or_id.strip().lower()
+        clean = raw_lower.replace(" ", "").replace("-", "")
+        cache_key = f"{clean}|{raw_lower}"
+        with self._cache_lock:
+            if cache_key in self._move_cache:
+                cached = self._move_cache[cache_key]
+                return copy.deepcopy(cached) if cached is not None else None
         res = self.query(
             "SELECT * FROM moves WHERE LOWER(id) = ? OR LOWER(name) = ? LIMIT 1;",
-            (clean, name_or_id.strip().lower())
+            (clean, raw_lower),
         )
-        return res[0] if res else None
+        found = res[0] if res else None
+        with self._cache_lock:
+            self._move_cache[cache_key] = copy.deepcopy(found) if found is not None else None
+        return found
 
     def get_condition(self, name_or_id: str) -> dict[str, Any] | None:
         """Fetch status/weather/terrain/mechanic condition details."""
-        clean = name_or_id.strip().lower().replace(" ", "").replace("-", "")
+        raw_lower = name_or_id.strip().lower()
+        clean = raw_lower.replace(" ", "").replace("-", "")
+        cache_key = f"{clean}|{raw_lower}"
+        with self._cache_lock:
+            if cache_key in self._condition_cache:
+                cached = self._condition_cache[cache_key]
+                return copy.deepcopy(cached) if cached is not None else None
         res = self.query(
             "SELECT * FROM conditions WHERE LOWER(id) = ? OR LOWER(name) = ? LIMIT 1;",
-            (clean, name_or_id.strip().lower())
+            (clean, raw_lower),
         )
-        return res[0] if res else None
+        found = res[0] if res else None
+        with self._cache_lock:
+            self._condition_cache[cache_key] = copy.deepcopy(found) if found is not None else None
+        return found
 
     def get_tournament_top_cut(self, tournament_id: str = None, top_rank: int = 8) -> list[dict[str, Any]]:
         if tournament_id:
@@ -208,10 +252,13 @@ class VGCDataRegistry:
 
 
 _registry_instance: VGCDataRegistry | None = None
+_registry_init_lock = threading.Lock()
 
 def get_registry() -> VGCDataRegistry:
     """Returns a shared in-memory DuckDB instance across agent calls."""
     global _registry_instance
     if _registry_instance is None:
-        _registry_instance = VGCDataRegistry()
+        with _registry_init_lock:
+            if _registry_instance is None:
+                _registry_instance = VGCDataRegistry()
     return _registry_instance

@@ -151,6 +151,23 @@ def has_nvidia_gpu(repo_root: Optional[Path] = None) -> bool:
         return False
 
 
+def venv_has_cuda_torch(venv_py: Path) -> bool:
+    """Return True if `.venv`'s installed `torch` build includes CUDA runtime support."""
+    if not venv_py.is_file():
+        return False
+    try:
+        proc = subprocess.run(
+            [str(venv_py), "-c", "import sys, torch; sys.exit(0 if getattr(torch.version, 'cuda', None) else 1)"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            timeout=20,
+            check=False,
+        )
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+
 def needs_dependency_sync(
     venv_py: Path,
     requirements_path: Path,
@@ -202,41 +219,85 @@ def ensure_venv_and_deps(repo_root: Path) -> Path:
 
     print(f"[2/4] Using isolated environment: {repo_root / '.venv'}", flush=True)
 
-    if needs_dependency_sync(venv_py, req_path, stamp_path):
-        print("[3/4] Syncing runtime dependencies into .venv (first launch may take a few minutes)...", flush=True)
+    gpu_present = has_nvidia_gpu(repo_root=repo_root)
+    need_sync = needs_dependency_sync(venv_py, req_path, stamp_path)
+    need_cuda_upgrade = bool(not need_sync and gpu_present and not venv_has_cuda_torch(venv_py))
+
+    if need_sync or need_cuda_upgrade:
         pip_env = dict(os.environ)
         pip_env["VIRTUAL_ENV"] = str(repo_root / ".venv")
         pip_env["PIP_REQUIRE_VIRTUALENV"] = "1"
         pip_env["PIP_DISABLE_PIP_VERSION_CHECK"] = "1"
-        subprocess.run(
-            [str(venv_py), "-m", "pip", "install", "--upgrade", "pip"],
-            cwd=str(repo_root),
-            env=pip_env,
-            check=True,
-        )
 
-        if has_nvidia_gpu(repo_root=repo_root):
-            print("      NVIDIA GPU detected — installing CUDA 12.4 PyTorch wheel...", flush=True)
-            cuda_res = subprocess.run(
+        if need_cuda_upgrade and not need_sync:
+            print(
+                "[3/4] NVIDIA GPU driver detected, but .venv currently has CPU-only PyTorch.\n"
+                "      Auto-upgrading .venv PyTorch to CUDA 12.4 wheel...",
+                flush=True,
+            )
+            subprocess.run(
+                [
+                    str(venv_py),
+                    "-m",
+                    "pip",
+                    "install",
+                    "--upgrade",
+                    "--force-reinstall",
+                    "--no-deps",
+                    "torch",
+                    "--index-url",
+                    PYTORCH_CU124_INDEX,
+                ],
+                cwd=str(repo_root),
+                env=pip_env,
+                check=False,
+            )
+            subprocess.run(
                 [str(venv_py), "-m", "pip", "install", "torch", "--index-url", PYTORCH_CU124_INDEX],
                 cwd=str(repo_root),
                 env=pip_env,
                 check=False,
             )
-            if cuda_res.returncode != 0:
-                print("[WARN] CUDA wheel install failed; falling back to standard CPU PyTorch...", flush=True)
         else:
-            print("      Installing standard PyTorch wheel (CPU / Apple Silicon)...", flush=True)
+            print("[3/4] Syncing runtime dependencies into .venv (first launch may take a few minutes)...", flush=True)
+            subprocess.run(
+                [str(venv_py), "-m", "pip", "install", "--upgrade", "pip"],
+                cwd=str(repo_root),
+                env=pip_env,
+                check=True,
+            )
 
-        subprocess.run(
-            [str(venv_py), "-m", "pip", "install", "-r", str(req_path)],
-            cwd=str(repo_root),
-            env=pip_env,
-            check=True,
-        )
-        stamp_path.parent.mkdir(parents=True, exist_ok=True)
-        stamp_path.write_text(compute_requirements_hash(req_path), encoding="utf-8")
-        print("      Dependencies synced and verified inside .venv.", flush=True)
+            if gpu_present:
+                print("      NVIDIA GPU detected — installing CUDA 12.4 PyTorch wheel...", flush=True)
+                cuda_res = subprocess.run(
+                    [
+                        str(venv_py),
+                        "-m",
+                        "pip",
+                        "install",
+                        "--upgrade",
+                        "torch",
+                        "--index-url",
+                        PYTORCH_CU124_INDEX,
+                    ],
+                    cwd=str(repo_root),
+                    env=pip_env,
+                    check=False,
+                )
+                if cuda_res.returncode != 0:
+                    print("[WARN] CUDA wheel install failed; falling back to standard CPU PyTorch...", flush=True)
+            else:
+                print("      Installing standard PyTorch wheel (CPU / Apple Silicon)...", flush=True)
+
+            subprocess.run(
+                [str(venv_py), "-m", "pip", "install", "-r", str(req_path)],
+                cwd=str(repo_root),
+                env=pip_env,
+                check=True,
+            )
+            stamp_path.parent.mkdir(parents=True, exist_ok=True)
+            stamp_path.write_text(compute_requirements_hash(req_path), encoding="utf-8")
+            print("      Dependencies synced and verified inside .venv.", flush=True)
     else:
         print("[3/4] All .venv dependencies verified (PyTorch, DuckDB, SciPy, NumPy, MiniRacer).", flush=True)
 

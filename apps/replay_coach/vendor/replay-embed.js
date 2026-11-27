@@ -29,31 +29,34 @@ document.head.appendChild(linkEl);
 }
 function requireScript(url){
 var scriptEl=document.createElement('script');
+scriptEl.async=false;
 scriptEl.src=url;
 document.head.appendChild(scriptEl);
 }
 
-linkStyle('https://play.pokemonshowdown.com/style/font-awesome.css?');
-linkStyle('https://play.pokemonshowdown.com/style/battle.css?a7');
-linkStyle('https://play.pokemonshowdown.com/style/replay.css?a7');
-linkStyle('https://play.pokemonshowdown.com/style/utilichart.css?a7');
+linkStyle('https://play.pokemonshowdown.com/style/font-awesome.css');
+linkStyle('https://play.pokemonshowdown.com/style/battle.css');
+linkStyle('https://play.pokemonshowdown.com/style/replay.css');
+linkStyle('https://play.pokemonshowdown.com/style/utilichart.css');
 
 requireScript('https://play.pokemonshowdown.com/js/lib/ps-polyfill.js');
-requireScript('https://play.pokemonshowdown.com/config/config.js?a7');
+requireScript('https://play.pokemonshowdown.com/config/config.js');
 requireScript('https://play.pokemonshowdown.com/js/lib/jquery-1.11.0.min.js');
 requireScript('https://play.pokemonshowdown.com/js/lib/html-sanitizer-minified.js');
 requireScript('https://play.pokemonshowdown.com/js/battle-sound.js');
-requireScript('https://play.pokemonshowdown.com/js/battledata.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/pokedex-mini.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/pokedex-mini-bw.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/graphics.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/pokedex.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/moves.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/abilities.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/items.js?a7');
-requireScript('https://play.pokemonshowdown.com/data/teambuilder-tables.js?a7');
-requireScript('https://play.pokemonshowdown.com/js/battle-tooltips.js?a7');
-requireScript('https://play.pokemonshowdown.com/js/battle.js?a7');
+requireScript('https://play.pokemonshowdown.com/js/battledata.js');
+requireScript('https://play.pokemonshowdown.com/data/pokedex-mini.js');
+requireScript('https://play.pokemonshowdown.com/data/pokedex-mini-bw.js');
+requireScript('https://play.pokemonshowdown.com/data/graphics.js');
+requireScript('https://play.pokemonshowdown.com/data/pokedex.js');
+requireScript('https://play.pokemonshowdown.com/data/moves.js');
+requireScript('https://play.pokemonshowdown.com/data/abilities.js');
+requireScript('https://play.pokemonshowdown.com/data/items.js');
+requireScript('https://play.pokemonshowdown.com/data/teambuilder-tables.js');
+requireScript('https://play.pokemonshowdown.com/js/battle-tooltips.js');
+requireScript('https://play.pokemonshowdown.com/js/battle-animations.js');
+requireScript('https://play.pokemonshowdown.com/js/battle-animations-moves.js');
+requireScript('https://play.pokemonshowdown.com/js/battle.js');
 
 var Replays={
 $el:null,
@@ -210,9 +213,20 @@ this.battle.switchViewpoint();
 }
 };
 
-window.onload=function(){
-Replays.init();
-};
+function bootReplaysWhenReady(){
+if(Replays.battle)return;
+if(typeof window.$==='function'&&typeof window.Battle==='function'&&typeof window.BattleScene==='function'&&typeof window.BattleMoveAnims==='object'){
+try{Replays.init();}catch(e){if(window.console)console.error('[CoachPorygon ReplayInit]',e);}
+return;
+}
+setTimeout(bootReplaysWhenReady,60);
+}
+if(document.readyState==='complete'){
+bootReplaysWhenReady();
+}else{
+window.addEventListener('load',bootReplaysWhenReady);
+setTimeout(bootReplaysWhenReady,120);
+}
 
 if(window.matchMedia){
 if(window.matchMedia('(prefers-color-scheme: dark)').matches){

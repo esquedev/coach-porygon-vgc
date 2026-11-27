@@ -150,7 +150,7 @@ def test_studio_pipeline_logs_sprites_inline_ots_and_telemetry_export(tmp_path: 
         pov_trainer="treces_gc",
     )
     assert prev["trainer_1_name"] == "treces_gc"
-    assert prev["trainer_2_name"] == "MatchaGotMe"
+    assert prev["trainer_2_name"] == "Showdown Opponent (Elo 1229)"
     assert prev["num_turns"] == 10
     assert prev["trainer_1_preview"][0]["sprite_url"] is not None
 
@@ -373,7 +373,7 @@ def test_two_ply_lookahead_auto_infer_and_session_analytics(tmp_path: Path, monk
     assert summary["total_turns"] == len(st.replay.turns)
     assert len(summary["matches"]) == 1
     assert summary["matches"][0]["trainer_1"] == "treces_gc"
-    assert summary["matches"][0]["trainer_2"] == "MatchaGotMe"
+    assert summary["matches"][0]["trainer_2"] == "Showdown Opponent (Elo 1229)"
     assert summary["avg_accuracy_pct"] is not None
     assert "lead" in summary["mistakes_by_phase"]
     assert "midgame" in summary["mistakes_by_phase"]

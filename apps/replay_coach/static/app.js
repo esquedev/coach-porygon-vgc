@@ -58,6 +58,10 @@
       selectedBench1: 0,
       selectedBench2: 0,
       deepAudit: null,
+      deepAuditReqSeq: 0,
+      playbookMode: "by_mine", // "by_mine" (1 Own Lead vs Top Opp Leads) | "by_opp" (1 Opp Lead vs Top Own Leads)
+      playbookSelectedIdx: null,
+      batchAuditsByKey: {},
       vaultOpen: false,
       vaultRuns: [],
       vaultTotal: 0,
@@ -360,7 +364,7 @@
       state.prevStepBeforePrep = state.activeStep || "home";
     }
     state.activeStep = stepName;
-    ["home", "setup", "pipeline", "review", "prep", "lead-lab", "analytics", "md-scout"].forEach((s) => {
+    ["home", "setup", "pipeline", "review", "prep", "lead-lab", "analytics", "md-scout", "team-db"].forEach((s) => {
       const view = $(`view-${s}`);
       if (view) view.classList.toggle("active", s === stepName);
     });
@@ -384,11 +388,13 @@
               ? "analytics"
               : stepName === "md-scout"
                 ? "md-scout"
-                : stepName === "prep"
-                  ? (state.prep.kind === "damage_matrix" ? "damage" : "speed")
-                  : "home";
+                : stepName === "team-db"
+                  ? "team-db"
+                  : stepName === "prep"
+                    ? (state.prep.kind === "damage_matrix" ? "damage" : "speed")
+                    : "home";
     if ($("btn-go-home")) $("btn-go-home").classList.toggle("active", activeHubKey === "home");
-    ["speed", "damage", "bo3", "lead-lab", "analytics", "md-scout"].forEach((k) => {
+    ["speed", "damage", "bo3", "lead-lab", "analytics", "md-scout", "team-db"].forEach((k) => {
       const pill = $(`nav-hub-${k}`);
       if (pill) pill.classList.toggle("active", k === activeHubKey);
     });
@@ -635,6 +641,15 @@
     }
     if ($("btn-ll-cancel")) $("btn-ll-cancel").textContent = isEs ? "■ Detener" : "■ Stop";
     if ($("btn-ll-cancel-bar")) $("btn-ll-cancel-bar").textContent = isEs ? "■ Detener" : "■ Stop";
+    if ($("ll-compute-mode")) {
+      const cm = $("ll-compute-mode");
+      const opts = cm.options;
+      if (opts && opts.length >= 3) {
+        opts[0].textContent = isEs ? "⚡ Híbrido (GPU + CPU)" : "⚡ Hybrid (GPU + CPU)";
+        opts[1].textContent = isEs ? "🚀 Solo GPU (CUDA)" : "🚀 GPU Only (CUDA)";
+        opts[2].textContent = isEs ? "🧵 CPU Paralelo (Multi-Hilo)" : "🧵 CPU Parallel (Multi-Thread)";
+      }
+    }
     if ($("lbl-ll-t1-title")) $("lbl-ll-t1-title").textContent = isEs ? "Tu Equipo (trainer_1 · 66-SP)" : "Your Team (trainer_1 · Full 66-SP)";
     if ($("lbl-ll-t2-title")) $("lbl-ll-t2-title").textContent = isEs ? "Equipo Rival (trainer_2)" : "Opponent Team (trainer_2)";
     if ($("btn-ll-t2-mode-full")) $("btn-ll-t2-mode-full").textContent = "Full 66-SP";
@@ -1629,6 +1644,20 @@
       $("setup-status-msg").textContent = `Error: ${data.error}`;
       return;
     }
+    // Sync client replay array with exact backend chronological order (Game 1 -> Game 2 -> Game 3)
+    if (
+      !useSample &&
+      Array.isArray(data.sorted_order) &&
+      data.sorted_order.length === state.bo3Replays.length
+    ) {
+      const reordered = data.sorted_order
+        .map((origIdx) => state.bo3Replays[origIdx])
+        .filter(Boolean);
+      if (reordered.length === state.bo3Replays.length) {
+        state.bo3Replays = reordered;
+        state.rawReplayText = state.bo3Replays[0].raw_input;
+      }
+    }
     await renderPreviewBanner(data);
   }
 
@@ -1643,20 +1672,80 @@
   // -------------------------------------------------------------------------
   // Step 2: Live Pipeline Console & Real Server-Side Cancellation
   // -------------------------------------------------------------------------
+  function workerHardwareClass(workerLabel) {
+    const w = String(workerLabel || "").toUpperCase();
+    if (w.startsWith("GPU")) return "hw-gpu";
+    if (w.startsWith("CPU")) return "hw-cpu";
+    return "hw-balancer";
+  }
+
+  function renderLiveWorkersStrip(activeWorkers) {
+    const strip = $("live-workers-strip");
+    if (!strip) return;
+    if (!activeWorkers || !activeWorkers.length) {
+      strip.style.display = "none";
+      strip.innerHTML = "";
+      return;
+    }
+    strip.style.display = "flex";
+    const isEs = state.lang === "es";
+    strip.innerHTML = activeWorkers
+      .map((w) => {
+        const cls = workerHardwareClass(w.worker);
+        const doneCls = w.state === "idle" || w.state === "done_turn" ? "hw-done" : "";
+        const hwShort = w.hardware_device ? ` · ${w.hardware_device}` : "";
+        const statusTxt =
+          w.state === "idle"
+            ? (isEs ? `T${w.turn} ✓` : `T${w.turn} ✓`)
+            : `T${w.turn} · ${w.phase || "SIM"} ${Number(w.pct || 0)}%`;
+        return `<span class="worker-chip ${cls} ${doneCls}"><strong>${escapeHtml(w.worker)}</strong><span>${escapeHtml(hwShort)}</span><span>→ ${escapeHtml(statusTxt)}</span></span>`;
+      })
+      .join("");
+  }
+
   function renderPipelineLogs() {
     const feed = $("pipeline-log-feed");
     if (!feed) return;
     const pk = profileKey();
+    const isEs = state.lang === "es";
+
+    if (state.activeStream && (!state.pipelineLogs || !state.pipelineLogs.length)) {
+      feed.innerHTML = `<div class="log-waiting-banner">${
+        isEs
+          ? "⚙️ Trabajadores GPU + CPU ejecutando cada turno una sola vez en paralelo. Esperando a que terminen todos los hilos para reconstruir y mostrar el log completo en orden (Turno 1 → N) con etiqueta de hardware..."
+          : "⚙️ GPU + CPU workers are computing each turn strictly once in parallel. Waiting for all workers to finish before reconstructing and displaying the complete ordered log (Turn 1 → N) with hardware tags..."
+      }</div>`;
+      return;
+    }
+
+    // Group strictly by turn (0 = scheduler summary first, then Turn 1 -> N ascending) so turn headers NEVER repeat
+    const orderedEntries = [...(state.pipelineLogs || [])].sort((a, b) => {
+      const ta = Number(a.turn || 0);
+      const tb = Number(b.turn || 0);
+      if (ta !== tb) return ta - tb;
+      return 0;
+    });
+
     let html = "";
     let lastTurn = -1;
 
-    state.pipelineLogs.forEach((entry) => {
-      if (entry.turn && entry.turn !== lastTurn) {
-        lastTurn = entry.turn;
-        html += `<div class="log-turn-header">${state.lang === "es" ? `Turno ${entry.turn}` : `Turn ${entry.turn}`}</div>`;
+    orderedEntries.forEach((entry) => {
+      const tNum = Number(entry.turn || 0);
+      const wLbl = String(entry.compute_worker || "BALANCER");
+      const hwDev = String(entry.hardware_device || "");
+      const hwCls = workerHardwareClass(wLbl);
+
+      if (tNum > 0 && tNum !== lastTurn) {
+        lastTurn = tNum;
+        const hwBadgeTxt = hwDev ? `${wLbl} · ${hwDev}` : wLbl;
+        html += `<div class="log-turn-header">
+          <span>${isEs ? `Turno ${tNum}` : `Turn ${tNum}`}</span>
+          <span class="log-hw-badge ${hwCls}">${escapeHtml(hwBadgeTxt)}</span>
+        </div>`;
       }
       const msg = (entry.messages && (entry.messages[pk] || entry.messages.es_vgc)) || entry.error || "";
       html += `<div class="log-line">
+        <span class="log-hw-badge ${hwCls}">${escapeHtml(wLbl)}</span>
         <span class="log-phase ${escapeHtml(entry.phase)}">${escapeHtml(entry.phase)}</span>
         <span>${escapeHtml(msg)}</span>
       </div>`;
@@ -1785,9 +1874,17 @@
 
   function openPipelineStream(startTurn) {
     if (!state.app || !state.app.replay) return;
+    if (state.activeStream) {
+      try { state.activeStream.close(); } catch (_) {}
+      state.activeStream = null;
+    }
     const numMc = parseInt($("setup-k-select").value || "128", 10);
     const twoPly = $("chk-two-ply") && $("chk-two-ply").checked ? 1 : 0;
+    const computeMode = ($("setup-compute-mode") && $("setup-compute-mode").value) || "auto";
     const isResume = startTurn > 1;
+    const alreadyDoneTurns = isResume
+      ? Object.keys(state.turnResults).map((k) => parseInt(k, 10)).filter((n) => Number.isFinite(n)).sort((a, b) => a - b)
+      : [];
 
     if (!isResume) {
       state.turnResults = {};
@@ -1796,45 +1893,90 @@
       state.autoPausedTurns = {};
       $("pipeline-progress-fill").style.width = "0%";
       $("pipeline-progress-pill").textContent = `0 / ${state.app.replay.num_turns}`;
-      renderPipelineLogs();
     }
 
     $("pipeline-done-banner").style.display = "none";
-    $("pipeline-sub-meta").textContent = `${state.app.replay.trainer_1_name} vs. ${state.app.replay.trainer_2_name} · K=${numMc}${twoPly ? " · 2-Ply" : ""} · ${state.app.device}`;
+    $("pipeline-sub-meta").textContent = `${state.app.replay.trainer_1_name} vs. ${state.app.replay.trainer_2_name} · K=${numMc}${twoPly ? " · 2-Ply" : ""} · ${computeMode.toUpperCase()} · ${state.app.device}`;
     $("live-status-dot").className = "status-dot running";
     $("live-tile-badge").textContent = isResume ? `T${startTurn}` : "RUNNING";
     $("live-tile-text").textContent =
       state.lang === "es"
-        ? (isResume ? `Reanudando desde Turno ${startTurn}...` : "Iniciando simulación...")
-        : (isResume ? `Resuming from Turn ${startTurn}...` : "Starting simulation...");
+        ? (isResume ? `Reanudando turnos pendientes desde T${startTurn}...` : "Planificando turnos únicos en balanceador híbrido GPU+CPU...")
+        : (isResume ? `Resuming remaining turns from T${startTurn}...` : "Scheduling unique turns across Hybrid GPU+CPU balancer...");
+    renderLiveWorkersStrip([]);
 
-    const es = new EventSource(`/api/analyze/stream?num_mc=${numMc}&start_turn=${startTurn}&two_ply=${twoPly}`);
+    const skipParam = alreadyDoneTurns.length ? `&skip_turns=${encodeURIComponent(alreadyDoneTurns.join(","))}` : "";
+    const es = new EventSource(`/api/analyze/stream?num_mc=${numMc}&start_turn=${startTurn}&two_ply=${twoPly}&compute_mode=${encodeURIComponent(computeMode)}${skipParam}`);
     state.activeStream = es;
     updatePipelineActionButtons();
+    renderPipelineLogs();
 
-    es.addEventListener("log", (ev) => {
-      const entry = JSON.parse(ev.data);
-      const pk = profileKey();
-      const msg = (entry.messages && (entry.messages[pk] || entry.messages.es_vgc)) || "";
-      if (entry.in_place) {
-        $("live-status-dot").className = "status-dot running";
-        $("live-tile-badge").textContent = `T${entry.turn}`;
-        $("live-tile-text").textContent = msg;
-      } else {
-        state.pipelineLogs.push(entry);
-        renderPipelineLogs();
+    function mergeReconstructedLogs(newLogs) {
+      const byTurn = new Map();
+      const schedulerEntries = [];
+      const combined = isResume ? [...(state.pipelineLogs || []), ...(newLogs || [])] : [...(newLogs || [])];
+      combined.forEach((entry) => {
+        const tn = Number(entry.turn || 0);
+        if (tn === 0) {
+          schedulerEntries.push(entry);
+        } else {
+          if (!byTurn.has(tn)) byTurn.set(tn, []);
+          byTurn.get(tn).push(entry);
+        }
+      });
+      // On Resume, if a turn was re-received replace cleanly; keep only latest scheduler header
+      const merged = [];
+      if (schedulerEntries.length) {
+        merged.push(schedulerEntries[schedulerEntries.length - 1]);
       }
+      Array.from(byTurn.keys())
+        .sort((a, b) => a - b)
+        .forEach((tn) => {
+          // Deduplicate identical (turn, phase) within each turn
+          const seenPhase = new Set();
+          byTurn.get(tn).forEach((ent) => {
+            const pkKey = `${tn}:${ent.phase}`;
+            if (!seenPhase.has(pkKey)) {
+              seenPhase.add(pkKey);
+              merged.push(ent);
+            }
+          });
+        });
+      state.pipelineLogs = merged;
+    }
+
+    es.addEventListener("scheduler", (ev) => {
+      try {
+        const plan = JSON.parse(ev.data || "{}");
+        const isEs = state.lang === "es";
+        const gpuTxt = plan.use_gpu ? `GPU (${plan.gpu_device_name || state.app.device})` : "0 GPU";
+        const cpuTxt = `${plan.cpu_workers || 0} CPU`;
+        $("live-tile-badge").textContent = String(plan.mode || "auto").toUpperCase();
+        $("live-tile-text").textContent = isEs
+          ? `Balanceador listo: ${gpuTxt} + ${cpuTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} turnos únicos (esperando fin para reconstruir log ordenado)`
+          : `Balancer ready: ${gpuTxt} + ${cpuTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} unique turns (waiting for join to reconstruct ordered log)`;
+      } catch (_) {}
     });
 
-    es.addEventListener("turn", (ev) => {
-      const data = JSON.parse(ev.data);
-      state.turnResults[data.turn] = data;
-      const doneCnt = Object.keys(state.turnResults).length;
-      const totCnt = state.app.replay.num_turns;
-      const pct = Math.min(100, Math.round((doneCnt / Math.max(1, totCnt)) * 100));
-      $("pipeline-progress-fill").style.width = `${pct}%`;
-      $("pipeline-progress-pill").textContent = `${doneCnt} / ${totCnt}`;
-      renderTimeline();
+    es.addEventListener("worker_progress", (ev) => {
+      try {
+        const snap = JSON.parse(ev.data || "{}");
+        const doneCnt = alreadyDoneTurns.length + Number(snap.completed_count || 0);
+        const totCnt = Number(snap.total_turns || state.app.replay.num_turns || 1);
+        const pct = Math.min(100, Math.round((doneCnt / Math.max(1, totCnt)) * 100));
+        $("pipeline-progress-fill").style.width = `${pct}%`;
+        $("pipeline-progress-pill").textContent = `${Math.min(doneCnt, totCnt)} / ${totCnt}`;
+        $("live-status-dot").className = "status-dot running";
+        $("live-tile-badge").textContent = `${Math.min(doneCnt, totCnt)}/${totCnt}`;
+        const activeList = snap.active_workers || [];
+        renderLiveWorkersStrip(activeList);
+        const summaryActive = activeList
+          .map((w) => `[${w.worker}: T${w.turn}${w.state === "idle" ? " ✓" : ` ${w.pct || 0}%`}]`)
+          .join("  ");
+        if (summaryActive) {
+          $("live-tile-text").textContent = summaryActive;
+        }
+      } catch (_) {}
     });
 
     es.addEventListener("error", (ev) => {
@@ -1844,6 +1986,7 @@
           state.pipelineLogs.push({
             turn: payload.turn || 0,
             phase: "ERROR",
+            compute_worker: payload.compute_worker || "ENGINE",
             messages: {
               es_vgc: `Error en turno ${payload.turn}: ${payload.error}`,
               en_vgc: `Error on turn ${payload.turn}: ${payload.error}`,
@@ -1859,11 +2002,23 @@
       }
     });
 
-    es.addEventListener("cancelled", () => {
+    es.addEventListener("cancelled", (ev) => {
       es.close();
       state.activeStream = null;
+      renderLiveWorkersStrip([]);
+      try {
+        const payload = JSON.parse((ev && ev.data) || "{}");
+        (payload.ordered_turns || []).forEach((tr) => {
+          state.turnResults[tr.turn] = tr;
+        });
+        if (payload.reconstructed_logs && payload.reconstructed_logs.length) {
+          mergeReconstructedLogs(payload.reconstructed_logs);
+        }
+      } catch (_) {}
       $("live-status-dot").className = "status-dot error";
       $("live-tile-badge").textContent = state.lang === "es" ? "DETENIDO" : "STOPPED";
+      renderPipelineLogs();
+      renderTimeline();
       updatePipelineActionButtons();
     });
 
@@ -1871,10 +2026,33 @@
       const payload = JSON.parse(ev.data || "{}");
       es.close();
       state.activeStream = null;
+      renderLiveWorkersStrip([]);
+
+      // Hydrate strictly ordered turns (T1 -> TN) reconstructed AFTER all workers joined
+      (payload.ordered_turns || []).forEach((tr) => {
+        state.turnResults[tr.turn] = tr;
+      });
+      if (payload.reconstructed_logs) {
+        mergeReconstructedLogs(payload.reconstructed_logs);
+      }
+
+      const totCnt = state.app.replay.num_turns;
+      const doneCnt = Object.keys(state.turnResults).length;
+      $("pipeline-progress-fill").style.width = `${Math.min(100, Math.round((doneCnt / Math.max(1, totCnt)) * 100))}%`;
+      $("pipeline-progress-pill").textContent = `${doneCnt} / ${totCnt}`;
       $("live-status-dot").className = "status-dot done";
       $("live-tile-badge").textContent = "DONE";
+      const sStats = payload.scheduler_stats;
+      const schedTxt = sStats
+        ? ` (${sStats.gpu_turns} GPU · ${sStats.cpu_turns} CPU · ${sStats.elapsed_s}s)`
+        : "";
       $("live-tile-text").textContent =
-        state.lang === "es" ? "Todos los turnos analizados." : "All turns analyzed.";
+        (state.lang === "es"
+          ? "Todos los hilos finalizaron · Log reconstruido en orden (T1 → TN)."
+          : "All workers finished · Log reconstructed in order (T1 → TN).") + schedTxt;
+
+      renderPipelineLogs();
+      renderTimeline();
       $("nav-step-pipeline").classList.add("done");
       $("nav-step-review").disabled = false;
       $("pipeline-done-banner").style.display = "flex";
@@ -2075,9 +2253,10 @@
       headBadge.className = `verdict-pill ${com.badge_class || ""}`;
       headBadge.textContent = `${com.symbol || ""} ${com.badge || ""}`.trim();
     }
+    const workerSuffix = data.compute_worker ? ` · ${data.compute_worker}` : "";
     $("turn-compute-meta").textContent = isSci
-      ? `[${data.matrix_shape[0]}×${data.matrix_shape[1]}] · ${(data.total_timelines / 1000).toFixed(0)}k · ${data.elapsed_s}s`
-      : `${data.elapsed_s}s`;
+      ? `[${data.matrix_shape[0]}×${data.matrix_shape[1]}] · ${(data.total_timelines / 1000).toFixed(0)}k · ${data.elapsed_s}s${workerSuffix}`
+      : `${data.elapsed_s}s${workerSuffix}`;
 
     const fieldTags = [];
     if (f.weather) fieldTags.push(`${f.weather} ${f.weather_turns}t`);
@@ -2157,27 +2336,33 @@
       </div>
     `;
 
-    const pillarLabelMap = isSci
+    const fallbackPillarMap = isSci
       ? {
-          material: isEs ? "Material_KO" : "Material_KO",
-          threat: isEs ? "Amenaza_Letal" : "Lethal_Threat",
-          malposition: isEs ? "Mal_Posicionamiento" : "Mal_Positioning",
-          restriction: isEs ? "Restriccion_Opciones" : "Option_Restriction",
-          status_boost: isEs ? "Estados_Boosts" : "Status_Boosts",
-          two_turn_prime: isEs ? "Primed_2Turn" : "Two_Turn_Prime",
-          resources: isEs ? "Recursos_Escudos" : "Resource_Shields",
-          field_tempo: isEs ? "Tempo_Campo" : "Field_Tempo",
+          material: { label: isEs ? "Ventaja Material (ΔHP + ΔKO)" : "Material (ΔHP + ΔKO)", desc: "" },
+          threat: { label: isEs ? "Amenaza Letal Ponderada por Velocidad" : "Speed-Weighted Lethal Threat", desc: "" },
+          malposition: { label: isEs ? "Atrapamiento Posicional y Escape a Banca" : "Positional Trap & Escape Equity", desc: "" },
+          restriction: { label: isEs ? "Restricción del Espacio de Acciones" : "Action-Space Restriction", desc: "" },
+          status_boost: { label: isEs ? "Valor de Estados y Modificadores de Stat" : "Role-Weighted Status & Boosts", desc: "" },
+          two_turn_prime: { label: isEs ? "Valor Diferido de 2 Turnos (Cond. a HP)" : "HP-Gated 2-Turn Primed Value", desc: "" },
+          resources: { label: isEs ? "Economía de Escudos y Recursos" : "Shield & Resource Economy", desc: "" },
+          field_tempo: { label: isEs ? "Tempo de Campo y Turnos Restantes" : "Turn-Scaled Field & Tempo", desc: "" },
         }
       : {
-          material: isEs ? "Material (HP/KO)" : "Material (HP/KO)",
-          threat: isEs ? "Presión de KO" : "KO Pressure",
-          malposition: isEs ? "Mal Posicionamiento" : "Enemy Position",
-          restriction: isEs ? "Bloqueo Opciones" : "Option Lock",
-          status_boost: isEs ? "Estados y Boosts" : "Status & Boosts",
-          two_turn_prime: isEs ? "Jugada 2 Turnos" : "2-Turn Setup",
-          resources: isEs ? "Escudos y Objetos" : "Shields & Items",
-          field_tempo: isEs ? "Control de Campo" : "Field & Speed",
+          material: { label: isEs ? "Vida y KOs" : "HP & KOs (Material)", desc: "" },
+          threat: { label: isEs ? "Amenaza de KO" : "Lethal KO Pressure", desc: "" },
+          malposition: { label: isEs ? "Posicionamiento y Cambios" : "Pinned Matchups & Safe Switches", desc: "" },
+          restriction: { label: isEs ? "Bloqueo de Jugadas" : "Move Locks (Choice / Taunt / Protect)", desc: "" },
+          status_boost: { label: isEs ? "Estados y Boosts" : "Status & Stat Boosts", desc: "" },
+          two_turn_prime: { label: isEs ? "Golpe Cargado (Próx. Turno)" : "Primed Next-Turn Threats", desc: "" },
+          resources: { label: isEs ? "Sash, Mega y Objetos" : "Shields, Items & Mega Reserve", desc: "" },
+          field_tempo: { label: isEs ? "Speed Control, Clima y Campo" : "Speed Control, Weather & Field", desc: "" },
         };
+    const glossaryPillars = (state.app && state.app.glossary && state.app.glossary.pillars) || {};
+    const getPillarInfo = (pkey) => {
+      const regEntry = glossaryPillars[pkey] && glossaryPillars[pkey][state.lang] && glossaryPillars[pkey][state.lang][state.style];
+      if (regEntry && regEntry.label) return { label: regEntry.label, desc: regEntry.desc || "" };
+      return fallbackPillarMap[pkey] || { label: pkey, desc: "" };
+    };
 
     const tVal = getTermInfo("nash_value", "Turn Advantage", false);
     const tLoss = getTermInfo("nash_regret", "Play Cost", false);
@@ -2226,8 +2411,8 @@
         .map((d) => {
           const v = Number(d.value || 0);
           const cls = v > 0.02 ? "pos" : v < -0.02 ? "neg" : "";
-          const lbl = pillarLabelMap[d.pillar] || d.pillar;
-          return `<span class="eq-chip ${cls}">${v >= 0 ? "+" : ""}${v.toFixed(2)} ${escapeHtml(lbl)}</span>`;
+          const pInfo = getPillarInfo(d.pillar);
+          return `<span class="eq-chip ${cls}" title="${escapeHtml(pInfo.desc || pInfo.label)}">${v >= 0 ? "+" : ""}${v.toFixed(2)} ${escapeHtml(pInfo.label)}</span>`;
         })
         .join("");
       const bulletCount = (com.bullets || []).length;
@@ -2280,8 +2465,9 @@
                 const n = Number(val || 0);
                 const pctW = Math.min(50, Math.round((Math.abs(n) / maxAbs) * 50));
                 const cls = n >= 0 ? "pos" : "neg";
-                return `<div class="pillar-tug-row">
-                  <span class="pillar-tug-lbl">${escapeHtml(pillarLabelMap[k] || k)}</span>
+                const pInfo = getPillarInfo(k);
+                return `<div class="pillar-tug-row" title="${escapeHtml(pInfo.desc || pInfo.label)}">
+                  <span class="pillar-tug-lbl">${escapeHtml(pInfo.label)}</span>
                   <div class="pillar-tug-track">
                     <div class="pillar-tug-mid"></div>
                     <div class="pillar-tug-fill ${cls}" style="width:${pctW}%"></div>
@@ -2387,12 +2573,22 @@
             if (m.spd_boost) boosts.push(`SpD${m.spd_boost > 0 ? "+" : ""}${m.spd_boost}`);
             const bStr = boosts.length ? ` [${boosts.join(",")}]` : "";
             const protTag = m.protect_prev ? " 🛡" : "";
+            const otsBadge = m.ots_verified
+              ? `<span class="ots-verified-chip" title="${isEs ? "Movimientos verificados desde OTS oficial del replay / paste" : "Moves verified from official replay |showteam| OTS / paste"}">OTS ✓</span>`
+              : "";
+            const movesLine =
+              m.moves && m.moves.length
+                ? `<div class="board-mon-moves">${m.moves.map((mv) => `<span class="board-move-pill">${escapeHtml(mv)}</span>`).join("")}</div>`
+                : "";
             return `<div class="board-mon ${m.hp_cur <= 0 ? "fainted" : ""}">
-              <span class="board-mon-left">
-                ${spritePairHtml(m.sprite_url, m.item_sprite_url, m.species, m.item)}
-                <span><strong>${m.role === "Active" ? "ACT" : "BNC"}</strong> ${escapeHtml(m.species)}${escapeHtml(bStr)}${protTag}</span>
-              </span>
-              <span class="muted-xs">${m.hp_pct}% · ${m.spe} Spe</span>
+              <div class="board-mon-top">
+                <span class="board-mon-left">
+                  ${spritePairHtml(m.sprite_url, m.item_sprite_url, m.species, m.item)}
+                  <span><strong>${m.role === "Active" ? "ACT" : "BNC"}</strong> ${escapeHtml(m.species)}${escapeHtml(bStr)}${protTag} ${otsBadge}</span>
+                </span>
+                <span class="muted-xs">${m.hp_pct}% · ${m.spe} Spe${m.ability ? ` · ${escapeHtml(m.ability)}` : ""}</span>
+              </div>
+              ${movesLine}
             </div>`;
           })
           .join("");
@@ -2606,10 +2802,23 @@
     applyAllTranslations();
   };
 
+  // Chrome-duplicate-safe filename comparator: `match.html` (0) < `match (1).html` (1) < `match (2).html` (2)
+  function compareReplayFilenames(nameA, nameB) {
+    const splitDup = (fn) => {
+      const s = String(fn || "").replace(/\.(html?|log|txt)$/i, "");
+      const m = s.match(/^(.*?)\s*\((\d+)\)$/);
+      return m ? { base: m[1].trim().toLowerCase(), num: parseInt(m[2], 10) } : { base: s.trim().toLowerCase(), num: 0 };
+    };
+    const a = splitDup(nameA);
+    const b = splitDup(nameB);
+    const cmp = a.base.localeCompare(b.base, undefined, { numeric: true });
+    return cmp !== 0 ? cmp : a.num - b.num;
+  }
+
   // Multi-File Drag & Drop + File Input + Append Mode (1 to 3 Showdown Replays: Bo1 or Bo3)
   async function readUploadedFiles(fileList, appendMode) {
     const arr = Array.from(fileList || []);
-    arr.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { numeric: true }));
+    arr.sort((a, b) => compareReplayFilenames(a.name, b.name));
     const newItems = [];
     for (const f of arr) {
       newItems.push({ filename: f.name, raw_input: await f.text() });
@@ -3583,6 +3792,201 @@
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Split DuckDB Own vs. Rival Team Database Explorer (7th Hub CTA Card)
+  // -------------------------------------------------------------------------
+  state.teamDb = {
+    scope: "own",
+    archetype: "",
+    regulation: "",
+    q: "",
+    minElo: "",
+    rosters: [],
+  };
+
+  function openTeamDbView() {
+    setStep("team-db");
+    refreshTeamDb();
+  }
+
+  async function refreshTeamDb() {
+    const tdb = state.teamDb;
+    const qs = new URLSearchParams();
+    if (tdb.scope && tdb.scope !== "all") qs.set("scope", tdb.scope);
+    if (tdb.archetype) qs.set("archetype", tdb.archetype);
+    if (tdb.regulation) qs.set("regulation", tdb.regulation);
+    if (tdb.q) qs.set("q", tdb.q);
+    if (tdb.minElo) qs.set("min_elo", tdb.minElo);
+    try {
+      const res = await fetch(`/api/rosters/search?${qs.toString()}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) return;
+      tdb.rosters = data.rosters || [];
+      if ($("tdb-count-own")) $("tdb-count-own").textContent = String(data.own_count || 0);
+      if ($("tdb-count-rival")) $("tdb-count-rival").textContent = String(data.rival_count || 0);
+      if ($("tdb-count-all")) $("tdb-count-all").textContent = String(data.total_count || 0);
+
+      // Populate dynamic Archetype & Regulation filter options once/incrementally
+      const archSel = $("tdb-filter-arch");
+      if (archSel) {
+        const curA = archSel.value;
+        const isEs = state.lang === "es";
+        archSel.innerHTML =
+          `<option value="">${isEs ? "Todos los Arquetipos" : "All Archetypes"}</option>` +
+          (data.archetypes || []).map((a) => `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`).join("");
+        archSel.value = curA;
+      }
+      const regSel = $("tdb-filter-reg");
+      if (regSel) {
+        const curR = regSel.value;
+        const isEs = state.lang === "es";
+        regSel.innerHTML =
+          `<option value="">${isEs ? "Todas las Regulaciones" : "All Regulations"}</option>` +
+          (data.regulations || []).map((rg) => `<option value="${escapeHtml(rg)}">${escapeHtml(rg)}</option>`).join("");
+        regSel.value = curR;
+      }
+      renderTeamDbCards();
+    } catch (_) {}
+  }
+
+  function renderTeamDbCards() {
+    const grid = $("tdb-cards-grid");
+    if (!grid) return;
+    const isEs = state.lang === "es";
+    const rows = (state.teamDb && state.teamDb.rosters) || [];
+    if (!rows.length) {
+      grid.innerHTML = `<div class="panel" style="padding:20px;text-align:center;color:#94a3b8;grid-column:1/-1">
+        ${isEs ? "No hay equipos que coincidan con estos filtros en DuckDB." : "No teams match the current DuckDB filters."}
+      </div>`;
+      return;
+    }
+    grid.innerHTML = rows
+      .map((r) => {
+        const isRival = r.team_scope === "rival";
+        const scopeBadge = isRival
+          ? `<span class="cyber-pill gold-pill">${isEs ? "🛡 Rival" : "🛡 Rival"}</span>`
+          : `<span class="cyber-pill cyan-pill">${isEs ? "🏠 Propio" : "🏠 Own"}</span>`;
+        const eloBadge =
+          r.source_type === "showdown_ladder"
+            ? `<span class="tdb-elo-chip">${escapeHtml(r.source_legend || "Showdown Opponent")}</span>`
+            : "";
+        const spritesHtml = (r.species_sprites || [])
+          .map(
+            (sp) =>
+              `<div class="tdb-mon-chip" title="${escapeHtml(sp.species)}">${
+                sp.sprite_url ? `<img src="${escapeHtml(sp.sprite_url)}" alt="${escapeHtml(sp.species)}" />` : ""
+              }<span>${escapeHtml(sp.species)}</span></div>`
+          )
+          .join("");
+        return `<article class="panel tdb-card ${isRival ? "is-rival" : "is-own"}" data-tdb-rid="${escapeHtml(r.roster_id)}">
+          <div class="tdb-card-head">
+            <div>
+              <div class="tdb-card-title">${escapeHtml(r.display_name || r.roster_id)}</div>
+              <div class="tdb-meta-chips">
+                ${scopeBadge}
+                <span class="tag-neutral">${escapeHtml(r.archetype || "Balance")}</span>
+                <span class="tag-neutral">${escapeHtml(r.regulation || "Reg M-C")}</span>
+                ${eloBadge}
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-xs tdb-del-btn" type="button" data-tdb-del="${escapeHtml(r.roster_id)}" title="${isEs ? "Eliminar de DuckDB" : "Delete from DuckDB"}">✕</button>
+          </div>
+          <div class="tdb-sprites-row">${spritesHtml}</div>
+          <div class="tdb-card-actions">
+            <button class="btn btn-ghost btn-xs" type="button" data-tdb-flip="${escapeHtml(r.roster_id)}" data-tdb-next-scope="${isRival ? "own" : "rival"}">
+              ${isRival ? (isEs ? "Mover a Propios" : "Move to Own") : (isEs ? "Mover a Rivales" : "Move to Rivals")}
+            </button>
+            <button class="btn btn-ghost btn-xs" type="button" data-tdb-copy="${escapeHtml(r.roster_id)}">${isEs ? "📋 Copiar" : "📋 Copy"}</button>
+            <button class="btn btn-ghost btn-xs" type="button" data-tdb-prep="${escapeHtml(r.roster_id)}">⚡ Prep</button>
+            <button class="btn btn-gold btn-xs" type="button" data-tdb-ll="${escapeHtml(r.roster_id)}" data-tdb-side="${isRival ? "t2" : "t1"}">
+              🎯 ${isRival ? "Lead Lab (Rival)" : "Lead Lab (T1)"}
+            </button>
+          </div>
+        </article>`;
+      })
+      .join("");
+
+    grid.querySelectorAll("[data-tdb-del]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const rid = btn.dataset.tdbDel;
+        const res = await fetch("/api/rosters/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roster_id: rid }),
+        });
+        const d = await res.json();
+        if (res.ok && d.rosters) {
+          if (state.app) state.app.rosters = d.rosters;
+          populateLeadLabRosterSelects();
+          populatePrepRosterSelect();
+          refreshTeamDb();
+        }
+      });
+    });
+
+    grid.querySelectorAll("[data-tdb-flip]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const rid = btn.dataset.tdbFlip;
+        const nextScope = btn.dataset.tdbNextScope;
+        const res = await fetch("/api/rosters/update-meta", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roster_id: rid, team_scope: nextScope }),
+        });
+        const d = await res.json();
+        if (res.ok && d.rosters) {
+          if (state.app) state.app.rosters = d.rosters;
+          populateLeadLabRosterSelects();
+          refreshTeamDb();
+        }
+      });
+    });
+
+    grid.querySelectorAll("[data-tdb-copy]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const row = rows.find((x) => x.roster_id === btn.dataset.tdbCopy);
+        if (!row) return;
+        try {
+          await navigator.clipboard.writeText(row.paste_text || "");
+          btn.textContent = isEs ? "✓ Copiado" : "✓ Copied";
+          setTimeout(() => { btn.textContent = isEs ? "📋 Copiar" : "📋 Copy"; }, 1200);
+        } catch (_) {}
+      });
+    });
+
+    grid.querySelectorAll("[data-tdb-prep]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const rid = btn.dataset.tdbPrep;
+        openPrepToolsView("speed_tiers");
+        if ($("prep-roster-select")) {
+          $("prep-roster-select").value = rid;
+          state.prep.usePaste = false;
+          updatePrepControlsUI();
+          generatePrepToolPreview();
+        }
+      });
+    });
+
+    grid.querySelectorAll("[data-tdb-ll]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const rid = btn.dataset.tdbLl;
+        const side = btn.dataset.tdbSide || "t1";
+        openLeadLabView();
+        if (side === "t2") {
+          state.leadLab.t2Mode = "full";
+          state.leadLab.t2UsePaste = false;
+          if ($("ll-t2-roster-select")) $("ll-t2-roster-select").value = rid;
+        } else {
+          state.leadLab.t1UsePaste = false;
+          if ($("ll-t1-roster-select")) $("ll-t1-roster-select").value = rid;
+        }
+        updateLeadLabControlsUI();
+        renderLeadLabRosterPreview(side);
+        scheduleLeadLabCacheLookup(0);
+      });
+    });
+  }
+
   if ($("btn-go-home")) $("btn-go-home").onclick = () => setStep("home");
   if ($("nav-hub-speed")) $("nav-hub-speed").onclick = () => openPrepToolsView("speed_tiers");
   if ($("nav-hub-damage")) $("nav-hub-damage").onclick = () => openPrepToolsView("damage_matrix");
@@ -3590,6 +3994,7 @@
   if ($("nav-hub-lead-lab")) $("nav-hub-lead-lab").onclick = () => openLeadLabView();
   if ($("nav-hub-analytics")) $("nav-hub-analytics").onclick = () => openAnalyticsView();
   if ($("nav-hub-md-scout")) $("nav-hub-md-scout").onclick = () => openMdScoutView();
+  if ($("nav-hub-team-db")) $("nav-hub-team-db").onclick = () => openTeamDbView();
 
   if ($("cta-card-speed")) $("cta-card-speed").onclick = () => openPrepToolsView("speed_tiers");
   if ($("cta-card-damage")) $("cta-card-damage").onclick = () => openPrepToolsView("damage_matrix");
@@ -3597,7 +4002,97 @@
   if ($("cta-card-lead-lab")) $("cta-card-lead-lab").onclick = () => openLeadLabView();
   if ($("cta-card-analytics")) $("cta-card-analytics").onclick = () => openAnalyticsView();
   if ($("cta-card-md-scout")) $("cta-card-md-scout").onclick = () => openMdScoutView();
+  if ($("cta-card-team-db")) $("cta-card-team-db").onclick = () => openTeamDbView();
   if ($("btn-md-scout-back")) $("btn-md-scout-back").onclick = () => setStep("home");
+  if ($("btn-tdb-back")) $("btn-tdb-back").onclick = () => setStep("home");
+
+  if ($("btn-tdb-toggle-import")) {
+    $("btn-tdb-toggle-import").onclick = () => {
+      const dr = $("tdb-import-drawer");
+      if (dr) dr.style.display = dr.style.display === "none" ? "block" : "none";
+    };
+  }
+  if ($("btn-tdb-close-import")) {
+    $("btn-tdb-close-import").onclick = () => {
+      const dr = $("tdb-import-drawer");
+      if (dr) dr.style.display = "none";
+    };
+  }
+  if ($("btn-tdb-save-import")) {
+    $("btn-tdb-save-import").onclick = async () => {
+      const paste = ($("tdb-imp-paste") && $("tdb-imp-paste").value.trim()) || "";
+      const scope = ($("tdb-imp-scope") && $("tdb-imp-scope").value) || "own";
+      const dname = ($("tdb-imp-name") && $("tdb-imp-name").value.trim()) || "";
+      const reg = ($("tdb-imp-reg") && $("tdb-imp-reg").value) || "Reg M-C";
+      const arch = ($("tdb-imp-arch") && $("tdb-imp-arch").value) || "";
+      const eloRaw = ($("tdb-imp-elo") && $("tdb-imp-elo").value.trim()) || "";
+      const stEl = $("tdb-imp-status");
+      if (!paste) {
+        if (stEl) stEl.textContent = state.lang === "es" ? "Pega un Showdown Paste válido." : "Paste a valid Showdown team first.";
+        return;
+      }
+      const rid = `${scope}_${Date.now().toString(36)}`;
+      const res = await fetch("/api/rosters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          roster_id: rid,
+          display_name: dname || (scope === "rival" ? "Showdown Opponent" : "My Team"),
+          trainer_hint: scope === "rival" ? "Showdown Opponent" : "trainer_1",
+          paste_text: paste,
+          team_scope: scope,
+          archetype: arch,
+          regulation: reg,
+          source_type: scope === "rival" ? "showdown_ladder" : "personal",
+          opponent_elo: eloRaw ? parseInt(eloRaw, 10) : null,
+        }),
+      });
+      const d = await res.json();
+      if (!res.ok || d.error) {
+        if (stEl) stEl.textContent = `Error: ${d.error || "Save failed"}`;
+        return;
+      }
+      if (state.app && d.rosters) state.app.rosters = d.rosters;
+      if ($("tdb-imp-paste")) $("tdb-imp-paste").value = "";
+      if ($("tdb-imp-name")) $("tdb-imp-name").value = "";
+      if ($("tdb-import-drawer")) $("tdb-import-drawer").style.display = "none";
+      populateLeadLabRosterSelects();
+      populatePrepRosterSelect();
+      refreshTeamDb();
+    };
+  }
+  document.querySelectorAll("#tdb-scope-tabs [data-tdb-scope]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#tdb-scope-tabs [data-tdb-scope]").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.teamDb.scope = btn.dataset.tdbScope || "own";
+      refreshTeamDb();
+    });
+  });
+  if ($("tdb-search-input")) {
+    $("tdb-search-input").addEventListener("input", () => {
+      state.teamDb.q = $("tdb-search-input").value.trim();
+      refreshTeamDb();
+    });
+  }
+  if ($("tdb-filter-arch")) {
+    $("tdb-filter-arch").addEventListener("change", () => {
+      state.teamDb.archetype = $("tdb-filter-arch").value;
+      refreshTeamDb();
+    });
+  }
+  if ($("tdb-filter-reg")) {
+    $("tdb-filter-reg").addEventListener("change", () => {
+      state.teamDb.regulation = $("tdb-filter-reg").value;
+      refreshTeamDb();
+    });
+  }
+  if ($("tdb-filter-elo")) {
+    $("tdb-filter-elo").addEventListener("input", () => {
+      state.teamDb.minElo = $("tdb-filter-elo").value.trim();
+      refreshTeamDb();
+    });
+  }
 
   // -------------------------------------------------------------------------
   // Factored 90×90 Turn-1 Lead & Bring Lab Controller
@@ -3650,21 +4145,54 @@
 
   function populateLeadLabRosterSelects() {
     const rosters = (state.app && state.app.rosters) || [];
-    ["t1", "t2"].forEach((side, idx) => {
+    const ownRows = rosters.filter((r) => (r.team_scope || "own") !== "rival");
+    const rivalRows = rosters.filter((r) => (r.team_scope || "own") === "rival");
+    const isEs = state.lang === "es";
+
+    const buildGroupedOptions = (primaryList, secondaryList, primaryLbl, secondaryLbl) => {
+      const mkOpts = (arr) =>
+        arr
+          .map(
+            (r) =>
+              `<option value="${escapeHtml(r.roster_id)}">${escapeHtml(r.display_name || r.roster_id)}${
+                r.archetype ? ` [${escapeHtml(r.archetype)}]` : ""
+              }</option>`
+          )
+          .join("");
+      let htmlOut = "";
+      if (primaryList.length) htmlOut += `<optgroup label="${escapeHtml(primaryLbl)}">${mkOpts(primaryList)}</optgroup>`;
+      if (secondaryList.length) htmlOut += `<optgroup label="${escapeHtml(secondaryLbl)}">${mkOpts(secondaryList)}</optgroup>`;
+      return htmlOut;
+    };
+
+    ["t1", "t2"].forEach((side) => {
       const sel = $(`ll-${side}-roster-select`);
       if (!sel) return;
       const prev = sel.value;
       if (!rosters.length) {
-        sel.innerHTML = `<option value="">${state.lang === "es" ? "(Sin equipos DuckDB)" : "(No DuckDB rosters)"}</option>`;
+        sel.innerHTML = `<option value="">${isEs ? "(Sin equipos DuckDB)" : "(No DuckDB rosters)"}</option>`;
         return;
       }
-      sel.innerHTML = rosters
-        .map((r) => `<option value="${escapeHtml(r.roster_id)}">${escapeHtml(r.display_name || r.roster_id)}</option>`)
-        .join("");
+      const isT1 = side === "t1";
+      sel.innerHTML = isT1
+        ? buildGroupedOptions(
+            ownRows,
+            rivalRows,
+            isEs ? "🏠 Mis Equipos" : "🏠 Own Teams",
+            isEs ? "🛡 Equipos Rivales" : "🛡 Rival Teams"
+          )
+        : buildGroupedOptions(
+            rivalRows,
+            ownRows,
+            isEs ? "🛡 Equipos Rivales (Showdown / Scout)" : "🛡 Rival Teams (Showdown / Scout)",
+            isEs ? "🏠 Mis Equipos" : "🏠 Own Teams"
+          );
       if (prev && rosters.some((r) => r.roster_id === prev)) {
         sel.value = prev;
-      } else if (rosters[idx]) {
-        sel.value = rosters[idx].roster_id;
+      } else if (isT1 && ownRows.length) {
+        sel.value = ownRows[0].roster_id;
+      } else if (!isT1 && rivalRows.length) {
+        sel.value = rivalRows[0].roster_id;
       } else {
         sel.value = rosters[0].roster_id;
       }
@@ -3996,6 +4524,222 @@
         );
       });
     });
+
+    renderLeadLabPlaybook();
+  }
+
+  function _collectUniqueTopLeads(brings, maxCount) {
+    const out = [];
+    const seen = new Set();
+    for (const b of brings || []) {
+      const lIdx = Number(b.lead_idx);
+      if (seen.has(lIdx)) continue;
+      seen.add(lIdx);
+      out.push(b);
+      if (out.length >= (maxCount || 5)) break;
+    }
+    return out;
+  }
+
+  function _getActivePlaybookPairs() {
+    const res = state.leadLab.result;
+    if (!res || !res.heatmap_cells || !res.heatmap_cells.length) return { mode: "by_mine", anchors: [], selectedAnchor: null, pairs: [] };
+    const mode = state.leadLab.playbookMode || "by_mine";
+    const ownTop = _collectUniqueTopLeads(res.trainer_1_top_brings, 5);
+    const oppTop = _collectUniqueTopLeads(res.trainer_2_top_brings, 6);
+    if (!ownTop.length || !oppTop.length) return { mode, anchors: [], selectedAnchor: null, pairs: [] };
+
+    const anchors = mode === "by_mine" ? ownTop : oppTop;
+    let selIdx = state.leadLab.playbookSelectedIdx;
+    if (selIdx === null || !anchors.some((a) => Number(a.lead_idx) === Number(selIdx))) {
+      selIdx = Number(anchors[0].lead_idx);
+      state.leadLab.playbookSelectedIdx = selIdx;
+    }
+    const selectedAnchor = anchors.find((a) => Number(a.lead_idx) === Number(selIdx)) || anchors[0];
+    const targets = mode === "by_mine" ? oppTop : ownTop;
+
+    const pairs = [];
+    for (const tgt of targets) {
+      const l1 = mode === "by_mine" ? Number(selectedAnchor.lead_idx) : Number(tgt.lead_idx);
+      const l2 = mode === "by_mine" ? Number(tgt.lead_idx) : Number(selectedAnchor.lead_idx);
+      const cell = res.heatmap_cells[l1] && res.heatmap_cells[l1][l2];
+      if (!cell) continue;
+      // Pick the Nash-best bench pairing for this exact (own_lead, opp_lead) pair
+      const b1 = Number(cell.best_t1_bench_idx || 0);
+      const b2 = Number(cell.best_t2_bench_idx || 0);
+      const b1Labels = (cell.t1_bench_labels && cell.t1_bench_labels[b1]) || [];
+      const b2Labels = (cell.t2_bench_labels && cell.t2_bench_labels[b2]) || [];
+      const nb1 = (cell.t1_bench_labels || []).length || 1;
+      const nb2 = (cell.t2_bench_labels || []).length || 1;
+      const sc = Number((cell.sub_matrix_6x6 && cell.sub_matrix_6x6[b1] && cell.sub_matrix_6x6[b1][b2]) ?? cell.score ?? 0);
+      const fl = Number((cell.sub_cvar_6x6 && cell.sub_cvar_6x6[b1] && cell.sub_cvar_6x6[b1][b2]) ?? sc);
+      const t1Top3 = (cell.sub_t1_top_plays && cell.sub_t1_top_plays[b1] && cell.sub_t1_top_plays[b1][b2]) || [];
+      const t2Top3 = (cell.sub_t2_top_plays && cell.sub_t2_top_plays[b1] && cell.sub_t2_top_plays[b1][b2]) || [];
+      const canonKey = canonicalLeadLabCellKey(cell.lead_1, b1Labels, cell.lead_2, b2Labels);
+      pairs.push({
+        l1,
+        l2,
+        b1,
+        b2,
+        mode_1_idx: l1 * nb1 + b1,
+        mode_2_idx: l2 * nb2 + b2,
+        lead_1: cell.lead_1,
+        bench_1: b1Labels,
+        lead_2: cell.lead_2,
+        bench_2: b2Labels,
+        score: sc,
+        floor: fl,
+        t1Top3,
+        t2Top3,
+        anchor: selectedAnchor,
+        target: tgt,
+        canonKey,
+      });
+    }
+    return { mode, anchors, selectedAnchor, pairs };
+  }
+
+  function renderLeadLabPlaybook() {
+    const panel = $("ll-playbook-panel");
+    const selBox = $("ll-playbook-selector");
+    const grid = $("ll-playbook-grid");
+    const res = state.leadLab.result;
+    if (!panel || !selBox || !grid) return;
+    const { mode, anchors, selectedAnchor, pairs } = _getActivePlaybookPairs();
+    if (!res || !pairs.length) {
+      panel.style.display = "none";
+      return;
+    }
+    panel.style.display = "block";
+    const isEs = state.lang === "es";
+    const isSci = state.style === "scientific";
+    const spr = res.sprites || {};
+    const mixLbl = isSci ? "Nash" : "Mix";
+    const scoreLbl = isSci ? "v*" : (isEs ? "Vent." : "Edge");
+
+    if ($("btn-ll-pb-by-mine")) {
+      $("btn-ll-pb-by-mine").classList.toggle("active", mode === "by_mine");
+      $("btn-ll-pb-by-mine").textContent = isEs ? "Mi Lead → vs. Top Rivales" : "My Lead → vs. Top Opp Leads";
+    }
+    if ($("btn-ll-pb-by-opp")) {
+      $("btn-ll-pb-by-opp").classList.toggle("active", mode === "by_opp");
+      $("btn-ll-pb-by-opp").textContent = isEs ? "Lead Rival → vs. Mis Top Leads" : "Opp Lead → vs. My Top Leads";
+    }
+    if ($("lbl-ll-playbook-title")) {
+      $("lbl-ll-playbook-title").textContent = isEs
+        ? "📋 Playbook Turno 1: Tus Leads vs. Leads del Rival"
+        : "📋 Turn-1 Playbook Matrix: Your Leads vs. Opponent Leads";
+    }
+    if ($("lbl-ll-deep-batch")) {
+      $("lbl-ll-deep-batch").textContent = isEs
+        ? `Auditar K=128 Todos (${pairs.length} pares)`
+        : `Deep Audit K=128 All (${pairs.length} pairs)`;
+    }
+
+    const selHint = mode === "by_mine"
+      ? (isEs ? "Elige tu Lead:" : "Pick your Lead:")
+      : (isEs ? "Elige Lead Rival:" : "Pick Opp Lead:");
+    selBox.innerHTML = `<span class="muted-xs" style="align-self:center;margin-right:4px">${selHint}</span>` + anchors
+      .map((a) => {
+        const activeCls = Number(a.lead_idx) === Number(selectedAnchor.lead_idx) ? "active" : "";
+        const wPct = ((Number(mode === "by_mine" ? a.nash_weight : a.opp_nash_weight) || 0) * 100).toFixed(0);
+        return `<button class="ll-pb-pill ${activeCls}" type="button" data-pb-anchor="${a.lead_idx}">
+          ${miniSpriteImg(a.lead_species[0], spr)}${miniSpriteImg(a.lead_species[1], spr)}
+          <span>${escapeHtml(a.lead_species[0])} + ${escapeHtml(a.lead_species[1])}</span>
+          <small>${mixLbl} ${wPct}%</small>
+        </button>`;
+      })
+      .join("");
+    selBox.querySelectorAll("[data-pb-anchor]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.leadLab.playbookSelectedIdx = parseInt(btn.dataset.pbAnchor, 10);
+        renderLeadLabPlaybook();
+      });
+    });
+
+    grid.innerHTML = pairs
+      .map((p, idx) => {
+        const isSel = state.leadLab.selectedLead1 === p.l1 && state.leadLab.selectedLead2 === p.l2;
+        const cachedAudit = state.leadLab.batchAuditsByKey && state.leadLab.batchAuditsByKey[p.canonKey];
+        const hasVaultCache =
+          Boolean(cachedAudit) ||
+          (state.leadLab.cachedDeepAuditKeys && state.leadLab.cachedDeepAuditKeys.has(p.canonKey));
+        const headMons = mode === "by_mine" ? p.lead_2 : p.lead_1;
+        const headPrefix = mode === "by_mine" ? (isEs ? "vs. Rival:" : "vs. Opp:") : (isEs ? "Con Tu Lead:" : "With Your Lead:");
+        const wPct = ((Number(mode === "by_mine" ? p.target.opp_nash_weight : p.target.nash_weight) || 0) * 100).toFixed(1);
+
+        // Prefer unpruned K=128 Deep Audit top actions when available, otherwise persisted Top-3 Turn-1 plays
+        let playsHtml = "";
+        if (cachedAudit && cachedAudit.top_actions && cachedAudit.top_actions.length) {
+          playsHtml = `<div class="ll-pb-deep-tag">⚡ ${isEs ? "Auditoría K=128 Sin Poda" : "Unpruned K=128 Deep Audit"}</div>` +
+            cachedAudit.top_actions
+              .slice(0, 3)
+              .map(
+                (a, ai) => `<div class="ll-pb-play-row ${ai === 0 ? "rank-1" : ""}">
+                  <span><strong>#${ai + 1}</strong> ${escapeHtml(a.desc)}</span>
+                  <span class="ll-pb-play-meta">${mixLbl} ${a.nash_pct}% · ${a.risk_ev >= 0 ? "+" : ""}${Number(a.risk_ev).toFixed(2)}</span>
+                </div>`
+              )
+              .join("");
+        } else if (p.t1Top3 && p.t1Top3.length) {
+          playsHtml = p.t1Top3
+            .slice(0, 3)
+            .map(
+              (pl, pi) => `<div class="ll-pb-play-row ${pi === 0 ? "rank-1" : ""}">
+                <span><strong>#${pi + 1}</strong> ${escapeHtml(pl[0])}</span>
+                <span class="ll-pb-play-meta">${mixLbl} ${Number(pl[1]).toFixed(0)}% · ${Number(pl[2]) >= 0 ? "+" : ""}${Number(pl[2]).toFixed(2)}</span>
+              </div>`
+            )
+            .join("");
+        } else {
+          playsHtml = `<div class="muted-xs">—</div>`;
+        }
+
+        const badgeCache = hasVaultCache
+          ? `<span class="cyber-pill cyan-pill" style="font-size:10px;padding:1px 6px">⚡ K=128</span>`
+          : "";
+        return `<article class="ll-pb-card ${isSel ? "selected" : ""}" data-pb-idx="${idx}">
+          <div class="ll-pb-card-head">
+            <div class="ll-pb-lead-info">
+              <span class="muted-xs">${headPrefix}</span>
+              <div class="ll-lead-line">
+                ${miniSpriteImg(headMons[0], spr)}${miniSpriteImg(headMons[1], spr)}
+                <strong>${escapeHtml(headMons[0])} + ${escapeHtml(headMons[1])}</strong>
+              </div>
+              <span class="muted-xs">${mixLbl} ${wPct}% · ${isEs ? "Tu Back-2:" : "Your Back:"} ${escapeHtml(p.bench_1.join(" / "))}</span>
+            </div>
+            <div class="ll-pb-score-col">
+              <span class="ll-metric-pill ${p.score >= 0 ? "pos" : "neg"}"><small>${scoreLbl}</small><strong>${p.score >= 0 ? "+" : ""}${p.score.toFixed(2)}</strong></span>
+              ${badgeCache}
+            </div>
+          </div>
+          <div class="ll-pb-plays">${playsHtml}</div>
+          <div class="ll-pb-actions">
+            <button class="btn btn-ghost btn-xs" type="button" data-pb-open="${idx}">${isEs ? "Ver 6×6 + Audit" : "Inspect 6×6"}</button>
+          </div>
+        </article>`;
+      })
+      .join("");
+
+    grid.querySelectorAll("[data-pb-open]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const p = pairs[parseInt(btn.dataset.pbOpen, 10)];
+        if (!p) return;
+        selectLeadLabCell(p.l1, p.l2, p.b1, p.b2);
+        const drill = $("ll-drill-panel");
+        if (drill) drill.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+  }
+
+  function canonicalLeadLabModeKey(leadArr, benchArr) {
+    const lToks = (leadArr || []).map((s) => normStr(s)).filter(Boolean).sort();
+    const bToks = (benchArr || []).map((s) => normStr(s)).filter(Boolean).sort();
+    return `${lToks.join("+")}|${bToks.join("+")}`;
+  }
+
+  function canonicalLeadLabCellKey(l1Arr, b1Arr, l2Arr, b2Arr) {
+    return `${canonicalLeadLabModeKey(l1Arr, b1Arr)}__${canonicalLeadLabModeKey(l2Arr, b2Arr)}`;
   }
 
   function selectLeadLabCell(l1Idx, l2Idx, optB1, optB2) {
@@ -4007,6 +4751,7 @@
     state.leadLab.selectedBench1 = typeof optB1 === "number" ? optB1 : Number(cell.best_t1_bench_idx || 0);
     state.leadLab.selectedBench2 = typeof optB2 === "number" ? optB2 : Number(cell.best_t2_bench_idx || 0);
     state.leadLab.deepAudit = null;
+    state.leadLab.deepAuditReqSeq = (state.leadLab.deepAuditReqSeq || 0) + 1;
 
     document.querySelectorAll(".ll-hm-cell.selected").forEach((el) => el.classList.remove("selected"));
     const activeTd = $(`ll-cell-${l1Idx}-${l2Idx}`);
@@ -4034,6 +4779,30 @@
         <span class="muted-xs">vs.</span>
         <span>${miniSpriteImg(cell.lead_2[0], spr)}${miniSpriteImg(cell.lead_2[1], spr)} ${escapeHtml(cell.lead_2.join(" + "))}</span>
       `;
+    }
+
+    // Own-Lead Quick Switcher right in the Drilldown header so coaches can compare different own leads against this exact Opponent Lead!
+    const ownSw = $("ll-drill-own-switcher");
+    if (ownSw) {
+      const ownTop = _collectUniqueTopLeads(res.trainer_1_top_brings, 5);
+      ownSw.innerHTML = `<span class="muted-xs" style="margin-right:2px">${isEs ? "Cambiar Mi Lead:" : "Switch My Lead:"}</span>` + ownTop
+        .map((ob) => {
+          const altL1 = Number(ob.lead_idx);
+          const altCell = res.heatmap_cells[altL1] && res.heatmap_cells[altL1][l2];
+          const altSc = altCell ? Number(altCell.score || 0) : 0;
+          const act = altL1 === l1 ? "active" : "";
+          return `<button class="ll-own-sw-pill ${act}" type="button" data-sw-l1="${altL1}" title="${escapeHtml(ob.lead_species.join(" + "))} (${altSc >= 0 ? "+" : ""}${altSc.toFixed(2)})">
+            ${miniSpriteImg(ob.lead_species[0], spr)}${miniSpriteImg(ob.lead_species[1], spr)}
+            <span>${altSc >= 0 ? "+" : ""}${altSc.toFixed(2)}</span>
+          </button>`;
+        })
+        .join("");
+      ownSw.querySelectorAll("[data-sw-l1]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const targetL1 = parseInt(btn.dataset.swL1, 10);
+          selectLeadLabCell(targetL1, l2);
+        });
+      });
     }
 
     if ($("ll-drill-turn0-strip")) {
@@ -4065,8 +4834,11 @@
               const selCls = rIdx === b1 && cIdx === b2 ? "selected" : "";
               const m1Key = `m${l1 * nb1 + rIdx}`;
               const m2Key = `m${l2 * nb2 + cIdx}`;
+              const canonCellKey = canonicalLeadLabCellKey(cell.lead_1, pair1, cell.lead_2, b2Lbls[cIdx] || []);
               const cachedCls =
-                state.leadLab.cachedDeepAuditKeys && state.leadLab.cachedDeepAuditKeys.has(`${m1Key}__${m2Key}`)
+                state.leadLab.cachedDeepAuditKeys &&
+                (state.leadLab.cachedDeepAuditKeys.has(canonCellKey) ||
+                  state.leadLab.cachedDeepAuditKeys.has(`${m1Key}__${m2Key}`))
                   ? "has-deep-cache"
                   : "";
               const cacheTip = cachedCls
@@ -4084,6 +4856,7 @@
           state.leadLab.selectedBench1 = parseInt(td.dataset.sb1, 10);
           state.leadLab.selectedBench2 = parseInt(td.dataset.sb2, 10);
           state.leadLab.deepAudit = null;
+          state.leadLab.deepAuditReqSeq = (state.leadLab.deepAuditReqSeq || 0) + 1;
           renderLeadLabDrilldown();
         });
       });
@@ -4140,21 +4913,26 @@
       `;
     }
 
-    // Auto-hydrate cached K=128 Deep Audit immediately from DuckDB if this exact (mode1, mode2) cell is cached!
+    // Auto-hydrate cached K=128 Deep Audit immediately from DuckDB using canonical species identity + stale-request guard!
     const nb1 = (cell.t1_bench_labels || []).length || 1;
     const nb2 = (cell.t2_bench_labels || []).length || 1;
     const m1Idx = l1 * nb1 + b1;
     const m2Idx = l2 * nb2 + b2;
-    const cellKey = `m${m1Idx}__m${m2Idx}`;
+    const b1PairSel = (cell.t1_bench_labels && cell.t1_bench_labels[b1]) || [];
+    const b2PairSel = (cell.t2_bench_labels && cell.t2_bench_labels[b2]) || [];
+    const canonKey = canonicalLeadLabCellKey(cell.lead_1, b1PairSel, cell.lead_2, b2PairSel);
+    const legacyKey = `m${m1Idx}__m${m2Idx}`;
     const deepBox = $("ll-deep-audit-box");
     if (deepBox) {
-      if (state.leadLab.deepAudit && state.leadLab.deepAudit.audit_cell_key === cellKey) {
+      const curAuditKey = state.leadLab.deepAudit && state.leadLab.deepAudit.audit_cell_key;
+      if (state.leadLab.deepAudit && (curAuditKey === canonKey || curAuditKey === legacyKey)) {
         renderLeadLabDeepAuditBox(state.leadLab.deepAudit);
       } else if (
         state.leadLab.jobId &&
         state.leadLab.cachedDeepAuditKeys &&
-        state.leadLab.cachedDeepAuditKeys.has(cellKey)
+        (state.leadLab.cachedDeepAuditKeys.has(canonKey) || state.leadLab.cachedDeepAuditKeys.has(legacyKey))
       ) {
+        const reqSeq = ++state.leadLab.deepAuditReqSeq;
         deepBox.style.display = "flex";
         deepBox.innerHTML = `<span class="muted-xs">⚡ ${isEs ? "Cargando auditoría profunda K=128 guardada en Vault..." : "Loading cached K=128 deep audit from Vault..."}</span>`;
         fetch("/api/lead-lab/deep-turn1", {
@@ -4164,12 +4942,17 @@
             job_id: state.leadLab.jobId,
             mode_1_idx: m1Idx,
             mode_2_idx: m2Idx,
+            lead_1: cell.lead_1,
+            bench_1: b1PairSel,
+            lead_2: cell.lead_2,
+            bench_2: b2PairSel,
             num_mc: 128,
             force_recompute: false,
           }),
         })
           .then((r) => r.json())
           .then((d) => {
+            if (reqSeq !== state.leadLab.deepAuditReqSeq) return;
             if (
               d &&
               !d.error &&
@@ -4178,6 +4961,16 @@
               state.leadLab.selectedBench1 === b1 &&
               state.leadLab.selectedBench2 === b2
             ) {
+              // Verify returned species match the active box so mismatched moves can NEVER render!
+              if (d.mode_1 && d.mode_2) {
+                const gotKey = canonicalLeadLabCellKey(
+                  d.mode_1.lead_species,
+                  d.mode_1.bench_species,
+                  d.mode_2.lead_species,
+                  d.mode_2.bench_species
+                );
+                if (gotKey !== canonKey) return;
+              }
               state.leadLab.deepAudit = d;
               renderLeadLabDeepAuditBox(d);
             }
@@ -4572,6 +5365,32 @@
     if (box) box.innerHTML = "";
   }
 
+  function renderLeadLabWorkersStrip(workersMap) {
+    const strip = $("ll-workers-strip");
+    if (!strip) return;
+    const entries = Object.values(workersMap || {});
+    if (!entries.length) {
+      strip.style.display = "none";
+      strip.innerHTML = "";
+      return;
+    }
+    strip.style.display = "flex";
+    const isEs = state.lang === "es";
+    entries.sort((a, b) => String(a.worker).localeCompare(String(b.worker)));
+    strip.innerHTML = entries
+      .map((w) => {
+        const cls = workerHardwareClass(w.worker);
+        const doneCls = w.done ? "hw-done" : "";
+        const hwShort = w.hardware_device ? ` · ${w.hardware_device}` : "";
+        const cntTxt = `${Number(w.count || 0)} ${isEs ? "celdas" : "cells"}`;
+        const cellTxt = w.done
+          ? `${cntTxt} ✓`
+          : `(${w.l1 + 1},${w.l2 + 1}) · ${cntTxt}`;
+        return `<span class="worker-chip ${cls} ${doneCls}"><strong>${escapeHtml(w.worker)}</strong><span>${escapeHtml(hwShort)}</span><span>→ ${escapeHtml(cellTxt)}</span></span>`;
+      })
+      .join("");
+  }
+
   function appendLeadLabCli(tag, msg, tagClass) {
     const box = $("ll-cli-console");
     if (!box) return;
@@ -4596,8 +5415,9 @@
     if (ll.running) return;
     const statusEl = $("ll-status-msg");
     const preset = ($("ll-preset-select") && $("ll-preset-select").value) || "balanced";
+    const computeMode = ($("ll-compute-mode") && $("ll-compute-mode").value) || "auto";
 
-    const payload = { preset };
+    const payload = { preset, compute_mode: computeMode };
     if (ll.t1UsePaste) {
       payload.t1_paste_text = ($("ll-t1-paste-input") && $("ll-t1-paste-input").value.trim()) || "";
     } else {
@@ -4622,12 +5442,13 @@
 
     if ($("ll-progress-panel")) $("ll-progress-panel").style.display = "block";
     if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot running";
+    renderLeadLabWorkersStrip({});
     clearLeadLabCli();
     appendLeadLabCli(
       "INIT",
       isEs
-        ? `Validando 66-SP y precompilando tensores Reg M-C (preset=${preset})...`
-        : `Validating 66-SP spreads & pre-compiling Reg M-C tensors (preset=${preset})...`
+        ? `Validando 66-SP y precompilando tensores Reg M-C (preset=${preset} · modo=${computeMode.toUpperCase()})...`
+        : `Validating 66-SP spreads & pre-compiling Reg M-C tensors (preset=${preset} · mode=${computeMode.toUpperCase()})...`
     );
     if (statusEl) {
       statusEl.textContent = isEs ? "Validando equipos 66-SP y compilando tensores..." : "Validating 66-SP teams & pre-compiling tensors...";
@@ -4659,7 +5480,7 @@
 
       appendLeadLabCli(
         "READY",
-        `${meta.t1_label} vs ${meta.t2_label} · ${meta.t1_leads.length}×${meta.t2_leads.length} leads (${meta.num_t1_modes}×${meta.num_t2_modes} = ${(meta.num_t1_modes * meta.num_t2_modes).toLocaleString()} modes) on ${meta.device}`,
+        `${meta.t1_label} vs ${meta.t2_label} · ${meta.t1_leads.length}×${meta.t2_leads.length} leads (${meta.num_t1_modes}×${meta.num_t2_modes} = ${(meta.num_t1_modes * meta.num_t2_modes).toLocaleString()} modes) · ${(meta.compute_mode || computeMode).toUpperCase()} · ${meta.device}`,
         "tag-nash"
       );
 
@@ -4671,15 +5492,39 @@
       if ($("ll-drill-panel")) $("ll-drill-panel").style.display = "none";
       renderLeadLabHeatmapSkeleton(meta);
 
+      appendLeadLabCli(
+        "SCHED",
+        isEs
+          ? `Scheduler ${(meta.compute_mode || computeMode).toUpperCase()} activo sobre ${meta.total_lead_pairs} pares únicos (GPU desde (1,1)→ y CPU robando desde ←(15,15)) — el log ordenado (001→${meta.total_lead_pairs}) se reconstruirá al finalizar todos los hilos...`
+          : `${(meta.compute_mode || computeMode).toUpperCase()} scheduler active across ${meta.total_lead_pairs} unique lead pairs (GPU from (1,1)→ and CPU stealing from ←(15,15)) — the ordered log (001→${meta.total_lead_pairs}) will be reconstructed once all workers join...`,
+        "tag-nash"
+      );
+
       if (ll.activeStream) {
         try { ll.activeStream.close(); } catch (_) {}
       }
+      const llWorkersLive = {};
       const es = new EventSource(`/api/lead-lab/stream?job_id=${encodeURIComponent(meta.job_id)}`);
       ll.activeStream = es;
 
       es.addEventListener("cell", (ev) => {
         const d = JSON.parse(ev.data);
         updateLeadLabHeatmapCell(d);
+        const wKey = d.compute_worker || "GPU";
+        const countsObj = d.worker_cell_counts || {};
+        llWorkersLive[wKey] = {
+          worker: wKey,
+          hardware_device: d.hardware_device || "",
+          l1: Number(d.lead_1_idx || 0),
+          l2: Number(d.lead_2_idx || 0),
+          count: countsObj[wKey] != null ? Number(countsObj[wKey]) : ((llWorkersLive[wKey] && llWorkersLive[wKey].count) || 0) + 1,
+          done: false,
+        };
+        Object.keys(countsObj).forEach((wk) => {
+          if (llWorkersLive[wk]) llWorkersLive[wk].count = Number(countsObj[wk]);
+        });
+        renderLeadLabWorkersStrip(llWorkersLive);
+
         const pct = Math.min(100, (Number(d.completed || 0) / Math.max(1, Number(d.total || 225))) * 100);
         const modesPerCell =
           meta.total_lead_pairs > 0
@@ -4687,26 +5532,17 @@
             : 36;
         const modesDone = Number(d.completed || 0) * modesPerCell;
         const modesTotal = meta.num_t1_modes * meta.num_t2_modes;
+        const wTag = d.compute_worker ? `[${d.compute_worker}] ` : "";
         if ($("ll-progress-fill")) $("ll-progress-fill").style.width = `${pct.toFixed(1)}%`;
         if ($("ll-progress-text")) {
           $("ll-progress-text").textContent = isEs
-            ? `${d.completed} / ${d.total} pares de lead (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modos)`
-            : `${d.completed} / ${d.total} lead pairs (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modes)`;
+            ? `${wTag}${d.completed} / ${d.total} pares de lead (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modos)`
+            : `${wTag}${d.completed} / ${d.total} lead pairs (${modesDone.toLocaleString()} / ${modesTotal.toLocaleString()} modes)`;
         }
         if ($("ll-progress-eta")) {
-          $("ll-progress-eta").textContent = `${d.elapsed_s}s · ETA ~${d.eta_s}s`;
+          const hwInfo = d.hardware_device ? `${d.hardware_device} · ` : "";
+          $("ll-progress-eta").textContent = `${hwInfo}${d.elapsed_s}s · ETA ~${d.eta_s}s`;
         }
-        const l1Pair = (meta.t1_leads && meta.t1_leads[d.lead_1_idx]) || ["?", "?"];
-        const l2Pair = (meta.t2_leads && meta.t2_leads[d.lead_2_idx]) || ["?", "?"];
-        const sc = Number(d.score || 0);
-        const cv = Number(d.cvar_10 || 0);
-        const backStr = (d.best_t1_bench || []).join("+");
-        const cTag = `CELL ${String(d.completed).padStart(3, "0")}/${d.total}`;
-        appendLeadLabCli(
-          cTag,
-          `${l1Pair[0]}+${l1Pair[1]} vs ${l2Pair[0]}+${l2Pair[1]} → v*=${sc >= 0 ? "+" : ""}${sc.toFixed(2)} (CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}) · Back: ${backStr} · ${d.elapsed_s}s`,
-          sc >= 0.12 ? "tag-win" : sc <= -0.12 ? "tag-err" : ""
-        );
       });
 
       es.addEventListener("done", (ev) => {
@@ -4715,12 +5551,59 @@
         ll.activeStream = null;
         ll.running = false;
         ll.result = fullRes;
+        Object.keys(llWorkersLive).forEach((wk) => {
+          llWorkersLive[wk].done = true;
+          if (fullRes.worker_cell_counts && fullRes.worker_cell_counts[wk] != null) {
+            llWorkersLive[wk].count = Number(fullRes.worker_cell_counts[wk]);
+          }
+        });
+        renderLeadLabWorkersStrip(llWorkersLive);
         ll.currentMatchupHash = fullRes.matchup_hash || "";
         ll.cachedDeepAuditKeys = new Set(fullRes.cached_deep_audit_keys || []);
         updateLeadLabControlsUI();
         updateLeadLabExportButtons(fullRes.vault_run_id || "");
         if ($("ll-progress-fill")) $("ll-progress-fill").style.width = "100%";
         if ($("ll-status-dot")) $("ll-status-dot").className = "status-dot done";
+
+        // Reconstruct complete, strictly ordered (1,1 -> 15,15) hardware-tagged Lead Lab CLI log AFTER all workers join
+        clearLeadLabCli();
+        const hwCounts = fullRes.worker_cell_counts || {};
+        const hwSplitStr = Object.entries(hwCounts)
+          .sort((a, b) => a[0].localeCompare(b[0]))
+          .map(([wk, cnt]) => `${wk}=${cnt}`)
+          .join(" · ");
+        const hwDevName = fullRes.hardware_device_name || fullRes.device_used || meta.device;
+        appendLeadLabCli(
+          "HARDWARE",
+          `${hwDevName} · ${hwSplitStr || `${meta.total_lead_pairs} cells`} · ${fullRes.elapsed_s}s`,
+          "tag-nash"
+        );
+        const t1Leads = fullRes.trainer_1_leads || meta.t1_leads || [];
+        const t2Leads = fullRes.trainer_2_leads || meta.t2_leads || [];
+        const cells2d = fullRes.heatmap_cells || [];
+        let seqNum = 0;
+        const totPairs = t1Leads.length * t2Leads.length;
+        for (let r = 0; r < cells2d.length; r++) {
+          const row = cells2d[r] || [];
+          for (let c = 0; c < row.length; c++) {
+            const cell = row[c];
+            if (!cell || typeof cell.score !== "number") continue;
+            seqNum += 1;
+            const l1Pair = t1Leads[r] || ["?", "?"];
+            const l2Pair = t2Leads[c] || ["?", "?"];
+            const sc = Number(cell.score || 0);
+            const cv = Number(cell.cvar_10 || 0);
+            const backStr = (cell.best_t1_bench || []).join("+");
+            const wLbl = cell.compute_worker || (String(fullRes.device_used || "").startsWith("cuda") ? "GPU" : "CPU-W1");
+            const cTag = `${wLbl} ${String(seqNum).padStart(3, "0")}/${totPairs}`;
+            appendLeadLabCli(
+              cTag,
+              `${l1Pair[0]}+${l1Pair[1]} vs ${l2Pair[0]}+${l2Pair[1]} → v*=${sc >= 0 ? "+" : ""}${sc.toFixed(2)} (CVaR₁₀ ${cv >= 0 ? "+" : ""}${cv.toFixed(2)}) · Back: ${backStr}`,
+              sc >= 0.12 ? "tag-win" : sc <= -0.12 ? "tag-err" : ""
+            );
+          }
+        }
+
         const topBring = (fullRes.trainer_1_top_brings && fullRes.trainer_1_top_brings[0]) || null;
         const gv = Number(fullRes.global_game_value || 0);
         appendLeadLabCli(
@@ -4986,12 +5869,25 @@
       const res = ll.result;
       if (!res || !ll.jobId || ll.selectedLead1 === null) return;
       const isEs = state.lang === "es";
-      const nb1 = (res.heatmap_cells[0][0].t1_bench_labels || []).length || 1;
-      const nb2 = (res.heatmap_cells[0][0].t2_bench_labels || []).length || 1;
-      const m1Idx = ll.selectedLead1 * nb1 + ll.selectedBench1;
-      const m2Idx = ll.selectedLead2 * nb2 + ll.selectedBench2;
+      const reqL1 = ll.selectedLead1;
+      const reqL2 = ll.selectedLead2;
+      const reqB1 = ll.selectedBench1;
+      const reqB2 = ll.selectedBench2;
+      const reqSeq = ++ll.deepAuditReqSeq;
+      const cell = res.heatmap_cells[reqL1][reqL2];
+      const b1Pair = (cell.t1_bench_labels && cell.t1_bench_labels[reqB1]) || [];
+      const b2Pair = (cell.t2_bench_labels && cell.t2_bench_labels[reqB2]) || [];
+      const wantCanonKey = canonicalLeadLabCellKey(cell.lead_1, b1Pair, cell.lead_2, b2Pair);
+      const nb1 = (cell.t1_bench_labels || []).length || 1;
+      const nb2 = (cell.t2_bench_labels || []).length || 1;
+      const m1Idx = reqL1 * nb1 + reqB1;
+      const m2Idx = reqL2 * nb2 + reqB2;
       const deepBox = $("ll-deep-audit-box");
-      appendLeadLabCli("DEEP", `Running unpruned Turn-1 Tensor Core audit (mode ${m1Idx} vs ${m2Idx}, K=128)...`, "tag-deep");
+      appendLeadLabCli(
+        "DEEP",
+        `Running unpruned Turn-1 Tensor Core audit (${cell.lead_1.join("+")} [${b1Pair.join("/")}] vs ${cell.lead_2.join("+")} [${b2Pair.join("/")}], K=128)...`,
+        "tag-deep"
+      );
       if (deepBox) {
         deepBox.style.display = "flex";
         deepBox.innerHTML = `<div class="muted-sm">${isEs ? "Ejecutando Tensor Core sin poda (K=128) para este 4v4..." : "Running full unpruned Turn-1 Tensor Core audit (K=128)..."}</div>`;
@@ -5000,30 +5896,137 @@
         const resp = await fetch("/api/lead-lab/deep-turn1", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ job_id: ll.jobId, mode_1_idx: m1Idx, mode_2_idx: m2Idx, num_mc: 128 }),
+          body: JSON.stringify({
+            job_id: ll.jobId,
+            mode_1_idx: m1Idx,
+            mode_2_idx: m2Idx,
+            lead_1: cell.lead_1,
+            bench_1: b1Pair,
+            lead_2: cell.lead_2,
+            bench_2: b2Pair,
+            num_mc: 128,
+          }),
         });
         const d = await resp.json();
         if (!resp.ok || !d.ok) {
-          appendLeadLabCli("ERR", d.error || "Deep audit failed", "tag-err");
-          if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(d.error || "Audit failed")}</div>`;
+          if (reqSeq === ll.deepAuditReqSeq) {
+            appendLeadLabCli("ERR", d.error || "Deep audit failed", "tag-err");
+            if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(d.error || "Audit failed")}</div>`;
+          }
           return;
         }
-        ll.deepAudit = d;
         if (d.audit_cell_key) {
           if (!ll.cachedDeepAuditKeys) ll.cachedDeepAuditKeys = new Set();
           ll.cachedDeepAuditKeys.add(d.audit_cell_key);
+          if (!ll.batchAuditsByKey) ll.batchAuditsByKey = {};
+          ll.batchAuditsByKey[d.audit_cell_key] = d;
         }
         appendLeadLabCli(
           "DEEP",
           `${d.from_vault_cache ? "[VAULT CACHE] " : ""}Audit done in ${d.elapsed_s}s [${(d.matrix_shape || []).join("×")}] · v*=${Number(d.nash_value || 0) >= 0 ? "+" : ""}${Number(d.nash_value || 0).toFixed(3)} · #1: ${(d.top_actions && d.top_actions[0] && d.top_actions[0].desc) || ""}`,
           "tag-deep"
         );
+        // Guard against stale async race: ONLY paint the box if user is still viewing this exact cell & species match!
+        const stillSameCell =
+          reqSeq === ll.deepAuditReqSeq &&
+          ll.selectedLead1 === reqL1 &&
+          ll.selectedLead2 === reqL2 &&
+          ll.selectedBench1 === reqB1 &&
+          ll.selectedBench2 === reqB2;
+        const speciesMatch =
+          !d.mode_1 ||
+          !d.mode_2 ||
+          canonicalLeadLabCellKey(
+            d.mode_1.lead_species,
+            d.mode_1.bench_species,
+            d.mode_2.lead_species,
+            d.mode_2.bench_species
+          ) === wantCanonKey;
+        if (stillSameCell && speciesMatch) {
+          ll.deepAudit = d;
+          renderLeadLabDrilldown();
+          renderLeadLabDeepAuditBox(d);
+        }
+        renderLeadLabPlaybook();
+        refreshLeadLabVault();
+      } catch (err) {
+        if (reqSeq === ll.deepAuditReqSeq) {
+          appendLeadLabCli("ERR", String(err), "tag-err");
+          if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(String(err))}</div>`;
+        }
+      }
+    };
+  }
+
+  if ($("btn-ll-pb-by-mine")) {
+    $("btn-ll-pb-by-mine").onclick = () => {
+      state.leadLab.playbookMode = "by_mine";
+      state.leadLab.playbookSelectedIdx = null;
+      renderLeadLabPlaybook();
+    };
+  }
+  if ($("btn-ll-pb-by-opp")) {
+    $("btn-ll-pb-by-opp").onclick = () => {
+      state.leadLab.playbookMode = "by_opp";
+      state.leadLab.playbookSelectedIdx = null;
+      renderLeadLabPlaybook();
+    };
+  }
+  if ($("btn-ll-deep-batch")) {
+    $("btn-ll-deep-batch").onclick = async () => {
+      const ll = state.leadLab;
+      if (!ll.jobId || !ll.result) return;
+      const { pairs } = _getActivePlaybookPairs();
+      if (!pairs.length) return;
+      const isEs = state.lang === "es";
+      const btn = $("btn-ll-deep-batch");
+      btn.disabled = true;
+      const origHtml = btn.innerHTML;
+      btn.textContent = isEs ? `⏳ Auditando ${pairs.length} pares (K=128)...` : `⏳ Auditing ${pairs.length} pairs (K=128)...`;
+      appendLeadLabCli("DEEP", `Running batch K=128 unpruned Turn-1 audits for ${pairs.length} Playbook pairs...`, "tag-deep");
+      try {
+        const resp = await fetch("/api/lead-lab/deep-turn1-batch", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            job_id: ll.jobId,
+            num_mc: 128,
+            pairs: pairs.map((p) => ({
+              mode_1_idx: p.mode_1_idx,
+              mode_2_idx: p.mode_2_idx,
+              lead_1: p.lead_1,
+              bench_1: p.bench_1,
+              lead_2: p.lead_2,
+              bench_2: p.bench_2,
+            })),
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) {
+          appendLeadLabCli("ERR", data.error || "Batch deep audit failed", "tag-err");
+          return;
+        }
+        if (!ll.cachedDeepAuditKeys) ll.cachedDeepAuditKeys = new Set();
+        if (!ll.batchAuditsByKey) ll.batchAuditsByKey = {};
+        for (const aud of data.audits || []) {
+          if (aud && aud.audit_cell_key) {
+            ll.cachedDeepAuditKeys.add(aud.audit_cell_key);
+            ll.batchAuditsByKey[aud.audit_cell_key] = aud;
+          }
+        }
+        appendLeadLabCli(
+          "DEEP",
+          `Batch K=128 complete: ${data.count} pairs (${data.cached_count} Vault hits, ${data.computed_count} freshly computed).`,
+          "tag-deep"
+        );
+        renderLeadLabPlaybook();
         renderLeadLabDrilldown();
-        renderLeadLabDeepAuditBox(d);
         refreshLeadLabVault();
       } catch (err) {
         appendLeadLabCli("ERR", String(err), "tag-err");
-        if (deepBox) deepBox.innerHTML = `<div class="muted-sm" style="color:#fda4af">Error: ${escapeHtml(String(err))}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
       }
     };
   }

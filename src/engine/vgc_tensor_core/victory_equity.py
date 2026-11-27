@@ -59,7 +59,7 @@ if HAS_TORCH:
 else:
     torch = None  # type: ignore
 
-EQUITY_ENGINE_VERSION: str = "v2_8pillar"
+EQUITY_ENGINE_VERSION: str = "v2_1_8pillar"
 DEFAULT_TUNED_WEIGHTS_PATH: Path = Path("data/telemetry/equity_weights.json")
 
 # Canonical feature names for Texel/TD logging and attribution
@@ -159,7 +159,10 @@ class VictoryEquityBreakdown:
         }
 
 
+import threading
+
 _DEFAULT_TABLES_CACHE: Dict[str, BilinearLookupTables] = {}
+_DEFAULT_TABLES_LOCK = threading.Lock()
 
 
 def _get_type_chart_on_device(
@@ -174,10 +177,11 @@ def _get_type_chart_on_device(
             tables.m_terrain_mod.to(device),
         )
     key = str(device)
-    cached = _DEFAULT_TABLES_CACHE.get(key)
-    if cached is None:
-        cached = build_bilinear_lookup_tables(device=device)
-        _DEFAULT_TABLES_CACHE[key] = cached
+    with _DEFAULT_TABLES_LOCK:
+        cached = _DEFAULT_TABLES_CACHE.get(key)
+        if cached is None:
+            cached = build_bilinear_lookup_tables(device=device)
+            _DEFAULT_TABLES_CACHE[key] = cached
     return (
         cached.m_type_chart.to(device),
         cached.m_weather_mod.to(device),
@@ -357,6 +361,26 @@ def _compute_directional_threat_matrix_torch(
 
     # Expand to pairwise [..., 2(att), 4(move), 2(def)]
     bp_pair = bp_eff.unsqueeze(-1)                          # [..., 2, 4, 1]
+    # Exposed 2-turn charged move telegraphed-threat discount (Protect / switchable immunity on Turn 2).
+    # Semi-invulnerable Phantom Force bypasses Protect and retains full 1.0x threat.
+    m_def = M_moves[:, :, :, list(def_slots), :, :]         # [..., 2(def), 4, MOVE_DIM]
+    def_has_prot = (
+        (m_def[..., MoveIdx.CAT_STATUS] > 0.5)
+        & (m_def[..., MoveIdx.PRIORITY] >= 4.0)
+        & (torch.round(m_def[..., MoveIdx.TARGET_TYPE]).long() == int(TargetType.SELF))
+    ).any(dim=-1) & (p_def[..., MonIdx.PROTECT_COUNTER] < 1.0) & (def_alive > 0.5)  # [..., 2(def)]
+    is_exposed_charged = (
+        (chg_idx > 0)
+        & (chg_idx == (m_slots + 1))
+        & (p_att[..., MonIdx.SEMI_INVULN].unsqueeze(-1) <= 0.5)
+        & (fop != int(FieldOpID.PHANTOM_FORCE))
+    ).unsqueeze(-1)                                         # [..., 2(att), 4, 1]
+    def_prot_pair = def_has_prot.unsqueeze(-2).unsqueeze(-2)  # [..., 1, 1, 2(def)]
+    bp_pair = torch.where(
+        is_exposed_charged,
+        torch.where(def_prot_pair, bp_pair * 0.35, bp_pair * 0.60),
+        bp_pair,
+    )
     m_type_pair = m_type_eff.unsqueeze(-1).expand(-1, -1, -1, -1, -1, 2)  # [..., 2, 4, 2]
     fop_pair = fop.unsqueeze(-1)                            # [..., 2, 4, 1]
     is_phys_pair = is_phys.unsqueeze(-1)                    # [..., 2, 4, 1]
@@ -701,6 +725,24 @@ def compute_victory_equity_torch(
         has_tantrum_8 = (fop_8 == int(FieldOpID.STOMPING_TANTRUM)).any(dim=-1).float()
         has_elec_dmg_8 = ((M_moves[:, :, :, :, :, MoveIdx.TYPE_START + TYPE_TO_IDX["electric"]] > 0.5) & (m_bp_8 > 0.0)).any(dim=-1).float()
         has_fake_out_8 = ((fop_8 == int(FieldOpID.FAKE_OUT)) | (M_moves[:, :, :, :, :, MoveIdx.FIRST_TURN_ONLY] > 0.5)).any(dim=-1).float()
+        has_fresh_prot_8 = (
+            (
+                (M_moves[:, :, :, :, :, MoveIdx.CAT_STATUS] > 0.5)
+                & (M_moves[:, :, :, :, :, MoveIdx.PRIORITY] >= 4.0)
+                & (torch.round(M_moves[:, :, :, :, :, MoveIdx.TARGET_TYPE]).long() == int(TargetType.SELF))
+            ).any(dim=-1)
+            & (P_eot[:, :, :, :, MonIdx.PROTECT_COUNTER] < 1.0)
+            & (alive > 0.5)
+        ).float()
+        t2_fresh_prot_any = torch.clamp(has_fresh_prot_8[:, :, :, 4:6].sum(dim=-1), 0.0, 1.0).unsqueeze(-1)
+        t1_fresh_prot_any = torch.clamp(has_fresh_prot_8[:, :, :, 0:2].sum(dim=-1), 0.0, 1.0).unsqueeze(-1)
+        # Bench 0x immunity check against each attacker's locked move (crucial for telegraphed Electro Shot / Solar Beam)
+        t1_opp_bench_imm = (
+            ((alive[:, :, :, 6:8].unsqueeze(-2) > 0.5) & (t1_to_t2b_raw <= 1e-4)).any(dim=-1).float()
+        )  # [..., 2]
+        t2_opp_bench_imm = (
+            ((alive[:, :, :, 2:4].unsqueeze(-2) > 0.5) & (t2_to_t1b_raw <= 1e-4)).any(dim=-1).float()
+        )  # [..., 2]
     else:
         phi_threat = 0.20 * speed_pair_sign
         phi_malpos = torch.zeros_like(phi_hp)
@@ -715,6 +757,10 @@ def compute_victory_equity_torch(
         has_tantrum_8 = torch.zeros_like(alive)
         has_elec_dmg_8 = torch.zeros_like(alive)
         has_fake_out_8 = torch.zeros_like(alive)
+        t2_fresh_prot_any = torch.zeros((P_eot.shape[0], P_eot.shape[1], P_eot.shape[2], 1), dtype=torch.float32, device=device)
+        t1_fresh_prot_any = torch.zeros_like(t2_fresh_prot_any)
+        t1_opp_bench_imm = torch.zeros_like(t1_max_out)
+        t2_opp_bench_imm = torch.zeros_like(t2_max_out)
 
     pillar_threat = w.w_threat * phi_threat
     pillar_malpos = w.w_malposition * phi_malpos
@@ -722,11 +768,26 @@ def compute_victory_equity_torch(
     # -------------------------------------------------------------------------
     # PILLAR 4: ROLE-AWARE OPTION RESTRICTION & LOCK-IN
     # -------------------------------------------------------------------------
-    def _side_restriction(slots: slice, max_out: "torch.Tensor", in_raw: "torch.Tensor") -> "torch.Tensor":
+    def _side_restriction(
+        slots: slice,
+        max_out: "torch.Tensor",
+        in_raw: "torch.Tensor",
+        opp_fresh_prot: "torch.Tensor",
+        opp_bench_imm: "torch.Tensor",
+    ) -> "torch.Tensor":
         alv = alive[:, :, :, slots]
         ch_lck = (P_eot[:, :, :, slots, MonIdx.CHOICE_LOCKED_MOVE] >= 0.0).float()
         # Choice-locked into 0x immunity (0.85) or resisted (<0.25 dmg, 0.40)
         ch_trap = ch_lck * torch.where(max_out <= 1e-4, torch.full_like(max_out, 0.85), torch.where(max_out < 0.25, torch.full_like(max_out, 0.40), torch.zeros_like(max_out)))
+        # Exposed 2-turn charge lock (Electro Shot / Solar Beam / Meteor Beam): cannot switch, Protect, or change move next turn!
+        # Semi-invulnerable Phantom Force is exempt because it is untargetable and pierces Protect.
+        exp_chg = ((P_eot[:, :, :, slots, MonIdx.CHARGED_MOVE_IDX] > 0.5) & (P_eot[:, :, :, slots, MonIdx.SEMI_INVULN] <= 0.5)).float()
+        chg_lock_pen = exp_chg * (
+            0.55
+            + 0.40 * (max_out <= 1e-4).float()
+            + 0.25 * opp_bench_imm
+            + 0.25 * opp_fresh_prot
+        )
         # Protect-streak exposure when facing high lethal threat next turn
         prot_exp = ((P_eot[:, :, :, slots, MonIdx.PROTECT_COUNTER] >= 1.0).float()) * torch.clamp((in_raw - 0.55) * 1.4, 0.0, 0.70)
         # Role-aware Taunt, Throat Chop, Encore, Recharge, Yawn
@@ -735,9 +796,12 @@ def compute_victory_equity_torch(
         enc_pen = (P_eot[:, :, :, slots, MonIdx.ENCORE_TURNS] > 0.0).float() * 0.65
         rech_pen = (P_eot[:, :, :, slots, MonIdx.MUST_RECHARGE] > 0.5).float() * 1.25
         yawn_pen = (P_eot[:, :, :, slots, MonIdx.YAWN_ACTIVE] > 0.5).float() * 0.55
-        return torch.sum((ch_trap + prot_exp + taunt_pen + tc_pen + enc_pen + rech_pen + yawn_pen) * alv, dim=-1)
+        return torch.sum((ch_trap + chg_lock_pen + prot_exp + taunt_pen + tc_pen + enc_pen + rech_pen + yawn_pen) * alv, dim=-1)
 
-    phi_restrict = _side_restriction(slice(4, 6), t2_max_out, t2_in_raw_act) - _side_restriction(slice(0, 2), t1_max_out, t1_in_raw_act)
+    phi_restrict = (
+        _side_restriction(slice(4, 6), t2_max_out, t2_in_raw_act, t1_fresh_prot_any, t2_opp_bench_imm)
+        - _side_restriction(slice(0, 2), t1_max_out, t1_in_raw_act, t2_fresh_prot_any, t1_opp_bench_imm)
+    )
     if extra_volatiles:
         for v_key, v_weight in (
             ("leech_seed_src", 0.50),
@@ -778,11 +842,30 @@ def compute_victory_equity_torch(
     # PILLAR 6: HP-GATED 2-TURN PRIMED PAYOFFS
     # -------------------------------------------------------------------------
     tantrum_primed_8 = (P_eot[:, :, :, :, MonIdx.LAST_MOVE_FAILED] > 0.5).float() * has_tantrum_8 * 0.75
-    charged_ready_8 = (P_eot[:, :, :, :, MonIdx.CHARGED_MOVE_IDX] > 0.5).float() * 0.85 + (P_eot[:, :, :, :, MonIdx.SEMI_INVULN] > 0.5).float() * 0.25
+    has_chg_8 = (P_eot[:, :, :, :, MonIdx.CHARGED_MOVE_IDX] > 0.5).float()
+    semi_inv_8 = (P_eot[:, :, :, :, MonIdx.SEMI_INVULN] > 0.5).float()
+    # Semi-invulnerable charges (Phantom Force) are untargetable and pierce Protect (0.55).
+    # Exposed 2-turn charges (Electro Shot / Solar Beam / Meteor Beam) are telegraphed and
+    # discounted heavily (0.25 base, further gated by opponent Protect and active/bench immunity).
+    t1_chg_gate = (1.0 - 0.50 * t2_fresh_prot_any) * (1.0 - 0.70 * torch.clamp((t1_max_out <= 1e-4).float() + t1_opp_bench_imm, 0.0, 1.0))
+    t2_chg_gate = (1.0 - 0.50 * t1_fresh_prot_any) * (1.0 - 0.70 * torch.clamp((t2_max_out <= 1e-4).float() + t2_opp_bench_imm, 0.0, 1.0))
+    t1_exp_chg = has_chg_8[:, :, :, 0:2] * (1.0 - semi_inv_8[:, :, :, 0:2]) * 0.25 * t1_chg_gate
+    t2_exp_chg = has_chg_8[:, :, :, 4:6] * (1.0 - semi_inv_8[:, :, :, 4:6]) * 0.25 * t2_chg_gate
+    t1_semi_chg = has_chg_8[:, :, :, 0:2] * semi_inv_8[:, :, :, 0:2] * 0.55
+    t2_semi_chg = has_chg_8[:, :, :, 4:6] * semi_inv_8[:, :, :, 4:6] * 0.55
     charge_elec_8 = (P_eot[:, :, :, :, MonIdx.CHARGE_ACTIVE] > 0.5).float() * has_elec_dmg_8 * 0.60
     glaive_pen_8 = (P_eot[:, :, :, :, MonIdx.GLAIVE_RUSH_VULN] > 0.5).float() * (-0.70)
-    prime_8 = (tantrum_primed_8 + charged_ready_8 + charge_elec_8 + glaive_pen_8) * alive * hp_frac
-    phi_prime = torch.sum(prime_8[:, :, :, 0:2], dim=-1) - torch.sum(prime_8[:, :, :, 4:6], dim=-1)
+    t1_prime = (
+        (tantrum_primed_8[:, :, :, 0:2] + t1_exp_chg + t1_semi_chg + charge_elec_8[:, :, :, 0:2] + glaive_pen_8[:, :, :, 0:2])
+        * alive[:, :, :, 0:2]
+        * hp_frac[:, :, :, 0:2]
+    )
+    t2_prime = (
+        (tantrum_primed_8[:, :, :, 4:6] + t2_exp_chg + t2_semi_chg + charge_elec_8[:, :, :, 4:6] + glaive_pen_8[:, :, :, 4:6])
+        * alive[:, :, :, 4:6]
+        * hp_frac[:, :, :, 4:6]
+    )
+    phi_prime = torch.sum(t1_prime, dim=-1) - torch.sum(t2_prime, dim=-1)
     pillar_prime = w.w_two_turn_prime * phi_prime
 
     # -------------------------------------------------------------------------

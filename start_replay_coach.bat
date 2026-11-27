@@ -67,6 +67,23 @@ if "%NEED_INSTALL%"=="0" (
     if errorlevel 1 set "NEED_INSTALL=1"
 )
 
+REM Self-healing CUDA upgrade: if NVIDIA drivers were installed AFTER .venv was created with CPU-only torch,
+REM automatically upgrade torch to the CUDA 12.4 wheel!
+set "NEED_CUDA_UPGRADE=0"
+if "%NEED_INSTALL%"=="0" (
+    where nvidia-smi >nul 2>&1
+    if !ERRORLEVEL!==0 (
+        "%VENV_PY%" -c "import sys, torch; sys.exit(0 if getattr(torch.version, 'cuda', None) else 1)" >nul 2>&1
+        if errorlevel 1 set "NEED_CUDA_UPGRADE=1"
+    )
+)
+
+if "%NEED_CUDA_UPGRADE%"=="1" (
+    echo [3/4] NVIDIA GPU driver detected, upgrading CPU-only PyTorch in .venv to CUDA 12.4...
+    "%VENV_PY%" -m pip install --upgrade --force-reinstall --no-deps torch --index-url https://download.pytorch.org/whl/cu124
+    "%VENV_PY%" -m pip install torch --index-url https://download.pytorch.org/whl/cu124
+)
+
 if "%NEED_INSTALL%"=="1" (
     echo [3/4] Syncing runtime dependencies into .venv ^(first-time setup may take a few minutes^)...
     "%VENV_PY%" -m pip install --upgrade pip

@@ -893,6 +893,7 @@ class ShowdownTensorCompiler:
                     pseudo_weather=str(row.get("pseudoWeather") or "").lower(),
                     vol_status=vol_status,
                     flags=flags,
+                    breaks_protect=bool(row.get("breaksProtect")),
                 )
             )
 
@@ -1020,10 +1021,17 @@ class ShowdownTensorCompiler:
         pseudo_weather: str,
         vol_status: str,
         flags: Optional[Dict[str, Any]] = None,
+        breaks_protect: bool = False,
     ) -> FieldOpID:
         """Resolve `FieldOpID` programmatically from Showdown move attributes."""
         if move_id == "fakeout":
             return FieldOpID.FAKE_OUT
+        if move_id == "feint":
+            return FieldOpID.FEINT
+        if move_id == "psychicfangs":
+            return FieldOpID.BREAK_SCREENS_BITE
+        if move_id in ("brickbreak", "ragingbull"):
+            return FieldOpID.BREAK_SCREENS
         if move_id == "suckerpunch":
             return FieldOpID.SUCKER_PUNCH
         if move_id == "upperhand":
@@ -1052,6 +1060,8 @@ class ShowdownTensorCompiler:
             return FieldOpID.CHARGE
         if move_id in ("phantomforce", "shadowforce", "fly", "dig", "bounce", "dive"):
             return FieldOpID.PHANTOM_FORCE
+        if breaks_protect:
+            return FieldOpID.FEINT
         if vol_status in ("followme", "ragepowder") or move_id in ("followme", "ragepowder"):
             return FieldOpID.FOLLOW_ME
         if vol_status == "helpinghand" or move_id == "helpinghand":

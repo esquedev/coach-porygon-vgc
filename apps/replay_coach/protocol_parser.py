@@ -202,6 +202,86 @@ class ParsedReplay:
     trainer_1_showteam_ots: Dict[str, ParsedPokemon] = field(default_factory=dict)
     trainer_2_showteam_ots: Dict[str, ParsedPokemon] = field(default_factory=dict)
     game_index: int = 1
+    raw_trainer_2_name: str = ""
+    trainer_1_elo: Optional[int] = None
+    trainer_2_elo: Optional[int] = None
+    wire_game_number: Optional[int] = None
+    is_anonymized_opponent: bool = False
+
+
+def format_showdown_opponent_label(elo: Optional[int] = None) -> str:
+    """Format a privacy-safe anonymized legend for Showdown ladder opponents."""
+    if elo is not None and int(elo) > 0:
+        return f"Showdown Opponent (Elo {int(elo)})"
+    return "Showdown Opponent (Unrated)"
+
+
+def extract_wire_game_number(raw_input: str) -> Optional[int]:
+    """Extract the official Bo3 game number (`1`, `2`, `3`) from `|uhtml|bestof|` wire headers."""
+    log_text, _ = extract_protocol_log(raw_input)
+    m_bo = re.search(r"\|uhtml\|bestof\|[^\n]*?Game\s+(\d+)", log_text, flags=re.IGNORECASE)
+    if not m_bo:
+        m_bo = re.search(r"<strong>\s*Game\s+(\d+)\s*</strong>\s+of", log_text, flags=re.IGNORECASE)
+    if m_bo:
+        try:
+            gnum = int(m_bo.group(1))
+            if 1 <= gnum <= 9:
+                return gnum
+        except ValueError:
+            pass
+    return None
+
+
+def anonymize_showdown_log_text(
+    raw_log: str,
+    opp_wire: str,
+    raw_opp_name: str,
+    anon_label: str,
+) -> str:
+    """Scrub opponent Showdown nickname from wire player/chat/timer/uhtml/win/HTML lines without mutating battle tags."""
+    if not raw_log or not raw_opp_name or raw_opp_name == anon_label:
+        return raw_log
+    opp_lower = raw_opp_name.strip().lower()
+    opp_slug = _norm_id(raw_opp_name)
+    pat = re.compile(re.escape(raw_opp_name), flags=re.IGNORECASE)
+    pat_slug = re.compile(re.escape(opp_slug), flags=re.IGNORECASE) if opp_slug else None
+    out_lines: List[str] = []
+    for ln in raw_log.splitlines():
+        if ln.startswith("|"):
+            toks = ln.split("|")
+            cmd = toks[1] if len(toks) > 1 else ""
+            if cmd == "player" and len(toks) >= 4 and toks[2].strip() == opp_wire and toks[3].strip():
+                toks[3] = anon_label
+                out_lines.append("|".join(toks))
+                continue
+            if cmd == "win" and len(toks) >= 3 and toks[2].strip().lower() == opp_lower:
+                toks[2] = anon_label
+                out_lines.append("|".join(toks))
+                continue
+            if cmd in ("j", "l", "n", "J", "L", "N") and len(toks) >= 3 and opp_lower in toks[2].lower():
+                toks[2] = f"☆{anon_label}"
+                out_lines.append("|".join(toks))
+                continue
+            if cmd in ("c", "c:") and len(toks) >= 4:
+                speaker_idx = 3 if cmd == "c:" else 2
+                if speaker_idx < len(toks) and opp_lower in toks[speaker_idx].lower():
+                    toks[speaker_idx] = f"☆{anon_label}"
+                    out_lines.append("|".join(toks))
+                    continue
+            if cmd in ("", "raw", "uhtml", "uhtmlchange", "html", "inactive", "inactiveoff", "message") and len(toks) >= 3:
+                for idx in range(2, len(toks)):
+                    if opp_lower in toks[idx].lower():
+                        toks[idx] = pat.sub(anon_label, toks[idx])
+                out_lines.append("|".join(toks))
+                continue
+        elif opp_lower in ln.lower() or (opp_slug and f"/users/{opp_slug}" in ln.lower()):
+            cleaned = pat.sub(anon_label, ln)
+            if pat_slug is not None and "/users/" in cleaned.lower():
+                cleaned = re.sub(rf"/users/{re.escape(opp_slug)}", "/users/showdown-opponent", cleaned, flags=re.IGNORECASE)
+            out_lines.append(cleaned)
+            continue
+        out_lines.append(ln)
+    return "\n".join(out_lines)
 
 
 def extract_protocol_log(raw_input: str) -> Tuple[str, str]:
@@ -224,6 +304,98 @@ def extract_protocol_log(raw_input: str) -> Tuple[str, str]:
         return log_body.strip(), replay_id
 
     return text, replay_id
+
+
+def extract_replay_sort_key(raw_input: str, filename: str = "") -> Tuple[int, int, int, str, int, str]:
+    """Compute a deterministic chronological sort key `(bestof_game, first_ts, replay_num, base_stem, dup_num, filename)`.
+
+    Solves Chrome's duplicate download naming inversion where `foo (1).html` (Game 2)
+    sorts lexicographically before `foo.html` (Game 1) because ASCII space < '.'.
+    """
+    log_text, replay_id = extract_protocol_log(raw_input)
+
+    # 1. Explicit Bo3 game number (`|uhtml|bestof|<h2><strong>Game 2</strong> ...`)
+    bestof_game = 99
+    m_bo = re.search(r"\|uhtml\|bestof\|[^\n]*?Game\s+(\d+)", log_text, flags=re.IGNORECASE)
+    if not m_bo:
+        m_bo = re.search(r"<strong>\s*Game\s+(\d+)\s*</strong>\s+of", log_text, flags=re.IGNORECASE)
+    if m_bo:
+        try:
+            bestof_game = int(m_bo.group(1))
+        except ValueError:
+            pass
+
+    # 2. Earliest Unix battle timestamp (`|t:|1795683873`)
+    first_ts = 10**12
+    m_ts = re.search(r"\|t:\|(\d{9,})", log_text)
+    if m_ts:
+        try:
+            first_ts = int(m_ts.group(1))
+        except ValueError:
+            pass
+
+    # 3. Monotonic numeric Showdown room ID (`gen9...-2719701193-...`)
+    replay_num = 10**12
+    m_rid = re.search(r"-(\d{6,})(?:-|$)", replay_id or "")
+    if m_rid:
+        try:
+            replay_num = int(m_rid.group(1))
+        except ValueError:
+            pass
+
+    # 4. Filename Chrome-duplicate-safe fallback (`foo.html` -> dup 0, `foo (1).html` -> dup 1)
+    fname = str(filename or "").strip()
+    stem = re.sub(r"\.(html?|log|txt)$", "", fname, flags=re.IGNORECASE)
+    m_dup = re.search(r"\s*\((\d+)\)$", stem)
+    if m_dup:
+        dup_num = int(m_dup.group(1))
+        base_stem = stem[: m_dup.start()].strip().lower()
+    else:
+        dup_num = 0
+        base_stem = stem.strip().lower()
+
+    return (bestof_game, first_ts, replay_num, base_stem, dup_num, fname.lower())
+
+
+def sort_replay_entries(entries: Sequence[Dict[str, str]]) -> Tuple[List[Dict[str, str]], List[int]]:
+    """Sort 1..N replay dicts into true sequential Bo3 order (`Game 1 -> Game 2 -> Game 3`)."""
+    indexed = [
+        (extract_replay_sort_key(str(it.get("raw_input") or ""), str(it.get("filename") or "")), idx, it)
+        for idx, it in enumerate(entries)
+    ]
+    indexed.sort(key=lambda tup: (tup[0], tup[1]))
+    sorted_items = [tup[2] for tup in indexed]
+    orig_order = [tup[1] for tup in indexed]
+    return sorted_items, orig_order
+
+
+def assign_bo3_game_numbers(entries: Sequence[Dict[str, str]]) -> List[int]:
+    """Assign true Game #s (`1`, `2`, `3`) preserving wire `|uhtml|bestof| Game N` when unique.
+
+    If a user uploads only Game 2 and Game 3 of a Bo3, this returns `[2, 3]` rather than
+    mislabeling them `[1, 2]`. Falls back cleanly to sequential `1..N` if wire headers are
+    missing or duplicated (e.g., repeated single-game samples).
+    """
+    n = len(entries)
+    if n == 0:
+        return []
+    wire_nums = [extract_wire_game_number(str(it.get("raw_input") or "")) for it in entries]
+    if all(w is not None for w in wire_nums) and len(set(wire_nums)) == n:
+        return [int(w) for w in wire_nums if w is not None]
+    # Hybrid: if some have unique wire numbers and others lack them, fill gaps deterministically
+    assigned: List[int] = []
+    used: set[int] = set()
+    for idx, w in enumerate(wire_nums, 1):
+        if w is not None and w not in used:
+            assigned.append(int(w))
+            used.add(int(w))
+        else:
+            cand = idx
+            while cand in used:
+                cand += 1
+            assigned.append(cand)
+            used.add(cand)
+    return assigned
 
 
 def _parse_hp_detailed(hp_token: str) -> Tuple[float, bool, Optional[int], Optional[int]]:
@@ -347,6 +519,7 @@ def parse_showdown_replay(
     trainer_1_ots_sets: Optional[Dict[str, ParsedPokemon]] = None,
     trainer_2_ots_sets: Optional[Dict[str, ParsedPokemon]] = None,
     game_index: int = 1,
+    anonymize_opponent: bool = False,
 ) -> ParsedReplay:
     """Parse an official Showdown `.html` or pipe-protocol replay into per-turn snapshots
     and lossless empirical Speed, Damage, and HP-tick observations for Bo1/Bo3 SP inference.
@@ -357,21 +530,33 @@ def parse_showdown_replay(
     """
     log_text, replay_id = extract_protocol_log(raw_input)
     lines = [ln.strip() for ln in log_text.splitlines() if ln.strip()]
+    wire_game_num = extract_wire_game_number(log_text)
 
     species_map, moves_map, items_map, abilities_map, move_meta_map = _build_duckdb_name_lookups()
 
     wire_players: Dict[str, str] = {}
+    wire_elos: Dict[str, Optional[int]] = {}
+    raw_rating_by_name: Dict[str, int] = {}
     format_name = "[Gen 9 Champions] VGC 2026 Reg M-C (Bo3)"
     winner: Optional[str] = None
 
-    # Pass 1: identify player names & format
+    # Pass 1: identify player names, Elo ratings & format
     for ln in lines:
         if not ln.startswith("|"):
             continue
         toks = ln.split("|")
         cmd = toks[1] if len(toks) > 1 else ""
         if cmd == "player" and len(toks) >= 4 and toks[3].strip():
-            wire_players[toks[2].strip()] = toks[3].strip()
+            side_tok = toks[2].strip()
+            wire_players[side_tok] = toks[3].strip()
+            if len(toks) >= 6 and toks[5].strip().isdigit():
+                elo_val = int(toks[5].strip())
+                if elo_val > 0:
+                    wire_elos[side_tok] = elo_val
+        elif cmd == "raw" and len(toks) >= 3 and "rating:" in toks[2].lower():
+            m_rat = re.search(r"([A-Za-z0-9_\-\.\s]+?)'s rating:\s*(\d{3,4})", toks[2], flags=re.IGNORECASE)
+            if m_rat:
+                raw_rating_by_name[m_rat.group(1).strip().lower()] = int(m_rat.group(2))
         elif cmd == "tier" and len(toks) >= 3:
             format_name = toks[2].strip()
         elif cmd == "win" and len(toks) >= 3:
@@ -389,11 +574,20 @@ def parse_showdown_replay(
             pov_wire = _WIRE_LEFT
     opp_wire = _WIRE_RIGHT if pov_wire == _WIRE_LEFT else _WIRE_LEFT
 
+    t1_raw_name = wire_players.get(pov_wire, "trainer_1")
+    t2_raw_name = wire_players.get(opp_wire, "trainer_2")
+    t1_elo = wire_elos.get(pov_wire) or raw_rating_by_name.get(t1_raw_name.lower())
+    t2_elo = wire_elos.get(opp_wire) or raw_rating_by_name.get(t2_raw_name.lower())
+
+    t2_display_name = format_showdown_opponent_label(t2_elo) if anonymize_opponent else t2_raw_name
+    if anonymize_opponent and winner and winner.strip().lower() == t2_raw_name.strip().lower():
+        winner = t2_display_name
+
     def wire_to_trainer(w: str) -> str:
         return "trainer_1" if w == pov_wire else "trainer_2"
 
-    team_1 = ParsedTeam(trainer_name=wire_players.get(pov_wire, "trainer_1"))
-    team_2 = ParsedTeam(trainer_name=wire_players.get(opp_wire, "trainer_2"))
+    team_1 = ParsedTeam(trainer_name=t1_raw_name)
+    team_2 = ParsedTeam(trainer_name=t2_display_name)
     teams = {"trainer_1": team_1, "trainer_2": team_2}
     db_sets_map = {
         "trainer_1": trainer_1_ots_sets or {},
@@ -1433,4 +1627,9 @@ def parse_showdown_replay(
         trainer_1_showteam_ots=showteam_ots["trainer_1"],
         trainer_2_showteam_ots=showteam_ots["trainer_2"],
         game_index=game_index,
+        raw_trainer_2_name=t2_raw_name,
+        trainer_1_elo=t1_elo,
+        trainer_2_elo=t2_elo,
+        wire_game_number=wire_game_num,
+        is_anonymized_opponent=bool(anonymize_opponent),
     )

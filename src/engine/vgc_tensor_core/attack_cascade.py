@@ -1454,17 +1454,21 @@ def _execute_attack_cascade_torch(
             is_foe_target = tgt_slot != partner_slot
 
             # Protect / Wide Guard / Quick Guard checks
-            # Pokémon Champions rule: Unseen Fist & Piercing Drill contact moves pierce Protect at 0.25x damage!
-            # Phantom Force / Shadow Force lift Protect at full 1.0x damage!
+            # Pokémon Champions rules:
+            # - Unseen Fist & Piercing Drill contact moves pierce Protect at 0.25x damage.
+            # - Feint lifts Protect on target & Wide Guard/Quick Guard on target's side at full 1.0x damage!
+            # - Phantom Force / Shadow Force lift Protect at full 1.0x damage!
             is_contact_pre = chosen_move[:, :, :, MoveIdx.IS_CONTACT] > 0.5
+            is_feint_break = field_op == int(FieldOpID.FEINT)
             is_phantom_pierce = field_op == int(FieldOpID.PHANTOM_FORCE)
+            lifts_protect_full = is_feint_break | is_phantom_pierce
             bypasses_protect_champions = is_contact_pre & (
                 (att_ab == float(AbilityID.UNSEEN_FIST)) | (att_ab == float(AbilityID.PIERCING_DRILL))
             )
-            pierced_protect = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & bypasses_protect_champions & (~is_phantom_pierce)
-            tgt_prot = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & (~bypasses_protect_champions) & (~is_phantom_pierce)
-            tgt_wg = is_spread & (p_tgt[:, :, :, MonIdx.WIDE_GUARD_ACTIVE] > 0.5)
-            tgt_qg = (eff_move_prio > 0.0) & (p_tgt[:, :, :, MonIdx.QUICK_GUARD_ACTIVE] > 0.5) & is_foe_target
+            pierced_protect = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & bypasses_protect_champions & (~lifts_protect_full)
+            tgt_prot = (p_tgt[:, :, :, MonIdx.PROTECT_ACTIVE] > 0.5) & (~bypasses_protect_champions) & (~lifts_protect_full)
+            tgt_wg = is_spread & (p_tgt[:, :, :, MonIdx.WIDE_GUARD_ACTIVE] > 0.5) & (~is_feint_break)
+            tgt_qg = (eff_move_prio > 0.0) & (p_tgt[:, :, :, MonIdx.QUICK_GUARD_ACTIVE] > 0.5) & is_foe_target & (~is_feint_break)
             tgt_semi_inv = (
                 (p_tgt[:, :, :, MonIdx.SEMI_INVULN] > 0.5)
                 & (att_ab != float(AbilityID.NO_GUARD))
@@ -2050,6 +2054,60 @@ def _execute_attack_cascade_torch(
                 + torch.where(act_item_active & (act_item == float(ItemID.LEEK)), torch.full_like(base_power, 2.0), torch.zeros_like(base_power))
             )
 
+            # Feint & Phantom Force lift Protect immediately on hit (Feint also lifts side-wide Wide/Quick Guard!)
+            feint_lands = dmg_move_hits & is_feint_break
+            lift_prot_lands = feint_lands | (dmg_move_hits & is_phantom_pierce)
+            if torch.any(lift_prot_lands):
+                cur_tp = torch.gather(P_mc[:, :, :, :, MonIdx.PROTECT_ACTIVE], 3, tgt_slot.unsqueeze(-1)).squeeze(-1)
+                P_mc[:, :, :, :, MonIdx.PROTECT_ACTIVE].scatter_(
+                    3,
+                    tgt_slot.unsqueeze(-1),
+                    torch.where(lift_prot_lands, torch.zeros_like(cur_tp), cur_tp).unsqueeze(-1),
+                )
+            if torch.any(feint_lands):
+                tgt_side_a = torch.where(
+                    tgt_is_t1,
+                    torch.full_like(tgt_slot, SLOT_TRAINER_1_A),
+                    torch.full_like(tgt_slot, SLOT_TRAINER_2_A),
+                )
+                tgt_side_b = torch.where(
+                    tgt_is_t1,
+                    torch.full_like(tgt_slot, SLOT_TRAINER_1_B),
+                    torch.full_like(tgt_slot, SLOT_TRAINER_2_B),
+                )
+                for side_sl in (tgt_side_a, tgt_side_b):
+                    cur_wg = torch.gather(P_mc[:, :, :, :, MonIdx.WIDE_GUARD_ACTIVE], 3, side_sl.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.WIDE_GUARD_ACTIVE].scatter_(
+                        3,
+                        side_sl.unsqueeze(-1),
+                        torch.where(feint_lands, torch.zeros_like(cur_wg), cur_wg).unsqueeze(-1),
+                    )
+                    cur_qg = torch.gather(P_mc[:, :, :, :, MonIdx.QUICK_GUARD_ACTIVE], 3, side_sl.unsqueeze(-1)).squeeze(-1)
+                    P_mc[:, :, :, :, MonIdx.QUICK_GUARD_ACTIVE].scatter_(
+                        3,
+                        side_sl.unsqueeze(-1),
+                        torch.where(feint_lands, torch.zeros_like(cur_qg), cur_qg).unsqueeze(-1),
+                    )
+
+            # Brick Break / Psychic Fangs / Raging Bull shatter target-side screens BEFORE damage calculation!
+            is_screen_break = (field_op == int(FieldOpID.BREAK_SCREENS)) | (
+                field_op == int(FieldOpID.BREAK_SCREENS_BITE)
+            )
+            screen_break_lands = dmg_move_hits & is_screen_break
+            if torch.any(screen_break_lands):
+                sb_t1 = screen_break_lands & tgt_is_t1
+                sb_t2 = screen_break_lands & (~tgt_is_t1)
+                if torch.any(sb_t1):
+                    z0 = torch.zeros_like(F_mc[:, :, :, FieldIdx.TRAINER_1_REFLECT_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_1_REFLECT_TURNS] = torch.where(sb_t1, z0, F_mc[:, :, :, FieldIdx.TRAINER_1_REFLECT_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS] = torch.where(sb_t1, z0, F_mc[:, :, :, FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_1_AURORA_VEIL_TURNS] = torch.where(sb_t1, z0, F_mc[:, :, :, FieldIdx.TRAINER_1_AURORA_VEIL_TURNS])
+                if torch.any(sb_t2):
+                    z0 = torch.zeros_like(F_mc[:, :, :, FieldIdx.TRAINER_2_REFLECT_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_2_REFLECT_TURNS] = torch.where(sb_t2, z0, F_mc[:, :, :, FieldIdx.TRAINER_2_REFLECT_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS] = torch.where(sb_t2, z0, F_mc[:, :, :, FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS])
+                    F_mc[:, :, :, FieldIdx.TRAINER_2_AURORA_VEIL_TURNS] = torch.where(sb_t2, z0, F_mc[:, :, :, FieldIdx.TRAINER_2_AURORA_VEIL_TURNS])
+
             # Screens on defending side (0.667x in Doubles, bypassed on crits)
             refl_turns = torch.where(tgt_is_t1, F_mc[:, :, :, FieldIdx.TRAINER_1_REFLECT_TURNS], F_mc[:, :, :, FieldIdx.TRAINER_2_REFLECT_TURNS])
             lscr_turns = torch.where(tgt_is_t1, F_mc[:, :, :, FieldIdx.TRAINER_1_LIGHT_SCREEN_TURNS], F_mc[:, :, :, FieldIdx.TRAINER_2_LIGHT_SCREEN_TURNS])
@@ -2188,7 +2246,7 @@ def _execute_attack_cascade_torch(
                     torch.floor(bp_eff * 6144.0 / 4096.0),
                     bp_eff,
                 )
-                is_bite_move = field_op == int(FieldOpID.FLAG_BITE)
+                is_bite_move = (field_op == int(FieldOpID.FLAG_BITE)) | (field_op == int(FieldOpID.BREAK_SCREENS_BITE))
                 bp_eff = torch.where(
                     (att_ab == float(AbilityID.STRONG_JAW)) & is_bite_move,
                     torch.floor(bp_eff * 6144.0 / 4096.0),

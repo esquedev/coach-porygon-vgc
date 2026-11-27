@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from enum import IntEnum
+import threading
 from typing import Iterator, Optional, Tuple, Union
 
 import numpy as np
@@ -45,9 +46,15 @@ if HAS_TORCH:
 else:
     TensorOrArray = np.ndarray
 
-# Active 2D tile coordinate context (b1_offset, b2_offset, B1_full, B2_full) so tiled execution
-# draws the exact same counter-based random numbers as full-matrix execution.
-_ACTIVE_TILE_CONTEXT: Optional[Tuple[int, int, int, int]] = None
+# Thread-local 2D tile coordinate context (b1_offset, b2_offset, B1_full, B2_full) so tiled
+# execution draws the exact same counter-based random numbers as full-matrix execution even
+# when GPU and multi-threaded CPU workers run concurrently inside the same process.
+_TILE_CONTEXT_LOCAL = threading.local()
+
+
+def _get_active_tile_context() -> Optional[Tuple[int, int, int, int]]:
+    """Return the active thread-local 2D `(b1_offset, b2_offset, B1_full, B2_full)` context."""
+    return getattr(_TILE_CONTEXT_LOCAL, "ctx", None)
 
 
 @contextmanager
@@ -57,14 +64,13 @@ def rng_tile_context(
     b1_full: int,
     b2_full: int,
 ) -> Iterator[None]:
-    """Set global 2D `(B1, B2)` coordinate offsets for tiled RNG draws."""
-    global _ACTIVE_TILE_CONTEXT
-    prev = _ACTIVE_TILE_CONTEXT
-    _ACTIVE_TILE_CONTEXT = (int(b1_offset), int(b2_offset), int(b1_full), int(b2_full))
+    """Set thread-local 2D `(B1, B2)` coordinate offsets for tiled RNG draws."""
+    prev = getattr(_TILE_CONTEXT_LOCAL, "ctx", None)
+    _TILE_CONTEXT_LOCAL.ctx = (int(b1_offset), int(b2_offset), int(b1_full), int(b2_full))
     try:
         yield
     finally:
-        _ACTIVE_TILE_CONTEXT = prev
+        _TILE_CONTEXT_LOCAL.ctx = prev
 
 
 class RNGEventID(IntEnum):
@@ -141,8 +147,9 @@ def counter_uniform_0_100_numpy(
     `(seed, event_id, step_idx, hit_idx, sub_draw, turn_idx, actor_slot, target_slot)` so draws are reproducible and decorrelated.
     """
     total = int(np.prod(shape))
-    if _ACTIVE_TILE_CONTEXT is not None and len(shape) >= 2:
-        i0, j0, _b1_full, b2_full = _ACTIVE_TILE_CONTEXT
+    active_tile_ctx = _get_active_tile_context()
+    if active_tile_ctx is not None and len(shape) >= 2:
+        i0, j0, _b1_full, b2_full = active_tile_ctx
         tb1, tb2 = int(shape[0]), int(shape[1])
         inner_prod = int(np.prod(shape[2:])) if len(shape) > 2 else 1
         bi = np.arange(i0, i0 + tb1, dtype=np.uint64)[:, None, None]
@@ -182,8 +189,9 @@ def counter_uniform_0_100_torch(
 ) -> "torch.Tensor":
     """Generate a PyTorch tensor of uniform random floats in `[0.0, 100.0)` on GPU/CPU."""
     total = int(np.prod(shape))
-    if _ACTIVE_TILE_CONTEXT is not None and len(shape) >= 2:
-        i0, j0, _b1_full, b2_full = _ACTIVE_TILE_CONTEXT
+    active_tile_ctx = _get_active_tile_context()
+    if active_tile_ctx is not None and len(shape) >= 2:
+        i0, j0, _b1_full, b2_full = active_tile_ctx
         tb1, tb2 = int(shape[0]), int(shape[1])
         inner_prod = int(np.prod(shape[2:])) if len(shape) > 2 else 1
         bi = torch.arange(i0, i0 + tb1, dtype=torch.int64, device=device).view(tb1, 1, 1)

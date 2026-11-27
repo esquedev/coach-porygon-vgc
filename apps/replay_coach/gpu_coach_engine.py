@@ -17,7 +17,7 @@ import math
 from pathlib import Path
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -27,6 +27,12 @@ from engine.solver.game_theory import (
     run_iterated_dominance_elimination,
     solve_quantal_response,
     solve_zero_sum_nash,
+)
+from engine.solver.hybrid_scheduler import (
+    HybridSchedulerStats,
+    HybridTurnScheduler,
+    TurnWorkItem,
+    resolve_worker_topology,
 )
 from engine.solver.two_ply_lookahead import evaluate_two_ply_on_ieds_core
 from engine.state.state_compiler import TurnStateCompiler
@@ -91,17 +97,97 @@ def append_equity_training_sample(
         pass
 
 
+_PROC_BO3_ENGINE: Optional["GPUReplayCoachEngine"] = None
+_BO3_MP_LOCK = threading.Lock()
+_BO3_MP_EXECUTOR: Any = None
+_BO3_MP_WORKERS: int = 0
+
+
+def _init_bo3_cpu_worker_process(omp_threads: int) -> None:
+    """Initialize a persistent Zero-GIL CPU `GPUReplayCoachEngine` inside a worker subprocess."""
+    global _PROC_BO3_ENGINE
+    try:
+        torch.set_num_threads(max(1, int(omp_threads)))
+    except Exception:
+        pass
+    _PROC_BO3_ENGINE = GPUReplayCoachEngine(
+        ots_db=None,  # type: ignore[arg-type]
+        device="cpu",
+        equity_samples_path=None,
+    )
+
+
+def _eval_bo3_turn_in_worker_process(
+    replay: ParsedReplay,
+    turn_number: int,
+    num_mc: int,
+    enable_two_ply: bool,
+    worker_label: str,
+) -> Dict[str, Any]:
+    """Evaluate a single Bo3 turn inside an isolated Zero-GIL CPU worker process."""
+    global _PROC_BO3_ENGINE
+    if _PROC_BO3_ENGINE is None:
+        _PROC_BO3_ENGINE = GPUReplayCoachEngine(
+            ots_db=None,  # type: ignore[arg-type]
+            device="cpu",
+            equity_samples_path=None,
+        )
+    return _PROC_BO3_ENGINE.analyze_turn(
+        replay,
+        turn_number=turn_number,
+        min_prior=0.0,
+        num_mc=num_mc,
+        enable_two_ply=enable_two_ply,
+        log_cb=None,
+        cancel_event=None,
+        worker_label=worker_label,
+    )
+
+
+def _get_bo3_cpu_process_pool(num_workers: int, omp_threads: int) -> Any:
+    """Return a persistent `spawn`-based `ProcessPoolExecutor` for Zero-GIL CPU turn workers."""
+    global _BO3_MP_EXECUTOR, _BO3_MP_WORKERS
+    import atexit
+    import concurrent.futures as _cf
+    import multiprocessing as _mp
+
+    with _BO3_MP_LOCK:
+        if _BO3_MP_EXECUTOR is not None and _BO3_MP_WORKERS == num_workers:
+            return _BO3_MP_EXECUTOR
+        if _BO3_MP_EXECUTOR is not None:
+            try:
+                _BO3_MP_EXECUTOR.shutdown(wait=False, cancel_futures=True)
+            except Exception:
+                pass
+            _BO3_MP_EXECUTOR = None
+        try:
+            ctx = _mp.get_context("spawn")
+            _BO3_MP_EXECUTOR = _cf.ProcessPoolExecutor(
+                max_workers=max(1, int(num_workers)),
+                mp_context=ctx,
+                initializer=_init_bo3_cpu_worker_process,
+                initargs=(max(1, int(omp_threads)),),
+            )
+            _BO3_MP_WORKERS = int(num_workers)
+            atexit.register(lambda ex=_BO3_MP_EXECUTOR: ex.shutdown(wait=False, cancel_futures=True))
+            return _BO3_MP_EXECUTOR
+        except Exception:
+            return None
+
+
 class GPUReplayCoachEngine:
     """Warm singleton Tensor Core solver wrapping `VgcTensorStateMachine` (CUDA GPU or CPU) and DuckDB OTS DB."""
 
     def __init__(
         self,
-        ots_db: OTSRosterDatabase,
+        ots_db: Optional[OTSRosterDatabase],
         device: Optional[str] = None,
         equity_samples_path: Optional[Path] = DEFAULT_EQUITY_SAMPLES_PATH,
     ) -> None:
         self.ots_db = ots_db
         self._gpu_lock = threading.Lock()
+        self._pool_lock = threading.Lock()
+        self._cpu_worker_engines: Dict[int, "GPUReplayCoachEngine"] = {}
         self.equity_samples_path = equity_samples_path
         self.sc = TurnStateCompiler()
 
@@ -302,10 +388,12 @@ class GPUReplayCoachEngine:
         enable_two_ply: bool = False,
         log_cb: Optional[Callable[[Dict[str, Any]], None]] = None,
         cancel_event: Optional[threading.Event] = None,
+        worker_label: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Run full Tensor Core IEDS + Nash + QRE + Zero-AI Commentary for one turn."""
         if cancel_event is not None and cancel_event.is_set():
             raise AnalysisCancelledError("Analysis cancelled before turn start.")
+        active_worker = str(worker_label or ("GPU" if self.device_type == "cuda" else "CPU")).strip()
 
         # min_prior is permanently locked to 0.0 (strictly mathematical pruner, zero heuristics)
         min_prior = 0.0
@@ -328,6 +416,8 @@ class GPUReplayCoachEngine:
                 "turn": int(turn_number),
                 "phase": phase,
                 "in_place": bool(in_place),
+                "compute_worker": active_worker,
+                "hardware_device": self.device_name,
                 "messages": {
                     "es_vgc": es_vgc,
                     "en_vgc": en_vgc,
@@ -813,6 +903,8 @@ class GPUReplayCoachEngine:
                         "spd_boost": int(round(float(P_np[s, MonIdx.BOOST_SPD]))),
                         "spe": int(round(float(P_np[s, MonIdx.STAT_SPE]))),
                         "protect_prev": bool(P_np[s, MonIdx.PROTECT_COUNTER] > 0.5),
+                        "moves": [str(m) for m in (comp.slot_move_names[s] if s < len(comp.slot_move_names) else ()) if m],
+                        "ots_verified": bool(mon_obj and mon_obj.moves),
                     }
                 )
 
@@ -894,6 +986,8 @@ class GPUReplayCoachEngine:
             "elapsed_s": elapsed_s,
             "from_cache": False,
             "device": self.device_name,
+            "hardware_device": self.device_name,
+            "compute_worker": active_worker,
             "matrix_shape": [int(B1), int(B2)],
             "total_timelines": int(B1 * B2 * num_mc),
             "nash_value": round(float(nash_sub.game_value), 4),
@@ -922,6 +1016,276 @@ class GPUReplayCoachEngine:
             "pipeline_logs": turn_logs,
         }
         return payload
+
+    def _get_cpu_worker_engine(self, worker_idx: int) -> "GPUReplayCoachEngine":
+        """Return an isolated CPU `GPUReplayCoachEngine` dedicated to `worker_idx` (zero lock contention)."""
+        with self._pool_lock:
+            eng = self._cpu_worker_engines.get(worker_idx)
+            if eng is None:
+                eng = GPUReplayCoachEngine(
+                    ots_db=self.ots_db,
+                    device="cpu",
+                    equity_samples_path=self.equity_samples_path,
+                )
+                self._cpu_worker_engines[worker_idx] = eng
+            return eng
+
+    def estimate_turn_cost(
+        self,
+        replay: ParsedReplay,
+        turn_number: int,
+        num_mc: int = 128,
+        enable_two_ply: bool = False,
+    ) -> TurnWorkItem:
+        """Fast `< 1 ms` pre-scan estimating exact simulation cost `B1 * B2 * K * ply` for one turn."""
+        snap = next((t for t in replay.turns if t.turn_number == turn_number), None)
+        if snap is None:
+            return TurnWorkItem(turn_number=turn_number, estimated_cost=1.0, b1=1, b2=1)
+        # Use isolated CPU compiler so pre-scan never blocks CUDA
+        scan_eng = self if self.device_type == "cpu" else self._get_cpu_worker_engine(0)
+        with scan_eng._gpu_lock:
+            comp = scan_eng._compile_snapshot(snap)
+            m1 = scan_eng.sm.logic_engine.prune_side_26x26_tensor_actions(
+                comp, "trainer_1", min_prior_threshold=0.0
+            )
+            m2 = scan_eng.sm.logic_engine.prune_side_26x26_tensor_actions(
+                comp, "trainer_2", min_prior_threshold=0.0
+            )
+            b1 = max(1, int(m1.pruned_choices.shape[0]))
+            b2 = max(1, int(m2.pruned_choices.shape[0]))
+        ply_mult = 2.5 if enable_two_ply else 1.0
+        est_cost = float(b1 * b2 * max(16, int(num_mc)) * ply_mult)
+        return TurnWorkItem(
+            turn_number=int(turn_number),
+            estimated_cost=est_cost,
+            b1=b1,
+            b2=b2,
+            payload=snap,
+        )
+
+    def analyze_match_parallel(
+        self,
+        replay: ParsedReplay,
+        start_turn: int = 1,
+        num_mc: int = 128,
+        enable_two_ply: bool = False,
+        compute_mode: str = "auto",
+        skip_turns: Optional[Sequence[int]] = None,
+        on_scheduler_plan: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_worker_start: Optional[Callable[[int, str, str], None]] = None,
+        on_log: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_turn: Optional[Callable[[Dict[str, Any]], None]] = None,
+        on_error: Optional[Callable[[int, str, Exception], None]] = None,
+        cancel_event: Optional[threading.Event] = None,
+    ) -> Tuple[List[Dict[str, Any]], HybridSchedulerStats]:
+        """Run unique turns `start_turn..N` (excluding `skip_turns`) exactly once across the Hybrid pool."""
+        skip_set = {int(x) for x in (skip_turns or ())}
+        seen_snaps: set[int] = set()
+        target_snaps: List[TurnSnapshot] = []
+        for s in replay.turns:
+            tn = int(s.turn_number)
+            if tn >= start_turn and tn not in skip_set and tn not in seen_snaps:
+                seen_snaps.add(tn)
+                target_snaps.append(s)
+
+        has_cuda = self.device_type == "cuda"
+        topo = resolve_worker_topology(
+            mode=compute_mode,
+            has_cuda=has_cuda,
+            total_turns=len(target_snaps),
+        )
+
+        work_items: List[TurnWorkItem] = [
+            self.estimate_turn_cost(replay, s.turn_number, num_mc=num_mc, enable_two_ply=enable_two_ply)
+            for s in target_snaps
+        ]
+        if on_scheduler_plan is not None:
+            try:
+                on_scheduler_plan(
+                    {
+                        "mode": topo["mode"],
+                        "use_gpu": topo["use_gpu"],
+                        "gpu_device_name": self.device_name if topo["use_gpu"] else None,
+                        "cpu_device_name": "CPU (PyTorch)",
+                        "cpu_workers": topo["cpu_workers"],
+                        "threads_per_cpu_worker": topo["threads_per_cpu_worker"],
+                        "total_scheduled_turns": len(work_items),
+                        "turns": [
+                            {"turn": w.turn_number, "b1": w.b1, "b2": w.b2, "cost": round(w.estimated_cost, 1)}
+                            for w in sorted(work_items, key=lambda x: -x.estimated_cost)
+                        ],
+                    }
+                )
+            except Exception:
+                pass
+
+        # Use Zero-GIL Multi-Process CPU Worker Pool for full Hybrid CUDA runs (K >= 32)
+        # so multi-core CPU workers never contend for the parent process's Python GIL during CUDA kernel launches!
+        import os as _os
+
+        use_mp_cpu = bool(
+            topo["use_gpu"]
+            and int(topo["cpu_workers"]) >= 1
+            and len(work_items) >= 3
+            and (int(num_mc) >= 32 or _os.environ.get("PORYGON_BO3_MP_POOL") == "1")
+        )
+        mp_pool = (
+            _get_bo3_cpu_process_pool(int(topo["cpu_workers"]), int(topo["threads_per_cpu_worker"]))
+            if use_mp_cpu
+            else None
+        )
+
+        # Pre-warm fallback CPU worker instances before parallel launch
+        if mp_pool is None:
+            for wi in range(int(topo["cpu_workers"])):
+                self._get_cpu_worker_engine(wi)
+
+        prev_torch_threads: Optional[int] = None
+        if int(topo["cpu_workers"]) >= 1 and mp_pool is None:
+            try:
+                prev_torch_threads = int(torch.get_num_threads())
+                torch.set_num_threads(max(1, int(topo["threads_per_cpu_worker"])))
+            except Exception:
+                prev_torch_threads = None
+
+        scheduler = HybridTurnScheduler(mode=compute_mode, has_cuda=has_cuda)
+
+        def _gpu_run(item: TurnWorkItem, w_lbl: str) -> Dict[str, Any]:
+            return self.analyze_turn(
+                replay,
+                turn_number=item.turn_number,
+                min_prior=0.0,
+                num_mc=num_mc,
+                enable_two_ply=enable_two_ply,
+                log_cb=on_log,
+                cancel_event=cancel_event,
+                worker_label=w_lbl,
+            )
+
+        def _cpu_run(item: TurnWorkItem, worker_idx: int, w_lbl: str) -> Dict[str, Any]:
+            if mp_pool is not None:
+                fut = mp_pool.submit(
+                    _eval_bo3_turn_in_worker_process,
+                    replay,
+                    int(item.turn_number),
+                    int(num_mc),
+                    bool(enable_two_ply),
+                    w_lbl,
+                )
+                out_res = fut.result()
+                if on_log is not None:
+                    for lg in out_res.get("pipeline_logs") or ():
+                        on_log(lg)
+                return out_res
+            cpu_eng = self._get_cpu_worker_engine(worker_idx)
+            return cpu_eng.analyze_turn(
+                replay,
+                turn_number=item.turn_number,
+                min_prior=0.0,
+                num_mc=num_mc,
+                enable_two_ply=enable_two_ply,
+                log_cb=on_log,
+                cancel_event=cancel_event,
+                worker_label=w_lbl,
+            )
+
+        def _start_cb(item: TurnWorkItem, w_lbl: str) -> None:
+            if on_worker_start is not None:
+                hw_name = self.device_name if w_lbl == "GPU" else "CPU (PyTorch)"
+                on_worker_start(item.turn_number, w_lbl, hw_name)
+
+        def _done_cb(item: TurnWorkItem, w_lbl: str, res_dict: Dict[str, Any]) -> None:
+            if on_turn is not None:
+                on_turn(res_dict)
+
+        def _err_cb(item: TurnWorkItem, w_lbl: str, exc: Exception) -> None:
+            if on_error is not None:
+                on_error(item.turn_number, w_lbl, exc)
+
+        try:
+            res_map, stats = scheduler.execute(
+                items=work_items,
+                gpu_runner=_gpu_run,
+                cpu_runner=_cpu_run,
+                on_item_start=_start_cb,
+                on_item_done=_done_cb,
+                on_item_error=_err_cb,
+                cancel_event=cancel_event,
+            )
+        finally:
+            if prev_torch_threads is not None:
+                try:
+                    torch.set_num_threads(prev_torch_threads)
+                except Exception:
+                    pass
+
+        ordered_results = [res_map[t] for t in sorted(res_map.keys())]
+        return ordered_results, stats
+
+    @staticmethod
+    def reconstruct_ordered_match_logs(
+        ordered_results: Sequence[Dict[str, Any]],
+        sched_stats: Optional[HybridSchedulerStats] = None,
+        gpu_device_name: str = "CUDA GPU",
+    ) -> List[Dict[str, Any]]:
+        """Reconstruct a single strictly chronological (`T1 -> TN`), deduplicated, hardware-tagged log.
+
+        Called strictly AFTER all parallel workers have finished and joined, guaranteeing that
+        every turn appears at most once, in exact ascending order, with clear hardware attribution.
+        """
+        reconstructed: List[Dict[str, Any]] = []
+        unique_sorted = sorted(
+            {int(r["turn"]): r for r in ordered_results if "turn" in r}.values(),
+            key=lambda r: int(r["turn"]),
+        )
+
+        if sched_stats is not None:
+            turn_assign_parts = [
+                f"T{int(r['turn'])}={r.get('compute_worker', '?')}"
+                for r in unique_sorted
+            ]
+            assign_str = " · ".join(turn_assign_parts) if turn_assign_parts else "—"
+            mode_up = str(sched_stats.mode or "auto").upper()
+            hw_es = (
+                f"Plan ejecutado [{mode_up}] en {sched_stats.elapsed_s:.2f}s · "
+                f"{sched_stats.gpu_turns} turno(s) GPU ({gpu_device_name}) · "
+                f"{sched_stats.cpu_turns} turno(s) CPU · Asignación: {assign_str}"
+            )
+            hw_en = (
+                f"Completed schedule [{mode_up}] in {sched_stats.elapsed_s:.2f}s · "
+                f"{sched_stats.gpu_turns} GPU turn(s) ({gpu_device_name}) · "
+                f"{sched_stats.cpu_turns} CPU turn(s) · Assignment: {assign_str}"
+            )
+            reconstructed.append(
+                {
+                    "turn": 0,
+                    "phase": "SCHEDULER",
+                    "in_place": False,
+                    "compute_worker": "BALANCER",
+                    "hardware_device": f"{gpu_device_name} + CPU",
+                    "messages": {
+                        "es_vgc": hw_es,
+                        "en_vgc": hw_en,
+                        "es_scientific": hw_es,
+                        "en_scientific": hw_en,
+                    },
+                }
+            )
+
+        for r in unique_sorted:
+            t_num = int(r["turn"])
+            w_lbl = str(r.get("compute_worker") or "GPU")
+            hw_dev = str(r.get("hardware_device") or r.get("device") or w_lbl)
+            for entry in r.get("pipeline_logs") or []:
+                if entry.get("in_place"):
+                    continue
+                cloned = dict(entry)
+                cloned["turn"] = t_num
+                cloned["compute_worker"] = str(entry.get("compute_worker") or w_lbl)
+                cloned["hardware_device"] = str(entry.get("hardware_device") or hw_dev)
+                reconstructed.append(cloned)
+
+        return reconstructed
 
     def _compute_equity_attribution(
         self,

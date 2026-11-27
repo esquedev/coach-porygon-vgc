@@ -570,11 +570,204 @@ def get_verdict_badge(verdict_key: str, lang: str = "es", style: str = "vgc") ->
     }
 
 
+VICTORY_EQUITY_PILLARS: Dict[str, Dict[Language, Dict[Style, Dict[str, str]]]] = {
+    "material": {
+        "es": {
+            "vgc": {
+                "label": "Vida y KOs",
+                "desc": "Diferencia de HP restante, Pokémon vivos y condición de victoria/derrota al final del turno (1 KO completo = 1.75 pts).",
+            },
+            "scientific": {
+                "label": "Ventaja Material (ΔHP + ΔKO)",
+                "desc": "Componente material antisimétrica: ΔHP% (w=1.00) + ΔAlive (w=0.75) + señal terminal (w=2.50); ancla 1 KO = 1.75.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "HP & KOs (Material)",
+                "desc": "Remaining HP%, alive Pokémon count, and win/loss check at end of turn (1 full healthy KO = 1.75 pts).",
+            },
+            "scientific": {
+                "label": "Material (ΔHP + ΔKO)",
+                "desc": "Antisymmetric material equity: ΔHP% (w=1.00) + ΔAlive (w=0.75) + terminal indicator (w=2.50); anchor 1 KO = 1.75.",
+            },
+        },
+    },
+    "threat": {
+        "es": {
+            "vgc": {
+                "label": "Amenaza de KO",
+                "desc": "Qué tan cerca estás de rematar a los activos rivales en el siguiente turno considerando el orden de velocidad y doble enfoque.",
+            },
+            "scientific": {
+                "label": "Amenaza Letal Ponderada por Velocidad",
+                "desc": "Cobertura activa 2v2 ponderada por orden de velocidad/prioridad y presión de focus-fire sobre el tablero post-turno.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Lethal KO Pressure",
+                "desc": "Immediate next-turn KO threats and double-up pressure across both active slots given current speed order.",
+            },
+            "scientific": {
+                "label": "Speed-Weighted Lethal Threat",
+                "desc": "Speed- and priority-weighted 2v2 active damage coverage and focus-fire lethality across legal move slots.",
+            },
+        },
+    },
+    "malposition": {
+        "es": {
+            "vgc": {
+                "label": "Posicionamiento y Cambios",
+                "desc": "Mide si un Pokémon queda en mal duelo activo sin un cambio seguro disponible en la banca.",
+            },
+            "scientific": {
+                "label": "Atrapamiento Posicional y Escape a Banca",
+                "desc": "Excedente de mal emparejamiento activo ponderado por la vulnerabilidad defensiva de los cambios disponibles en banca.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Pinned Matchups & Safe Switches",
+                "desc": "Measures whether an active Pokémon is stuck in a losing matchup with no safe bench switch-in.",
+            },
+            "scientific": {
+                "label": "Positional Trap & Escape Equity",
+                "desc": "Active matchup deficit gated by bench escape safety across surviving reserve slots.",
+            },
+        },
+    },
+    "restriction": {
+        "es": {
+            "vgc": {
+                "label": "Bloqueo de Jugadas",
+                "desc": "Penaliza quedar encerrado por Choice Scarf, Taunt, Encore, Throat Chop, recarga obligada, Yawn/Perish o doble Protect riesgoso.",
+            },
+            "scientific": {
+                "label": "Restricción del Espacio de Acciones",
+                "desc": "Pérdida de opcionalidad: Choice-lock, Taunt, Encore, Disable, Throat Chop, recarga, Yawn, Perish Song y exposición post-Protect.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Move Locks (Choice / Taunt / Protect)",
+                "desc": "Penalizes locked or restricted lines: Choice lock, Taunt, Encore, Throat Chop, recharge, Yawn/Perish, or consecutive Protect exposure.",
+            },
+            "scientific": {
+                "label": "Action-Space Restriction",
+                "desc": "Role-aware option restriction: Choice lock, Protect-chain exposure, Taunt, Encore, Disable, Throat Chop, Recharge, Yawn & Perish Song.",
+            },
+        },
+    },
+    "status_boost": {
+        "es": {
+            "vgc": {
+                "label": "Estados y Boosts",
+                "desc": "Impacto real de Quemadura (en atacantes físicos), Parálisis (considerando Trick Room), Sueño y cambios de Atk/Def/SpA/SpD/Spe.",
+            },
+            "scientific": {
+                "label": "Valor de Estados y Modificadores de Stat",
+                "desc": "Estados ponderados por rol (Burn físico vs. especial, Parálisis bajo TR, Sleep) y etapas de stat escaladas por HP vivo.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Status & Stat Boosts",
+                "desc": "Role-weighted impact of Burn (physical attackers), Paralysis (Trick Room aware), Sleep, and HP-scaled stat stage boosts.",
+            },
+            "scientific": {
+                "label": "Role-Weighted Status & Boosts",
+                "desc": "Role-aware major statuses (physical Burn, TR-aware Paralysis, Sleep) plus HP-scaled stat-stage modifiers.",
+            },
+        },
+    },
+    "two_turn_prime": {
+        "es": {
+            "vgc": {
+                "label": "Golpe Cargado (Próx. Turno)",
+                "desc": "Valor de amenazas ya preparadas para el turno siguiente: Stomping Tantrum ×2 tras fallo, Electro Shot / Solar Beam cargado o vulnerabilidad de Glaive Rush.",
+            },
+            "scientific": {
+                "label": "Valor Diferido de 2 Turnos (Cond. a HP)",
+                "desc": "Payoff condicionado a supervivencia: LAST_MOVE_FAILED (Stomping Tantrum 2×), cargas en cola (Electro Shot/Solar Beam), Charge y penalización Glaive Rush.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Primed Next-Turn Threats",
+                "desc": "Next-turn primed payoffs gated by survival: Stomping Tantrum 2× after miss/fail, queued Electro Shot/Solar Beam, Charge, or Glaive Rush vulnerability.",
+            },
+            "scientific": {
+                "label": "HP-Gated 2-Turn Primed Value",
+                "desc": "Survival-gated 2-turn state equity: LAST_MOVE_FAILED Stomping Tantrum 2×, queued charge attacks, Charge boost, and Glaive Rush exposure.",
+            },
+        },
+    },
+    "resources": {
+        "es": {
+            "vgc": {
+                "label": "Sash, Mega y Objetos",
+                "desc": "Valor de recursos intactos: Focus Sash activa, Disguise, Multiscale, Sturdy, Bayas sin consumir, Megaevolución libre y Fake Out disponible.",
+            },
+            "scientific": {
+                "label": "Economía de Escudos y Recursos",
+                "desc": "Reserva táctica intacta: umbrales de Focus Sash/Sturdy/Multiscale/Disguise, bayas defensivas, Mega Evolution disponible y Fake Out.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Shields, Items & Mega Reserve",
+                "desc": "Intact one-time tactical shields and resources: Focus Sash, Disguise, Multiscale, Sturdy, unconsumed Berries, unspent Mega, and Fake Out.",
+            },
+            "scientific": {
+                "label": "Shield & Resource Economy",
+                "desc": "Preserved threshold shields (Focus Sash, Disguise, Multiscale, Sturdy), consumable berries, unspent Mega slot, and Fake Out availability.",
+            },
+        },
+    },
+    "field_tempo": {
+        "es": {
+            "vgc": {
+                "label": "Speed Control, Clima y Campo",
+                "desc": "Ventaja de Tailwind, Trick Room, Pantallas (Reflect / Light Screen / Aurora Veil), Clima, Terreno y Hazards ponderada por los turnos restantes.",
+            },
+            "scientific": {
+                "label": "Tempo de Campo y Turnos Restantes",
+                "desc": "Control global escalado por duración restante: Tailwind, Trick Room, Screens, sinergia de Clima/Terreno y Toxic Spikes.",
+            },
+        },
+        "en": {
+            "vgc": {
+                "label": "Speed Control, Weather & Field",
+                "desc": "Active Tailwind, Trick Room, Screens (Reflect / Light Screen / Aurora Veil), Weather/Terrain synergy, and hazards weighted by turns left.",
+            },
+            "scientific": {
+                "label": "Turn-Scaled Field & Tempo",
+                "desc": "Remaining-turn-scaled global field equity: Tailwind, Trick Room, Screens, Weather/Terrain synergy, and entry hazards.",
+            },
+        },
+    },
+}
+
+
+def get_pillar_label(pillar_key: str, lang: str = "es", style: str = "vgc") -> str:
+    """Return the canonical localized label for one of the 8 Victory Equity pillars."""
+    l_clean, s_clean = normalize_lang_style(lang, style)
+    return VICTORY_EQUITY_PILLARS.get(pillar_key, {}).get(l_clean, {}).get(s_clean, {}).get("label", pillar_key)
+
+
+def get_pillar_description(pillar_key: str, lang: str = "es", style: str = "vgc") -> str:
+    """Return the canonical localized tooltip description for one of the 8 Victory Equity pillars."""
+    l_clean, s_clean = normalize_lang_style(lang, style)
+    return VICTORY_EQUITY_PILLARS.get(pillar_key, {}).get(l_clean, {}).get(s_clean, {}).get("desc", "")
+
+
 def export_glossary_payload() -> Dict[str, Any]:
-    """Export the full 4-variant glossary, aliases, and badge dictionary for zero-latency GUI switching."""
+    """Export the full 4-variant glossary, aliases, 8-pillar catalog, and badges for zero-latency GUI switching."""
     return {
         "terms": TERM_GLOSSARY,
         "aliases": TERM_KEY_ALIASES,
         "badges": VERDICT_BADGES,
+        "pillars": VICTORY_EQUITY_PILLARS,
         "rng_events": RNG_SAMPLED_EVENTS_TEXT,
     }

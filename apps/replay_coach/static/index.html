@@ -50,6 +50,10 @@
         <span class="nav-ico" aria-hidden="true">🔮</span>
         <span id="lbl-nav-md-scout">Reg M-D</span>
       </button>
+      <button class="hub-nav-pill hub-nav-teal" id="nav-hub-team-db" data-hub-nav="team-db" type="button">
+        <span class="nav-ico" aria-hidden="true">🗄</span>
+        <span id="lbl-nav-team-db">Equipos DB</span>
+      </button>
     </nav>
 
     <div class="topbar-controls">
@@ -223,6 +227,22 @@
             <span class="cta-arrow" aria-hidden="true">Explorar &rarr;</span>
           </div>
         </button>
+
+        <!-- Card 7: Split DuckDB Own vs. Rival Team Database Explorer -->
+        <button class="cta-card cta-teal" id="cta-card-team-db" type="button">
+          <div class="cta-card-top">
+            <span class="cta-icon-box" aria-hidden="true">🗄</span>
+            <span class="cta-badge" id="lbl-cta7-badge">DUCKDB · PROPIOS VS. RIVALES</span>
+          </div>
+          <h2 class="cta-title" id="lbl-cta7-title">Base de Equipos &amp; Rivales</h2>
+          <p class="cta-desc" id="lbl-cta7-desc">
+            Administra por separado tus propios equipos y los equipos rivales encontrados en Showdown (anonimizados con Elo), busca por arquetipo, regulación o Pokémon y envíalos en 1 click a Lead Lab o Prep.
+          </p>
+          <div class="cta-footer">
+            <span class="cta-meta" id="lbl-cta7-meta">Filtro por Arquetipo · Regulación · Elo Showdown</span>
+            <span class="cta-arrow" aria-hidden="true">Explorar &rarr;</span>
+          </div>
+        </button>
       </div>
     </div>
   </section>
@@ -288,6 +308,14 @@
                   <option value="128" selected>Balanceado (K=128)</option>
                   <option value="256">Torneo (K=256)</option>
                   <option value="512">Profundo (K=512 · lento)</option>
+                </select>
+              </label>
+              <label class="field-inline" title="Balanceador de carga: GPU para turnos pesados + hilos CPU paralelos para turnos ligeros">
+                <span id="lbl-compute-mode">Motor:</span>
+                <select id="setup-compute-mode">
+                  <option value="auto" selected>Híbrido (GPU + CPU)</option>
+                  <option value="gpu_only">Solo GPU</option>
+                  <option value="cpu_parallel">CPU Paralelo</option>
                 </select>
               </label>
               <label class="check-inline" title="Proyecta las jugadas clave del núcleo IEDS hacia el siguiente turno (Turn + 2)">
@@ -414,6 +442,8 @@
           <span class="mono-label" id="live-tile-badge">IDLE</span>
           <span id="live-tile-text">Esperando inicio...</span>
         </div>
+
+        <div class="live-workers-strip" id="live-workers-strip" style="display:none"></div>
 
         <div class="pipeline-console" id="pipeline-log-feed"></div>
 
@@ -605,6 +635,11 @@
             <option value="balanced" selected>Balanceado (K=32 · ~105s GPU)</option>
             <option value="tournament">Torneo (K=48 · ~175s GPU)</option>
           </select>
+          <select id="ll-compute-mode" class="prep-select-sm" title="Balanceador de carga para los 225 pares de leads (90×90 modos)">
+            <option value="auto" selected>⚡ Híbrido (GPU + CPU)</option>
+            <option value="gpu_only">🚀 Solo GPU (CUDA)</option>
+            <option value="cpu_parallel">🧵 CPU Paralelo (Multi-Hilo)</option>
+          </select>
           <button class="btn btn-danger" id="btn-ll-cancel" type="button" disabled>■ Detener</button>
           <button class="btn btn-gold btn-lg" id="btn-ll-launch" type="button">
             <span id="lbl-ll-launch">Simular 90×90 Leads &rarr;</span>
@@ -658,6 +693,7 @@
             <button class="btn btn-danger btn-xs" id="btn-ll-cancel-bar" type="button" style="display:none">■ Detener</button>
           </div>
         </div>
+        <div class="live-workers-strip" id="ll-workers-strip" style="display:none;margin:6px 0"></div>
         <div class="ll-cli-console" id="ll-cli-console" aria-live="polite" aria-label="Lead Lab live telemetry log"></div>
       </div>
 
@@ -763,6 +799,26 @@
           </div>
         </div>
 
+        <!-- Level 1A-2: Interactive Own-Lead × Opp-Lead Turn-1 Playbook Matrix + Batch K=128 Audit -->
+        <div class="panel ll-playbook-panel" id="ll-playbook-panel" style="display:none">
+          <div class="panel-head">
+            <div class="btn-row" style="flex-wrap:wrap">
+              <span class="panel-title" id="lbl-ll-playbook-title">📋 Playbook Turno 1: Tus Leads vs. Leads del Rival</span>
+              <div class="seg-group" aria-label="Playbook pivot mode">
+                <button class="seg-btn active" id="btn-ll-pb-by-mine" type="button">Mi Lead → vs. Top Rivales</button>
+                <button class="seg-btn" id="btn-ll-pb-by-opp" type="button">Lead Rival → vs. Mis Top Leads</button>
+              </div>
+            </div>
+            <button class="btn btn-gold btn-xs" id="btn-ll-deep-batch" type="button" title="Ejecuta auditorías K=128 sin poda para todos los pares visibles y las guarda en Vault">
+              ⚡ <span id="lbl-ll-deep-batch">Auditar K=128 Todos los Pares</span>
+            </button>
+          </div>
+          <div class="panel-body">
+            <div class="ll-playbook-selector" id="ll-playbook-selector"></div>
+            <div class="ll-playbook-grid" id="ll-playbook-grid"></div>
+          </div>
+        </div>
+
         <!-- Level 1B: Interactive Live 15×15 Lead-Pair Heatmap -->
         <div class="panel ll-heatmap-panel">
           <div class="panel-head">
@@ -782,9 +838,12 @@
         <div class="panel ll-drill-panel" id="ll-drill-panel" style="display:none">
           <div class="panel-head">
             <div class="ll-drill-head-left" id="ll-drill-title">Detalle de Matchup</div>
-            <button class="btn btn-gold" id="btn-ll-deep-audit" type="button">
-              <span id="lbl-ll-deep-btn">⚡ Auditoría Profunda Turno 1 (Sin Poda · K=128)</span>
-            </button>
+            <div class="btn-row" style="flex-wrap:wrap">
+              <div class="ll-drill-own-switcher" id="ll-drill-own-switcher"></div>
+              <button class="btn btn-gold" id="btn-ll-deep-audit" type="button">
+                <span id="lbl-ll-deep-btn">⚡ Auditoría Profunda Turno 1 (Sin Poda · K=128)</span>
+              </button>
+            </div>
           </div>
           <div class="panel-body ll-drill-body">
             <div class="ll-turn0-strip" id="ll-drill-turn0-strip"></div>
@@ -875,6 +934,91 @@
       <div class="panel prep-stage-panel">
         <iframe id="md-scout-iframe" class="prep-iframe" src="about:blank" title="Regulation M-D Meta Scout Report"></iframe>
       </div>
+    </div>
+  </section>
+
+  <!-- ================================================================== -->
+  <!-- DEDICATED VIEW: SPLIT DUCKDB TEAM & RIVAL DATABASE EXPLORER        -->
+  <!-- ================================================================== -->
+  <section class="studio-view" id="view-team-db">
+    <div class="tdb-wrap">
+      <div class="hero-action-bar">
+        <div class="hero-copy">
+          <div class="hero-title" id="lbl-tdb-title">🗄 Base de Equipos &amp; Rivales (DuckDB)</div>
+          <div class="muted-sm" id="lbl-tdb-sub">
+            Bases separadas entre tus equipos propios y equipos rivales de Showdown (anonimizados con leyenda de Elo). Filtra por arquetipo, regulación o Pokémon.
+          </div>
+        </div>
+        <div class="hero-cta-group">
+          <button class="btn btn-ghost" id="btn-tdb-back" type="button">&larr; Hub</button>
+          <button class="btn btn-greatball" id="btn-tdb-toggle-import" type="button">+ Importar Equipo</button>
+        </div>
+      </div>
+
+      <!-- Import Drawer -->
+      <div class="panel tdb-import-drawer" id="tdb-import-drawer" style="display:none">
+        <div class="panel-head">
+          <span class="panel-title" id="lbl-tdb-import-title">Guardar Nuevo Equipo en DuckDB</span>
+          <button class="btn btn-ghost btn-xs" id="btn-tdb-close-import" type="button">&times;</button>
+        </div>
+        <div class="panel-body">
+          <div class="tdb-form-row">
+            <select id="tdb-imp-scope" class="prep-select-sm" title="Base destino">
+              <option value="own">Mis Equipos (Propio)</option>
+              <option value="rival">Equipo Rival (Showdown / Scout)</option>
+            </select>
+            <input type="text" id="tdb-imp-name" class="grow" placeholder="Nombre del equipo (ej. Char-Y Sun v5 o Showdown Rival)..." />
+            <select id="tdb-imp-reg" class="prep-select-sm" title="Regulación">
+              <option value="Reg M-C">Reg M-C</option>
+              <option value="Reg M-D">Reg M-D</option>
+              <option value="Custom">Custom</option>
+            </select>
+            <select id="tdb-imp-arch" class="prep-select-sm" title="Arquetipo">
+              <option value="">Auto-detectar Arquetipo</option>
+              <option value="Dual Weather">Dual Weather</option>
+              <option value="Sun">Sun</option>
+              <option value="Rain">Rain</option>
+              <option value="Sand">Sand</option>
+              <option value="Snow">Snow</option>
+              <option value="Trick Room">Trick Room</option>
+              <option value="Tailwind / Hyper Offense">Tailwind / Hyper Offense</option>
+              <option value="Psychic Terrain">Psychic Terrain</option>
+              <option value="Grassy Balance">Grassy Balance</option>
+              <option value="Goodstuffs / Balance">Goodstuffs / Balance</option>
+            </select>
+            <input type="number" id="tdb-imp-elo" class="prep-select-sm" style="width:110px" placeholder="Elo (opc.)" min="1000" max="2500" />
+          </div>
+          <textarea id="tdb-imp-paste" rows="6" style="width:100%;margin-top:8px" placeholder="Pega aquí el Showdown Paste (66-SP o EV-less OTS)..."></textarea>
+          <div class="btn-row" style="margin-top:8px;justify-content:space-between">
+            <span class="muted-xs" id="tdb-imp-status"></span>
+            <button class="btn btn-greatball" id="btn-tdb-save-import" type="button">Guardar en DuckDB</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scope Split Tabs + Multi-Facet Filters -->
+      <div class="panel">
+        <div class="panel-body tdb-toolbar">
+          <div class="seg-group" id="tdb-scope-tabs" role="tablist" aria-label="Database split">
+            <button class="seg-btn active" data-tdb-scope="own" id="btn-tdb-scope-own" type="button">🏠 Mis Equipos (<span id="tdb-count-own">0</span>)</button>
+            <button class="seg-btn" data-tdb-scope="rival" id="btn-tdb-scope-rival" type="button">🛡 Rivales Showdown (<span id="tdb-count-rival">0</span>)</button>
+            <button class="seg-btn" data-tdb-scope="all" id="btn-tdb-scope-all" type="button">📚 Todos (<span id="tdb-count-all">0</span>)</button>
+          </div>
+          <div class="tdb-filters-row">
+            <input type="text" id="tdb-search-input" class="ll-vault-search-input" placeholder="Buscar Pokémon, nombre o nota (ej. Incineroar, Charizard)..." autocomplete="off" />
+            <select id="tdb-filter-arch" class="prep-select-sm" title="Filtrar por Arquetipo">
+              <option value="">Todos los Arquetipos</option>
+            </select>
+            <select id="tdb-filter-reg" class="prep-select-sm" title="Filtrar por Regulación">
+              <option value="">Todas las Regulaciones</option>
+            </select>
+            <input type="number" id="tdb-filter-elo" class="prep-select-sm" style="width:110px" placeholder="Elo mín." min="1000" max="2500" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Cards Grid -->
+      <div class="tdb-cards-grid" id="tdb-cards-grid"></div>
     </div>
   </section>
 

@@ -448,6 +448,9 @@ class FieldOpID(IntEnum):
     GLAIVE_RUSH = 39
     CHARGE = 40
     PHANTOM_FORCE = 41
+    FEINT = 42
+    BREAK_SCREENS = 43
+    BREAK_SCREENS_BITE = 44
     # Flag-carrier codes (zero conflict with active FieldOpID moves in DuckDB `moves`)
     FLAG_PULSE = 100
     FLAG_BITE = 101

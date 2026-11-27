@@ -25,12 +25,113 @@ DEFAULT_DB_PATH = Path("data/replay_coach_ots.duckdb")
 DEFAULT_TRAINER_1_PASTE = Path("data/teams/char_y_v4.txt")
 DEFAULT_OPPONENT_PASTE = Path("apps/replay_coach/sample_data/matchagotme_ots.txt")
 SLUG_MAP_PATH = Path("assets/slug_map.json")
+SEED_ROSTER_IDS = frozenset({"treces_gc_char_y_v4", "matchagotme_camerupt_tr"})
+
+KNOWN_ARCHETYPES: tuple[str, ...] = (
+    "Dual Weather",
+    "Sun",
+    "Rain",
+    "Sand",
+    "Snow",
+    "Trick Room",
+    "Tailwind / Hyper Offense",
+    "Psychic Terrain",
+    "Grassy Balance",
+    "Goodstuffs / Balance",
+)
+KNOWN_REGULATIONS: tuple[str, ...] = ("Reg M-C", "Reg M-D", "Custom")
+
+
+def classify_team_archetype(paste_text: str) -> str:
+    """Deterministically classify a 6-Pokémon VGC team paste into a canonical archetype."""
+    text = (paste_text or "").strip()
+    if not text:
+        return "Goodstuffs / Balance"
+    try:
+        mons = list(parse_showdown_paste(text).values())
+    except Exception:
+        mons = []
+    if not mons:
+        return "Goodstuffs / Balance"
+
+    seen: set[int] = set()
+    abilities: set[str] = set()
+    items: set[str] = set()
+    moves: set[str] = set()
+    species_l: set[str] = set()
+    for m in mons:
+        if id(m) in seen:
+            continue
+        seen.add(id(m))
+        species_l.add((m.species or "").lower())
+        if m.ability:
+            abilities.add(m.ability.strip().lower())
+        if m.item:
+            items.add(m.item.strip().lower())
+        for mv in (m.moves or []):
+            moves.add(str(mv).strip().lower())
+
+    has_sun = (
+        "drought" in abilities
+        or "charizardite y" in items
+        or "sunny day" in moves
+        or "torkoal" in species_l
+    )
+    has_rain = (
+        "drizzle" in abilities
+        or "rain dance" in moves
+        or "pelipper" in species_l
+        or "politoed" in species_l
+    )
+    has_sand = "sand stream" in abilities or "tyranitar" in species_l or "hippowdon" in species_l
+    has_snow = "snow warning" in abilities or "aurora veil" in moves
+    has_tr = "trick room" in moves
+    has_tw = "tailwind" in moves
+    has_psy = "psychic surge" in abilities or "expanding force" in moves
+    has_grassy = "grassy surge" in abilities
+
+    if has_sun and has_rain:
+        return "Dual Weather"
+    if has_tr and not has_tw:
+        return "Trick Room"
+    if has_sun:
+        return "Sun"
+    if has_rain:
+        return "Rain"
+    if has_sand:
+        return "Sand"
+    if has_snow:
+        return "Snow"
+    if has_psy:
+        return "Psychic Terrain"
+    if has_tw:
+        return "Tailwind / Hyper Offense"
+    if has_grassy:
+        return "Grassy Balance"
+    return "Goodstuffs / Balance"
 
 _CACHED_SLUG_LOOKUP: Optional[Dict[str, Dict[str, str]]] = None
 
 
 def _norm_slug(s: str) -> str:
     return "".join(ch for ch in (s or "").lower() if ch.isalnum())
+
+
+def canonical_mode_key(lead_species: Sequence[str], bench_species: Sequence[str]) -> str:
+    """Build an order-invariant species key (`leadA+leadB|benchA+benchB`) for deep-audit caching."""
+    l_toks = sorted(_norm_slug(s) for s in (lead_species or []) if s)
+    b_toks = sorted(_norm_slug(s) for s in (bench_species or []) if s)
+    return f"{'+'.join(l_toks)}|{'+'.join(b_toks)}"
+
+
+def canonical_deep_audit_cell_key(
+    lead_1: Sequence[str],
+    bench_1: Sequence[str],
+    lead_2: Sequence[str],
+    bench_2: Sequence[str],
+) -> str:
+    """Build canonical species-grounded deep-audit cell key immune to paste slot reordering."""
+    return f"{canonical_mode_key(lead_1, bench_1)}__{canonical_mode_key(lead_2, bench_2)}"
 
 
 def get_sprite_lookup() -> Dict[str, Dict[str, str]]:
@@ -165,10 +266,52 @@ class OTSRosterDatabase:
                     trainer_hint VARCHAR NOT NULL,
                     paste_text VARCHAR NOT NULL,
                     species_json VARCHAR NOT NULL,
-                    updated_at VARCHAR NOT NULL
+                    updated_at VARCHAR NOT NULL,
+                    team_scope VARCHAR NOT NULL DEFAULT 'own',
+                    archetype VARCHAR NOT NULL DEFAULT '',
+                    regulation VARCHAR NOT NULL DEFAULT 'Reg M-C',
+                    source_type VARCHAR NOT NULL DEFAULT 'personal',
+                    opponent_elo INTEGER,
+                    notes VARCHAR NOT NULL DEFAULT ''
                 );
                 """
             )
+            # Idempotent forward schema migration for existing DuckDB databases
+            existing_cols = {
+                str(r[1]).lower()
+                for r in self.conn.execute("PRAGMA table_info('ots_rosters');").fetchall()
+            }
+            for col_name, col_ddl in (
+                ("team_scope", "VARCHAR NOT NULL DEFAULT 'own'"),
+                ("archetype", "VARCHAR NOT NULL DEFAULT ''"),
+                ("regulation", "VARCHAR NOT NULL DEFAULT 'Reg M-C'"),
+                ("source_type", "VARCHAR NOT NULL DEFAULT 'personal'"),
+                ("opponent_elo", "INTEGER"),
+                ("notes", "VARCHAR NOT NULL DEFAULT ''"),
+            ):
+                if col_name not in existing_cols:
+                    self.conn.execute(f"ALTER TABLE ots_rosters ADD COLUMN {col_name} {col_ddl};")
+
+            # Backfill archetype & normalize seed/rival scopes cleanly for pre-v0.4.0 rows
+            rows_backfill = self.conn.execute(
+                "SELECT roster_id, paste_text, archetype, team_scope, trainer_hint FROM ots_rosters;"
+            ).fetchall()
+            for r_id, p_txt, arch, sc, t_hint in rows_backfill:
+                updates: Dict[str, Any] = {}
+                if not str(arch or "").strip():
+                    updates["archetype"] = classify_team_archetype(str(p_txt or ""))
+                if str(r_id) == "matchagotme_camerupt_tr" and str(sc or "") == "own":
+                    updates["team_scope"] = "rival"
+                    updates["source_type"] = "showdown_ladder"
+                    updates["opponent_elo"] = 1229
+                    updates["display_name"] = "Showdown Opponent (Elo 1229) — Trick Room"
+                    updates["trainer_hint"] = "Showdown Opponent (Elo 1229)"
+                if updates:
+                    sets_sql = ", ".join(f"{k} = ?" for k in updates.keys())
+                    self.conn.execute(
+                        f"UPDATE ots_rosters SET {sets_sql} WHERE roster_id = ?;",
+                        list(updates.values()) + [r_id],
+                    )
             self.conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS lead_lab_runs (
@@ -206,21 +349,50 @@ class OTSRosterDatabase:
                 """
             )
 
+            self.conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS dismissed_seed_rosters (
+                    roster_id VARCHAR PRIMARY KEY,
+                    dismissed_at VARCHAR NOT NULL
+                );
+                """
+            )
+
     def _seed_defaults(self) -> None:
-        """Pre-seed `treces_gc` (`char_y_v4.txt`) and `MatchaGotMe` OTS if missing."""
-        if DEFAULT_TRAINER_1_PASTE.exists() and self.get_roster("treces_gc_char_y_v4") is None:
+        """Pre-seed `treces_gc` (`char_y_v4.txt`) and `MatchaGotMe` OTS unless user deleted them."""
+        with self._db_lock:
+            dismissed_rows = self.conn.execute("SELECT roster_id FROM dismissed_seed_rosters;").fetchall()
+            dismissed = {str(r[0]) for r in dismissed_rows}
+        if (
+            "treces_gc_char_y_v4" not in dismissed
+            and DEFAULT_TRAINER_1_PASTE.exists()
+            and self.get_roster("treces_gc_char_y_v4") is None
+        ):
             self.save_roster(
                 roster_id="treces_gc_char_y_v4",
                 display_name="treces_gc — Charizard-Y Dual Weather v4",
                 trainer_hint="treces_gc",
                 paste_text=DEFAULT_TRAINER_1_PASTE.read_text(encoding="utf-8"),
+                team_scope="own",
+                archetype="Dual Weather",
+                regulation="Reg M-C",
+                source_type="personal",
             )
-        if DEFAULT_OPPONENT_PASTE.exists() and self.get_roster("matchagotme_camerupt_tr") is None:
+        if (
+            "matchagotme_camerupt_tr" not in dismissed
+            and DEFAULT_OPPONENT_PASTE.exists()
+            and self.get_roster("matchagotme_camerupt_tr") is None
+        ):
             self.save_roster(
                 roster_id="matchagotme_camerupt_tr",
-                display_name="MatchaGotMe — Camerupt / Raichu-Y Trick Room",
-                trainer_hint="MatchaGotMe",
+                display_name="Showdown Opponent (Elo 1229) — Trick Room",
+                trainer_hint="Showdown Opponent (Elo 1229)",
                 paste_text=DEFAULT_OPPONENT_PASTE.read_text(encoding="utf-8"),
+                team_scope="rival",
+                archetype="Trick Room",
+                regulation="Reg M-C",
+                source_type="showdown_ladder",
+                opponent_elo=1229,
             )
 
     def validate_paste(self, paste_text: str) -> Dict[str, Any]:
@@ -295,8 +467,14 @@ class OTSRosterDatabase:
         display_name: str,
         trainer_hint: str,
         paste_text: str,
+        team_scope: str = "own",
+        archetype: str = "",
+        regulation: str = "Reg M-C",
+        source_type: str = "personal",
+        opponent_elo: Optional[int] = None,
+        notes: str = "",
     ) -> Dict[str, Any]:
-        """Insert or update an OTS + EVs/SPs roster in DuckDB."""
+        """Insert or update an OTS + EVs/SPs roster in DuckDB with Own/Rival scope & archetype metadata."""
         pokemon_dict = parse_showdown_paste(paste_text)
         species_list: List[str] = []
         seen_ids = set()
@@ -305,69 +483,225 @@ class OTSRosterDatabase:
                 seen_ids.add(id(mon))
                 species_list.append(mon.species)
         now = datetime.now(timezone.utc).isoformat()
-        self.conn.execute(
-            """
-            INSERT OR REPLACE INTO ots_rosters
-            (roster_id, display_name, trainer_hint, paste_text, species_json, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?);
-            """,
-            [
-                roster_id.strip(),
-                display_name.strip() or roster_id.strip(),
-                trainer_hint.strip(),
-                paste_text.strip(),
-                json.dumps(species_list),
-                now,
-            ],
-        )
-        return self.get_roster(roster_id.strip()) or {}
+        clean_id = roster_id.strip()
+        scope_clean = "rival" if str(team_scope or "").strip().lower() in ("rival", "opponent", "enemy", "t2") else "own"
+        src_clean = str(source_type or ("showdown_ladder" if scope_clean == "rival" else "personal")).strip().lower()
+        if src_clean not in ("personal", "showdown_ladder", "tournament"):
+            src_clean = "showdown_ladder" if scope_clean == "rival" else "personal"
+        arch_clean = str(archetype or "").strip() or classify_team_archetype(paste_text)
+        reg_clean = str(regulation or "Reg M-C").strip() or "Reg M-C"
+        elo_clean: Optional[int] = None
+        if opponent_elo is not None and str(opponent_elo).strip() != "":
+            try:
+                ev = int(opponent_elo)
+                if ev > 0:
+                    elo_clean = ev
+            except (TypeError, ValueError):
+                pass
+        notes_clean = str(notes or "").strip()[:300]
+
+        # Enforce Showdown Opponent privacy legend whenever saving a Showdown ladder rival team
+        hint_clean = trainer_hint.strip()
+        disp_clean = display_name.strip() or clean_id
+        if src_clean == "showdown_ladder" and scope_clean == "rival":
+            anon_lbl = f"Showdown Opponent (Elo {elo_clean})" if elo_clean else "Showdown Opponent (Unrated)"
+            hint_clean = anon_lbl
+            if "showdown opponent" not in disp_clean.lower():
+                disp_clean = f"{anon_lbl} — {arch_clean}"
+
+        with self._db_lock:
+            self.conn.execute(
+                """
+                INSERT OR REPLACE INTO ots_rosters
+                (roster_id, display_name, trainer_hint, paste_text, species_json, updated_at,
+                 team_scope, archetype, regulation, source_type, opponent_elo, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """,
+                [
+                    clean_id,
+                    disp_clean,
+                    hint_clean,
+                    paste_text.strip(),
+                    json.dumps(species_list),
+                    now,
+                    scope_clean,
+                    arch_clean,
+                    reg_clean,
+                    src_clean,
+                    elo_clean,
+                    notes_clean,
+                ],
+            )
+            if clean_id in SEED_ROSTER_IDS:
+                self.conn.execute("DELETE FROM dismissed_seed_rosters WHERE roster_id = ?;", [clean_id])
+        return self.get_roster(clean_id) or {}
+
+    def _row_to_roster_dict(self, r: Sequence[Any], include_sprites: bool = False) -> Dict[str, Any]:
+        sp_list = json.loads(r[4])
+        elo_val = int(r[10]) if r[10] is not None else None
+        scope_val = str(r[6] or "own")
+        src_val = str(r[9] or "personal")
+        out: Dict[str, Any] = {
+            "roster_id": str(r[0]),
+            "display_name": str(r[1]),
+            "trainer_hint": str(r[2]),
+            "paste_text": str(r[3]),
+            "species": sp_list,
+            "updated_at": str(r[5]),
+            "team_scope": scope_val,
+            "archetype": str(r[7] or "") or classify_team_archetype(str(r[3])),
+            "regulation": str(r[8] or "Reg M-C"),
+            "source_type": src_val,
+            "opponent_elo": elo_val,
+            "notes": str(r[11] or ""),
+            "source_legend": (
+                (f"Showdown Opponent · Elo {elo_val}" if elo_val else "Showdown Opponent · Unrated")
+                if src_val == "showdown_ladder"
+                else ("Tournament Archive" if src_val == "tournament" else "Personal Roster")
+            ),
+        }
+        if include_sprites:
+            out["species_sprites"] = [
+                {"species": sp, "sprite_url": resolve_sprite_urls(sp)["sprite_url"]}
+                for sp in sp_list
+            ]
+        return out
 
     def get_roster(self, roster_id: str) -> Optional[Dict[str, Any]]:
         """Fetch a single stored roster by ID."""
         row = self.conn.execute(
             """
-            SELECT roster_id, display_name, trainer_hint, paste_text, species_json, updated_at
+            SELECT roster_id, display_name, trainer_hint, paste_text, species_json, updated_at,
+                   team_scope, archetype, regulation, source_type, opponent_elo, notes
             FROM ots_rosters WHERE roster_id = ?;
             """,
             [roster_id],
         ).fetchone()
         if not row:
             return None
+        return self._row_to_roster_dict(row, include_sprites=False)
+
+    def list_rosters(self, team_scope: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List stored OTS rosters (optionally filtered by `own` / `rival`) ordered by most recently updated."""
+        scope_f = str(team_scope or "").strip().lower()
+        if scope_f in ("own", "rival"):
+            rows = self.conn.execute(
+                """
+                SELECT roster_id, display_name, trainer_hint, paste_text, species_json, updated_at,
+                       team_scope, archetype, regulation, source_type, opponent_elo, notes
+                FROM ots_rosters WHERE team_scope = ? ORDER BY updated_at DESC;
+                """,
+                [scope_f],
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                """
+                SELECT roster_id, display_name, trainer_hint, paste_text, species_json, updated_at,
+                       team_scope, archetype, regulation, source_type, opponent_elo, notes
+                FROM ots_rosters ORDER BY updated_at DESC;
+                """
+            ).fetchall()
+        return [self._row_to_roster_dict(r, include_sprites=True) for r in rows]
+
+    def search_rosters(
+        self,
+        scope: str = "",
+        archetype: str = "",
+        regulation: str = "",
+        source_type: str = "",
+        q: str = "",
+        min_elo: Optional[int] = None,
+        max_elo: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Multi-facet search across Own & Rival DuckDB rosters by scope, archetype, regulation, Elo & Pokémon."""
+        all_rows = self.list_rosters()
+        sc_f = str(scope or "").strip().lower()
+        arch_f = str(archetype or "").strip().lower()
+        reg_f = str(regulation or "").strip().lower()
+        src_f = str(source_type or "").strip().lower()
+        tokens = [t for t in str(q or "").strip().lower().split() if t]
+
+        matched: List[Dict[str, Any]] = []
+        own_count = 0
+        rival_count = 0
+        archetypes_present: set[str] = set()
+        regulations_present: set[str] = set()
+
+        for r in all_rows:
+            if r["team_scope"] == "rival":
+                rival_count += 1
+            else:
+                own_count += 1
+            if r["archetype"]:
+                archetypes_present.add(r["archetype"])
+            if r["regulation"]:
+                regulations_present.add(r["regulation"])
+
+            if sc_f in ("own", "rival") and r["team_scope"] != sc_f:
+                continue
+            if arch_f and arch_f != "all" and arch_f not in r["archetype"].lower():
+                continue
+            if reg_f and reg_f != "all" and reg_f != r["regulation"].lower():
+                continue
+            if src_f and src_f != "all" and src_f != r["source_type"].lower():
+                continue
+            if min_elo is not None and (r["opponent_elo"] is None or int(r["opponent_elo"]) < int(min_elo)):
+                continue
+            if max_elo is not None and (r["opponent_elo"] is None or int(r["opponent_elo"]) > int(max_elo)):
+                continue
+            if tokens:
+                hay = " ".join(
+                    [
+                        r["display_name"],
+                        r["trainer_hint"],
+                        r["archetype"],
+                        r["regulation"],
+                        r["notes"],
+                        " ".join(r["species"]),
+                        r["paste_text"],
+                    ]
+                ).lower()
+                if not all(tok in hay for tok in tokens):
+                    continue
+            matched.append(r)
+
         return {
-            "roster_id": row[0],
-            "display_name": row[1],
-            "trainer_hint": row[2],
-            "paste_text": row[3],
-            "species": json.loads(row[4]),
-            "updated_at": row[5],
+            "ok": True,
+            "total_count": len(all_rows),
+            "own_count": own_count,
+            "rival_count": rival_count,
+            "matched_count": len(matched),
+            "archetypes": sorted(archetypes_present | set(KNOWN_ARCHETYPES)),
+            "regulations": sorted(regulations_present | set(KNOWN_REGULATIONS)),
+            "rosters": matched,
         }
 
-    def list_rosters(self) -> List[Dict[str, Any]]:
-        """List all stored OTS rosters ordered by most recently updated."""
-        rows = self.conn.execute(
-            """
-            SELECT roster_id, display_name, trainer_hint, paste_text, species_json, updated_at
-            FROM ots_rosters ORDER BY updated_at DESC;
-            """
-        ).fetchall()
-        result: List[Dict[str, Any]] = []
-        for r in rows:
-            sp_list = json.loads(r[4])
-            result.append(
-                {
-                    "roster_id": r[0],
-                    "display_name": r[1],
-                    "trainer_hint": r[2],
-                    "paste_text": r[3],
-                    "species": sp_list,
-                    "species_sprites": [
-                        {"species": sp, "sprite_url": resolve_sprite_urls(sp)["sprite_url"]}
-                        for sp in sp_list
-                    ],
-                    "updated_at": r[5],
-                }
-            )
-        return result
+    def update_roster_meta(
+        self,
+        roster_id: str,
+        display_name: Optional[str] = None,
+        team_scope: Optional[str] = None,
+        archetype: Optional[str] = None,
+        regulation: Optional[str] = None,
+        opponent_elo: Optional[int] = None,
+        notes: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Update editable metadata (`team_scope`, `archetype`, `regulation`, `notes`, `opponent_elo`) on a roster."""
+        existing = self.get_roster(roster_id)
+        if existing is None:
+            return None
+        return self.save_roster(
+            roster_id=existing["roster_id"],
+            display_name=display_name if display_name is not None else existing["display_name"],
+            trainer_hint=existing["trainer_hint"],
+            paste_text=existing["paste_text"],
+            team_scope=team_scope if team_scope is not None else existing["team_scope"],
+            archetype=archetype if archetype is not None else existing["archetype"],
+            regulation=regulation if regulation is not None else existing["regulation"],
+            source_type=existing["source_type"],
+            opponent_elo=opponent_elo if opponent_elo is not None else existing["opponent_elo"],
+            notes=notes if notes is not None else existing["notes"],
+        )
 
     def match_best_roster(
         self,
@@ -397,12 +731,21 @@ class OTSRosterDatabase:
         return out
 
     def delete_roster(self, roster_id: str) -> bool:
-        """Delete a stored OTS roster by ID."""
+        """Delete a stored OTS roster by ID (persisting dismissal for built-in seed rosters)."""
         clean_id = (roster_id or "").strip()
         with self._db_lock:
             if not clean_id or self.get_roster(clean_id) is None:
                 return False
             self.conn.execute("DELETE FROM ots_rosters WHERE roster_id = ?;", [clean_id])
+            if clean_id in SEED_ROSTER_IDS:
+                now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+                self.conn.execute(
+                    """
+                    INSERT OR REPLACE INTO dismissed_seed_rosters (roster_id, dismissed_at)
+                    VALUES (?, ?);
+                    """,
+                    [clean_id, now],
+                )
             return True
 
     # =========================================================================
@@ -771,8 +1114,12 @@ class OTSRosterDatabase:
         t1_mode_key: str,
         t2_mode_key: str,
         engine_version: str = EQUITY_ENGINE_VERSION,
+        expected_lead_1: Optional[Sequence[str]] = None,
+        expected_bench_1: Optional[Sequence[str]] = None,
+        expected_lead_2: Optional[Sequence[str]] = None,
+        expected_bench_2: Optional[Sequence[str]] = None,
     ) -> Optional[Dict[str, Any]]:
-        """Fetch a cached `K=128` deep Turn-1 audit if stored for `(matchup_hash, mode1, mode2, engine_version)`."""
+        """Fetch a cached `K=128` deep Turn-1 audit validated against expected species identity."""
         audit_key = f"{matchup_hash}:{t1_mode_key}:{t2_mode_key}"
         with self._db_lock:
             row = self.conn.execute(
@@ -786,6 +1133,21 @@ class OTSRosterDatabase:
             if not row:
                 return None
             payload = json.loads(row[0])
+            # Strict species-identity guard: never serve a cached deep audit for mismatched Pokémon!
+            if expected_lead_1:
+                m1_saved = payload.get("mode_1") or {}
+                if (
+                    canonical_mode_key(m1_saved.get("lead_species") or [], m1_saved.get("bench_species") or [])
+                    != canonical_mode_key(expected_lead_1, expected_bench_1 or [])
+                ):
+                    return None
+            if expected_lead_2:
+                m2_saved = payload.get("mode_2") or {}
+                if (
+                    canonical_mode_key(m2_saved.get("lead_species") or [], m2_saved.get("bench_species") or [])
+                    != canonical_mode_key(expected_lead_2, expected_bench_2 or [])
+                ):
+                    return None
             payload["from_vault_cache"] = True
             payload["cached_at"] = str(row[1])
             payload["audit_cell_key"] = f"{t1_mode_key}__{t2_mode_key}"

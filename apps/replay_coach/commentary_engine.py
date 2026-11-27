@@ -15,6 +15,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from engine.terminology import (
+    get_pillar_label,
     get_rng_sampling_note,
     get_term_label,
     get_verdict_badge,
@@ -37,58 +38,6 @@ def _classify_verdict_key(
     if regret <= 0.22:
         return "good"
     return "inaccuracy"
-
-
-_PILLAR_LABELS: Dict[str, Dict[str, str]] = {
-    "material": {
-        "es_vgc": "Material (HP y KOs)",
-        "en_vgc": "Material (HP & KOs)",
-        "es_scientific": "Material_KO",
-        "en_scientific": "Material_KO",
-    },
-    "threat": {
-        "es_vgc": "Presión de KO",
-        "en_vgc": "Lethal Pressure",
-        "es_scientific": "Amenaza_Letal",
-        "en_scientific": "Lethal_Threat",
-    },
-    "malposition": {
-        "es_vgc": "Mal Posicionamiento Rival",
-        "en_vgc": "Enemy Mal-Positioning",
-        "es_scientific": "Mal_Posicionamiento",
-        "en_scientific": "Mal_Positioning",
-    },
-    "restriction": {
-        "es_vgc": "Restricción de Opciones",
-        "en_vgc": "Option Lock",
-        "es_scientific": "Restriccion_Opciones",
-        "en_scientific": "Option_Restriction",
-    },
-    "status_boost": {
-        "es_vgc": "Estados y Boosts",
-        "en_vgc": "Status & Boosts",
-        "es_scientific": "Estados_Boosts",
-        "en_scientific": "Status_Boosts",
-    },
-    "two_turn_prime": {
-        "es_vgc": "Jugada Preparada (2 Turnos)",
-        "en_vgc": "2-Turn Primed Payoff",
-        "es_scientific": "Primed_2Turn",
-        "en_scientific": "Two_Turn_Prime",
-    },
-    "resources": {
-        "es_vgc": "Escudos y Recursos",
-        "en_vgc": "Shields & Resources",
-        "es_scientific": "Recursos_Escudos",
-        "en_scientific": "Resource_Shields",
-    },
-    "field_tempo": {
-        "es_vgc": "Control de Campo y Velocidad",
-        "en_vgc": "Field & Speed Tempo",
-        "es_scientific": "Tempo_Campo",
-        "en_scientific": "Field_Tempo",
-    },
-}
 
 
 def generate_deterministic_commentary(
@@ -534,7 +483,7 @@ def generate_deterministic_commentary(
                 continue
             if drv.get("mode") == "delta":
                 mode_is_delta = True
-            plabel = _PILLAR_LABELS.get(pkey, {}).get(prof_key, pkey)
+            plabel = get_pillar_label(pkey, lg, st)
             driver_strs.append(f"{val:+.2f} {plabel}")
 
         if driver_strs:
