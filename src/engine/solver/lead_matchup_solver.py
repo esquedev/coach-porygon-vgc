@@ -602,7 +602,7 @@ def _eval_lead_cell_in_worker_process(
     cfg: LeadMatchupConfig,
 ) -> Dict[str, Any]:
     """Evaluate one `(lead_1_idx, lead_2_idx)` cell inside an isolated Zero-GIL CPU worker process."""
-    global _PROC_LEAD_SOLVER, _PROC_LEAD_POOL_CACHE
+    global _PROC_LEAD_SOLVER
     if _PROC_LEAD_SOLVER is None:
         _PROC_LEAD_SOLVER = LeadMatchupSolver(device="cpu")
     cache_key = (t1_paste, t2_paste, bool(require_explicit_spreads))
