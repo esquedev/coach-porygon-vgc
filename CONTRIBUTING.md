@@ -80,24 +80,19 @@ PYTHONPATH=src:. .venv/bin/python scripts/generate_reg_md_meta_report.py
 
 ---
 
-## 4. Building & Releasing `CoachPorygonStudio.exe`
+## 4. Releasing (Source Bundles + `.bat` / `.sh` Launchers — No `.exe`)
 
-We ship a lightweight (`~8 MB`) PyInstaller bootstrap launcher (`apps/replay_coach/launcher_entry.py` + `scripts/build_windows_launcher.py`) that auto-creates an isolated `.venv` and installs the user's exact GPU/CPU PyTorch wheel.
+We ship **no compiled binaries**. Releases are `git archive` bundles of the repo; users run `start_replay_coach.bat` (Windows) or `start_replay_coach.sh` (Linux/macOS), which auto-create an isolated `.venv` and install the exact GPU/CPU PyTorch wheel.
 
-- **Dry-run verification on Linux / macOS / Windows:**
+- **Line endings are pinned by `.gitattributes`** (`*.bat` → CRLF, `*.sh` → LF). Never override them; the release workflow fails if the `.bat` loses CRLF or the `.sh` loses its executable bit.
+- **Local launcher checks:**
   ```bash
-  python scripts/build_windows_launcher.py --check
+  bash -n start_replay_coach.sh && shellcheck -S warning start_replay_coach.sh
+  PYTHONPATH=src:. .venv/bin/pytest tests/test_prep_tools.py tests/test_security_hardening.py -q
   ```
-- **Local Windows build:**
-  ```powershell
-  pip install pyinstaller
-  python scripts/build_windows_launcher.py
-  # Outputs dist\CoachPorygonStudio.exe
-  ```
-- **Automated GitHub Actions Release Pipeline (`.github/workflows/build-windows-launcher.yml`):**
-  1. Every push to `develop` or `main` runs **`.github/workflows/ci.yml`** (Flake8, 7-gate anti-hallucination scanner, Python `3.11`/`3.12` unit suite, `TestAT-1`..`TestAT-10` acceptance fuzzer, `twine check`, and `build_windows_launcher.py --check`).
-  2. When CI passes cleanly on **`main`**, `build-windows-launcher.yml` automatically compiles and uploads `CoachPorygonStudio.exe` and `CoachPorygonVGC-windows-x64.zip` as workflow artifacts.
-  3. Pushing a **`v*` release tag** enforces that the tagged commit is an ancestor of `origin/main` AND passes the full test + anti-hallucination suite before compiling and publishing the public GitHub Release.
+- **Automated pipeline:**
+  1. Every push/PR to `develop` or `main` runs **`.github/workflows/ci.yml`** (Flake8, 7-gate anti-hallucination scanner, Python `3.11`/`3.12` unit suite, `TestAT-1`..`TestAT-10` acceptance fuzzer, `twine check`, launcher lint).
+  2. Pushing a **`v*` tag** runs **`.github/workflows/release.yml`**: it enforces that the tagged commit is an ancestor of `origin/main`, re-runs the full suite, builds `CoachPorygonVGC-windows.zip` + `CoachPorygonVGC-linux-macos.tar.gz` + `SHA256SUMS.txt` with SLSA provenance, and publishes the public GitHub Release.
 
 ---
 

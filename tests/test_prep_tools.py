@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-"""Comprehensive Unit & Integration Tests for Isolated Launchers, Windows `.exe`
-Packaging, Zero-AI Offline Base64 Prep Tools (`src/engine/prep_tools/`), CLI,
+"""Comprehensive Unit & Integration Tests for Isolated `.bat`/`.sh` Launchers,
+Source-Bundle Release Packaging, Zero-AI Offline Base64 Prep Tools (`src/engine/prep_tools/`), CLI,
 and Replay Coach Studio Prep Tools API.
 
 Strictly enforces Regulation M-C invariants:
@@ -21,7 +21,6 @@ import subprocess
 import tempfile
 import unittest
 
-from apps.replay_coach import launcher_entry
 from apps.replay_coach.server import ReplayCoachAppState
 from engine.prep_tools import (
     build_damage_matrix_html,
@@ -32,7 +31,7 @@ from engine.prep_tools import (
     calc_champions_stat,
     get_top_n_meta_snapshot,
 )
-from scripts import build_windows_launcher, generate_prep_tools
+from scripts import generate_prep_tools
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CHAR_Y_PASTE_PATH = REPO_ROOT / "data" / "teams" / "char_y_v4.txt"
@@ -302,11 +301,11 @@ class TestPrepToolsAndLaunchers(unittest.TestCase):
             self.assertGreater(speed_file.stat().st_size, 100_000)
             self.assertGreater(dmg_file.stat().st_size, 100_000)
 
-    def test_06_launchers_and_windows_exe_builder_validation(self) -> None:
-        """Isolated .venv bash/bat launchers, launcher_entry.py, icon builder, and GH workflow are valid."""
+    def test_06_launchers_and_release_workflow_validation(self) -> None:
+        """Isolated .venv bash/bat launchers and the zero-.exe GH release workflow are valid."""
         sh_path = REPO_ROOT / "start_replay_coach.sh"
         bat_path = REPO_ROOT / "start_replay_coach.bat"
-        wf_path = REPO_ROOT / ".github" / "workflows" / "build-windows-launcher.yml"
+        wf_path = REPO_ROOT / ".github" / "workflows" / "release.yml"
 
         self.assertTrue(sh_path.is_file())
         self.assertTrue(os.access(sh_path, os.X_OK), msg="start_replay_coach.sh must be executable")
@@ -323,24 +322,20 @@ class TestPrepToolsAndLaunchers(unittest.TestCase):
         self.assertIn("py_mini_racer", bat_txt)
         self.assertIn(".requirements.sha256", bat_txt)
 
+        # Bulletproofing: CUDA cascade + self-healing venv + zero-.exe release workflow
+        for cu_tag in ("cu128", "cu126", "cu124", "cu121"):
+            self.assertIn(cu_tag, sh_txt)
+            self.assertIn(cu_tag, bat_txt)
+        self.assertIn(".cuda_attempt", sh_txt)
+        self.assertIn(".cuda_attempt", bat_txt)
         self.assertTrue(wf_path.is_file())
-        self.assertIn("windows-latest", wf_path.read_text(encoding="utf-8"))
-
-        # Test launcher_entry pure helpers
-        found_root = launcher_entry.find_repo_root(REPO_ROOT)
-        self.assertEqual(found_root, REPO_ROOT)
-        req_hash = launcher_entry.compute_requirements_hash(REPO_ROOT / "requirements.txt")
-        self.assertEqual(len(req_hash), 64)
-        parsed_args = launcher_entry.build_arg_parser().parse_args(["--port", "9100", "--no-browser"])
-        self.assertEqual(parsed_args.port, 9100)
-        self.assertTrue(parsed_args.no_browser)
-
-        # Test pure-stdlib ICO generation
-        with tempfile.TemporaryDirectory() as td:
-            ico_file = build_windows_launcher.generate_coach_icon(Path(td) / "test.ico")
-            raw = ico_file.read_bytes()
-            reserved, ico_type, count = struct.unpack("<HHH", raw[:6])
-            self.assertEqual((reserved, ico_type, count), (0, 1, 4))
+        wf_txt = wf_path.read_text(encoding="utf-8")
+        self.assertNotIn("windows-latest", wf_txt)
+        self.assertNotIn("CoachPorygonStudio", wf_txt)
+        # Every batch label that is CALLed/GOTOed must exist (a typo here breaks Windows launches)
+        labels = set(re.findall(r"^:(\w+)", bat_txt, re.MULTILINE))
+        targets = set(re.findall(r"(?:call|goto) :(\w+)", bat_txt))
+        self.assertTrue(targets <= labels, msg=f"Undefined .bat labels: {targets - labels}")
 
     def test_07_studio_prep_tools_api_and_caching(self) -> None:
         """ReplayCoachAppState.generate_prep_tool serves live & cached offline Base64 HTMLs."""

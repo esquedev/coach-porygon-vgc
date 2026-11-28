@@ -75,11 +75,15 @@ def _compute_safe_thread_budget(device: Any) -> int:
         try:
             free_bytes, _total_bytes = torch.cuda.mem_get_info(device)
             free_gb = free_bytes / (1024.0 ** 3)
-            if free_gb >= 4.0:
-                return 65536
-            if free_gb >= 2.0:
-                return 32768
-            return 16384
+            if free_gb >= 10.0:
+                return 220000
+            if free_gb >= 6.0:
+                return 135000
+            if free_gb >= 3.0:
+                return 90000
+            if free_gb >= 1.6:
+                return 45000
+            return 22500
         except Exception:
             return 65536
     return 65536
@@ -169,7 +173,8 @@ def _execute_end_of_turn_torch(
     """Pure PyTorch implementation of Phase 5 (End-of-Turn resolution + bench promotions)."""
     F = F.clone()
     P = P.clone()
-    M_moves = M_moves.clone()
+    if auto_promote:
+        M_moves = M_moves.clone()
 
     device = P.device
     B1, B2, K = P.shape[0], P.shape[1], P.shape[2]
