@@ -211,7 +211,7 @@ def test_charge_lock_calibration_charizard_sun_electro_shot_vs_rain_and_phantom_
 def test_lead_lab_deep_turn1_batch_endpoint_and_playbook_ui(tmp_path: Path) -> None:
     """Verify POST /api/lead-lab/deep-turn1-batch audits multiple Own x Opp pairs with
     canonical caching and zero absent Pokémon, and verify Playbook DOM hooks exist."""
-    st = ReplayCoachAppState(preload_sample=False, db_path=tmp_path / "ll_batch.duckdb")
+    st = ReplayCoachAppState(preload_sample=False, db_path=tmp_path / "ll_batch.duckdb", device="cpu")
     solver = LeadMatchupSolver(device="cpu")
     pool1 = solver._precompile_team_pool(SAMPLE_T1, trainer_id="trainer_1", require_explicit_spreads=False)
     pool2 = solver._precompile_team_pool(SAMPLE_T2, trainer_id="trainer_2", require_explicit_spreads=False)

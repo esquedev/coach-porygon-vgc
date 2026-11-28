@@ -2179,7 +2179,7 @@ class ReplayCoachAppState:
         audit = self.gpu_engine.analyze_compiled_turn1(
             comp=board,
             turn0_events=events,
-            num_mc=max(32, min(256, int(num_mc or 128))),
+            num_mc=max(8, min(256, int(num_mc or 128))),
         )
         audit["mode_1"] = m1.to_dict()
         audit["mode_2"] = m2.to_dict()

@@ -1401,7 +1401,9 @@ class GPUReplayCoachEngine:
         so Turn-0 entry abilities never double-fire.
         """
         t0 = time.time()
-        k_mc = max(16, int(num_mc))
+        k_mc = max(8, int(num_mc))
+        if self.device_type == "cpu":
+            k_mc = min(k_mc, 32)
         with self._gpu_lock:
             if cancel_event is not None and cancel_event.is_set():
                 raise AnalysisCancelledError("Deep Turn-1 audit cancelled before start.")
@@ -1416,6 +1418,33 @@ class GPUReplayCoachEngine:
             c2 = m2.pruned_choices
             c1_np = c1.detach().cpu().numpy() if isinstance(c1, torch.Tensor) else np.asarray(c1)
             c2_np = c2.detach().cpu().numpy() if isinstance(c2, torch.Tensor) else np.asarray(c2)
+
+            # On CPU-only hardware (e.g. 2-core CI runners or CPU laptops), cap Turn-1 joint action pairs
+            # to the top-48 highest-prior legal lines per side (48x48 = 2,304 pairs vs ~27,000 raw Mega+switch pairs)
+            # so CPU deep audits complete in ~3-5s instead of 95s+ per pair, while CUDA evaluates the full matrix.
+            if self.device_type == "cpu":
+                cpu_cap = 48
+                if c1_np.shape[0] > cpu_cap:
+                    p1_mat = (
+                        m1.prior_matrix_26x26.detach().cpu().numpy()
+                        if isinstance(m1.prior_matrix_26x26, torch.Tensor)
+                        else np.asarray(m1.prior_matrix_26x26)
+                    )
+                    sc1 = np.array([float(p1_mat[int(r[0]), int(r[1])]) for r in c1_np], dtype=np.float32)
+                    top1_idx = np.argsort(-sc1)[:cpu_cap]
+                    c1_np = c1_np[top1_idx]
+                    c1 = torch.tensor(c1_np, dtype=torch.long, device=self.sm.device)
+                if c2_np.shape[0] > cpu_cap:
+                    p2_mat = (
+                        m2.prior_matrix_26x26.detach().cpu().numpy()
+                        if isinstance(m2.prior_matrix_26x26, torch.Tensor)
+                        else np.asarray(m2.prior_matrix_26x26)
+                    )
+                    sc2 = np.array([float(p2_mat[int(r[0]), int(r[1])]) for r in c2_np], dtype=np.float32)
+                    top2_idx = np.argsort(-sc2)[:cpu_cap]
+                    c2_np = c2_np[top2_idx]
+                    c2 = torch.tensor(c2_np, dtype=torch.long, device=self.sm.device)
+
             B1, B2 = int(c1_np.shape[0]), int(c2_np.shape[0])
 
             with torch.inference_mode():
