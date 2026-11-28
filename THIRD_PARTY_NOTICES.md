@@ -102,4 +102,3 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 | **V8 JavaScript Engine** (via `mini-racer`) | Embedded JavaScript engine for Smogon Calc & JS syntax guardrails | <https://v8.dev/> | BSD-3-Clause |
 | **pytest** *(dev)* | Unit, integration, and `TestAT-1`..`TestAT-10` acceptance test runner | <https://pytest.org/> | MIT |
 | **Pillow** *(dev/assets)* | Sprite normalization & offline icon packaging | <https://python-pillow.org/> | MIT-CMU |
-| **PyInstaller** *(dev/release)* | Optional lightweight Windows `.exe` bootstrap launcher builder | <https://pyinstaller.org/> | GPL-2.0 with bootloader exception |

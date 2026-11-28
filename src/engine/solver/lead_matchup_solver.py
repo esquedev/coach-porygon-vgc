@@ -571,6 +571,166 @@ def _partition_bench_chunks(rem_indices: Sequence[int]) -> List[Tuple[int, int]]
     ]
 
 
+def _assemble_lead_pair_cell_from_payoffs(
+    u_full: np.ndarray,
+    cv_full: np.ndarray,
+    lead_1_idx: int,
+    lead_2_idx: int,
+    n_stay1: int,
+    n_stay2: int,
+    r1_global_slice: Dict[int, Tuple[int, int]],
+    r2_global_slice: Dict[int, Tuple[int, int]],
+    stay1_labels: Sequence[str],
+    stay2_labels: Sequence[str],
+    sw1_labels_by_mon: Dict[int, Sequence[str]],
+    sw2_labels_by_mon: Dict[int, Sequence[str]],
+    turn0_events: List[str],
+    lead1: Tuple[int, int],
+    lead2: Tuple[int, int],
+    benches1: Sequence[Tuple[int, int]],
+    benches2: Sequence[Tuple[int, int]],
+    display_species_1: Sequence[str],
+    display_species_2: Sequence[str],
+    pressure_12: np.ndarray,
+    pressure_21: np.ndarray,
+    bench_residual_weight: float,
+) -> Dict[str, Any]:
+    """Slice a fused `[B1, B2]` cell payoff matrix into all `C(n1-2, 2) × C(n2-2, 2)` bench games and solve their HiGHS Nash LPs."""
+    nb1, nb2 = len(benches1), len(benches2)
+    sub_scores = np.zeros((nb1, nb2), dtype=np.float64)
+    sub_cvar = np.zeros((nb1, nb2), dtype=np.float64)
+    sub_t1_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
+    sub_t2_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
+    sub_t1_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
+    sub_t2_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
+
+    u_ss = u_full[:n_stay1, :n_stay2]
+    cvar_ss = cv_full[:n_stay1, :n_stay2]
+
+    for b1_i, (r1a, r1b) in enumerate(benches1):
+        a0, a1 = r1_global_slice[r1a]
+        b0, b1 = r1_global_slice[r1b]
+        t1_labels = (
+            list(stay1_labels)
+            + list(sw1_labels_by_mon.get(r1a, ()))
+            + list(sw1_labels_by_mon.get(r1b, ()))
+        )
+        u_r1a_s2 = u_full[a0:a1, :n_stay2]
+        cv_r1a_s2 = cv_full[a0:a1, :n_stay2]
+        u_r1b_s2 = u_full[b0:b1, :n_stay2]
+        cv_r1b_s2 = cv_full[b0:b1, :n_stay2]
+        squad1 = (lead1[0], lead1[1], r1a, r1b)
+
+        for b2_i, (r2a, r2b) in enumerate(benches2):
+            c0, c1 = r2_global_slice[r2a]
+            d0, d1 = r2_global_slice[r2b]
+            t2_labels = (
+                list(stay2_labels)
+                + list(sw2_labels_by_mon.get(r2a, ()))
+                + list(sw2_labels_by_mon.get(r2b, ()))
+            )
+            u_s1_r2a = u_full[:n_stay1, c0:c1]
+            cv_s1_r2a = cv_full[:n_stay1, c0:c1]
+            u_s1_r2b = u_full[:n_stay1, d0:d1]
+            cv_s1_r2b = cv_full[:n_stay1, d0:d1]
+
+            u_aa, cv_aa = u_full[a0:a1, c0:c1], cv_full[a0:a1, c0:c1]
+            u_ab, cv_ab = u_full[a0:a1, d0:d1], cv_full[a0:a1, d0:d1]
+            u_ba, cv_ba = u_full[b0:b1, c0:c1], cv_full[b0:b1, c0:c1]
+            u_bb, cv_bb = u_full[b0:b1, d0:d1], cv_full[b0:b1, d0:d1]
+
+            u_mat = np.block(
+                [
+                    [u_ss, u_s1_r2a, u_s1_r2b],
+                    [u_r1a_s2, u_aa, u_ab],
+                    [u_r1b_s2, u_ba, u_bb],
+                ]
+            )
+            cv_mat = np.block(
+                [
+                    [cvar_ss, cv_s1_r2a, cv_s1_r2b],
+                    [cv_r1a_s2, cv_aa, cv_ab],
+                    [cv_r1b_s2, cv_ba, cv_bb],
+                ]
+            )
+
+            squad2 = (lead2[0], lead2[1], r2a, r2b)
+            t1_bench_adv = float(np.mean([pressure_12[b, o] for b in (r1a, r1b) for o in squad2]))
+            t2_bench_adv = float(np.mean([pressure_21[b, o] for b in (r2a, r2b) for o in squad1]))
+            residual = float(np.clip(t1_bench_adv - t2_bench_adv, -1.0, 1.0)) * float(
+                bench_residual_weight
+            )
+            u_mat_adj = u_mat + residual
+
+            nash_sub = solve_zero_sum_nash(u_mat_adj)
+            p_star = nash_sub.trainer_1_strategy
+            q_star = nash_sub.trainer_2_strategy
+            top_r = int(np.argmax(p_star)) if len(p_star) > 0 else 0
+            top_c = int(np.argmax(q_star)) if len(q_star) > 0 else 0
+
+            sub_scores[b1_i, b2_i] = float(nash_sub.game_value)
+            sub_cvar[b1_i, b2_i] = float(p_star @ cv_mat @ q_star)
+            sub_t1_openings[b1_i][b2_i] = t1_labels[top_r] if top_r < len(t1_labels) else ""
+            sub_t2_openings[b1_i][b2_i] = t2_labels[top_c] if top_c < len(t2_labels) else ""
+
+            ev_t1_rows = u_mat_adj @ q_star if len(q_star) > 0 else np.zeros(len(t1_labels))
+            ev_t2_cols = p_star @ u_mat_adj if len(p_star) > 0 else np.zeros(len(t2_labels))
+            t1_order = sorted(
+                range(min(len(t1_labels), len(p_star))),
+                key=lambda idx: (round(float(p_star[idx]), 4), float(ev_t1_rows[idx])),
+                reverse=True,
+            )[:3]
+            t2_order = sorted(
+                range(min(len(t2_labels), len(q_star))),
+                key=lambda idx: (round(float(q_star[idx]), 4), -float(ev_t2_cols[idx])),
+                reverse=True,
+            )[:3]
+            sub_t1_top_plays[b1_i][b2_i] = [
+                [t1_labels[i], round(float(p_star[i] * 100.0), 1), round(float(ev_t1_rows[i]), 3)]
+                for i in t1_order
+            ]
+            sub_t2_top_plays[b1_i][b2_i] = [
+                [t2_labels[j], round(float(q_star[j] * 100.0), 1), round(float(ev_t2_cols[j]), 3)]
+                for j in t2_order
+            ]
+
+    cell_nash = solve_zero_sum_nash(sub_scores)
+    best_b1 = int(np.argmax(cell_nash.trainer_1_strategy))
+    best_b2 = int(np.argmax(cell_nash.trainer_2_strategy))
+
+    t1_bench_labels = [
+        [display_species_1[a], display_species_1[b]] for (a, b) in benches1
+    ]
+    t2_bench_labels = [
+        [display_species_2[a], display_species_2[b]] for (a, b) in benches2
+    ]
+
+    return {
+        "lead_1_idx": lead_1_idx,
+        "lead_2_idx": lead_2_idx,
+        "lead_1": [display_species_1[lead1[0]], display_species_1[lead1[1]]],
+        "lead_2": [display_species_2[lead2[0]], display_species_2[lead2[1]]],
+        "score": round(float(cell_nash.game_value), 4),
+        "cvar_10": round(float(sub_cvar[best_b1, best_b2]), 4),
+        "best_t1_bench_idx": best_b1,
+        "best_t2_bench_idx": best_b2,
+        "best_t1_bench": t1_bench_labels[best_b1],
+        "best_t2_bench": t2_bench_labels[best_b2],
+        "t1_opening": sub_t1_openings[best_b1][best_b2],
+        "t2_opening": sub_t2_openings[best_b1][best_b2],
+        "t1_bench_labels": t1_bench_labels,
+        "t2_bench_labels": t2_bench_labels,
+        "sub_matrix_6x6": np.round(sub_scores, 4).tolist(),
+        "sub_cvar_6x6": np.round(sub_cvar, 4).tolist(),
+        "sub_t1_openings": sub_t1_openings,
+        "sub_t2_openings": sub_t2_openings,
+        "sub_t1_top_plays": sub_t1_top_plays,
+        "sub_t2_top_plays": sub_t2_top_plays,
+        "turn0_events": turn0_events,
+        "_raw_sub_scores": sub_scores,
+    }
+
+
 _PROC_LEAD_SOLVER: Optional["LeadMatchupSolver"] = None
 _PROC_LEAD_POOL_CACHE: Dict[
     Tuple[str, str, bool],
@@ -1023,18 +1183,16 @@ class LeadMatchupSolver:
             np.asarray(cvar_raw, dtype=np.float64),
         )
 
-    def _evaluate_lead_pair_factored(
+    def _prepare_lead_pair_fused_tensors(
         self,
         pool_t1: CompiledTeamPool,
         pool_t2: CompiledTeamPool,
         lead_1_idx: int,
         lead_2_idx: int,
-        pressure_12: np.ndarray,
-        pressure_21: np.ndarray,
         config: LeadMatchupConfig,
-        cancel_event: Optional[threading.Event],
-    ) -> Dict[str, Any]:
-        """Evaluate all `C(n1-2, 2) × C(n2-2, 2)` (up to `6 × 6 = 36`) bench matchups for one lead pair."""
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, Dict[str, Any]]:
+        """Compile Turn-0 lead entry & fuse all 4 bench-chunk boards into one `[B1, B2]` tensor block."""
+        prep_solver = self if self.device_str == "cpu" else self._get_cpu_worker_solver(0)
         lead1 = pool_t1.leads[lead_1_idx]
         lead2 = pool_t2.leads[lead_2_idx]
         rem1 = [i for i in range(len(pool_t1.mons)) if i not in lead1]
@@ -1058,9 +1216,17 @@ class LeadMatchupSolver:
         p_base[SLOT_TRAINER_2_BENCH1] = pool_t2.roster_rows[chunks2[0][0]]
         p_base[SLOT_TRAINER_2_BENCH2] = pool_t2.roster_rows[chunks2[0][1]]
 
-        f_t0, p_t0 = resolve_turn_zero_lead_entry(f_clean, p_base, tables=self.sm.tables)
-        f_t0_np = f_t0.detach().cpu().numpy() if (HAS_TORCH and isinstance(f_t0, torch.Tensor)) else np.asarray(f_t0)
-        p_t0_np = p_t0.detach().cpu().numpy() if (HAS_TORCH and isinstance(p_t0, torch.Tensor)) else np.asarray(p_t0)
+        f_t0, p_t0 = resolve_turn_zero_lead_entry(f_clean, p_base, tables=prep_solver.sm.tables)
+        f_t0_np = (
+            f_t0.detach().cpu().numpy()
+            if (HAS_TORCH and isinstance(f_t0, torch.Tensor))
+            else np.asarray(f_t0)
+        )
+        p_t0_np = (
+            p_t0.detach().cpu().numpy()
+            if (HAS_TORCH and isinstance(p_t0, torch.Tensor))
+            else np.asarray(p_t0)
+        )
 
         lead_slot_species = (
             pool_t1.display_species[lead1[0]],
@@ -1074,11 +1240,11 @@ class LeadMatchupSolver:
         )
         turn0_events = _describe_turn0_events(f_t0_np, p_base, p_t0_np, lead_slot_species)
 
-        # 2. Build chunk boards & prune Stay-In (once) + Symmetric Single-Switches per bench mon
+        # 2. Build chunk boards on CPU & prune Stay-In (once) + Symmetric Single-Switches per bench mon
         boards: Dict[Tuple[int, int], CompiledBattleState] = {}
         for c1_i, ch1 in enumerate(chunks1):
             for c2_i, ch2 in enumerate(chunks2):
-                boards[(c1_i, c2_i)] = self._build_board_state(
+                boards[(c1_i, c2_i)] = prep_solver._build_board_state(
                     f_t0_np, p_t0_np, pool_t1, pool_t2, lead1, ch1, lead2, ch2
                 )
 
@@ -1088,7 +1254,7 @@ class LeadMatchupSolver:
         seen_r1: set[int] = set()
         for c1_i, ch1 in enumerate(chunks1):
             needed = [m for m in ch1 if m not in seen_r1]
-            s1_c, s1_l, sw_map = self._extract_stay_and_switch_actions(
+            s1_c, s1_l, sw_map = prep_solver._extract_stay_and_switch_actions(
                 boards[(c1_i, 0)],
                 trainer_id="trainer_1",
                 cap_stay=config.cap_stay,
@@ -1109,7 +1275,7 @@ class LeadMatchupSolver:
         seen_r2: set[int] = set()
         for c2_i, ch2 in enumerate(chunks2):
             needed = [m for m in ch2 if m not in seen_r2]
-            s2_c, s2_l, sw_map = self._extract_stay_and_switch_actions(
+            s2_c, s2_l, sw_map = prep_solver._extract_stay_and_switch_actions(
                 boards[(0, c2_i)],
                 trainer_id="trainer_2",
                 cap_stay=config.cap_stay,
@@ -1124,222 +1290,201 @@ class LeadMatchupSolver:
                 sw2_by_mon[m_id] = val
                 seen_r2.add(m_id)
 
-        # Map each bench mon to its owning chunk & slice inside chunk-batched switch arrays
-        chunk1_sw_choices: List[np.ndarray] = []
-        r1_chunk_slice: Dict[int, Tuple[int, int, int]] = {}
+        # 3. Fuse all trainer_1 rows [Stay1, Sw1_chunk0, Sw1_chunk1, ...] and trainer_2 cols into one [B1, B2] grid
+        t1_parts = [stay1_choices]
+        t1_chunk_owners = [0] * len(stay1_choices)
+        r1_global_slice: Dict[int, Tuple[int, int]] = {}
+        cur_r = len(stay1_choices)
         assigned_r1: set[int] = set()
         for c1_i, ch1 in enumerate(chunks1):
-            parts: List[np.ndarray] = []
-            offset = 0
             for m_id in ch1:
                 if m_id in assigned_r1:
                     continue
                 arr = sw1_by_mon.get(m_id, (np.zeros((0, 2), dtype=np.int64), []))[0]
-                r1_chunk_slice[m_id] = (c1_i, offset, offset + len(arr))
-                offset += len(arr)
+                r1_global_slice[m_id] = (cur_r, cur_r + len(arr))
+                cur_r += len(arr)
                 if len(arr) > 0:
-                    parts.append(arr)
+                    t1_parts.append(arr)
+                    t1_chunk_owners.extend([c1_i] * len(arr))
                 assigned_r1.add(m_id)
-            chunk1_sw_choices.append(
-                np.concatenate(parts, axis=0) if parts else np.zeros((0, 2), dtype=np.int64)
-            )
+        all_c1 = np.concatenate(t1_parts, axis=0) if t1_parts else np.zeros((1, 2), dtype=np.int64)
 
-        chunk2_sw_choices: List[np.ndarray] = []
-        r2_chunk_slice: Dict[int, Tuple[int, int, int]] = {}
+        t2_parts = [stay2_choices]
+        t2_chunk_owners = [0] * len(stay2_choices)
+        r2_global_slice: Dict[int, Tuple[int, int]] = {}
+        cur_c = len(stay2_choices)
         assigned_r2: set[int] = set()
         for c2_i, ch2 in enumerate(chunks2):
-            parts2: List[np.ndarray] = []
-            offset2 = 0
             for m_id in ch2:
                 if m_id in assigned_r2:
                     continue
                 arr2 = sw2_by_mon.get(m_id, (np.zeros((0, 2), dtype=np.int64), []))[0]
-                r2_chunk_slice[m_id] = (c2_i, offset2, offset2 + len(arr2))
-                offset2 += len(arr2)
+                r2_global_slice[m_id] = (cur_c, cur_c + len(arr2))
+                cur_c += len(arr2)
                 if len(arr2) > 0:
-                    parts2.append(arr2)
+                    t2_parts.append(arr2)
+                    t2_chunk_owners.extend([c2_i] * len(arr2))
                 assigned_r2.add(m_id)
-            chunk2_sw_choices.append(
-                np.concatenate(parts2, axis=0) if parts2 else np.zeros((0, 2), dtype=np.int64)
+        all_c2 = np.concatenate(t2_parts, axis=0) if t2_parts else np.zeros((1, 2), dtype=np.int64)
+
+        B1, B2 = len(all_c1), len(all_c2)
+        p_t1_by_c = []
+        m_t1_by_c = []
+        for ch1 in chunks1:
+            p_t1_by_c.append(
+                np.stack(
+                    [
+                        p_t0_np[SLOT_TRAINER_1_A],
+                        p_t0_np[SLOT_TRAINER_1_B],
+                        pool_t1.roster_rows[ch1[0]],
+                        pool_t1.roster_rows[ch1[1]],
+                    ],
+                    axis=0,
+                )
+            )
+            m_t1_by_c.append(
+                np.stack(
+                    [
+                        pool_t1.move_rows[lead1[0]],
+                        pool_t1.move_rows[lead1[1]],
+                        pool_t1.move_rows[ch1[0]],
+                        pool_t1.move_rows[ch1[1]],
+                    ],
+                    axis=0,
+                )
             )
 
-        pair_seed = (lead_1_idx * 31 + lead_2_idx) * 101
-
-        # 3. Execute the 4 Factored GPU Blocks (within inference_mode when torch is enabled)
-        ctx = torch.inference_mode() if (self.backend == "torch" and HAS_TORCH) else _NullContext()
-        with ctx:
-            # Block A: Stay1 × Stay2 (computed ONCE, reused across all 36 bench pairs!)
-            u_ss, cvar_ss = self._run_block(
-                boards[(0, 0)], stay1_choices, stay2_choices, config, pair_seed + 1, cancel_event
+        p_t2_by_c = []
+        m_t2_by_c = []
+        for ch2 in chunks2:
+            p_t2_by_c.append(
+                np.stack(
+                    [
+                        p_t0_np[SLOT_TRAINER_2_A],
+                        p_t0_np[SLOT_TRAINER_2_B],
+                        pool_t2.roster_rows[ch2[0]],
+                        pool_t2.roster_rows[ch2[1]],
+                    ],
+                    axis=0,
+                )
+            )
+            m_t2_by_c.append(
+                np.stack(
+                    [
+                        pool_t2.move_rows[lead2[0]],
+                        pool_t2.move_rows[lead2[1]],
+                        pool_t2.move_rows[ch2[0]],
+                        pool_t2.move_rows[ch2[1]],
+                    ],
+                    axis=0,
+                )
             )
 
-            # Block B: Sw1(c1) × Stay2
-            u_sw1_s2: Dict[int, Tuple[np.ndarray, np.ndarray]] = {}
-            for c1_i, sw1_arr in enumerate(chunk1_sw_choices):
-                u_blk, cv_blk = self._run_block(
-                    boards[(c1_i, 0)], sw1_arr, stay2_choices, config, pair_seed + 10 + c1_i, cancel_event
-                )
-                u_sw1_s2[c1_i] = (u_blk, cv_blk)
+        own1 = np.asarray(t1_chunk_owners, dtype=np.int64)
+        own2 = np.asarray(t2_chunk_owners, dtype=np.int64)
+        P_cell = np.empty((B1, B2, ROSTER_SLOTS, MON_DIM), dtype=np.float32)
+        M_cell = np.empty((B1, B2, ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
+        P_cell[:, :, :4, :] = np.asarray(p_t1_by_c)[own1][:, None, :, :]
+        P_cell[:, :, 4:, :] = np.asarray(p_t2_by_c)[own2][None, :, :, :]
+        M_cell[:, :, :4, :, :] = np.asarray(m_t1_by_c)[own1][:, None, :, :, :]
+        M_cell[:, :, 4:, :, :] = np.asarray(m_t2_by_c)[own2][None, :, :, :, :]
+        F_cell = np.broadcast_to(f_t0_np[None, None, :], (B1, B2, FIELD_DIM)).copy()
+        C1_cell = np.broadcast_to(all_c1[:, None, :], (B1, B2, 2)).copy()
+        C2_cell = np.broadcast_to(all_c2[None, :, :], (B1, B2, 2)).copy()
 
-            # Block C: Stay1 × Sw2(c2)
-            u_s1_sw2: Dict[int, Tuple[np.ndarray, np.ndarray]] = {}
-            for c2_i, sw2_arr in enumerate(chunk2_sw_choices):
-                u_blk, cv_blk = self._run_block(
-                    boards[(0, c2_i)], stay1_choices, sw2_arr, config, pair_seed + 20 + c2_i, cancel_event
-                )
-                u_s1_sw2[c2_i] = (u_blk, cv_blk)
-
-            # Block D: Sw1(c1) × Sw2(c2)
-            u_sw1_sw2: Dict[Tuple[int, int], Tuple[np.ndarray, np.ndarray]] = {}
-            for c1_i, sw1_arr in enumerate(chunk1_sw_choices):
-                for c2_i, sw2_arr in enumerate(chunk2_sw_choices):
-                    u_blk, cv_blk = self._run_block(
-                        boards[(c1_i, c2_i)],
-                        sw1_arr,
-                        sw2_arr,
-                        config,
-                        pair_seed + 30 + c1_i * 4 + c2_i,
-                        cancel_event,
-                    )
-                    u_sw1_sw2[(c1_i, c2_i)] = (u_blk, cv_blk)
-
-        # 4. Assemble and solve all C(n1-2, 2) × C(n2-2, 2) (6 × 6 = 36) bench-pair Nash LPs in RAM
-        benches1 = pool_t1.benches_for_lead[lead_1_idx]
-        benches2 = pool_t2.benches_for_lead[lead_2_idx]
-        nb1, nb2 = len(benches1), len(benches2)
-
-        sub_scores = np.zeros((nb1, nb2), dtype=np.float64)
-        sub_cvar = np.zeros((nb1, nb2), dtype=np.float64)
-        sub_t1_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
-        sub_t2_openings: List[List[str]] = [["" for _ in range(nb2)] for _ in range(nb1)]
-        sub_t1_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
-        sub_t2_top_plays: List[List[List[List[Any]]]] = [[[] for _ in range(nb2)] for _ in range(nb1)]
-
-        def _slice_sw1_s2(m1: int) -> Tuple[np.ndarray, np.ndarray]:
-            c_i, s0, s1 = r1_chunk_slice[m1]
-            u_b, cv_b = u_sw1_s2[c_i]
-            return u_b[s0:s1, :], cv_b[s0:s1, :]
-
-        def _slice_s1_sw2(m2: int) -> Tuple[np.ndarray, np.ndarray]:
-            c_i, s0, s1 = r2_chunk_slice[m2]
-            u_b, cv_b = u_s1_sw2[c_i]
-            return u_b[:, s0:s1], cv_b[:, s0:s1]
-
-        def _slice_sw1_sw2(m1: int, m2: int) -> Tuple[np.ndarray, np.ndarray]:
-            c1_i, a0, a1 = r1_chunk_slice[m1]
-            c2_i, b0, b1 = r2_chunk_slice[m2]
-            u_b, cv_b = u_sw1_sw2[(c1_i, c2_i)]
-            return u_b[a0:a1, b0:b1], cv_b[a0:a1, b0:b1]
-
-        for b1_i, (r1a, r1b) in enumerate(benches1):
-            t1_labels = list(stay1_labels) + list(sw1_by_mon[r1a][1]) + list(sw1_by_mon[r1b][1])
-            u_r1a_s2, cv_r1a_s2 = _slice_sw1_s2(r1a)
-            u_r1b_s2, cv_r1b_s2 = _slice_sw1_s2(r1b)
-            squad1 = (lead1[0], lead1[1], r1a, r1b)
-
-            for b2_i, (r2a, r2b) in enumerate(benches2):
-                t2_labels = list(stay2_labels) + list(sw2_by_mon[r2a][1]) + list(sw2_by_mon[r2b][1])
-                u_s1_r2a, cv_s1_r2a = _slice_s1_sw2(r2a)
-                u_s1_r2b, cv_s1_r2b = _slice_s1_sw2(r2b)
-
-                u_aa, cv_aa = _slice_sw1_sw2(r1a, r2a)
-                u_ab, cv_ab = _slice_sw1_sw2(r1a, r2b)
-                u_ba, cv_ba = _slice_sw1_sw2(r1b, r2a)
-                u_bb, cv_bb = _slice_sw1_sw2(r1b, r2b)
-
-                u_mat = np.block(
-                    [
-                        [u_ss, u_s1_r2a, u_s1_r2b],
-                        [u_r1a_s2, u_aa, u_ab],
-                        [u_r1b_s2, u_ba, u_bb],
-                    ]
-                )
-                cv_mat = np.block(
-                    [
-                        [cvar_ss, cv_s1_r2a, cv_s1_r2b],
-                        [cv_r1a_s2, cv_aa, cv_ab],
-                        [cv_r1b_s2, cv_ba, cv_bb],
-                    ]
-                )
-
-                # DuckDB-grounded Post-Turn-1 Bench Matchup Residual (±bench_residual_weight)
-                squad2 = (lead2[0], lead2[1], r2a, r2b)
-                t1_bench_adv = float(np.mean([pressure_12[b, o] for b in (r1a, r1b) for o in squad2]))
-                t2_bench_adv = float(np.mean([pressure_21[b, o] for b in (r2a, r2b) for o in squad1]))
-                residual = float(np.clip(t1_bench_adv - t2_bench_adv, -1.0, 1.0)) * float(
-                    config.bench_residual_weight
-                )
-                u_mat_adj = u_mat + residual
-
-                nash_sub = solve_zero_sum_nash(u_mat_adj)
-                p_star = nash_sub.trainer_1_strategy
-                q_star = nash_sub.trainer_2_strategy
-                top_r = int(np.argmax(p_star)) if len(p_star) > 0 else 0
-                top_c = int(np.argmax(q_star)) if len(q_star) > 0 else 0
-
-                sub_scores[b1_i, b2_i] = float(nash_sub.game_value)
-                sub_cvar[b1_i, b2_i] = float(p_star @ cv_mat @ q_star)
-                sub_t1_openings[b1_i][b2_i] = t1_labels[top_r] if top_r < len(t1_labels) else ""
-                sub_t2_openings[b1_i][b2_i] = t2_labels[top_c] if top_c < len(t2_labels) else ""
-
-                # Persist compact Top-3 Turn-1 plays ([desc, mix_pct, score]) for both sides
-                ev_t1_rows = u_mat_adj @ q_star if len(q_star) > 0 else np.zeros(len(t1_labels))
-                ev_t2_cols = p_star @ u_mat_adj if len(p_star) > 0 else np.zeros(len(t2_labels))
-                t1_order = sorted(
-                    range(min(len(t1_labels), len(p_star))),
-                    key=lambda idx: (round(float(p_star[idx]), 4), float(ev_t1_rows[idx])),
-                    reverse=True,
-                )[:3]
-                t2_order = sorted(
-                    range(min(len(t2_labels), len(q_star))),
-                    key=lambda idx: (round(float(q_star[idx]), 4), -float(ev_t2_cols[idx])),
-                    reverse=True,
-                )[:3]
-                sub_t1_top_plays[b1_i][b2_i] = [
-                    [t1_labels[i], round(float(p_star[i] * 100.0), 1), round(float(ev_t1_rows[i]), 3)]
-                    for i in t1_order
-                ]
-                sub_t2_top_plays[b1_i][b2_i] = [
-                    [t2_labels[j], round(float(q_star[j] * 100.0), 1), round(float(ev_t2_cols[j]), 3)]
-                    for j in t2_order
-                ]
-
-        # Solve the 6×6 Back-2 Nash game at this lead pair for the 15×15 heatmap headline cell
-        cell_nash = solve_zero_sum_nash(sub_scores)
-        best_b1 = int(np.argmax(cell_nash.trainer_1_strategy))
-        best_b2 = int(np.argmax(cell_nash.trainer_2_strategy))
-
-        t1_bench_labels = [
-            [pool_t1.display_species[a], pool_t1.display_species[b]] for (a, b) in benches1
-        ]
-        t2_bench_labels = [
-            [pool_t2.display_species[a], pool_t2.display_species[b]] for (a, b) in benches2
-        ]
-
-        return {
+        cell_meta: Dict[str, Any] = {
             "lead_1_idx": lead_1_idx,
             "lead_2_idx": lead_2_idx,
-            "lead_1": [pool_t1.display_species[lead1[0]], pool_t1.display_species[lead1[1]]],
-            "lead_2": [pool_t2.display_species[lead2[0]], pool_t2.display_species[lead2[1]]],
-            "score": round(float(cell_nash.game_value), 4),
-            "cvar_10": round(float(sub_cvar[best_b1, best_b2]), 4),
-            "best_t1_bench_idx": best_b1,
-            "best_t2_bench_idx": best_b2,
-            "best_t1_bench": t1_bench_labels[best_b1],
-            "best_t2_bench": t2_bench_labels[best_b2],
-            "t1_opening": sub_t1_openings[best_b1][best_b2],
-            "t2_opening": sub_t2_openings[best_b1][best_b2],
-            "t1_bench_labels": t1_bench_labels,
-            "t2_bench_labels": t2_bench_labels,
-            "sub_matrix_6x6": np.round(sub_scores, 4).tolist(),
-            "sub_cvar_6x6": np.round(sub_cvar, 4).tolist(),
-            "sub_t1_openings": sub_t1_openings,
-            "sub_t2_openings": sub_t2_openings,
-            "sub_t1_top_plays": sub_t1_top_plays,
-            "sub_t2_top_plays": sub_t2_top_plays,
+            "n_stay1": len(stay1_choices),
+            "n_stay2": len(stay2_choices),
+            "r1_global_slice": r1_global_slice,
+            "r2_global_slice": r2_global_slice,
+            "stay1_labels": stay1_labels,
+            "stay2_labels": stay2_labels,
+            "sw1_labels_by_mon": {m_id: val[1] for m_id, val in sw1_by_mon.items()},
+            "sw2_labels_by_mon": {m_id: val[1] for m_id, val in sw2_by_mon.items()},
             "turn0_events": turn0_events,
-            "_raw_sub_scores": sub_scores,
         }
+        return F_cell, P_cell, M_cell, C1_cell, C2_cell, cell_meta
+
+    def _evaluate_lead_pair_factored(
+        self,
+        pool_t1: CompiledTeamPool,
+        pool_t2: CompiledTeamPool,
+        lead_1_idx: int,
+        lead_2_idx: int,
+        pressure_12: np.ndarray,
+        pressure_21: np.ndarray,
+        config: LeadMatchupConfig,
+        cancel_event: Optional[threading.Event],
+    ) -> Dict[str, Any]:
+        """Evaluate all `C(n1-2, 2) × C(n2-2, 2)` (up to `6 × 6 = 36`) bench matchups for one lead pair in 1 fused pass."""
+        F_cell, P_cell, M_cell, C1_cell, C2_cell, meta = self._prepare_lead_pair_fused_tensors(
+            pool_t1=pool_t1,
+            pool_t2=pool_t2,
+            lead_1_idx=lead_1_idx,
+            lead_2_idx=lead_2_idx,
+            config=config,
+        )
+        pair_seed = (lead_1_idx * 31 + lead_2_idx) * 101
+        ctx = torch.inference_mode() if (self.backend == "torch" and HAS_TORCH) else _NullContext()
+        with ctx:
+            if self.backend == "torch" and HAS_TORCH:
+                f_in: Any = torch.from_numpy(F_cell).to(self.device_str)
+                p_in: Any = torch.from_numpy(P_cell).to(self.device_str)
+                m_in: Any = torch.from_numpy(M_cell).to(self.device_str)
+                c1_in: Any = torch.from_numpy(C1_cell).to(self.device_str)
+                c2_in: Any = torch.from_numpy(C2_cell).to(self.device_str)
+            else:
+                f_in, p_in, m_in, c1_in, c2_in = F_cell, P_cell, M_cell, C1_cell, C2_cell
+
+            step_res = self.sm.step(
+                F=f_in,
+                P=p_in,
+                M_moves=m_in,
+                trainer_1_choices=c1_in,
+                trainer_2_choices=c2_in,
+                num_mc_samples=config.num_rng_samples,
+                rng_seed=config.rng_seed + pair_seed + 1,
+                risk_aversion_lambda=config.risk_aversion_lambda,
+                resolve_lead_entry_abilities=False,
+                max_sim_chunk_size=max(64, int(config.num_rng_samples)),
+                cancel_event=cancel_event,
+            )
+            u_raw = step_res.stats.risk_adjusted_utility
+            cvar_raw = step_res.stats.cvar_10_utility
+            if HAS_TORCH and isinstance(u_raw, torch.Tensor):
+                u_full = u_raw.detach().cpu().numpy().astype(np.float64)
+                cv_full = cvar_raw.detach().cpu().numpy().astype(np.float64)
+            else:
+                u_full = np.asarray(u_raw, dtype=np.float64)
+                cv_full = np.asarray(cvar_raw, dtype=np.float64)
+            del step_res
+
+        return _assemble_lead_pair_cell_from_payoffs(
+            u_full=u_full,
+            cv_full=cv_full,
+            lead_1_idx=lead_1_idx,
+            lead_2_idx=lead_2_idx,
+            n_stay1=meta["n_stay1"],
+            n_stay2=meta["n_stay2"],
+            r1_global_slice=meta["r1_global_slice"],
+            r2_global_slice=meta["r2_global_slice"],
+            stay1_labels=meta["stay1_labels"],
+            stay2_labels=meta["stay2_labels"],
+            sw1_labels_by_mon=meta["sw1_labels_by_mon"],
+            sw2_labels_by_mon=meta["sw2_labels_by_mon"],
+            turn0_events=meta["turn0_events"],
+            lead1=pool_t1.leads[lead_1_idx],
+            lead2=pool_t2.leads[lead_2_idx],
+            benches1=pool_t1.benches_for_lead[lead_1_idx],
+            benches2=pool_t2.benches_for_lead[lead_2_idx],
+            display_species_1=pool_t1.display_species,
+            display_species_2=pool_t2.display_species,
+            pressure_12=pressure_12,
+            pressure_21=pressure_21,
+            bench_residual_weight=config.bench_residual_weight,
+        )
 
     def solve_90x90_matchup(
         self,
@@ -1403,8 +1548,12 @@ class LeadMatchupSolver:
         cpu_hw_name = "CPU (PyTorch)"
 
         from collections import deque as _deque
+        import concurrent.futures as _cf
         import os as _os
-        from engine.solver.hybrid_scheduler import resolve_worker_topology
+        from engine.solver.hybrid_scheduler import (
+            resolve_gpu_superbatch_bounds,
+            resolve_worker_topology,
+        )
 
         cpu_cores = max(1, int(_os.cpu_count() or 4))
         topo = resolve_worker_topology(
@@ -1415,29 +1564,34 @@ class LeadMatchupSolver:
         )
         eff_mode = str(topo["mode"])
         use_gpu = bool(topo["use_gpu"])
+        num_gpu_workers = int(topo.get("gpu_workers", 1 if use_gpu else 0)) if use_gpu else 0
         num_cpu_workers = int(topo["cpu_workers"])
-        # In pure CPU mode with >=4 lead pairs, cap CPU workers to min(4, cpu_cores // 3) for optimal BLAS scaling
-        if not use_gpu and total_lead_pairs >= 4:
-            num_cpu_workers = min(4, max(1, cpu_cores // 3), total_lead_pairs)
+        threads_per_cpu = int(topo.get("threads_per_cpu_worker") or 2)
+        sb_bounds = (
+            resolve_gpu_superbatch_bounds(
+                num_mc_samples=cfg.num_rng_samples,
+                device=getattr(self.sm, "device", None),
+            )
+            if use_gpu
+            else {"gpu_superbatch_cells": 1, "gpu_thread_budget": 65536}
+        )
+        m_batch = max(1, int(sb_bounds["gpu_superbatch_cells"]))
 
+        gpu_stream_tag = f"{gpu_hw_name} ({num_gpu_workers}S)" if num_gpu_workers > 1 else gpu_hw_name
         hw_name = (
-            f"{gpu_hw_name} + CPU ({num_cpu_workers}W)"
+            f"{gpu_stream_tag} + CPU ({num_cpu_workers}W)"
             if (use_gpu and num_cpu_workers > 0)
-            else (gpu_hw_name if use_gpu else f"{cpu_hw_name} ({num_cpu_workers}W)")
+            else (gpu_stream_tag if use_gpu else f"{cpu_hw_name} ({num_cpu_workers}W)")
         )
 
-        # Dual-End Hybrid GPU + Multi-CPU Work-Stealing Queue with strict single-claim deduplication:
-        # - GPU worker pops lead pairs from the LEFT: (0,0) -> (14,14)
-        # - CPU worker(s) steal lead pairs from the RIGHT: (14,14) -> (0,0) in Hybrid mode
-        #   (or pop from the LEFT in pure CPU-parallel mode) with a tail-straggler makespan guard.
+        # Dual-End Hybrid Fused GPU Super-Batch Producer + Zero-GIL Multi-CPU LP & Work-Stealing Pool:
+        # - GPU Super-Batch Producer pops `M_batch` lead pairs at a time from the LEFT: (0,0) -> (14,14),
+        #   simulates them in one fused CUDA launch, and offloads the 37 HiGHS Nash LPs per cell asynchronously to CPU workers.
+        # - In Hybrid mode, each CPU worker (`CPU-W1..WN`) steals 1 initial right-end cell (14,14) -> ... at t=0
+        #   while the GPU runs its first super-batch, then dedicates 100% of CPU cores to solving the GPU's offloaded HiGHS LPs.
         if use_gpu or num_cpu_workers >= 1:
-            reserved = 4 if use_gpu else 0
-            threads_per_cpu = max(1, min(4, max(1, cpu_cores - reserved) // max(1, num_cpu_workers)))
-            # Use Zero-GIL Multi-Process CPU Worker Pool for full Hybrid sweeps (K >= 16, e.g. fast/balanced/tournament)
-            # so multi-core CPU workers never contend for the parent process's Python GIL during CUDA kernel launches!
             use_mp_cpu = bool(
-                use_gpu
-                and num_cpu_workers >= 1
+                num_cpu_workers >= 1
                 and total_lead_pairs >= 16
                 and (int(cfg.num_rng_samples) >= 16 or _os.environ.get("PORYGON_LEAD_MP_POOL") == "1")
             )
@@ -1447,7 +1601,7 @@ class LeadMatchupSolver:
                 else None
             )
             if mp_pool is None:
-                for wi in range(num_cpu_workers):
+                for wi in range(max(1, num_cpu_workers)):
                     self._get_cpu_worker_solver(wi)
 
             prev_threads = int(torch.get_num_threads()) if HAS_TORCH else None
@@ -1461,8 +1615,28 @@ class LeadMatchupSolver:
             claimed_pairs: set[Tuple[int, int]] = set()
             q_lock = threading.Lock()
             out_lock = threading.Lock()
-            gpu_active = threading.Event()
             worker_errors: List[Exception] = []
+
+            # Pre-claim the initial lead pairs for GPU lanes in deterministic order
+            # so Lane 0 ("GPU") strictly evaluates (0, 0) and Lane 1 ("GPU-S2") evaluates (0, 1).
+            initial_gpu_pairs: List[Tuple[int, int]] = []
+            initial_cpu_pairs: Dict[int, Optional[Tuple[int, int]]] = {}
+            if use_gpu:
+                for _gi in range(max(1, num_gpu_workers)):
+                    while pair_q:
+                        cand = pair_q.popleft()
+                        if cand not in claimed_pairs:
+                            claimed_pairs.add(cand)
+                            initial_gpu_pairs.append(cand)
+                            break
+                # Pre-claim 1 right-end cell per CPU worker at t=0 so CPU workers never create a late tail stall
+                for wi in range(num_cpu_workers):
+                    if len(pair_q) <= max(4, m_batch * 2):
+                        break
+                    cand_r = pair_q.pop()
+                    if cand_r not in claimed_pairs:
+                        claimed_pairs.add(cand_r)
+                        initial_cpu_pairs[wi] = cand_r
 
             def _record_completed_cell(
                 l1_i: int,
@@ -1507,14 +1681,201 @@ class LeadMatchupSolver:
                         }
                     )
 
-            def _gpu_lead_worker() -> None:
-                w_label = "GPU"
-                gpu_active.set()
+            def _gpu_superbatch_producer() -> None:
+                own_lp_pool = mp_pool is None
+                lp_pool: Any = (
+                    _cf.ThreadPoolExecutor(max_workers=max(2, num_cpu_workers or 2))
+                    if own_lp_pool
+                    else mp_pool
+                )
+                pending_lp_futs: Any = _deque()
+                pre_q: Any = _deque(initial_gpu_pairs)
+                gpu_cell_counter = 0
+                cur_m_batch = m_batch
+
+                def _drain_lps(block_all: bool = False) -> None:
+                    while pending_lp_futs:
+                        if not block_all and not pending_lp_futs[0][0].done():
+                            break
+                        fut_item, f_l1, f_l2, f_lbl = pending_lp_futs.popleft()
+                        cell_out = fut_item.result()
+                        if cancel_event is not None and cancel_event.is_set():
+                            return
+                        _record_completed_cell(f_l1, f_l2, cell_out, f_lbl, gpu_hw_name)
+
                 try:
                     while True:
                         if cancel_event is not None and cancel_event.is_set():
                             return
-                        pair_item: Optional[Tuple[int, int]] = None
+                        batch_items: List[Tuple[int, int, str]] = []
+                        with q_lock:
+                            while len(batch_items) < cur_m_batch:
+                                cand_pair: Optional[Tuple[int, int]] = None
+                                if pre_q:
+                                    cand_pair = pre_q.popleft()
+                                else:
+                                    while pair_q:
+                                        c_p = pair_q.popleft()
+                                        if c_p not in claimed_pairs:
+                                            claimed_pairs.add(c_p)
+                                            cand_pair = c_p
+                                            break
+                                if cand_pair is None:
+                                    break
+                                lane_idx = gpu_cell_counter % max(1, num_gpu_workers)
+                                w_lbl = "GPU" if lane_idx == 0 else f"GPU-S{lane_idx + 1}"
+                                gpu_cell_counter += 1
+                                batch_items.append((cand_pair[0], cand_pair[1], w_lbl))
+
+                        if not batch_items:
+                            break
+
+                        try:
+                            prepped = [
+                                (
+                                    l1_i,
+                                    l2_i,
+                                    w_lbl,
+                                    self._prepare_lead_pair_fused_tensors(
+                                        pool_t1, pool_t2, l1_i, l2_i, cfg
+                                    ),
+                                )
+                                for (l1_i, l2_i, w_lbl) in batch_items
+                            ]
+
+                            def _run_superbatch(
+                                sub_prepped: Sequence[Tuple[int, int, str, Any]],
+                                seed_shift: int,
+                            ) -> List[Tuple[int, int, str, np.ndarray, np.ndarray, Dict[str, Any]]]:
+                                max_b1 = max(item[3][0].shape[0] for item in sub_prepped)
+                                max_b2 = max(item[3][0].shape[1] for item in sub_prepped)
+                                n_b = len(sub_prepped)
+                                F_sup = np.zeros((n_b * max_b1, max_b2, FIELD_DIM), dtype=np.float32)
+                                P_sup = np.zeros((n_b * max_b1, max_b2, ROSTER_SLOTS, MON_DIM), dtype=np.float32)
+                                M_sup = np.zeros((n_b * max_b1, max_b2, ROSTER_SLOTS, MOVES_PER_MON, MOVE_DIM), dtype=np.float32)
+                                C1_sup = np.zeros((n_b * max_b1, max_b2, 2), dtype=np.int64)
+                                C2_sup = np.zeros((n_b * max_b1, max_b2, 2), dtype=np.int64)
+                                slices_info = []
+                                for bi, (l1_i, l2_i, w_lbl, (fc, pc, mc, c1c, c2c, meta)) in enumerate(sub_prepped):
+                                    b1, b2 = fc.shape[0], fc.shape[1]
+                                    r0 = bi * max_b1
+                                    F_sup[r0 : r0 + b1, :b2] = fc
+                                    P_sup[r0 : r0 + b1, :b2] = pc
+                                    M_sup[r0 : r0 + b1, :b2] = mc
+                                    C1_sup[r0 : r0 + b1, :b2] = c1c
+                                    C2_sup[r0 : r0 + b1, :b2] = c2c
+                                    slices_info.append((l1_i, l2_i, w_lbl, r0, b1, b2, meta))
+
+                                ctx = torch.inference_mode() if (self.backend == "torch" and HAS_TORCH) else _NullContext()
+                                with ctx:
+                                    step_res = self.sm.step(
+                                        F=torch.from_numpy(F_sup).to(self.device_str),
+                                        P=torch.from_numpy(P_sup).to(self.device_str),
+                                        M_moves=torch.from_numpy(M_sup).to(self.device_str),
+                                        trainer_1_choices=torch.from_numpy(C1_sup).to(self.device_str),
+                                        trainer_2_choices=torch.from_numpy(C2_sup).to(self.device_str),
+                                        num_mc_samples=cfg.num_rng_samples,
+                                        rng_seed=cfg.rng_seed + seed_shift,
+                                        risk_aversion_lambda=cfg.risk_aversion_lambda,
+                                        resolve_lead_entry_abilities=False,
+                                        max_sim_chunk_size=max(64, int(cfg.num_rng_samples)),
+                                        cancel_event=cancel_event,
+                                    )
+                                    u_sup = step_res.stats.risk_adjusted_utility.detach().cpu().numpy().astype(np.float64)
+                                    cv_sup = step_res.stats.cvar_10_utility.detach().cpu().numpy().astype(np.float64)
+                                    del step_res
+
+                                out_slices = []
+                                for (l1_i, l2_i, w_lbl, r0, b1, b2, meta) in slices_info:
+                                    out_slices.append(
+                                        (
+                                            l1_i,
+                                            l2_i,
+                                            w_lbl,
+                                            u_sup[r0 : r0 + b1, :b2].copy(),
+                                            cv_sup[r0 : r0 + b1, :b2].copy(),
+                                            meta,
+                                        )
+                                    )
+                                return out_slices
+
+                            base_seed_shift = (batch_items[0][0] * 31 + batch_items[0][1]) * 101 + 1
+                            try:
+                                sim_outputs = _run_superbatch(prepped, base_seed_shift)
+                            except RuntimeError as oom_exc:
+                                if "out of memory" not in str(oom_exc).lower():
+                                    raise
+                                if HAS_TORCH and torch.cuda.is_available():
+                                    torch.cuda.empty_cache()
+                                cur_m_batch = 1
+                                sim_outputs = []
+                                for single_item in prepped:
+                                    s_shift = (single_item[0] * 31 + single_item[1]) * 101 + 1
+                                    sim_outputs.extend(_run_superbatch([single_item], s_shift))
+
+                            for (l1_i, l2_i, w_lbl, u_cell, cv_cell, meta) in sim_outputs:
+                                fut = lp_pool.submit(
+                                    _assemble_lead_pair_cell_from_payoffs,
+                                    u_cell,
+                                    cv_cell,
+                                    l1_i,
+                                    l2_i,
+                                    meta["n_stay1"],
+                                    meta["n_stay2"],
+                                    meta["r1_global_slice"],
+                                    meta["r2_global_slice"],
+                                    meta["stay1_labels"],
+                                    meta["stay2_labels"],
+                                    meta["sw1_labels_by_mon"],
+                                    meta["sw2_labels_by_mon"],
+                                    meta["turn0_events"],
+                                    pool_t1.leads[l1_i],
+                                    pool_t2.leads[l2_i],
+                                    pool_t1.benches_for_lead[l1_i],
+                                    pool_t2.benches_for_lead[l2_i],
+                                    pool_t1.display_species,
+                                    pool_t2.display_species,
+                                    pressure_12,
+                                    pressure_21,
+                                    cfg.bench_residual_weight,
+                                )
+                                pending_lp_futs.append((fut, l1_i, l2_i, w_lbl))
+
+                            _drain_lps(block_all=False)
+                        except AnalysisCancelledError:
+                            return
+                        except Exception as exc:
+                            with out_lock:
+                                worker_errors.append(exc)
+                            return
+
+                    _drain_lps(block_all=True)
+                except AnalysisCancelledError:
+                    return
+                except Exception as exc:
+                    with out_lock:
+                        worker_errors.append(exc)
+                finally:
+                    if own_lp_pool:
+                        try:
+                            lp_pool.shutdown(wait=False, cancel_futures=True)
+                        except Exception:
+                            pass
+
+            def _cpu_lead_worker(worker_idx: int) -> None:
+                w_label = f"CPU-W{worker_idx + 1}"
+                w_solver = None if mp_pool is not None else self._get_cpu_worker_solver(worker_idx)
+                next_cpu_pair: Optional[Tuple[int, int]] = initial_cpu_pairs.get(worker_idx)
+                while True:
+                    if cancel_event is not None and cancel_event.is_set():
+                        return
+                    pair_item: Optional[Tuple[int, int]] = next_cpu_pair
+                    next_cpu_pair = None
+                    if pair_item is None:
+                        if use_gpu:
+                            # In Hybrid mode, after finishing its 1 pre-claimed right-end cell at t=0,
+                            # this CPU worker immediately frees the CPU pool to solve the GPU Producer's HiGHS LPs!
+                            return
                         with q_lock:
                             while pair_q:
                                 cand = pair_q.popleft()
@@ -1522,52 +1883,6 @@ class LeadMatchupSolver:
                                     claimed_pairs.add(cand)
                                     pair_item = cand
                                     break
-                        if pair_item is None:
-                            return
-                        l1_i, l2_i = pair_item
-                        try:
-                            cell = self._evaluate_lead_pair_factored(
-                                pool_t1=pool_t1,
-                                pool_t2=pool_t2,
-                                lead_1_idx=l1_i,
-                                lead_2_idx=l2_i,
-                                pressure_12=pressure_12,
-                                pressure_21=pressure_21,
-                                config=cfg,
-                                cancel_event=cancel_event,
-                            )
-                        except AnalysisCancelledError:
-                            return
-                        except Exception as exc:
-                            with out_lock:
-                                worker_errors.append(exc)
-                            return
-                        _record_completed_cell(l1_i, l2_i, cell, w_label, gpu_hw_name)
-                finally:
-                    gpu_active.clear()
-
-            def _cpu_lead_worker(worker_idx: int) -> None:
-                w_label = f"CPU-W{worker_idx + 1}"
-                w_solver = None if mp_pool is not None else self._get_cpu_worker_solver(worker_idx)
-                my_claimed = 0
-                tail_guard = max(2, num_cpu_workers)
-                while True:
-                    if cancel_event is not None and cancel_event.is_set():
-                        return
-                    pair_item: Optional[Tuple[int, int]] = None
-                    with q_lock:
-                        # Tail-straggler makespan guard in Hybrid GPU+CPU mode:
-                        # Once this CPU worker has already stolen at least 1 cell and GPU is actively running,
-                        # leave the last `tail_guard` cells in the queue for the faster GPU so CPU never causes a tail stall.
-                        if use_gpu and gpu_active.is_set() and my_claimed >= 1 and len(pair_q) <= tail_guard:
-                            return
-                        while pair_q:
-                            cand = pair_q.pop() if use_gpu else pair_q.popleft()
-                            if cand not in claimed_pairs:
-                                claimed_pairs.add(cand)
-                                pair_item = cand
-                                my_claimed += 1
-                                break
                     if pair_item is None:
                         return
                     l1_i, l2_i = pair_item
@@ -1610,8 +1925,8 @@ class LeadMatchupSolver:
                 if use_gpu:
                     workers.append(
                         threading.Thread(
-                            target=_gpu_lead_worker,
-                            name="porygon-lead-gpu",
+                            target=_gpu_superbatch_producer,
+                            name="porygon-lead-gpu-superbatch",
                             daemon=True,
                         )
                     )

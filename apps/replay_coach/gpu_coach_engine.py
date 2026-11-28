@@ -185,7 +185,8 @@ class GPUReplayCoachEngine:
         equity_samples_path: Optional[Path] = DEFAULT_EQUITY_SAMPLES_PATH,
     ) -> None:
         self.ots_db = ots_db
-        self._gpu_lock = threading.Lock()
+        self._compile_lock = threading.Lock()
+        self._gpu_lock = threading.Semaphore(2)
         self._pool_lock = threading.Lock()
         self._cpu_worker_engines: Dict[int, "GPUReplayCoachEngine"] = {}
         self.equity_samples_path = equity_samples_path
@@ -441,7 +442,8 @@ class GPUReplayCoachEngine:
             if cancel_event is not None and cancel_event.is_set():
                 raise AnalysisCancelledError("Analysis cancelled while acquiring compute lock.")
             t_comp0 = time.perf_counter()
-            comp = self._compile_snapshot(snap)
+            with self._compile_lock:
+                comp = self._compile_snapshot(snap)
             t_comp_ms = (time.perf_counter() - t_comp0) * 1000.0
             t1_leads = f"{comp.slot_species[0]} + {comp.slot_species[1]}"
             t2_leads = f"{comp.slot_species[4]} + {comp.slot_species[5]}"
@@ -1105,6 +1107,7 @@ class GPUReplayCoachEngine:
                     {
                         "mode": topo["mode"],
                         "use_gpu": topo["use_gpu"],
+                        "gpu_workers": topo.get("gpu_workers", 1 if topo["use_gpu"] else 0),
                         "gpu_device_name": self.device_name if topo["use_gpu"] else None,
                         "cpu_device_name": "CPU (PyTorch)",
                         "cpu_workers": topo["cpu_workers"],
@@ -1119,13 +1122,12 @@ class GPUReplayCoachEngine:
             except Exception:
                 pass
 
-        # Use Zero-GIL Multi-Process CPU Worker Pool for full Hybrid CUDA runs (K >= 32)
-        # so multi-core CPU workers never contend for the parent process's Python GIL during CUDA kernel launches!
+        # Use Zero-GIL Multi-Process CPU Worker Pool for full Hybrid CUDA AND Multi-Core CPU-Parallel runs (K >= 32)
+        # so multi-core CPU workers never contend for a single Python GIL!
         import os as _os
 
         use_mp_cpu = bool(
-            topo["use_gpu"]
-            and int(topo["cpu_workers"]) >= 1
+            int(topo["cpu_workers"]) >= 1
             and len(work_items) >= 3
             and (int(num_mc) >= 32 or _os.environ.get("PORYGON_BO3_MP_POOL") == "1")
         )
@@ -1148,9 +1150,32 @@ class GPUReplayCoachEngine:
             except Exception:
                 prev_torch_threads = None
 
-        scheduler = HybridTurnScheduler(mode=compute_mode, has_cuda=has_cuda)
+        scheduler = HybridTurnScheduler(mode=compute_mode, has_cuda=has_cuda, cpu_slowdown_factor=9.0)
+        gpu_streams_by_lbl: Dict[str, Any] = {}
+        if has_cuda and torch.cuda.is_available():
+            for gi in range(max(1, int(topo.get("gpu_workers", 1)))):
+                lbl_k = "GPU" if gi == 0 else f"GPU-S{gi + 1}"
+                try:
+                    gpu_streams_by_lbl[lbl_k] = torch.cuda.Stream()
+                except Exception:
+                    pass
 
         def _gpu_run(item: TurnWorkItem, w_lbl: str) -> Dict[str, Any]:
+            stream = gpu_streams_by_lbl.get(w_lbl)
+            if stream is not None:
+                with torch.cuda.stream(stream):
+                    out = self.analyze_turn(
+                        replay,
+                        turn_number=item.turn_number,
+                        min_prior=0.0,
+                        num_mc=num_mc,
+                        enable_two_ply=enable_two_ply,
+                        log_cb=on_log,
+                        cancel_event=cancel_event,
+                        worker_label=w_lbl,
+                    )
+                    stream.synchronize()
+                    return out
             return self.analyze_turn(
                 replay,
                 turn_number=item.turn_number,
@@ -1191,7 +1216,7 @@ class GPUReplayCoachEngine:
 
         def _start_cb(item: TurnWorkItem, w_lbl: str) -> None:
             if on_worker_start is not None:
-                hw_name = self.device_name if w_lbl == "GPU" else "CPU (PyTorch)"
+                hw_name = self.device_name if w_lbl.startswith("GPU") else "CPU (PyTorch)"
                 on_worker_start(item.turn_number, w_lbl, hw_name)
 
         def _done_cb(item: TurnWorkItem, w_lbl: str, res_dict: Dict[str, Any]) -> None:
@@ -1246,23 +1271,41 @@ class GPUReplayCoachEngine:
             ]
             assign_str = " · ".join(turn_assign_parts) if turn_assign_parts else "—"
             mode_up = str(sched_stats.mode or "auto").upper()
-            hw_es = (
-                f"Plan ejecutado [{mode_up}] en {sched_stats.elapsed_s:.2f}s · "
-                f"{sched_stats.gpu_turns} turno(s) GPU ({gpu_device_name}) · "
-                f"{sched_stats.cpu_turns} turno(s) CPU · Asignación: {assign_str}"
-            )
-            hw_en = (
-                f"Completed schedule [{mode_up}] in {sched_stats.elapsed_s:.2f}s · "
-                f"{sched_stats.gpu_turns} GPU turn(s) ({gpu_device_name}) · "
-                f"{sched_stats.cpu_turns} CPU turn(s) · Assignment: {assign_str}"
-            )
+            if sched_stats.has_gpu and sched_stats.gpu_turns > 0:
+                hw_es = (
+                    f"Plan ejecutado [{mode_up}] en {sched_stats.elapsed_s:.2f}s · "
+                    f"{sched_stats.gpu_turns} turno(s) GPU ({gpu_device_name}) · "
+                    f"{sched_stats.cpu_turns} turno(s) CPU ({sched_stats.cpu_workers}W) · Asignación: {assign_str}"
+                )
+                hw_en = (
+                    f"Completed schedule [{mode_up}] in {sched_stats.elapsed_s:.2f}s · "
+                    f"{sched_stats.gpu_turns} GPU turn(s) ({gpu_device_name}) · "
+                    f"{sched_stats.cpu_turns} CPU turn(s) ({sched_stats.cpu_workers}W) · Assignment: {assign_str}"
+                )
+                sched_hw_dev = (
+                    f"{gpu_device_name} + CPU ({sched_stats.cpu_workers}W)"
+                    if sched_stats.cpu_workers > 0
+                    else gpu_device_name
+                )
+            else:
+                hw_es = (
+                    f"Plan ejecutado [{mode_up}] en {sched_stats.elapsed_s:.2f}s · "
+                    f"{sched_stats.cpu_turns} turno(s) en CPU Multi-Core ({sched_stats.cpu_workers} workers) · "
+                    f"Asignación: {assign_str}"
+                )
+                hw_en = (
+                    f"Completed schedule [{mode_up}] in {sched_stats.elapsed_s:.2f}s · "
+                    f"{sched_stats.cpu_turns} turn(s) on Multi-Core CPU ({sched_stats.cpu_workers} workers) · "
+                    f"Assignment: {assign_str}"
+                )
+                sched_hw_dev = f"CPU ({sched_stats.cpu_workers}W)"
             reconstructed.append(
                 {
                     "turn": 0,
                     "phase": "SCHEDULER",
                     "in_place": False,
                     "compute_worker": "BALANCER",
-                    "hardware_device": f"{gpu_device_name} + CPU",
+                    "hardware_device": sched_hw_dev,
                     "messages": {
                         "es_vgc": hw_es,
                         "en_vgc": hw_en,
@@ -1272,9 +1315,10 @@ class GPUReplayCoachEngine:
                 }
             )
 
+        default_worker = "GPU" if (sched_stats and sched_stats.has_gpu) else "CPU"
         for r in unique_sorted:
             t_num = int(r["turn"])
-            w_lbl = str(r.get("compute_worker") or "GPU")
+            w_lbl = str(r.get("compute_worker") or default_worker)
             hw_dev = str(r.get("hardware_device") or r.get("device") or w_lbl)
             for entry in r.get("pipeline_logs") or []:
                 if entry.get("in_place"):

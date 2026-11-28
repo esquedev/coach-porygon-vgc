@@ -101,7 +101,7 @@ jobs:
           pytest tests/test_acceptance_anti_hallucination.py tests/vgc_tensor_core/test_adversarial_fuzzer.py -v
 
   package-integrity:
-    name: Validate Package & Launcher Build Scripts
+    name: Validate Package & start_replay_coach Launchers
     runs-on: ubuntu-latest
     needs: [unit-tests, acceptance-and-model-fuzzer]
 
@@ -121,5 +121,5 @@ jobs:
           pip install build twine
           python -m build
           twine check --strict dist/*
-          python -m py_compile apps/replay_coach/launcher_entry.py scripts/build_windows_launcher.py
-          python scripts/build_windows_launcher.py --check
+          bash -n start_replay_coach.sh
+          shellcheck -S warning start_replay_coach.sh

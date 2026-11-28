@@ -1621,7 +1621,9 @@ class ShowdownTensorCompiler:
 
         w_onehot = f_np[FieldIdx.WEATHER_START:FieldIdx.WEATHER_END]
         t_onehot = f_np[FieldIdx.TERRAIN_START:FieldIdx.TERRAIN_END]
+        is_sun = float(w_onehot[WEATHER_TO_IDX["sun"]])
         is_rain = float(w_onehot[WEATHER_TO_IDX["rain"]])
+        is_sand = float(w_onehot[WEATHER_TO_IDX["sand"]])
         is_snow = float(w_onehot[WEATHER_TO_IDX["snow"]])
         is_psychic_terrain = float(t_onehot[TERRAIN_TO_IDX["psychic"]])
         is_grassy_terrain = float(t_onehot[TERRAIN_TO_IDX["grassy"]])
@@ -1673,6 +1675,22 @@ class ShowdownTensorCompiler:
             if mega_mode == 1 and can_mega_gate <= 0.0:
                 continue
             eff_user_ab = int(round(user_vec[MonIdx.MEGA_ABILITY_ID])) if mega_mode == 1 else user_ab
+
+            # Account for Phase 2 (+5.5) Mega Evolution weather abilities overwriting Turn-0 weather
+            # BEFORE Phase 4 attacks execute (e.g., Mega Charizard Y Drought overwriting Pelipper's Rain with Sun!)
+            eff_is_sun = is_sun
+            eff_is_rain = is_rain
+            eff_is_sand = is_sand
+            eff_is_snow = is_snow
+            if mega_mode == 1 or eff_user_ab == AbilityID.MEGA_SOL:
+                if eff_user_ab in (AbilityID.DROUGHT, AbilityID.MEGA_SOL):
+                    eff_is_sun, eff_is_rain, eff_is_sand, eff_is_snow = 1.0, 0.0, 0.0, 0.0
+                elif eff_user_ab == AbilityID.DRIZZLE:
+                    eff_is_sun, eff_is_rain, eff_is_sand, eff_is_snow = 0.0, 1.0, 0.0, 0.0
+                elif eff_user_ab == AbilityID.SAND_STREAM:
+                    eff_is_sun, eff_is_rain, eff_is_sand, eff_is_snow = 0.0, 0.0, 1.0, 0.0
+                elif eff_user_ab == AbilityID.SNOW_WARNING:
+                    eff_is_sun, eff_is_rain, eff_is_sand, eff_is_snow = 0.0, 0.0, 0.0, 1.0
 
             for tgt_bucket, raw_tgt_vec in enumerate(target_slots):
                 for m_idx in range(MOVES_PER_MON):
@@ -1807,16 +1825,40 @@ class ShowdownTensorCompiler:
                         prior_scale = 0.40 if protect_count == 1.0 else 0.10
 
                     acc_val = float(m_vec[MoveIdx.ACCURACY])
+                    w_op_code = float(m_vec[MoveIdx.WEATHER_SURE_HIT])
                     if eff_user_ab == AbilityID.NO_GUARD or tgt_ab == AbilityID.NO_GUARD:
                         acc_val = 1.0
-                    elif m_vec[MoveIdx.WEATHER_SURE_HIT] == 2.0 and is_rain > 0.5:
-                        acc_val = 1.0
-                    elif m_vec[MoveIdx.WEATHER_SURE_HIT] == 4.0 and is_snow > 0.5:
+                    elif w_op_code == 2.0:
+                        if eff_is_rain > 0.5:
+                            acc_val = 1.0
+                        elif eff_is_sun > 0.5:
+                            acc_val = 0.50
+                    elif w_op_code == 4.0 and eff_is_snow > 0.5:
                         acc_val = 1.0
                     acc_val = min(1.0, max(0.0, acc_val))
 
                     if not is_status:
                         m_type_vec = m_vec[MoveIdx.TYPE_START:MoveIdx.TYPE_END]
+                        # Dynamic Weather Ball (w_op_code == 1.0) type adaptation under post-Mega weather
+                        wb_active_weather = False
+                        if w_op_code == 1.0:
+                            if eff_is_sun > 0.5:
+                                m_type_vec = np.zeros_like(m_type_vec)
+                                m_type_vec[TYPE_TO_IDX["fire"]] = 1.0
+                                wb_active_weather = True
+                            elif eff_is_rain > 0.5:
+                                m_type_vec = np.zeros_like(m_type_vec)
+                                m_type_vec[TYPE_TO_IDX["water"]] = 1.0
+                                wb_active_weather = True
+                            elif eff_is_sand > 0.5:
+                                m_type_vec = np.zeros_like(m_type_vec)
+                                m_type_vec[TYPE_TO_IDX["rock"]] = 1.0
+                                wb_active_weather = True
+                            elif eff_is_snow > 0.5:
+                                m_type_vec = np.zeros_like(m_type_vec)
+                                m_type_vec[TYPE_TO_IDX["ice"]] = 1.0
+                                wb_active_weather = True
+
                         eff1 = float(m_type_vec @ m_chart_np @ tgt_type1)
                         raw_eff2 = float(m_type_vec @ m_chart_np @ tgt_type2)
                         eff2 = raw_eff2 + (1.0 - float(np.sum(tgt_type2)))
@@ -1839,6 +1881,17 @@ class ShowdownTensorCompiler:
                                 prior_scale = 1.20 * acc_val
                             elif acc_val < 0.85:
                                 prior_scale = acc_val
+
+                            # 100 BP Weather Ball in active weather or instant-fire 2-turn weather moves
+                            if wb_active_weather and eff_total >= 1.0:
+                                prior_scale *= 1.15
+                            elif w_op_code == 10.0 and eff_is_sun <= 0.5:
+                                prior_scale *= 0.40  # Uncharged 2-turn Solar Beam outside Sun
+                            elif w_op_code == 20.0:
+                                if eff_is_rain > 0.5:
+                                    prior_scale *= 1.20  # Instant 1-turn Electro Shot in Rain
+                                elif eff_is_sun > 0.5:
+                                    prior_scale *= 0.45  # 2-turn exposed Electro Shot charge in Sun
                     elif acc_val < 0.85:
                         prior_scale *= acc_val
 

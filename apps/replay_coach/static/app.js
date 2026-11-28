@@ -641,15 +641,7 @@
     }
     if ($("btn-ll-cancel")) $("btn-ll-cancel").textContent = isEs ? "■ Detener" : "■ Stop";
     if ($("btn-ll-cancel-bar")) $("btn-ll-cancel-bar").textContent = isEs ? "■ Detener" : "■ Stop";
-    if ($("ll-compute-mode")) {
-      const cm = $("ll-compute-mode");
-      const opts = cm.options;
-      if (opts && opts.length >= 3) {
-        opts[0].textContent = isEs ? "⚡ Híbrido (GPU + CPU)" : "⚡ Hybrid (GPU + CPU)";
-        opts[1].textContent = isEs ? "🚀 Solo GPU (CUDA)" : "🚀 GPU Only (CUDA)";
-        opts[2].textContent = isEs ? "🧵 CPU Paralelo (Multi-Hilo)" : "🧵 CPU Parallel (Multi-Thread)";
-      }
-    }
+    syncComputeModeSelectors();
     if ($("lbl-ll-t1-title")) $("lbl-ll-t1-title").textContent = isEs ? "Tu Equipo (trainer_1 · 66-SP)" : "Your Team (trainer_1 · Full 66-SP)";
     if ($("lbl-ll-t2-title")) $("lbl-ll-t2-title").textContent = isEs ? "Equipo Rival (trainer_2)" : "Opponent Team (trainer_2)";
     if ($("btn-ll-t2-mode-full")) $("btn-ll-t2-mode-full").textContent = "Full 66-SP";
@@ -1703,17 +1695,79 @@
       .join("");
   }
 
+  function syncComputeModeSelectors() {
+    const isEs = state.lang === "es";
+    const hasCuda = Boolean(state.app && state.app.device_type === "cuda");
+    const hw = (state.app && state.app.hardware_topology) || {};
+    const recMode = hw.recommended_mode || (hasCuda ? "auto" : "cpu_parallel");
+    const gpuS = hw.gpu_streams || (hasCuda ? 2 : 0);
+    const bo3CpuW = hw.bo3_cpu_parallel_workers || 4;
+    const leadCpuW = hw.lead_cpu_parallel_workers || 8;
+    const bo3HybW = hw.bo3_hybrid_cpu_workers || 4;
+    const leadHybW = hw.lead_hybrid_cpu_workers || 6;
+    const recTag = isEs ? " ★ Recomendado" : " ★ Recommended";
+
+    const setupSel = $("setup-compute-mode");
+    if (setupSel && setupSel.options && setupSel.options.length >= 3) {
+      setupSel.options[0].textContent = hasCuda
+        ? (isEs
+            ? `⚡ Híbrido (${gpuS} GPU Streams + ${bo3HybW} CPU)${recMode === "auto" ? recTag : ""}`
+            : `⚡ Hybrid (${gpuS} GPU Streams + ${bo3HybW} CPU)${recMode === "auto" ? recTag : ""}`)
+        : (isEs ? "⚡ Híbrido (Sin CUDA → CPU)" : "⚡ Hybrid (No CUDA → CPU)");
+      setupSel.options[1].textContent = hasCuda
+        ? (isEs
+            ? `🚀 Solo GPU (${gpuS} CUDA Streams)${recMode === "gpu_only" ? recTag : ""}`
+            : `🚀 GPU Only (${gpuS} CUDA Streams)${recMode === "gpu_only" ? recTag : ""}`)
+        : (isEs ? "🚀 Solo GPU (CUDA no activo)" : "🚀 GPU Only (CUDA not active)");
+      setupSel.options[2].textContent = isEs
+        ? `🧵 CPU Paralelo (${bo3CpuW} Procesos)${recMode === "cpu_parallel" ? recTag : ""}`
+        : `🧵 CPU Parallel (${bo3CpuW} Processes)${recMode === "cpu_parallel" ? recTag : ""}`;
+      if (!setupSel.dataset.autoSetBest) {
+        setupSel.value = recMode;
+        setupSel.dataset.autoSetBest = "1";
+      }
+    }
+
+    const llSel = $("ll-compute-mode");
+    if (llSel && llSel.options && llSel.options.length >= 3) {
+      llSel.options[0].textContent = hasCuda
+        ? (isEs
+            ? `⚡ Híbrido (${gpuS} GPU Streams + ${leadHybW} CPU)${recMode === "auto" ? recTag : ""}`
+            : `⚡ Hybrid (${gpuS} GPU Streams + ${leadHybW} CPU)${recMode === "auto" ? recTag : ""}`)
+        : (isEs ? "⚡ Híbrido (Sin CUDA → CPU)" : "⚡ Hybrid (No CUDA → CPU)");
+      llSel.options[1].textContent = hasCuda
+        ? (isEs
+            ? `🚀 Solo GPU (${gpuS} CUDA Streams)${recMode === "gpu_only" ? recTag : ""}`
+            : `🚀 GPU Only (${gpuS} CUDA Streams)${recMode === "gpu_only" ? recTag : ""}`)
+        : (isEs ? "🚀 Solo GPU (CUDA no activo)" : "🚀 GPU Only (CUDA not active)");
+      llSel.options[2].textContent = isEs
+        ? `🧵 CPU Paralelo (${leadCpuW} Procesos)${recMode === "cpu_parallel" ? recTag : ""}`
+        : `🧵 CPU Parallel (${leadCpuW} Processes)${recMode === "cpu_parallel" ? recTag : ""}`;
+      if (!llSel.dataset.autoSetBest) {
+        llSel.value = recMode;
+        llSel.dataset.autoSetBest = "1";
+      }
+    }
+  }
+
   function renderPipelineLogs() {
     const feed = $("pipeline-log-feed");
     if (!feed) return;
     const pk = profileKey();
     const isEs = state.lang === "es";
+    const hasCuda = Boolean(state.app && state.app.device_type === "cuda");
+    const selMode = ($("setup-compute-mode") && $("setup-compute-mode").value) || "auto";
+    const isCpuOnlyRun = !hasCuda || selMode === "cpu_parallel";
 
     if (state.activeStream && (!state.pipelineLogs || !state.pipelineLogs.length)) {
       feed.innerHTML = `<div class="log-waiting-banner">${
-        isEs
-          ? "⚙️ Trabajadores GPU + CPU ejecutando cada turno una sola vez en paralelo. Esperando a que terminen todos los hilos para reconstruir y mostrar el log completo en orden (Turno 1 → N) con etiqueta de hardware..."
-          : "⚙️ GPU + CPU workers are computing each turn strictly once in parallel. Waiting for all workers to finish before reconstructing and displaying the complete ordered log (Turn 1 → N) with hardware tags..."
+        isCpuOnlyRun
+          ? (isEs
+              ? "⚙️ Procesos CPU Multi-Core ejecutando cada turno una sola vez en paralelo. Esperando a que terminen todos los workers para reconstruir el log ordenado (Turno 1 → N)..."
+              : "⚙️ Multi-Core CPU worker processes are computing each turn strictly once in parallel. Waiting for all workers to finish before reconstructing the ordered log (Turn 1 → N)...")
+          : (isEs
+              ? "⚙️ Trabajadores GPU + CPU ejecutando cada turno una sola vez en paralelo. Esperando a que terminen todos los hilos para reconstruir y mostrar el log completo en orden (Turno 1 → N) con etiqueta de hardware..."
+              : "⚙️ GPU + CPU workers are computing each turn strictly once in parallel. Waiting for all workers to finish before reconstructing and displaying the complete ordered log (Turn 1 → N) with hardware tags...")
       }</div>`;
       return;
     }
@@ -1895,14 +1949,24 @@
       $("pipeline-progress-pill").textContent = `0 / ${state.app.replay.num_turns}`;
     }
 
+    const hasCuda = Boolean(state.app && state.app.device_type === "cuda");
+    const isCpuOnlyRun = !hasCuda || computeMode === "cpu_parallel";
     $("pipeline-done-banner").style.display = "none";
     $("pipeline-sub-meta").textContent = `${state.app.replay.trainer_1_name} vs. ${state.app.replay.trainer_2_name} · K=${numMc}${twoPly ? " · 2-Ply" : ""} · ${computeMode.toUpperCase()} · ${state.app.device}`;
     $("live-status-dot").className = "status-dot running";
     $("live-tile-badge").textContent = isResume ? `T${startTurn}` : "RUNNING";
     $("live-tile-text").textContent =
       state.lang === "es"
-        ? (isResume ? `Reanudando turnos pendientes desde T${startTurn}...` : "Planificando turnos únicos en balanceador híbrido GPU+CPU...")
-        : (isResume ? `Resuming remaining turns from T${startTurn}...` : "Scheduling unique turns across Hybrid GPU+CPU balancer...");
+        ? (isResume
+            ? `Reanudando turnos pendientes desde T${startTurn}...`
+            : isCpuOnlyRun
+              ? "Planificando turnos únicos en pool CPU Multi-Proceso..."
+              : "Planificando turnos únicos en balanceador híbrido GPU+CPU...")
+        : (isResume
+            ? `Resuming remaining turns from T${startTurn}...`
+            : isCpuOnlyRun
+              ? "Scheduling unique turns across Multi-Process CPU pool..."
+              : "Scheduling unique turns across Hybrid GPU+CPU balancer...");
     renderLiveWorkersStrip([]);
 
     const skipParam = alreadyDoneTurns.length ? `&skip_turns=${encodeURIComponent(alreadyDoneTurns.join(","))}` : "";
@@ -1949,12 +2013,15 @@
       try {
         const plan = JSON.parse(ev.data || "{}");
         const isEs = state.lang === "es";
-        const gpuTxt = plan.use_gpu ? `GPU (${plan.gpu_device_name || state.app.device})` : "0 GPU";
-        const cpuTxt = `${plan.cpu_workers || 0} CPU`;
+        const hwTxt = plan.use_gpu
+          ? (plan.cpu_workers > 0
+              ? `GPU (${plan.gpu_device_name || state.app.device}) + ${plan.cpu_workers} CPU`
+              : `GPU (${plan.gpu_device_name || state.app.device})`)
+          : `${plan.cpu_workers || 1} CPU Workers (${plan.threads_per_cpu_worker || 1}T/worker)`;
         $("live-tile-badge").textContent = String(plan.mode || "auto").toUpperCase();
         $("live-tile-text").textContent = isEs
-          ? `Balanceador listo: ${gpuTxt} + ${cpuTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} turnos únicos (esperando fin para reconstruir log ordenado)`
-          : `Balancer ready: ${gpuTxt} + ${cpuTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} unique turns (waiting for join to reconstruct ordered log)`;
+          ? `Balanceador listo: ${hwTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} turnos únicos (esperando fin para reconstruir log ordenado)`
+          : `Balancer ready: ${hwTxt} · ${plan.total_scheduled_turns || (plan.turns || []).length} unique turns (waiting for join to reconstruct ordered log)`;
       } catch (_) {}
     });
 
@@ -2044,7 +2111,9 @@
       $("live-tile-badge").textContent = "DONE";
       const sStats = payload.scheduler_stats;
       const schedTxt = sStats
-        ? ` (${sStats.gpu_turns} GPU · ${sStats.cpu_turns} CPU · ${sStats.elapsed_s}s)`
+        ? (sStats.has_gpu && sStats.gpu_turns > 0
+            ? ` (${sStats.gpu_turns} GPU · ${sStats.cpu_turns} CPU · ${sStats.elapsed_s}s)`
+            : ` (${sStats.cpu_turns} CPU [${sStats.cpu_workers || 1}W] · ${sStats.elapsed_s}s)`)
         : "";
       $("live-tile-text").textContent =
         (state.lang === "es"
@@ -6215,9 +6284,17 @@
     const res = await fetch("/api/state");
     state.app = await res.json();
     const prefix = state.app.device_type === "cuda" ? "CUDA" : "CPU";
-    $("hw-badge").textContent = `${prefix}: ${state.app.device}`;
+    const hw = state.app.hardware_topology || {};
+    const hwSuffix =
+      hw.physical_cores && hw.logical_threads
+        ? ` · ${hw.physical_cores}C/${hw.logical_threads}T`
+        : "";
+    $("hw-badge").textContent = `${prefix}: ${state.app.device}${hwSuffix}`;
+    if (hw.available_ram_mb) {
+      $("hw-badge").title = `Cores: ${hw.physical_cores}C/${hw.logical_threads}T · RAM Libre: ${(hw.available_ram_mb / 1024).toFixed(1)} GB / ${(hw.total_ram_mb / 1024).toFixed(1)} GB · Max CPU Workers: ${hw.lead_cpu_parallel_workers}`;
+    }
     if ($("home-hw-pill")) {
-      $("home-hw-pill").textContent = `${prefix} · ${state.app.device}`;
+      $("home-hw-pill").textContent = `${prefix} · ${state.app.device}${hwSuffix}`;
     }
     if ($("home-db-pill")) {
       const nRosters = (state.app.rosters || []).length;

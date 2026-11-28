@@ -46,6 +46,7 @@ from engine.db_registry import get_registry
 from engine.solver.hybrid_scheduler import (
     HybridTurnScheduler,
     TurnWorkItem,
+    resolve_gpu_superbatch_bounds,
     resolve_worker_topology,
 )
 from engine.solver.lead_matchup_solver import LeadMatchupSolver
@@ -468,18 +469,58 @@ def test_split_duckdb_own_vs_rival_migration_search_api_and_hub_cta(tmp_path: Pa
 def test_hybrid_scheduler_dual_end_stealing_cancellation_and_thread_safe_duckdb(tmp_path: Path) -> None:
     """Verify HybridTurnScheduler dual-end cost routing, critical-path makespan guard,
     instant cancellation, thread-safe DuckDB registry, and real parallel replay execution."""
-    # 1. Topology resolution invariants (Multi-Core CPU scales to 2..3 parallel CPU workers alongside CUDA!)
-    topo_hyb_10 = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=10, cpu_count=16)
-    assert topo_hyb_10["use_gpu"] is True and topo_hyb_10["cpu_workers"] == 2
+    # 1. Topology resolution invariants (2 Concurrent GPU CUDA Streams + Hardware-Adaptive Core & RAM Scaling!)
+    topo_hyb_10 = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=10, cpu_count=16, available_ram_mb=12000)
+    assert topo_hyb_10["use_gpu"] is True and topo_hyb_10["gpu_workers"] == 2 and topo_hyb_10["cpu_workers"] == 4
 
-    topo_hyb_225 = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=225, cpu_count=16)
-    assert topo_hyb_225["use_gpu"] is True and topo_hyb_225["cpu_workers"] == 3
+    topo_hyb_225 = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=225, cpu_count=16, available_ram_mb=12000)
+    assert topo_hyb_225["use_gpu"] is True and topo_hyb_225["gpu_workers"] == 2 and topo_hyb_225["cpu_workers"] == 6
 
-    topo_cpu = resolve_worker_topology(mode="cpu_parallel", has_cuda=True, total_turns=10, cpu_count=16)
-    assert topo_cpu["use_gpu"] is False and topo_cpu["cpu_workers"] == 4
+    topo_hyb_32t = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=225, cpu_count=32, available_ram_mb=32000)
+    assert topo_hyb_32t["use_gpu"] is True and topo_hyb_32t["gpu_workers"] == 2 and topo_hyb_32t["cpu_workers"] == 10
+
+    topo_cpu_10 = resolve_worker_topology(mode="cpu_parallel", has_cuda=True, total_turns=10, cpu_count=16, available_ram_mb=12000)
+    assert topo_cpu_10["use_gpu"] is False and topo_cpu_10["gpu_workers"] == 0 and topo_cpu_10["cpu_workers"] == 4
+
+    topo_cpu_225 = resolve_worker_topology(mode="cpu_parallel", has_cuda=False, total_turns=225, cpu_count=16, available_ram_mb=12000)
+    assert topo_cpu_225["use_gpu"] is False and topo_cpu_225["gpu_workers"] == 0 and topo_cpu_225["cpu_workers"] == 8
+
+    # Low-RAM safety guard: ~3.5 GB available RAM minus 2.0 GB OS reserve = 1.5 GB -> caps at 2 workers (~650 MB/worker)
+    topo_low_ram = resolve_worker_topology(mode="cpu_parallel", has_cuda=False, total_turns=225, cpu_count=16, available_ram_mb=3500)
+    assert topo_low_ram["use_gpu"] is False and topo_low_ram["cpu_workers"] == 2 and topo_low_ram["recommended_mode"] == "cpu_parallel"
+
+    # Tier-2 Entry-level GPU (<4.5 GB VRAM, e.g. 4 GB GTX 1650 / RTX 3050) -> auto-throttles to 1 CUDA stream to protect VRAM
+    topo_tier2_gpu = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=225, cpu_count=12, available_ram_mb=8000, gpu_vram_mb=4096, gpu_sm_count=14)
+    assert topo_tier2_gpu["use_gpu"] is True and topo_tier2_gpu["gpu_workers"] == 1 and topo_tier2_gpu["hardware_tier"] == "tier2_hybrid_singlestream_gpu_cpu"
+
+    # Tier-3 CUDA GPU on low-RAM host (<2.8 GB free RAM) -> auto-protects host from swapping by selecting gpu_only (0 CPU workers)
+    topo_tier3_protect = resolve_worker_topology(mode="auto", has_cuda=True, total_turns=225, cpu_count=8, available_ram_mb=2400, gpu_vram_mb=6144, gpu_sm_count=30)
+    assert topo_tier3_protect["mode"] == "gpu_only" and topo_tier3_protect["recommended_mode"] == "gpu_only" and topo_tier3_protect["cpu_workers"] == 0
 
     topo_gpu = resolve_worker_topology(mode="gpu_only", has_cuda=True, total_turns=10, cpu_count=16)
-    assert topo_gpu["use_gpu"] is True and topo_gpu["cpu_workers"] == 0
+    assert topo_gpu["use_gpu"] is True and topo_gpu["gpu_workers"] == 2 and topo_gpu["cpu_workers"] == 0
+
+    # 1b. Hardware-adaptive GPU super-batch bounds across VRAM tiers (2 GB .. 24 GB) & K presets (16, 32, 48)
+    sb_16gb_fast = resolve_gpu_superbatch_bounds(num_mc_samples=16, free_vram_mb=12288, gpu_sm_count=64)
+    assert sb_16gb_fast["gpu_superbatch_cells"] == 10 and sb_16gb_fast["gpu_thread_budget"] == 220000
+
+    sb_16gb_bal = resolve_gpu_superbatch_bounds(num_mc_samples=32, free_vram_mb=12288, gpu_sm_count=64)
+    assert sb_16gb_bal["gpu_superbatch_cells"] == 5
+
+    sb_8gb_bal = resolve_gpu_superbatch_bounds(num_mc_samples=32, free_vram_mb=6800, gpu_sm_count=46)
+    assert sb_8gb_bal["gpu_superbatch_cells"] == 3 and sb_8gb_bal["gpu_thread_budget"] == 135000
+
+    sb_6gb_bal = resolve_gpu_superbatch_bounds(num_mc_samples=32, free_vram_mb=3800, gpu_sm_count=30)
+    assert sb_6gb_bal["gpu_superbatch_cells"] == 2 and sb_6gb_bal["gpu_thread_budget"] == 90000
+
+    sb_6gb_fast = resolve_gpu_superbatch_bounds(num_mc_samples=16, free_vram_mb=3800, gpu_sm_count=30)
+    assert sb_6gb_fast["gpu_superbatch_cells"] == 4
+
+    sb_4gb_bal = resolve_gpu_superbatch_bounds(num_mc_samples=32, free_vram_mb=2200, gpu_sm_count=14)
+    assert sb_4gb_bal["gpu_superbatch_cells"] == 1 and sb_4gb_bal["gpu_thread_budget"] == 45000
+
+    sb_2gb_bal = resolve_gpu_superbatch_bounds(num_mc_samples=32, free_vram_mb=1200, gpu_sm_count=8)
+    assert sb_2gb_bal["gpu_superbatch_cells"] == 1 and sb_2gb_bal["gpu_thread_budget"] == 22500
 
     # 2. Dual-end stealing order + makespan guard prevents CPU from stealing the heaviest turn
     items = [
@@ -689,9 +730,13 @@ def test_barrier_ordered_log_reconstruction_single_execution_and_hardware_tags(t
     # 2. Post-join ordered log reconstruction guarantees contiguous ascending turns (0, 1, 2, 3) with hardware tags
     from apps.replay_coach.gpu_coach_engine import GPUReplayCoachEngine
     ordered_res = [res_map[t] for t in sorted(res_map.keys())]
-    reconstructed = GPUReplayCoachEngine.reconstruct_ordered_match_logs(ordered_res, sched_stats=st_stats, gpu_device_name="Mock GPU")
+    reconstructed = GPUReplayCoachEngine.reconstruct_ordered_match_logs(ordered_res, sched_stats=st_stats, gpu_device_name="CPU (PyTorch)")
     assert reconstructed[0]["phase"] == "SCHEDULER"
     assert reconstructed[0]["compute_worker"] == "BALANCER"
+    # CPU-only schedule MUST NEVER claim GPU turns in its summary message or hardware_device tag!
+    assert "GPU" not in reconstructed[0]["hardware_device"]
+    assert "GPU" not in reconstructed[0]["messages"]["es_vgc"]
+    assert "GPU" not in reconstructed[0]["messages"]["en_vgc"]
     turn_seq = [int(e["turn"]) for e in reconstructed if int(e["turn"]) > 0]
     assert turn_seq == sorted(turn_seq), f"Reconstructed log turns out of order: {turn_seq}"
     # Verify turn transitions occur strictly once per turn (no repeated turn headers!)
@@ -816,13 +861,15 @@ def test_barrier_ordered_log_reconstruction_single_execution_and_hardware_tags(t
         assert len(set(hyb_seen)) == 36, "Duplicate Hybrid Lead Lab cell computed!"
         assert hyb_res.compute_mode in ("auto", "hybrid")
         assert sum(hyb_res.worker_cell_counts.values()) == 36
-        assert hyb_res.worker_cell_counts.get("GPU", 0) >= 1, f"Expected GPU cells in Hybrid Lead Lab: {hyb_res.worker_cell_counts}"
+        assert hyb_res.worker_cell_counts.get("GPU", 0) >= 1, f"Expected GPU Stream 1 cells in Hybrid Lead Lab: {hyb_res.worker_cell_counts}"
+        assert hyb_res.worker_cell_counts.get("GPU-S2", 0) >= 1, f"Expected GPU Stream 2 cells in Hybrid Lead Lab: {hyb_res.worker_cell_counts}"
         cpu_total_stolen = sum(v for k, v in hyb_res.worker_cell_counts.items() if k.startswith("CPU-W"))
         active_cpu_workers = [k for k, v in hyb_res.worker_cell_counts.items() if k.startswith("CPU-W") and v >= 1]
         assert cpu_total_stolen >= 2, f"Expected multi-CPU stolen cells in Hybrid Lead Lab: {hyb_res.worker_cell_counts}"
         assert len(active_cpu_workers) >= 2, f"Expected >=2 concurrent CPU workers stealing cells: {hyb_res.worker_cell_counts}"
-        # GPU pops (0,0) from the left; CPU workers steal (5,5), (5,4), ... from the right!
+        # GPU Stream 1 pops (0,0) and GPU Stream 2 pops (0,1) from the left; CPU workers steal (5,5), (5,4), ... from the right!
         assert hyb_res.heatmap_cells[0][0]["compute_worker"] == "GPU"
+        assert hyb_res.heatmap_cells[0][1]["compute_worker"] == "GPU-S2"
         assert str(hyb_res.heatmap_cells[5][5]["compute_worker"]).startswith("CPU-W")
 
     # 5. Showdown replay player loads local /vendor/replay-embed.js primary with BattleScene/BattleMoveAnims readiness poller & pendingMessages queue
