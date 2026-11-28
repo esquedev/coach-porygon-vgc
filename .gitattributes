@@ -1,0 +1,6 @@
+# Launchers MUST keep platform-correct line endings in the working tree AND in `git archive`
+# release bundles: a CRLF .sh fails with "bad interpreter", an LF .bat can break labels/CALL.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.sh  text eol=lf
+.githooks/* text eol=lf

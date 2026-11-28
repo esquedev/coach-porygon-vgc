@@ -37,6 +37,10 @@ from engine.prep_tools import (
     build_damage_matrix_html,
     build_speed_tiers_html,
 )
+from engine.solver.hybrid_scheduler import (
+    probe_hardware_resources,
+    resolve_worker_topology,
+)
 from engine.solver.lead_matchup_solver import (
     LeadMatchupConfig,
     LeadMatchupSolver,
@@ -1195,11 +1199,40 @@ class ReplayCoachAppState:
 
     def get_state_summary_unlocked(self) -> Dict[str, Any]:
         """Serialize current replay metadata, matched rosters, and compute hardware info."""
+        import torch
+
         rep = self.replay
+        has_cuda = self.gpu_engine.device_type == "cuda"
+        hw_probe = probe_hardware_resources()
+        topo_bo3 = resolve_worker_topology(mode="auto", has_cuda=has_cuda, total_turns=10)
+        topo_lead = resolve_worker_topology(mode="auto", has_cuda=has_cuda, total_turns=225)
+        topo_cpu_bo3 = resolve_worker_topology(mode="cpu_parallel", has_cuda=has_cuda, total_turns=10)
+        topo_cpu_lead = resolve_worker_topology(mode="cpu_parallel", has_cuda=has_cuda, total_turns=225)
         return {
             "device": self.gpu_engine.device_name,
             "device_type": self.gpu_engine.device_type,
-            "recommended_k": 128 if self.gpu_engine.device_type == "cuda" else 64,
+            "recommended_k": 128 if has_cuda else 64,
+            "hardware_topology": {
+                "cpu_model": str(hw_probe.get("cpu_model") or "Multi-Core CPU"),
+                "logical_threads": int(hw_probe["logical_threads"]),
+                "physical_cores": int(hw_probe["physical_cores"]),
+                "total_ram_mb": int(hw_probe["total_ram_mb"]),
+                "available_ram_mb": int(hw_probe["available_ram_mb"]),
+                "ram_safe_max_workers": int(hw_probe["ram_safe_max_workers"]),
+                "cuda_available": bool(has_cuda),
+                "torch_cuda_version": getattr(torch.version, "cuda", None),
+                "gpu_name": str(hw_probe.get("gpu_name") or (self.gpu_engine.device_name if has_cuda else "")),
+                "gpu_vram_mb": int(hw_probe.get("gpu_vram_mb") or 0),
+                "gpu_sm_count": int(hw_probe.get("gpu_sm_count") or 0),
+                "gpu_compute_capability": str(hw_probe.get("gpu_compute_capability") or ""),
+                "recommended_mode": str(topo_lead.get("recommended_mode") or ("auto" if has_cuda else "cpu_parallel")),
+                "hardware_tier": str(topo_lead.get("hardware_tier") or ""),
+                "gpu_streams": int(topo_lead.get("gpu_workers", 0)),
+                "bo3_hybrid_cpu_workers": int(topo_bo3["cpu_workers"]),
+                "lead_hybrid_cpu_workers": int(topo_lead["cpu_workers"]),
+                "bo3_cpu_parallel_workers": int(topo_cpu_bo3["cpu_workers"]),
+                "lead_cpu_parallel_workers": int(topo_cpu_lead["cpu_workers"]),
+            },
             "has_vendor_showdown": (VENDOR_DIR / "replay-embed.js").exists(),
             "rosters": self.ots_db.list_rosters(),
             "active_t1_roster_id": self.t1_roster_id,
@@ -2548,7 +2581,8 @@ def make_handler(app_state: ReplayCoachAppState):
                 def _on_log(log_entry: Dict[str, Any]) -> None:
                     # Buffer full per-turn logs inside each worker's result; stream ONLY compact
                     # non-interleaved hardware status updates while parallel workers run.
-                    w_lbl = str(log_entry.get("compute_worker") or "GPU")
+                    fallback_w = "GPU" if app_state.gpu_engine.device_type == "cuda" else "CPU"
+                    w_lbl = str(log_entry.get("compute_worker") or fallback_w)
                     hw_dev = str(log_entry.get("hardware_device") or app_state.gpu_engine.device_name)
                     t_num = int(log_entry.get("turn") or 0)
                     ph = str(log_entry.get("phase") or "")
@@ -2570,7 +2604,8 @@ def make_handler(app_state: ReplayCoachAppState):
 
                 def _on_turn(res: Dict[str, Any]) -> None:
                     t_num = int(res.get("turn") or 0)
-                    w_lbl = str(res.get("compute_worker") or "GPU")
+                    fallback_w = "GPU" if app_state.gpu_engine.device_type == "cuda" else "CPU"
+                    w_lbl = str(res.get("compute_worker") or fallback_w)
                     hw_dev = str(res.get("hardware_device") or res.get("device") or w_lbl)
                     with status_lock:
                         completed_by_turn[t_num] = res

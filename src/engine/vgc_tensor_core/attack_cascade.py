@@ -524,12 +524,19 @@ class _RosterFeatureFlags:
 
 
 def _build_roster_feature_flags(P: "torch.Tensor") -> _RosterFeatureFlags:
-    """Inspect the 8 roster slots of `P[0, 0]` once on CPU to build static presence flags."""
-    p0 = P[0, 0].detach().cpu().numpy()  # [8, MON_DIM]
-    ab_set = set(np.round(p0[:, MonIdx.ABILITY_ID]).astype(int).tolist()) | set(
-        np.round(p0[:, MonIdx.MEGA_ABILITY_ID]).astype(int).tolist()
-    )
-    it_set = set(np.round(p0[:, MonIdx.ITEM_ID]).astype(int).tolist())
+    """Inspect roster slots across the batch tensor `P` once on CPU to build static presence flags."""
+    if P.shape[0] <= 1 and P.shape[1] <= 1:
+        p0 = P[0, 0].detach().cpu().numpy()  # [8, MON_DIM]
+        ab_set = set(np.round(p0[:, MonIdx.ABILITY_ID]).astype(int).tolist()) | set(
+            np.round(p0[:, MonIdx.MEGA_ABILITY_ID]).astype(int).tolist()
+        )
+        it_set = set(np.round(p0[:, MonIdx.ITEM_ID]).astype(int).tolist())
+    else:
+        p_k0 = P[:, :, 0, :, :] if P.ndim == 5 else P
+        ab_cols = p_k0[..., [MonIdx.ABILITY_ID, MonIdx.MEGA_ABILITY_ID]].detach().cpu().numpy()
+        it_col = p_k0[..., MonIdx.ITEM_ID].detach().cpu().numpy()
+        ab_set = set(np.unique(np.round(ab_cols).astype(np.int32)).tolist())
+        it_set = set(np.unique(np.round(it_col).astype(np.int32)).tolist())
     resist_berry_ids = {int(k) for k in RESIST_BERRY_TO_TYPE_IDX.keys()}
 
     return _RosterFeatureFlags(

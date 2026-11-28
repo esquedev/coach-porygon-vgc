@@ -15,10 +15,6 @@ import threading
 
 import pytest
 
-from apps.replay_coach.launcher_entry import (
-    find_system_python,
-    validate_bind_host_port,
-)
 from apps.replay_coach.protocol_parser import parse_showdown_replay
 from apps.replay_coach.server import (
     MAX_JSON_BODY_BYTES,
@@ -145,34 +141,36 @@ def test_showdown_player_escapes_case_insensitive_script_breakout(tmp_path: Path
     assert "alert('xss')" not in rendered.split('class="battle-log-data">')[1].split("</script>")[1]
 
 
-def test_launcher_host_port_validation_and_cwd_plant_defense(tmp_path: Path, monkeypatch) -> None:
-    """Launcher rejects shell-injection hosts/invalid ports and ignores planted python in repo root."""
-    assert validate_bind_host_port("127.0.0.1", 8765) == ("127.0.0.1", 8765)
-    for bad_host in ("127.0.0.1 & calc.exe", "127.0.0.1';import os;#", "http://evil", ""):
-        with pytest.raises(ValueError):
-            validate_bind_host_port(bad_host, 8765)
-    for bad_port in (0, -1, 70000):
-        with pytest.raises(ValueError):
-            validate_bind_host_port("127.0.0.1", bad_port)
-
-    # Planted python binary inside fake repo_root must never be selected
-    planted = tmp_path / "python3"
-    planted.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-    planted.chmod(0o755)
-    monkeypatch.setattr("apps.replay_coach.launcher_entry.shutil.which", lambda _name: str(planted))
-    assert find_system_python(repo_root=tmp_path) is None
+def test_launchers_have_no_exe_and_pin_safe_line_endings() -> None:
+    """Release ships ONLY .bat/.sh launchers: no .exe tooling, CRLF/LF pinned, binary-planting guard kept."""
+    attrs = (REPO_ROOT / ".gitattributes").read_text(encoding="utf-8")
+    assert "*.bat text eol=crlf" in attrs and "*.sh  text eol=lf" in attrs
+    for stale in (
+        REPO_ROOT / "apps" / "replay_coach" / "launcher_entry.py",
+        REPO_ROOT / "scripts" / "build_windows_launcher.py",
+        REPO_ROOT / ".github" / "workflows" / "build-windows-launcher.yml",
+    ):
+        assert not stale.exists(), f"Stale .exe tooling must stay deleted: {stale}"
+    bat = (REPO_ROOT / "start_replay_coach.bat").read_text(encoding="utf-8")
+    assert "NoDefaultCurrentDirectoryInExePath=1" in bat
+    assert "where $PATH:nvidia-smi" in bat  # never resolve nvidia-smi from the current folder
+    assert "--no-browser" in bat and "chcp 65001" in bat and "PYTHONUTF8" in bat
+    sh = (REPO_ROOT / "start_replay_coach.sh").read_text(encoding="utf-8")
+    assert "PIP_REQUIRE_VIRTUALENV=1" in sh and "PYTHONUTF8=1" in sh
+    assert "Invalid --port" in sh and "Invalid --host" in sh
 
 
 def test_github_actions_supply_chain_hardening() -> None:
-    """Verify least-privilege permissions, pinned PyInstaller, SHA256SUMS, SLSA attestation & zero tag injection."""
+    """Verify least-privilege permissions, SHA256SUMS, SLSA attestation, zero .exe & zero tag injection."""
     ci_txt = (REPO_ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
-    exe_txt = (REPO_ROOT / ".github" / "workflows" / "build-windows-launcher.yml").read_text(encoding="utf-8")
+    rel_txt = (REPO_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
 
     assert re.search(r"^permissions:\s*\n\s+contents:\s*read", ci_txt, re.MULTILINE)
-    assert re.search(r"^permissions:\s*\n\s+contents:\s*read", exe_txt, re.MULTILINE)
-    assert "pyinstaller==" in exe_txt
-    assert "SHA256SUMS.txt" in exe_txt
-    assert "actions/attest-build-provenance@" in exe_txt
-    # Ensure github.ref_name is NEVER interpolated directly inside shell/pwsh scripts (only via env:)
-    assert '$tag = "${{ github.ref_name }}"' not in exe_txt
-    assert "RELEASE_TAG: ${{ github.ref_name }}" in exe_txt
+    assert re.search(r"^permissions:\s*\n\s+contents:\s*read", rel_txt, re.MULTILINE)
+    assert "pyinstaller" not in rel_txt.lower() and "windows-latest" not in rel_txt
+    assert "SHA256SUMS.txt" in rel_txt
+    assert "actions/attest-build-provenance@" in rel_txt
+    assert "git merge-base --is-ancestor HEAD origin/main" in rel_txt
+    # Ensure github.ref_name is NEVER interpolated directly inside shell scripts (only via env:)
+    assert '"${{ github.ref_name }}"' not in rel_txt
+    assert "RELEASE_TAG: ${{ github.ref_name }}" in rel_txt

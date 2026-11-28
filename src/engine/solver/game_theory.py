@@ -115,13 +115,32 @@ def decode_slot_choice(
         raise ValueError(f"Invalid trainer_id: {trainer_id!r}. Must be 'trainer_1' or 'trainer_2'.")
 
     species_list = compiled_state.slot_species
-    actor_name = (
+    raw_actor_name = (
         species_list[actor_slot]
         if len(species_list) > actor_slot and species_list[actor_slot]
         else f"Slot{actor_slot}"
     )
 
     roster_np = _to_numpy(compiled_state.roster_tensor)
+    already_mega = bool(
+        roster_np.ndim >= 2
+        and roster_np.shape[0] > actor_slot
+        and roster_np.shape[1] > MonIdx.IS_MEGA
+        and float(roster_np[actor_slot, MonIdx.IS_MEGA]) > 0.5
+    )
+    will_mega = 12 <= c < 24
+    # If the Pokémon has not Mega Evolved yet and this action does NOT click [MEGA],
+    # display its base species name (e.g. "Charizard" instead of "Charizard-Mega-Y")
+    # so non-Mega plays in Rain/Base form are never confused with Mega Evolution!
+    if not already_mega and not will_mega:
+        actor_name = raw_actor_name
+        for mega_sfx in ("-Mega-X", "-Mega-Y", "-Mega-Z", "-Mega"):
+            if actor_name.endswith(mega_sfx):
+                actor_name = actor_name[: -len(mega_sfx)]
+                break
+    else:
+        actor_name = raw_actor_name
+
     if (
         roster_np.ndim >= 2
         and roster_np.shape[0] > actor_slot

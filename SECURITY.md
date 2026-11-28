@@ -1,32 +1,33 @@
 # Security Policy — Coach Porygon VGC
 
-**Coach Porygon VGC** is a strictly local, non-commercial, open-source Pokémon VGC analytical suite. Protecting users who run our Windows `.exe` launcher and local web Studio is a top priority.
+**Coach Porygon VGC** is a strictly local, non-commercial, open-source Pokémon VGC analytical suite. Protecting users who run our launchers and local web Studio is a top priority.
 
 ---
 
-## 1. Verifying Official Windows Releases (`CoachPorygonStudio.exe`)
+## 1. Verifying Official Releases (No `.exe` — Plain-Text Launchers Only)
 
-Every official GitHub Release of `CoachPorygonStudio.exe` and `CoachPorygonVGC-windows-x64.zip` is:
-- Compiled exclusively on GitHub's hosted `windows-latest` runners via [`.github/workflows/build-windows-launcher.yml`](.github/workflows/build-windows-launcher.yml) **only after** `origin/main` ancestry + the full test & anti-hallucination suite pass.
+We deliberately **do not ship compiled binaries**. Every official release contains only auditable source plus the plain-text launchers **[`start_replay_coach.bat`](start_replay_coach.bat)** (Windows) and **[`start_replay_coach.sh`](start_replay_coach.sh)** (Linux/macOS), so there is nothing opaque for SmartScreen / antivirus to flag and nothing to trust blindly.
+
+Every GitHub Release (`CoachPorygonVGC-windows.zip`, `CoachPorygonVGC-linux-macos.tar.gz`) is:
+- Built exclusively by [`.github/workflows/release.yml`](.github/workflows/release.yml) **only after** `origin/main` ancestry + the full test & anti-hallucination suite pass, with CI asserting the bundles contain **zero `.exe`**, a CRLF `.bat`, and an executable LF `.sh`.
 - Published alongside a cryptographic **`SHA256SUMS.txt`** manifest.
 - Signed with **GitHub SLSA Build Provenance Attestations** (`actions/attest-build-provenance`).
 
-### Verify SHA-256 Checksum (Windows PowerShell)
+### Verify SHA-256 Checksum
 ```powershell
-Get-FileHash .\CoachPorygonStudio.exe -Algorithm SHA256
+# Windows PowerShell
+Get-FileHash .\CoachPorygonVGC-windows.zip -Algorithm SHA256
 Get-Content .\SHA256SUMS.txt
 ```
-Confirm the hex hash matches `SHA256SUMS.txt` byte-for-byte.
+```bash
+# Linux / macOS
+sha256sum -c --ignore-missing SHA256SUMS.txt   # (macOS: shasum -a 256 -c SHA256SUMS.txt)
+```
 
 ### Verify GitHub Build Provenance (Optional, via GitHub CLI)
 ```bash
-gh attestation verify CoachPorygonStudio.exe --repo esquedev/coach-porygon-vgc
+gh attestation verify CoachPorygonVGC-windows.zip --repo esquedev/coach-porygon-vgc
 ```
-
-### Why Does Windows SmartScreen Sometimes Warn About `.exe` Files?
-Because **Coach Porygon VGC is a 100% fan-made, non-commercial project**, we do not purchase paid EV Code Signing certificates. Unsigned PyInstaller `.exe` wrappers are commonly flagged by Windows SmartScreen as "Unknown publisher."
-- You can verify the `.exe` using the SHA-256 / GitHub attestation checks above, **or**
-- Skip the `.exe` entirely and run the plain-text, human-auditable launcher **[`start_replay_coach.bat`](start_replay_coach.bat)** (Windows) or **[`start_replay_coach.sh`](start_replay_coach.sh)** (Linux/macOS) directly!
 
 ---
 
@@ -36,14 +37,14 @@ Because **Coach Porygon VGC is a 100% fan-made, non-commercial project**, we do 
 - **Localhost CSRF Protection:** State-changing `POST` endpoints reject cross-site `Sec-Fetch-Site: cross-site`, untrusted `Origin`, and untrusted `Referer` headers (`403 Forbidden`).
 - **Path Traversal & XSS Controls:** Static asset serving uses strict `Path.is_relative_to()` containment (rejecting null bytes, backslashes, and symlink escapes). Embedded Showdown replay logs apply case-insensitive `</script` and HTML comment escaping, and all responses emit `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: no-referrer`, and `Permissions-Policy`.
 - **Memory DoS Cap:** JSON POST request bodies are hard-capped at `10 MiB` (`413 Payload Too Large`).
-- **Windows Binary-Planting & System-Python Isolation:** `apps/replay_coach/launcher_entry.py` sets `NoDefaultCurrentDirectoryInExePath=1` on Windows, refuses to execute loose `python.exe`/`nvidia-smi.exe` files placed inside the repository folder, enforces `PIP_REQUIRE_VIRTUALENV=1`, and never touches system-wide Python packages.
+- **Launcher Binary-Planting & System-Python Isolation:** `start_replay_coach.bat` sets `NoDefaultCurrentDirectoryInExePath=1`, resolves `nvidia-smi` only from system paths / `PATH` (never the current folder), and both launchers enforce `PIP_REQUIRE_VIRTUALENV=1`, validate `--host`/`--port` (`.sh`), and never touch system-wide Python packages.
 - **Zero-SQLi Persistence:** All user-facing DuckDB queries in `apps/replay_coach/ots_db.py` use strictly bound `?` parameters.
 
 ---
 
 ## 3. Reporting a Vulnerability
 
-If you discover a security bug (in the launcher, HTTP server, replay parser, DuckDB persistence, or GitHub Actions workflows), please **do not open a public exploit issue**. Instead, email **`esquedevil94@gmail.com`** with:
+If you discover a security bug (in the launchers, HTTP server, replay parser, DuckDB persistence, or GitHub Actions workflows), please **do not open a public exploit issue**. Instead, email **`esquedevil94@gmail.com`** with:
 - A concise description and reproduction steps.
 - Affected file(s) and commit hash or release tag.
 

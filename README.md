@@ -33,30 +33,22 @@ Coach Porygon VGC boots into a unified **7-Card Cyber-Tactical Command Hub** fea
    ```
 3. Launch with **automatic isolated `.venv` creation & activation** (never touches system Python packages):
    - **Windows (Batch):** Double-click **[`start_replay_coach.bat`](start_replay_coach.bat)** (or run `.\start_replay_coach.bat`).
-   - **Linux / macOS (Bash):** Run **`./start_replay_coach.sh`**.
-   - **Windows Native Launcher (`.exe`):** Build or download the lightweight **`CoachPorygonStudio.exe`** (`~8 MB`, see Option B below) and double-click it inside the repo folder.
+   - **Linux / macOS (Bash):** Run **`./start_replay_coach.sh`** (or `bash start_replay_coach.sh` if the executable bit was lost).
 
 What every launcher does automatically:
-- Creates and activates an isolated project **`.venv`** on first run (never pollutes system-wide Python).
-- Checks a SHA-256 stamp of `requirements.txt` (`.venv/.requirements.sha256`) plus full core imports (`torch`, `numpy`, `scipy`, `duckdb`, `py_mini_racer`) so dependency updates sync automatically while subsequent launches boot in ~2s.
-- Auto-detects NVIDIA GPUs (`nvidia-smi`) to install **CUDA 12.4 PyTorch**, or **CPU / Apple Silicon PyTorch** otherwise.
-- Sets `PYTHONPATH` (`src;.` / `src:.`), starts Replay Coach Studio at **`http://127.0.0.1:8765/`**, and opens your browser automatically.
+- Finds a **64-bit Python 3.10+** (prefers 3.12 / 3.11), then creates — or transparently **recreates if broken/outdated** — an isolated project **`.venv`** (never pollutes system-wide Python).
+- Checks a SHA-256 stamp of `requirements.txt` (`.venv/.requirements.sha256`) plus full core imports (`torch`, `numpy`, `scipy`, `duckdb`, `py_mini_racer`) so dependency updates sync automatically while subsequent launches boot in ~2s. All `pip` calls retry on flaky networks.
+- Auto-detects a **working** NVIDIA driver (`nvidia-smi -L`, incl. WSL2) and installs the first matching **CUDA PyTorch** wheel (`cu128` → `cu126` → `cu124` → `cu121`), falling back to CPU PyTorch; unsupported GPUs are remembered (`.venv/.cuda_attempt`) so torch is never reinstalled on every launch.
+- Forces UTF-8, sets `PYTHONPATH`, starts Replay Coach Studio at **`http://127.0.0.1:8765/`**, and opens your browser (`--no-browser` or `COACH_NO_BROWSER=1` to skip).
 
 *(Pass server flags straight through any launcher, e.g. `./start_replay_coach.sh --device cpu --port 9000` or `.\start_replay_coach.bat --port 9000`.)*
 
-### Option B — Windows No-Git 1-Click Release Bundle (`CoachPorygonStudio.exe`)
-For Windows users who prefer not to use `git`, download **`CoachPorygonVGC-windows-x64.zip`** from the **[GitHub Releases](https://github.com/esquedev/coach-porygon-vgc/releases/latest)** page, extract it, and double-click **`CoachPorygonStudio.exe`** (`~8 MB`, compiled automatically on `windows-latest` via [`.github/workflows/build-windows-launcher.yml`](.github/workflows/build-windows-launcher.yml) **only after 100% of CI & acceptance tests pass on `main`**, or on verified `main`-ancestor `v*` release tags).
+### Option B — No-Git Release Bundles (no `.exe`, just the launchers)
+Download from the **[GitHub Releases](https://github.com/esquedev/coach-porygon-vgc/releases/latest)** page, extract the **full** archive, and run the launcher:
+- **Windows:** `CoachPorygonVGC-windows.zip` → double-click `start_replay_coach.bat` *(tip: right-click the zip → Properties → **Unblock** before extracting to avoid the SmartScreen prompt)*.
+- **Linux / macOS:** `CoachPorygonVGC-linux-macos.tar.gz` → `tar xzf … && cd CoachPorygonVGC && ./start_replay_coach.sh`.
 
-Instead of shipping a bloated 3 GB CPU-only PyTorch monolith, `CoachPorygonStudio.exe` wraps the pure-stdlib launcher ([`apps/replay_coach/launcher_entry.py`](apps/replay_coach/launcher_entry.py)) with a custom Great Ball icon ([`assets/coach_porygon.ico`](assets/coach_porygon.ico)) and bootstraps `.venv` with the user's exact GPU:
-```powershell
-# Dry-run validate on Linux / macOS / Windows:
-python scripts/build_windows_launcher.py --check
-
-# Or compile locally on Windows:
-pip install pyinstaller
-python scripts/build_windows_launcher.py
-# Output: dist\CoachPorygonStudio.exe
-```
+Bundles are built by [`.github/workflows/release.yml`](.github/workflows/release.yml) **only for `v*` tags that are ancestors of `origin/main` and pass the full test + anti-hallucination suite**, and ship with `SHA256SUMS.txt` + SLSA provenance (see [`SECURITY.md`](SECURITY.md)).
 
 ### Option C — Manual Setup (PowerShell / Bash)
 ```powershell
@@ -186,7 +178,7 @@ PYTHONPATH=src:. python3 scripts/coach_bo3.py \
 *(Supports `--opp-ots <file>` for Bo1 replays without `|showteam|`, `--two-ply` for Selective 2-Ply Lookahead, `--no-sim` for instant 66-SP solving only, `--device {auto,cuda,cpu}`, `--lang {es,en}`, and `--style {vgc,scientific}`.)*
 
 ### Verification, Git Pre-Hooks & Contributing (`develop` & `main`)
-See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for full developer guidelines, 7-gate anti-hallucination checks, and `.exe` release rules.
+See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for full developer guidelines, 7-gate anti-hallucination checks, and release rules.
 ```powershell
 # Windows (PowerShell)
 $env:PYTHONPATH = "src;."
